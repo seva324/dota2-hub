@@ -39,7 +39,8 @@ export function getTeams(options?: { isCnOnly?: boolean; region?: string }) {
   return db.prepare(sql).all(...params);
 }
 
-export function getTeamById(id: string) {
+export function getTeamById(id: string | undefined) {
+  if (!id) return undefined;
   const db = getDb();
   return db.prepare('SELECT * FROM teams WHERE id = ?').get(id);
 }
