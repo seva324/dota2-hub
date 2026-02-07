@@ -151,11 +151,11 @@ export default function HomePage() {
               </div>
             </div>
             <nav className="hidden md:flex items-center gap-6">
-              <a href="/" className="text-amber-500 font-medium">首页</a>
-              <a href="/matches.html" className="text-slate-300 hover:text-white transition-colors">比赛</a>
-              <a href="/tournaments.html" className="text-slate-300 hover:text-white transition-colors">赛事</a>
-              <a href="/teams.html" className="text-slate-300 hover:text-white transition-colors">战队</a>
-              <a href="/news.html" className="text-slate-300 hover:text-white transition-colors">资讯</a>
+              <a href="./" className="text-amber-500 font-medium">首页</a>
+              <a href="./matches.html" className="text-slate-300 hover:text-white transition-colors">比赛</a>
+              <a href="./tournaments.html" className="text-slate-300 hover:text-white transition-colors">赛事</a>
+              <a href="./teams.html" className="text-slate-300 hover:text-white transition-colors">战队</a>
+              <a href="./news.html" className="text-slate-300 hover:text-white transition-colors">资讯</a>
             </nav>
           </div>
         </div>
