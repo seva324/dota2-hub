@@ -98,28 +98,12 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 尝试多个可能的路径
-        const paths = ['./data/home.json', '/dota2-hub/data/home.json', 'data/home.json'];
-        let lastError;
-        
-        for (const path of paths) {
-          try {
-            console.log('Trying to fetch:', path);
-            const response = await fetch(path);
-            if (response.ok) {
-              const homeData = await response.json();
-              console.log('Data loaded successfully from:', path);
-              setData(homeData);
-              setLoading(false);
-              return;
-            }
-          } catch (e) {
-            lastError = e;
-            console.log('Failed to fetch from:', path, e);
-          }
-        }
-        
-        throw lastError || new Error('All paths failed');
+        // 使用绝对路径（basePath 会自动处理前缀）
+        const response = await fetch('/dota2-hub/data/home.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const homeData = await response.json();
+        setData(homeData);
+        setLoading(false);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         setError(`加载数据失败: ${errorMsg}`);
@@ -167,11 +151,11 @@ export default function HomePage() {
               </div>
             </div>
             <nav className="hidden md:flex items-center gap-6">
-              <a href="./" className="text-amber-500 font-medium">首页</a>
-              <a href="./matches.html" className="text-slate-300 hover:text-white transition-colors">比赛</a>
-              <a href="./tournaments.html" className="text-slate-300 hover:text-white transition-colors">赛事</a>
-              <a href="./teams.html" className="text-slate-300 hover:text-white transition-colors">战队</a>
-              <a href="./news.html" className="text-slate-300 hover:text-white transition-colors">资讯</a>
+              <a href="/dota2-hub/" className="text-amber-500 font-medium">首页</a>
+              <a href="/dota2-hub/matches.html" className="text-slate-300 hover:text-white transition-colors">比赛</a>
+              <a href="/dota2-hub/tournaments.html" className="text-slate-300 hover:text-white transition-colors">赛事</a>
+              <a href="/dota2-hub/teams.html" className="text-slate-300 hover:text-white transition-colors">战队</a>
+              <a href="/dota2-hub/news.html" className="text-slate-300 hover:text-white transition-colors">资讯</a>
             </nav>
           </div>
         </div>
