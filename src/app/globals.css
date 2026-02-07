@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #f1f5f9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-orbitron: var(--font-orbitron);
+  --font-rajdhani: var(--font-rajdhani);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tabular nums for countdown */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
