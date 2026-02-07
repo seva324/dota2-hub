@@ -98,15 +98,32 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 使用相对路径加载数据（适配 GitHub Pages 子目录部署）
-        const response = await fetch('./data/home.json');
-        if (!response.ok) throw new Error('Failed to load data');
-        const homeData = await response.json();
-        setData(homeData);
+        // 尝试多个可能的路径
+        const paths = ['./data/home.json', '/dota2-hub/data/home.json', 'data/home.json'];
+        let lastError;
+        
+        for (const path of paths) {
+          try {
+            console.log('Trying to fetch:', path);
+            const response = await fetch(path);
+            if (response.ok) {
+              const homeData = await response.json();
+              console.log('Data loaded successfully from:', path);
+              setData(homeData);
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            lastError = e;
+            console.log('Failed to fetch from:', path, e);
+          }
+        }
+        
+        throw lastError || new Error('All paths failed');
       } catch (err) {
-        setError('加载数据失败，请稍后重试');
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        setError(`加载数据失败: ${errorMsg}`);
         console.error('Error loading data:', err);
-      } finally {
         setLoading(false);
       }
     };
