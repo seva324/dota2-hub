@@ -98,7 +98,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/data/home.json');
+        // 获取当前路径前缀（用于 GitHub Pages 子目录部署）
+        const basePath = window.location.pathname.startsWith('/dota2-hub') ? '/dota2-hub' : '';
+        const response = await fetch(`${basePath}/data/home.json`);
         if (!response.ok) throw new Error('Failed to load data');
         const homeData = await response.json();
         setData(homeData);
