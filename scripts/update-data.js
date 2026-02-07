@@ -4,8 +4,12 @@
  * 每天早上8点运行，更新所有数据
  */
 
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCRIPTS_DIR = __dirname;
 
@@ -14,7 +18,7 @@ function runScript(scriptName) {
   try {
     execSync(`node ${path.join(SCRIPTS_DIR, scriptName)}`, {
       stdio: 'inherit',
-      timeout: 300000, // 5分钟超时
+      timeout: 300000,
     });
     console.log(`✓ ${scriptName} completed`);
   } catch (error) {
@@ -28,11 +32,7 @@ async function main() {
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
 
-  // 1. 从 OpenDota 获取比赛数据
   runScript('fetch-opendota.js');
-
-  // 2. 从 Liquidpedia 获取赛事和战队信息
-  // runScript('scrape-liquipedia.js'); // 需要 Playwright，暂时跳过
 
   console.log('\n========================================');
   console.log('Update completed!');

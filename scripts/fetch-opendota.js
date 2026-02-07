@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 /**
  * OpenDota API 数据采集脚本 - XG/YB/VG 专用版
- * 使用多种方式获取完整的比赛数据
  */
 
-const Database = require('better-sqlite3');
-const path = require('path');
+import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || 'ab01b0b0-c459-4524-92eb-0b6af0cdc415';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
@@ -14,21 +17,11 @@ const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
-// 目标战队的账号ID（OpenDota team_id）
+// 目标战队
 const TARGET_TEAM_IDS = {
-  // XG - Xtreme Gaming
   'xtreme-gaming': { name: 'Xtreme Gaming', name_cn: 'XG', team_id: 8261502 },
-  // YB - Yakult Brother (原来的 Azure Ray)
   'yakult-brother': { name: 'Yakult Brother', name_cn: 'YB', team_id: 8255888 },
-  // VG - Vici Gaming  
   'vici-gaming': { name: 'Vici Gaming', name_cn: 'VG', team_id: 7391077 },
-};
-
-// 战队名称变体映射
-const TEAM_NAME_VARIANTS = {
-  'xtreme-gaming': ['Xtreme Gaming', 'XG', 'xtreme', 'XTREME GAMING'],
-  'yakult-brother': ['Yakult Brother', 'YB', 'yakult', 'YAKULT BROTHER', 'Azure Ray', 'AR', 'azure ray'],
-  'vici-gaming': ['Vici Gaming', 'VG', 'vici', 'VICI GAMING'],
 };
 
 async function fetchWithRetry(url, retries = 3) {
@@ -59,25 +52,21 @@ async function fetchWithRetry(url, retries = 3) {
   }
 }
 
-// 识别战队
 function identifyTeam(name) {
   if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
   
   const upperName = name.toUpperCase();
   const lowerName = name.toLowerCase();
   
-  // 检查 XG
   if (upperName === 'XG' || lowerName.includes('xtreme')) {
     return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
   }
   
-  // 检查 YB (包括 Azure Ray)
   if (upperName === 'YB' || lowerName.includes('yakult') || 
       upperName === 'AR' || lowerName.includes('azure') || lowerName.includes('ray')) {
     return { id: 'yakult-brother', name_cn: 'YB', is_cn: true };
   }
   
-  // 检查 VG
   if (upperName === 'VG' || lowerName.includes('vici')) {
     return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
   }
@@ -85,7 +74,6 @@ function identifyTeam(name) {
   return { id: 'unknown', name_cn: name, is_cn: false };
 }
 
-// 更新战队信息
 function updateTeam(teamInfo) {
   if (!teamInfo || !teamInfo.id) return;
   
@@ -97,31 +85,20 @@ function updateTeam(teamInfo) {
     VALUES (?, ?, ?, ?, ?, ?, unixepoch())
   `);
   
-  stmt.run(
-    teamInfo.id,
-    teamData.name,
-    teamData.name_cn,
-    teamData.name_cn,
-    'China',
-    1
-  );
+  stmt.run(teamInfo.id, teamData.name, teamData.name_cn, teamData.name_cn, 'China', 1);
 }
 
-// 保存比赛
 async function saveMatch(match) {
   const radiantTeam = identifyTeam(match.radiant_name);
   const direTeam = identifyTeam(match.dire_name);
   
-  // 只保存包含 XG/YB/VG 的比赛
   if (!radiantTeam.is_cn && !direTeam.is_cn) {
     return null;
   }
   
-  // 更新战队信息
   updateTeam(radiantTeam);
   updateTeam(direTeam);
   
-  // 确定比赛状态
   const now = Date.now() / 1000;
   let status = 'scheduled';
   if (match.start_time < now - 3600) {
@@ -130,7 +107,6 @@ async function saveMatch(match) {
     status = 'live';
   }
   
-  // 比赛结果 - 使用 radiant_win 字段
   let radiantGameWins = 0;
   let direGameWins = 0;
   
@@ -173,12 +149,10 @@ async function saveMatch(match) {
   return match;
 }
 
-// 获取职业比赛（所有）
 async function fetchProMatches() {
   console.log('Fetching pro matches from OpenDota...');
   let allMatches = [];
   
-  // 获取多页数据（最多3页，约300场比赛）
   for (let page = 0; page < 3; page++) {
     try {
       const url = page === 0 
@@ -191,7 +165,6 @@ async function fetchProMatches() {
       allMatches = allMatches.concat(data);
       console.log(`  Page ${page + 1}: ${data.length} matches (total: ${allMatches.length})`);
       
-      // 检查是否已经有足够的比赛（过去30天）
       const oldestMatch = data[data.length - 1];
       const daysAgo = (Date.now() / 1000 - oldestMatch.start_time) / 86400;
       if (daysAgo > 30) break;
@@ -206,19 +179,6 @@ async function fetchProMatches() {
   return allMatches;
 }
 
-// 获取公开比赛（高MMR）
-async function fetchPublicMatches() {
-  console.log('Fetching public matches (high MMR)...');
-  try {
-    const data = await fetchWithRetry(`${OPENDOTA_BASE_URL}/publicMatches?mmr_descending=1`);
-    return data || [];
-  } catch (error) {
-    console.error('  Error:', error.message);
-    return [];
-  }
-}
-
-// 获取特定战队的比赛
 async function fetchTeamMatches(teamId, teamName) {
   console.log(`Fetching matches for ${teamName} (team_id: ${teamId})...`);
   try {
@@ -230,7 +190,6 @@ async function fetchTeamMatches(teamId, teamName) {
   }
 }
 
-// 主函数
 async function main() {
   console.log('========================================');
   console.log('DOTA2 Hub - XG/YB/VG Match Fetcher');
@@ -238,9 +197,8 @@ async function main() {
   console.log('========================================\n');
   
   let savedCount = 0;
-  let allMatchIds = new Set(); // 去重
+  let allMatchIds = new Set();
   
-  // 方法1: 获取职业比赛（大量）
   console.log('--- Method 1: Pro Matches ---');
   try {
     const proMatches = await fetchProMatches();
@@ -263,7 +221,6 @@ async function main() {
     console.error('Error in pro matches:', error.message);
   }
   
-  // 方法2: 获取每个目标战队的比赛
   console.log('\n--- Method 2: Team-specific Matches ---');
   for (const [teamKey, teamData] of Object.entries(TARGET_TEAM_IDS)) {
     try {
@@ -273,7 +230,6 @@ async function main() {
       for (const match of teamMatches) {
         if (allMatchIds.has(match.match_id)) continue;
         
-        // team matches API 返回的格式不同，需要转换
         const convertedMatch = {
           match_id: match.match_id,
           radiant_name: match.radiant ? teamData.name : match.opposing_team_name,
@@ -284,7 +240,7 @@ async function main() {
           start_time: match.start_time,
           duration: match.duration || 0,
           leagueid: match.leagueid,
-          lobby_type: 7, // 职业比赛
+          lobby_type: 7,
         };
         
         try {
