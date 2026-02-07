@@ -1,6 +1,10 @@
-const Database = require('better-sqlite3');
-const fs = require('fs');
-const path = require('path');
+import Database from 'better-sqlite3';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const outputDir = path.join(__dirname, '..', 'public', 'data');
@@ -48,12 +52,12 @@ const upcomingMatches = db.prepare(`
     AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
   ORDER BY m.start_time ASC
   LIMIT 10
-`).all(now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS);
+`).all([now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
 
 fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(upcomingMatches, null, 2));
 console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
 
-// 导出中国战队比赛（只包含 XG/YB/VG）
+// 导出中国战队近期比赛
 const cnMatches = db.prepare(`
   SELECT m.*, 
          rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn, rt.logo_url as radiant_logo,
@@ -63,54 +67,41 @@ const cnMatches = db.prepare(`
   LEFT JOIN teams rt ON m.radiant_team_id = rt.id
   LEFT JOIN teams dt ON m.dire_team_id = dt.id
   LEFT JOIN tournaments t ON m.tournament_id = t.id
-  WHERE (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
+  WHERE m.start_time < ?
+    AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
   ORDER BY m.start_time DESC
   LIMIT 20
-`).all(...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS);
+`).all([now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
 
 fs.writeFileSync(path.join(outputDir, 'cn-matches.json'), JSON.stringify(cnMatches, null, 2));
 console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
 // 导出赛事数据
-const tournaments = db.prepare(`
-  SELECT * FROM tournaments
-  ORDER BY start_date DESC
-  LIMIT 20
-`).all();
-
+const tournaments = db.prepare('SELECT * FROM tournaments ORDER BY start_date DESC').all();
 fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify(tournaments, null, 2));
 console.log(`Exported ${tournaments.length} tournaments`);
 
 // 导出战队数据
-const teams = db.prepare(`
-  SELECT * FROM teams
-  ORDER BY is_cn_team DESC, name
-`).all();
-
+const teams = db.prepare('SELECT * FROM teams').all();
 fs.writeFileSync(path.join(outputDir, 'teams.json'), JSON.stringify(teams, null, 2));
 console.log(`Exported ${teams.length} teams`);
 
 // 导出新闻数据
-const news = db.prepare(`
-  SELECT * FROM news
-  ORDER BY published_at DESC
-  LIMIT 20
-`).all();
-
+const news = db.prepare('SELECT * FROM news ORDER BY published_at DESC').all();
 fs.writeFileSync(path.join(outputDir, 'news.json'), JSON.stringify(news, null, 2));
 console.log(`Exported ${news.length} news items`);
 
-// 导出首页数据（聚合）
+// 导出首页数据（合并所有数据）
 const homeData = {
   upcoming: upcomingMatches,
-  cnMatches: cnMatches.slice(0, 6),
-  tournaments: tournaments.slice(0, 4),
-  news: news.slice(0, 5),
+  cnMatches,
+  tournaments,
+  news,
   lastUpdated: new Date().toISOString()
 };
 
 fs.writeFileSync(path.join(outputDir, 'home.json'), JSON.stringify(homeData, null, 2));
 console.log('Exported home page data');
 
-db.close();
 console.log('Data export complete!');
+db.close();

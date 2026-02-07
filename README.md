@@ -1,115 +1,73 @@
-# DOTA2 战报中心
+# React + TypeScript + Vite
 
-专注中国战队 (XG, AR, VG, LGD, iG 等) 的 DOTA2 赛事战报网站。
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 功能特性
+Currently, two official plugins are available:
 
-- 🏆 **T1 赛事战报** - 实时更新顶级赛事比赛结果
-- ⏰ **赛事倒计时** - 即将开始的比赛倒计时提醒
-- 🇨🇳 **中国战队聚焦** - XG, Azure Ray, VG, LGD 等重点关注
-- 📰 **转会新闻** - 选手转会动态
-- 🔥 **社区热点** - X/Reddit/NGA 热门讨论
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## 技术栈
+## React Compiler
 
-- **前端**: Next.js 15 + TypeScript + Tailwind CSS
-- **数据库**: SQLite (better-sqlite3)
-- **数据源**: 
-  - OpenDota API
-  - Liquidpedia
-  - GosuGamers
-- **部署**: GitHub Pages (前端) + 本地服务器 (数据采集)
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## 快速开始
+## Expanding the ESLint configuration
 
-### 1. 安装依赖
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-```bash
-npm install
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-### 2. 初始化数据库
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-npm run init-db
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-### 3. 启动开发服务器
-
-```bash
-npm run dev
-```
-
-访问 http://localhost:3000
-
-### 4. 更新数据
-
-```bash
-npm run update-data
-```
-
-## 数据采集
-
-### OpenDota API
-- 获取职业比赛数据
-- 战队信息
-- 比赛详情
-
-配置 API Key: 在 `scripts/fetch-opendota.js` 中设置
-
-### Liquidpedia 抓取
-- 赛事信息
-- 战队 Logo
-- 转会新闻
-
-```bash
-npm run fetch-liquipedia
-```
-
-## 部署
-
-### GitHub Pages 自动部署
-
-1. Fork 本仓库
-2. 在 Settings > Pages 中启用 GitHub Pages
-3. 设置 Secrets: `OPENDOTA_API_KEY`
-4. 推送代码，自动触发部署
-
-### 定时更新
-
-GitHub Actions 每天 8:00 UTC 自动：
-1. 拉取最新数据
-2. 构建静态站点
-3. 部署到 GitHub Pages
-
-## 项目结构
-
-```
-dota2-hub/
-├── data/                  # SQLite 数据库
-├── scripts/               # 数据采集脚本
-│   ├── init-db.js        # 数据库初始化
-│   ├── fetch-opendota.js # OpenDota API 抓取
-│   └── scrape-liquipedia.js # Liquidpedia 抓取
-├── src/
-│   ├── app/              # Next.js App Router
-│   │   ├── page.tsx      # 首页
-│   │   ├── matches/      # 比赛页面
-│   │   ├── tournaments/  # 赛事页面
-│   │   ├── teams/        # 战队页面
-│   │   ├── news/         # 新闻页面
-│   │   └── api/          # API 路由
-│   ├── components/       # 组件
-│   └── lib/              # 工具函数
-└── .github/workflows/    # GitHub Actions
-```
-
-## 数据来源
-
-- [OpenDota](https://www.opendota.com/)
-- [Liquidpedia Dota2](https://liquipedia.net/dota2/)
-- [GosuGamers](https://www.gosugamers.net/dota2)
-
-## License
-
-MIT
