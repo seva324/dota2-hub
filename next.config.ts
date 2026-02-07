@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/dota2-hub' : '',
+  // 排除 API 路由，使用静态数据文件
+  skipTrailingSlashRedirect: true,
 };
 
 export default nextConfig;

@@ -32,24 +32,21 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Playwright browsers
-        run: npx playwright install chromium
-
       - name: Setup database
         run: |
           mkdir -p data
           node scripts/init-db.js
 
       - name: Fetch data from APIs
-        run: node scripts/update-data.js
+        run: node scripts/fetch-opendota.js
         env:
           OPENDOTA_API_KEY: ${{ secrets.OPENDOTA_API_KEY }}
 
+      - name: Export static data
+        run: node scripts/export-static-data.js
+
       - name: Build static site
         run: npm run build
-
-      - name: Copy database to dist
-        run: cp -r data dist/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

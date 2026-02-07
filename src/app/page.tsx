@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { Trophy, Calendar, Users, Flame, ChevronRight, Clock, MapPin } from 'lucide-react';
+import { Trophy, Calendar, Users, ChevronRight, Clock } from 'lucide-react';
 
 interface Match {
   id: number;
@@ -35,7 +35,6 @@ interface Tournament {
   end_date: string;
   status: string;
   prize_pool?: string;
-  image_url?: string;
 }
 
 interface News {
@@ -49,14 +48,12 @@ interface News {
   category: string;
 }
 
-interface CommunityPost {
-  id: string;
-  platform: string;
-  platform_name?: string;
-  summary: string;
-  keywords?: string;
-  url: string;
-  hot_score: number;
+interface HomeData {
+  upcoming: Match[];
+  cnMatches: Match[];
+  tournaments: Tournament[];
+  news: News[];
+  lastUpdated: string;
 }
 
 function Countdown({ targetTime }: { targetTime: number }) {
@@ -94,36 +91,20 @@ function Countdown({ targetTime }: { targetTime: number }) {
 }
 
 export default function HomePage() {
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [recentMatches, setRecentMatches] = useState<Match[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [news, setNews] = useState<News[]>([]);
-  const [community, setCommunity] = useState<CommunityPost[]>([]);
+  const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [matchesRes, cnMatchesRes, tourneysRes, newsRes] = await Promise.all([
-          fetch('/api/matches?type=countdown&limit=5'),
-          fetch('/api/matches?cn=true&limit=6'),
-          fetch('/api/tournaments?limit=4'),
-          fetch('/api/news?limit=5'),
-        ]);
-
-        const [matchesData, cnData, tourneysData, newsData] = await Promise.all([
-          matchesRes.json(),
-          cnMatchesRes.json(),
-          tourneysRes.json(),
-          newsRes.json(),
-        ]);
-
-        setUpcomingMatches(matchesData.data || []);
-        setRecentMatches(cnData.data || []);
-        setTournaments(tourneysData.data || []);
-        setNews(newsData.data || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+        const response = await fetch('/data/home.json');
+        if (!response.ok) throw new Error('Failed to load data');
+        const homeData = await response.json();
+        setData(homeData);
+      } catch (err) {
+        setError('加载数据失败，请稍后重试');
+        console.error('Error loading data:', err);
       } finally {
         setLoading(false);
       }
@@ -134,11 +115,21 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="text-amber-500 text-xl font-[family-name:var(--font-orbitron)]">加载中...</div>
       </div>
     );
   }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-red-500">{error || '数据加载失败'}</div>
+      </div>
+    );
+  }
+
+  const { upcoming, cnMatches, tournaments, news, lastUpdated } = data;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
@@ -159,10 +150,10 @@ export default function HomePage() {
             </div>
             <nav className="hidden md:flex items-center gap-6">
               <a href="/" className="text-amber-500 font-medium">首页</a>
-              <a href="/matches" className="text-slate-300 hover:text-white transition-colors">比赛</a>
-              <a href="/tournaments" className="text-slate-300 hover:text-white transition-colors">赛事</a>
-              <a href="/teams" className="text-slate-300 hover:text-white transition-colors">战队</a>
-              <a href="/news" className="text-slate-300 hover:text-white transition-colors">资讯</a>
+              <a href="/matches.html" className="text-slate-300 hover:text-white transition-colors">比赛</a>
+              <a href="/tournaments.html" className="text-slate-300 hover:text-white transition-colors">赛事</a>
+              <a href="/teams.html" className="text-slate-300 hover:text-white transition-colors">战队</a>
+              <a href="/news.html" className="text-slate-300 hover:text-white transition-colors">资讯</a>
             </nav>
           </div>
         </div>
@@ -170,7 +161,7 @@ export default function HomePage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section - 即将开始的比赛倒计时 */}
-        {upcomingMatches.length > 0 && (
+        {upcoming.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center gap-2 mb-6">
               <Clock className="w-5 h-5 text-amber-500" />
@@ -179,7 +170,7 @@ export default function HomePage() {
               </h2>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {upcomingMatches.slice(0, 2).map((match) => (
+              {upcoming.slice(0, 2).map((match) => (
                 <div
                   key={match.id}
                   className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-6 border border-slate-700/50 hover:border-amber-500/30 transition-all"
@@ -188,9 +179,7 @@ export default function HomePage() {
                     <span className="text-xs text-amber-500 font-medium bg-amber-500/10 px-2 py-1 rounded">
                       {match.tournament_name_cn || match.tournament_name}
                     </span>
-                    <span className="text-sm text-slate-400">
-                      {match.series_type}
-                    </span>
+                    <span className="text-sm text-slate-400">{match.series_type}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -205,9 +194,7 @@ export default function HomePage() {
                     </div>
                     
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-amber-500 font-[family-name:var(--font-orbitron)]">
-                        VS
-                      </p>
+                      <p className="text-2xl font-bold text-amber-500 font-[family-name:var(--font-orbitron)]">VS</p>
                       <p className="text-xs text-slate-400 mt-1">
                         <Countdown targetTime={match.start_time} />
                       </p>
@@ -244,14 +231,14 @@ export default function HomePage() {
                     中国战队战报
                   </h2>
                 </div>
-                <a href="/matches" className="text-sm text-amber-500 hover:text-amber-400 flex items-center gap-1">
+                <a href="/matches.html" className="text-sm text-amber-500 hover:text-amber-400 flex items-center gap-1">
                   查看全部 <ChevronRight className="w-4 h-4" />
                 </a>
               </div>
               
               <div className="space-y-3">
-                {recentMatches.length > 0 ? (
-                  recentMatches.map((match) => (
+                {cnMatches.length > 0 ? (
+                  cnMatches.map((match) => (
                     <div
                       key={match.id}
                       className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-all"
@@ -349,9 +336,8 @@ export default function HomePage() {
             </section>
           </div>
 
-          {/* Right Column - 新闻 & 社区 */}
+          {/* Right Column - 新闻 */}
           <div>
-            {/* 最新资讯 */}
             <section className="mb-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -408,6 +394,11 @@ export default function HomePage() {
                 ))}
               </div>
             </section>
+
+            {/* 最后更新时间 */}
+            <div className="text-xs text-slate-500 text-center">
+              最后更新: {lastUpdated ? format(new Date(lastUpdated), 'yyyy-MM-dd HH:mm', { locale: zhCN }) : '-'}
+            </div>
           </div>
         </div>
       </main>
