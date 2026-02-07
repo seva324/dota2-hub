@@ -3,7 +3,7 @@ import { getNews } from '@/lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const category = searchParams.get('category');
+  const category = searchParams.get('category') || undefined;
   const isCnNews = searchParams.get('cn') === 'true';
   const limit = parseInt(searchParams.get('limit') || '20');
 

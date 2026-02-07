@@ -4,9 +4,9 @@ import { getMatches, getCnTeamMatches, getUpcomingMatchesWithCountdown } from '@
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
-  const tournamentId = searchParams.get('tournament');
-  const teamId = searchParams.get('team');
-  const status = searchParams.get('status');
+  const tournamentId = searchParams.get('tournament') || undefined;
+  const teamId = searchParams.get('team') || undefined;
+  const status = searchParams.get('status') || undefined;
   const upcoming = searchParams.get('upcoming') === 'true';
   const cnOnly = searchParams.get('cn') === 'true';
   const limit = parseInt(searchParams.get('limit') || '50');

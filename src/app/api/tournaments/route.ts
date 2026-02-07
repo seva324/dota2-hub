@@ -3,8 +3,8 @@ import { getTournaments } from '@/lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status');
-  const tier = searchParams.get('tier');
+  const status = searchParams.get('status') || undefined;
+  const tier = searchParams.get('tier') || undefined;
   const upcoming = searchParams.get('upcoming') === 'true';
   const limit = parseInt(searchParams.get('limit') || '20');
 

@@ -3,7 +3,7 @@ import { getTeams, getTeamById } from '@/lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
+  const id = searchParams.get('id') || undefined;
   const isCnOnly = searchParams.get('cn') === 'true';
   const region = searchParams.get('region') || undefined;
 
