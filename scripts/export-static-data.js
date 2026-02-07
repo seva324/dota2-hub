@@ -5,6 +5,10 @@ const path = require('path');
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const outputDir = path.join(__dirname, '..', 'public', 'data');
 
+// 目标战队
+const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brother', 'vici-gaming'];
+const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
+
 // 确保输出目录存在
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
@@ -50,9 +54,6 @@ fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(upcomingM
 console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
 
 // 导出中国战队比赛（只包含 XG/YB/VG）
-const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brother', 'vici-gaming'];
-const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
-
 const cnMatches = db.prepare(`
   SELECT m.*, 
          rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn, rt.logo_url as radiant_logo,
