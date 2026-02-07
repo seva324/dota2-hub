@@ -29,7 +29,7 @@ const matches = db.prepare(`
 fs.writeFileSync(path.join(outputDir, 'matches.json'), JSON.stringify(matches, null, 2));
 console.log(`Exported ${matches.length} matches`);
 
-// 导出即将开始的比赛（带倒计时）
+// 导出即将开始的比赛（带倒计时）- 只包含 XG/YB/VG
 const now = Math.floor(Date.now() / 1000);
 const upcomingMatches = db.prepare(`
   SELECT m.*, 
@@ -40,15 +40,19 @@ const upcomingMatches = db.prepare(`
   LEFT JOIN teams rt ON m.radiant_team_id = rt.id
   LEFT JOIN teams dt ON m.dire_team_id = dt.id
   LEFT JOIN tournaments t ON m.tournament_id = t.id
-  WHERE m.start_time > ?
+  WHERE m.start_time > ? 
+    AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
   ORDER BY m.start_time ASC
   LIMIT 10
-`).all(now);
+`).all(now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS);
 
 fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(upcomingMatches, null, 2));
-console.log(`Exported ${upcomingMatches.length} upcoming matches`);
+console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
 
-// 导出中国战队比赛
+// 导出中国战队比赛（只包含 XG/YB/VG）
+const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brother', 'vici-gaming'];
+const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
+
 const cnMatches = db.prepare(`
   SELECT m.*, 
          rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn, rt.logo_url as radiant_logo,
@@ -58,13 +62,13 @@ const cnMatches = db.prepare(`
   LEFT JOIN teams rt ON m.radiant_team_id = rt.id
   LEFT JOIN teams dt ON m.dire_team_id = dt.id
   LEFT JOIN tournaments t ON m.tournament_id = t.id
-  WHERE (rt.is_cn_team = 1 OR dt.is_cn_team = 1)
+  WHERE (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
   ORDER BY m.start_time DESC
   LIMIT 20
-`).all();
+`).all(...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS);
 
 fs.writeFileSync(path.join(outputDir, 'cn-matches.json'), JSON.stringify(cnMatches, null, 2));
-console.log(`Exported ${cnMatches.length} CN team matches`);
+console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
 // 导出赛事数据
 const tournaments = db.prepare(`

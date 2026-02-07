@@ -230,10 +230,10 @@ export default function HomePage() {
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-red-500" />
                   <h2 className="text-lg font-bold text-white font-[family-name:var(--font-orbitron)]">
-                    中国战队战报
+                    XG / YB / VG 战报
                   </h2>
                 </div>
-                <a href="/matches.html" className="text-sm text-amber-500 hover:text-amber-400 flex items-center gap-1">
+                <a href="/dota2-hub/matches.html" className="text-sm text-amber-500 hover:text-amber-400 flex items-center gap-1">
                   查看全部 <ChevronRight className="w-4 h-4" />
                 </a>
               </div>

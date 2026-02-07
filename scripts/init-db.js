@@ -165,18 +165,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id);
 `);
 
-// 插入中国重点战队
+// 插入中国重点战队（只关注 XG, YB, VG）
 db.exec(`
   INSERT OR IGNORE INTO teams (id, name, name_cn, tag, region, is_cn_team) VALUES
   ('xtreme-gaming', 'Xtreme Gaming', 'XG', 'XG', 'China', 1),
+  ('yakult-brother', 'Yakult Brother', 'YB', 'YB', 'China', 1),
   ('azure-ray', 'Azure Ray', 'AR', 'AR', 'China', 1),
   ('vici-gaming', 'Vici Gaming', 'VG', 'VG', 'China', 1),
-  ('lgd-gaming', 'LGD Gaming', 'LGD', 'LGD', 'China', 1),
-  ('invictus-gaming', 'Invictus Gaming', 'iG', 'iG', 'China', 1),
-  ('g2-ig', 'G2 x iG', 'G2.iG', 'G2.iG', 'China', 1),
-  ('team-zero', 'Team Zero', 'TZ', 'TZ', 'China', 1),
-  ('team-aster', 'Team Aster', 'Aster', 'Aster', 'China', 1),
-  ('bright', 'Bright', 'Bright', 'Bright', 'China', 1),
   ('nouns', 'Nouns', 'Nouns', 'Nouns', 'NA', 0),
   ('falcons', 'Team Falcons', 'Falcons', 'Falcons', 'MENA', 0),
   ('liquid', 'Team Liquid', 'Liquid', 'Liquid', 'Europe', 0),
