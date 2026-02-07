@@ -51,18 +51,18 @@ export const chineseTeams: Team[] = [
 
 // 国际顶级战队
 export const internationalTeams: Team[] = [
-  { id: 'falcons', name: 'Team Falcons', tag: 'Falcons', country: 'SA', ranking: 1, points: 1308 },
-  { id: 'tundra', name: 'Tundra Esports', tag: 'Tundra', country: 'EU', ranking: 2, points: 1142 },
-  { id: 'spirit', name: 'Team Spirit', tag: 'TSpirit', country: 'EEU', ranking: 3, points: 939 },
+  { id: 'falcons', name: 'Team Falcons', tag: 'Falcons', country: 'SA', ranking: 1, points: 1308, logo: '/images/falcons-logo.png' },
+  { id: 'tundra', name: 'Tundra Esports', tag: 'Tundra', country: 'EU', ranking: 2, points: 1142, logo: '/images/tundra-logo.png' },
+  { id: 'spirit', name: 'Team Spirit', tag: 'TSpirit', country: 'EEU', ranking: 3, points: 939, logo: '/images/spirit-logo.png' },
   { id: 'yandex', name: 'Team Yandex', tag: 'Yandex', country: 'EEU', ranking: 4, points: 812 },
   { id: 'betboom', name: 'BetBoom Team', tag: 'BetBoom', country: 'EEU', ranking: 5, points: 756 },
-  { id: 'liquid', name: 'Team Liquid', tag: 'Liquid', country: 'EU', ranking: 7, points: 654 },
+  { id: 'liquid', name: 'Team Liquid', tag: 'Liquid', country: 'EU', ranking: 7, points: 654, logo: '/images/liquid-logo.png' },
   { id: 'pari', name: 'PARIVISION', tag: 'PARI', country: 'EEU', ranking: 8, points: 612 },
-  { id: 'og', name: 'OG', tag: 'OG', country: 'EU', ranking: 9, points: 578 },
-  { id: 'mouz', name: 'MOUZ', tag: 'MOUZ', country: 'EU', ranking: 10, points: 534 },
-  { id: 'navi', name: 'Natus Vincere', tag: 'NAVI', country: 'EEU', ranking: 11, points: 498 },
-  { id: 'heroic', name: 'HEROIC', tag: 'HEROIC', country: 'SA', ranking: 12, points: 456 },
-  { id: 'gl', name: 'GamerLegion', tag: 'GL', country: 'EU', ranking: 13, points: 423 },
+  { id: 'og', name: 'OG', tag: 'OG', country: 'EU', ranking: 9, points: 578, logo: '/images/og-logo.png' },
+  { id: 'mouz', name: 'MOUZ', tag: 'MOUZ', country: 'EU', ranking: 10, points: 534, logo: '/images/mouz-logo.png' },
+  { id: 'navi', name: 'Natus Vincere', tag: 'NAVI', country: 'EEU', ranking: 11, points: 498, logo: '/images/navi-logo.png' },
+  { id: 'heroic', name: 'HEROIC', tag: 'HEROIC', country: 'SA', ranking: 12, points: 456, logo: '/images/heroic-logo.png' },
+  { id: 'gl', name: 'GamerLegion', tag: 'GL', country: 'EU', ranking: 13, points: 423, logo: '/images/gl-logo.png' },
 ];
 
 // 合并所有战队

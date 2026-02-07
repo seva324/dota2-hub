@@ -1,0 +1,68 @@
+name: Daily Update
+
+on:
+  schedule:
+    # 每天 UTC 00:00 运行 (北京时间 08:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Fetch latest DOTA2 data
+      run: |
+        echo "Fetching latest tournament data from OpenDota API..."
+        # 这里可以添加脚本从 OpenDota API 获取最新数据
+        # curl -s "https://api.opendota.com/api/proMatches" > src/data/proMatches.json
+        
+        echo "Fetching latest news from Liquidpedia..."
+        # 这里可以添加脚本抓取 Liquidpedia 新闻
+        
+        echo "Fetching latest community posts from Reddit..."
+        # 这里可以添加脚本获取 Reddit 热门帖子
+        
+    - name: Update data files
+      run: |
+        echo "Updating tournament data..."
+        # node scripts/update-tournaments.js
+        
+        echo "Updating news data..."
+        # node scripts/update-news.js
+        
+        echo "Updating community data..."
+        # node scripts/update-community.js
+        
+    - name: Build project
+      run: npm run build
+      
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
+        
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git diff --quiet && git diff --staged --quiet || git commit -m "Daily update: $(date +'%Y-%m-%d')"
+        
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
