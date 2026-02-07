@@ -10,7 +10,7 @@
     "init-db": "node scripts/init-db.js",
     "update-data": "node scripts/update-data.js",
     "fetch-opendota": "node scripts/fetch-opendota.js",
-    "fetch-liquipedia": "node scripts/scrape-liquipedia.js"
+    "test-local": "node scripts/test-local.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.1.0",
