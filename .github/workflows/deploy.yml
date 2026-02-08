@@ -45,11 +45,14 @@ jobs:
           mkdir -p data
           node scripts/init-db.js
 
-      - name: Fetch Data
+      - name: Fetch Data from OpenDota
         run: node scripts/fetch-opendota.js
         env:
           OPENDOTA_API_KEY: ${{ secrets.OPENDOTA_API_KEY }}
         continue-on-error: true
+
+      - name: Add Tournament & News Data
+        run: node scripts/scrape-liquipedia.js
 
       - name: Export Data
         run: node scripts/export-static-data.js

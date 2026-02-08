@@ -58,15 +58,22 @@ db.exec(`
     match_id INTEGER UNIQUE,
     radiant_team_id TEXT,
     dire_team_id TEXT,
+    radiant_team_name TEXT,
+    radiant_team_name_cn TEXT,
+    dire_team_name TEXT,
+    dire_team_name_cn TEXT,
     radiant_score INTEGER DEFAULT 0,
     dire_score INTEGER DEFAULT 0,
     radiant_game_wins INTEGER DEFAULT 0,
     dire_game_wins INTEGER DEFAULT 0,
     start_time INTEGER,
+    duration INTEGER DEFAULT 0,
     series_type TEXT,
     league_id INTEGER,
     tournament_id TEXT,
     status TEXT DEFAULT 'upcoming',
+    lobby_type INTEGER DEFAULT 0,
+    game_mode INTEGER,
     created_at INTEGER DEFAULT (unixepoch())
   );
 `);
