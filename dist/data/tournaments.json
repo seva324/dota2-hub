@@ -1,1 +1,72 @@
-[]
+[
+  {
+    "id": "ti-2025",
+    "name": "The International 2025",
+    "name_cn": "国际邀请赛 2025",
+    "tier": "T1",
+    "start_date": "2025-09-04",
+    "end_date": "2025-09-14",
+    "status": "upcoming",
+    "prize_pool": "$2,500,000+",
+    "location": "Hamburg, Germany",
+    "format": "Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs",
+    "logo_url": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "esl-one-birmingham-2025",
+    "name": "ESL One Birmingham 2025",
+    "name_cn": "ESL One 伯明翰 2025",
+    "tier": "T1",
+    "start_date": "2025-04-22",
+    "end_date": "2025-04-27",
+    "status": "upcoming",
+    "prize_pool": "$1,000,000",
+    "location": "Birmingham, UK",
+    "format": "Group Stage + Playoffs",
+    "logo_url": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "pgl-wallachia-7",
+    "name": "PGL Wallachia Season 7",
+    "name_cn": "PGL 瓦拉几亚 S7",
+    "tier": "T1",
+    "start_date": "2025-03-07",
+    "end_date": "2025-03-15",
+    "status": "upcoming",
+    "prize_pool": "$1,000,000",
+    "location": "Bucharest, Romania",
+    "format": "Swiss-system Group Stage (Bo3) + Double-elimination Playoffs",
+    "logo_url": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "dreamleague-28",
+    "name": "DreamLeague Season 28",
+    "name_cn": "梦幻联赛 S28",
+    "tier": "T1",
+    "start_date": "2025-02-16",
+    "end_date": "2025-03-01",
+    "status": "upcoming",
+    "prize_pool": "$1,000,000",
+    "location": "Online (Europe)",
+    "format": "Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs",
+    "logo_url": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "blast-slam-6",
+    "name": "BLAST Slam VI",
+    "name_cn": "BLAST Slam 第六赛季",
+    "tier": "T1",
+    "start_date": "2025-02-03",
+    "end_date": "2025-02-15",
+    "status": "ongoing",
+    "prize_pool": "$1,000,000",
+    "location": "Malta",
+    "format": "Round-robin Group Stage + Single-elimination Playoffs",
+    "logo_url": null,
+    "created_at": 1770511741
+  }
+]

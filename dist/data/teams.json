@@ -1,82 +1,5 @@
 [
   {
-    "id": "azure-ray",
-    "name": "Azure Ray",
-    "name_cn": "AR",
-    "tag": "AR",
-    "logo_url": null,
-    "region": "China",
-    "is_cn_team": 1,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
-    "id": "nouns",
-    "name": "Nouns",
-    "name_cn": "Nouns",
-    "tag": "Nouns",
-    "logo_url": null,
-    "region": "NA",
-    "is_cn_team": 0,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
-    "id": "falcons",
-    "name": "Team Falcons",
-    "name_cn": "Falcons",
-    "tag": "Falcons",
-    "logo_url": null,
-    "region": "MENA",
-    "is_cn_team": 0,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
-    "id": "liquid",
-    "name": "Team Liquid",
-    "name_cn": "Liquid",
-    "tag": "Liquid",
-    "logo_url": null,
-    "region": "Europe",
-    "is_cn_team": 0,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
-    "id": "gg",
-    "name": "Gaimin Gladiators",
-    "name_cn": "GG",
-    "tag": "GG",
-    "logo_url": null,
-    "region": "Europe",
-    "is_cn_team": 0,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
-    "id": "bb",
-    "name": "BetBoom Team",
-    "name_cn": "BB",
-    "tag": "BB",
-    "logo_url": null,
-    "region": "Eastern Europe",
-    "is_cn_team": 0,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
-    "id": "spirit",
-    "name": "Team Spirit",
-    "name_cn": "Spirit",
-    "tag": "TS",
-    "logo_url": null,
-    "region": "Eastern Europe",
-    "is_cn_team": 0,
-    "created_at": 1770479262,
-    "updated_at": 1770479262
-  },
-  {
     "id": "xtreme-gaming",
     "name": "Xtreme Gaming",
     "name_cn": "XG",
@@ -84,8 +7,8 @@
     "logo_url": null,
     "region": "China",
     "is_cn_team": 1,
-    "created_at": 1770479278,
-    "updated_at": 1770479278
+    "created_at": 1770525841,
+    "updated_at": 1770525841
   },
   {
     "id": "yakult-brother",
@@ -95,8 +18,8 @@
     "logo_url": null,
     "region": "China",
     "is_cn_team": 1,
-    "created_at": 1770479280,
-    "updated_at": 1770479280
+    "created_at": 1770525853,
+    "updated_at": 1770525853
   },
   {
     "id": "vici-gaming",
@@ -106,7 +29,7 @@
     "logo_url": null,
     "region": "China",
     "is_cn_team": 1,
-    "created_at": 1770479281,
-    "updated_at": 1770479281
+    "created_at": 1770525863,
+    "updated_at": 1770525863
   }
 ]

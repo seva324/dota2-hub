@@ -1,1 +1,54 @@
-[]
+[
+  {
+    "id": "news-4",
+    "title": "BLAST Slam VI小组赛：XG首战对阵Team Falcons",
+    "summary": "XG将在BLAST Slam VI小组赛首轮对阵世界排名第一的Team Falcons，比赛将于2月5日进行。",
+    "content": null,
+    "source": "Liquipedia",
+    "url": "https://liquipedia.net",
+    "published_at": 1770425341,
+    "keywords": null,
+    "category": "tournament",
+    "image": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "news-2",
+    "title": "电竞国家杯ENC官宣DOTA2项目，11月利雅得开战",
+    "summary": "2025年1月29日，电竞国家杯官方正式宣布Dota 2将成为16个参赛项目之一。比赛将于11月2日-8日在沙特阿拉伯利雅得举办。",
+    "content": null,
+    "source": "直播吧",
+    "url": "https://www.zhibo8.com",
+    "published_at": 1770252541,
+    "keywords": null,
+    "category": "tournament",
+    "image": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "news-1",
+    "title": "XG鏖战92分钟击败VG晋级BLAST Slam VI",
+    "summary": "2025年1月6日，BLAST Slam VI中国赛区预选赛决赛上演史诗级对决，XG与VG战满三局，最终XG 2-1击败VG获得参赛资格。",
+    "content": null,
+    "source": "17173",
+    "url": "https://www.17173.com",
+    "published_at": 1770079741,
+    "keywords": null,
+    "category": "tournament",
+    "image": null,
+    "created_at": 1770511741
+  },
+  {
+    "id": "news-3",
+    "title": "2025年DOTA2国际邀请赛将在德国汉堡举办",
+    "summary": "维尔福集团近日宣布，2025年DOTA2国际邀请赛将在德国汉堡举办，总奖金池超过250万美元。",
+    "content": null,
+    "source": "Valve",
+    "url": "https://www.dota2.com",
+    "published_at": 1769906941,
+    "keywords": null,
+    "category": "tournament",
+    "image": null,
+    "created_at": 1770511741
+  }
+]
