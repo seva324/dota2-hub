@@ -51,6 +51,10 @@ jobs:
           OPENDOTA_API_KEY: ${{ secrets.OPENDOTA_API_KEY }}
         continue-on-error: true
 
+      - name: Fetch Data from Liquipedia
+        run: node scripts/fetch-liquipedia.js
+        continue-on-error: true
+
       - name: Add Tournament & News Data
         run: node scripts/scrape-liquipedia.js
 
