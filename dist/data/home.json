@@ -27,6 +27,62 @@
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
+    },
+    {
+      "id": 2610,
+      "match_id": "upcoming_1770857181546_0",
+      "radiant_team_id": "unknown",
+      "dire_team_id": "xtreme-gaming",
+      "radiant_team_name": null,
+      "radiant_team_name_cn": null,
+      "dire_team_name": "Xtreme Gaming",
+      "dire_team_name_cn": "XG",
+      "radiant_score": 0,
+      "dire_score": 0,
+      "radiant_game_wins": 0,
+      "dire_game_wins": 0,
+      "start_time": 1771248600,
+      "duration": 0,
+      "series_type": "BO3",
+      "league_id": null,
+      "tournament_id": null,
+      "status": "scheduled",
+      "lobby_type": 0,
+      "game_mode": null,
+      "created_at": 1770857181,
+      "radiant_logo": null,
+      "dire_logo": null,
+      "tournament_name": null,
+      "tournament_name_cn": null,
+      "tournament_tier": null
+    },
+    {
+      "id": 2611,
+      "match_id": "upcoming_1770857181548_1",
+      "radiant_team_id": "unknown",
+      "dire_team_id": "yakult-brother",
+      "radiant_team_name": null,
+      "radiant_team_name_cn": null,
+      "dire_team_name": "Yakult Brother",
+      "dire_team_name_cn": "YB",
+      "radiant_score": 0,
+      "dire_score": 0,
+      "radiant_game_wins": 0,
+      "dire_game_wins": 0,
+      "start_time": 1771326000,
+      "duration": 0,
+      "series_type": "BO3",
+      "league_id": null,
+      "tournament_id": null,
+      "status": "scheduled",
+      "lobby_type": 0,
+      "game_mode": null,
+      "created_at": 1770857181,
+      "radiant_logo": null,
+      "dire_logo": null,
+      "tournament_name": null,
+      "tournament_name_cn": null,
+      "tournament_tier": null
     }
   ],
   "cnMatches": [
@@ -717,5 +773,5 @@
       "created_at": 1770511741
     }
   ],
-  "lastUpdated": "2026-02-11T16:31:01.146Z"
+  "lastUpdated": "2026-02-12T00:46:32.648Z"
 }
