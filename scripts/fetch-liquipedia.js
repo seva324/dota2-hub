@@ -267,8 +267,8 @@ async function saveMatch(match, bpData = null) {
       radiant_score, dire_score,
       radiant_game_wins, dire_game_wins,
       start_time, duration, series_type, status, 
-      lobby_type, tournament_name
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      lobby_type
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   insertMatch.run(
@@ -287,8 +287,7 @@ async function saveMatch(match, bpData = null) {
     bpData?.duration || 0,
     match.format,
     match.status,
-    7, // lobby_type = tournament
-    match.tournament || null
+    7 // lobby_type = tournament
   );
   
   // 如果有 BP 数据，保存到 bp_data 表
