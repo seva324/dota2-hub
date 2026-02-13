@@ -123,9 +123,11 @@ async function saveMatch(match) {
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO matches (
       match_id, league_id, radiant_team_id, dire_team_id,
+      radiant_team_name, radiant_team_name_cn,
+      dire_team_name, dire_team_name_cn,
       radiant_score, dire_score, radiant_game_wins, dire_game_wins,
       start_time, duration, series_type, status, lobby_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   stmt.run(
@@ -133,6 +135,10 @@ async function saveMatch(match) {
     match.leagueid || null,
     radiantTeam.id,
     direTeam.id,
+    match.radiant_name || null,
+    radiantTeam.name_cn || null,
+    match.dire_name || null,
+    direTeam.name_cn || null,
     match.radiant_score || 0,
     match.dire_score || 0,
     radiantGameWins,
