@@ -103,5 +103,21 @@ const homeData = {
 fs.writeFileSync(path.join(outputDir, 'home.json'), JSON.stringify(homeData, null, 2));
 console.log('Exported home page data');
 
+// 导出 BP 数据（带 match_id 的比赛）
+const bpData = db.prepare(`
+  SELECT bp.match_id, bp.picks_bans, bp.radiant_win,
+         m.radiant_team_id, m.dire_team_id,
+         rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn,
+         dt.name as dire_team_name, dt.name_cn as dire_team_name_cn
+  FROM bp_data bp
+  JOIN matches m ON bp.match_id = m.match_id
+  LEFT JOIN teams rt ON m.radiant_team_id = rt.id
+  LEFT JOIN teams dt ON m.dire_team_id = dt.id
+  ORDER BY bp.updated_at DESC
+`).all();
+
+fs.writeFileSync(path.join(outputDir, 'bp-data.json'), JSON.stringify(bpData, null, 2));
+console.log(`Exported ${bpData.length} BP data items`);
+
 console.log('Data export complete!');
 db.close();
