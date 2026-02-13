@@ -20,15 +20,11 @@ if (!fs.existsSync(outputDir)) {
 
 const db = new Database(dbPath);
 
-// 导出比赛数据
+// 导出比赛数据 - 直接用 matches 表里的字段
 const matches = db.prepare(`
   SELECT m.*, 
-         rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn, rt.logo_url as radiant_logo,
-         dt.name as dire_team_name, dt.name_cn as dire_team_name_cn, dt.logo_url as dire_logo,
          t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
   FROM matches m
-  LEFT JOIN teams rt ON m.radiant_team_id = rt.id
-  LEFT JOIN teams dt ON m.dire_team_id = dt.id
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   ORDER BY m.start_time DESC
   LIMIT 100
@@ -41,12 +37,8 @@ console.log(`Exported ${matches.length} matches`);
 const now = Math.floor(Date.now() / 1000);
 const upcomingMatches = db.prepare(`
   SELECT m.*, 
-         rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn, rt.logo_url as radiant_logo,
-         dt.name as dire_team_name, dt.name_cn as dire_team_name_cn, dt.logo_url as dire_logo,
          t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
   FROM matches m
-  LEFT JOIN teams rt ON m.radiant_team_id = rt.id
-  LEFT JOIN teams dt ON m.dire_team_id = dt.id
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time > ? 
     AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
@@ -60,12 +52,8 @@ console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
 // 导出中国战队近期比赛
 const cnMatches = db.prepare(`
   SELECT m.*, 
-         rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn, rt.logo_url as radiant_logo,
-         dt.name as dire_team_name, dt.name_cn as dire_team_name_cn, dt.logo_url as dire_logo,
          t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
   FROM matches m
-  LEFT JOIN teams rt ON m.radiant_team_id = rt.id
-  LEFT JOIN teams dt ON m.dire_team_id = dt.id
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time < ?
     AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
@@ -104,20 +92,22 @@ fs.writeFileSync(path.join(outputDir, 'home.json'), JSON.stringify(homeData, nul
 console.log('Exported home page data');
 
 // 导出 BP 数据（带 match_id 的比赛）
-const bpData = db.prepare(`
-  SELECT bp.match_id, bp.picks_bans, bp.radiant_win,
-         m.radiant_team_id, m.dire_team_id,
-         rt.name as radiant_team_name, rt.name_cn as radiant_team_name_cn,
-         dt.name as dire_team_name, dt.name_cn as dire_team_name_cn
-  FROM bp_data bp
-  JOIN matches m ON bp.match_id = m.match_id
-  LEFT JOIN teams rt ON m.radiant_team_id = rt.id
-  LEFT JOIN teams dt ON m.dire_team_id = dt.id
-  ORDER BY bp.updated_at DESC
-`).all();
+try {
+  const bpData = db.prepare(`
+    SELECT bp.match_id, bp.picks_bans, bp.radiant_win,
+           m.radiant_team_id, m.dire_team_id,
+           m.radiant_team_name, m.radiant_team_name_cn,
+           m.dire_team_name, m.dire_team_name_cn
+    FROM bp_data bp
+    JOIN matches m ON bp.match_id = m.match_id
+    ORDER BY bp.updated_at DESC
+  `).all();
 
-fs.writeFileSync(path.join(outputDir, 'bp-data.json'), JSON.stringify(bpData, null, 2));
-console.log(`Exported ${bpData.length} BP data items`);
+  fs.writeFileSync(path.join(outputDir, 'bp-data.json'), JSON.stringify(bpData, null, 2));
+  console.log(`Exported ${bpData.length} BP data items`);
+} catch (e) {
+  console.log('BP data table not found, skipping...');
+}
 
 console.log('Data export complete!');
 db.close();
