@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Liquipedia 比赛数据抓取脚本 - 增强版
- * 从 Liquipedia:Upcoming_and_ongoing_matches 获取比赛
+ * Liquipedia 比赛数据抓取脚本 - 修复版
+ * 从 Liquipedia:Matches 获取比赛
  * 提取 OpenDota/Stratz match_id
  */
 
@@ -56,7 +56,7 @@ function fetchWithGzip(url, customHeaders = {}) {
     options.headers = {
       'User-Agent': 'DOTA2-Hub-Bot/1.0 (https://github.com/seva324/dota2-hub)',
       'Accept-Encoding': 'gzip',
-      'Accept': 'application/json, text/html',
+      'Accept': 'text/html,application/json',
       ...customHeaders
     };
     
@@ -92,47 +92,95 @@ function fetchWithGzip(url, customHeaders = {}) {
 
 /**
  * 从 Liquipedia HTML 中解析比赛数据
+ * HTML 结构: <div class="match-info">...</div>
  */
 function parseMatchesFromHtml(html) {
   const matches = [];
   
-  // 按比赛卡片分割
-  const matchBlocks = html.split('class="infobox_matches_content"');
+  // 按 <div class="match-info"> 分割
+  const matchBlocks = html.split('<div class="match-info">');
   
   for (let i = 1; i < matchBlocks.length; i++) {
     const block = matchBlocks[i];
     
-    // 跳过非 Dota2 比赛
-    const gameCheck = block.match(/data-game="([^"]+)"/);
-    if (gameCheck && gameCheck[1] !== 'Dota 2') continue;
+    // 找到这个块的结束位置（下一个 </div></div>）
+    const endIdx = block.indexOf('<div class="match-info-tournament">');
+    if (endIdx === -1) continue;
     
-    // 提取队伍1
-    const team1Match = block.match(/class="team-left[^"]*"[^>]*>[\s\S]*?title="([^"]+)"/);
-    const team1 = team1Match ? team1Match[1].trim() : null;
+    const matchHtml = block.substring(0, endIdx + 2000); // 多取一些内容
     
-    // 提取队伍2
-    const team2Match = block.match(/class="team-right[^"]*"[^>]*>[\s\S]*?title="([^"]+)"/);
-    const team2 = team2Match ? team2Match[1].trim() : null;
+    // 提取队伍名称 - 使用 title 属性
+    // 左侧队伍 (opponent-left)
+    const leftMatch = matchHtml.match(/match-info-header-opponent-left[^"]*"[^>]*>[\s\S]*?title="([^"]+)"/);
+    const team1 = leftMatch ? leftMatch[1].trim() : null;
     
-    // 提取比分
-    let score1 = 0, score2 = 0;
-    const versusMatch = block.match(/class="versus"[\s\S]*?<\/div>/);
-    if (versusMatch) {
-      const scores = versusMatch[0].match(/<span[^>]*style[^>]*>(\d+)<\/span>/g);
-      if (scores && scores.length >= 2) {
-        score1 = parseInt(scores[0].replace(/<[^>]+>/g, ''));
-        score2 = parseInt(scores[1].replace(/<[^>]+>/g, ''));
+    // 右侧队伍
+    const rightMatch = matchHtml.match(/match-info-header-opponent match-info-header-opponent[^"]*"[^>]*>[\s\S]*?title="([^"]+)"/);
+    const team2 = rightMatch ? rightMatch[1].trim() : null;
+    
+    if (!team1 || !team2) continue;
+    
+    // 提取比分 - 从 scoreholder-score 类
+    const scoreRegex = /match-info-header-scoreholder-score[^>]*>([^<]+)</g;
+    const scores = [];
+    let scoreMatch;
+    while ((scoreMatch = scoreRegex.exec(matchHtml)) !== null) {
+      const s = scoreMatch[1].trim();
+      if (s !== 'FF' && s !== 'W') {
+        scores.push(parseInt(s) || 0);
+      } else {
+        scores.push(s);
       }
     }
     
-    // 🔑 核心：提取 OpenDota match_id
-    let matchId = null;
-    const opendotaLink = block.match(/opendota\.com\/matches\/(\d+)/);
-    if (opendotaLink) {
-      matchId = opendotaLink[1];
+    const score1 = scores.length >= 1 ? scores[0] : 0;
+    const score2 = scores.length >= 2 ? scores[1] : 0;
+    
+    // 提取 timestamp
+    let timestamp = null;
+    const timeMatch = matchHtml.match(/data-timestamp="(\d+)"/);
+    if (timeMatch) {
+      timestamp = parseInt(timeMatch[1]);
     }
     
-    // 备选：Stratz match_id
+    // 提取赛制 (Bo3, Bo5)
+    let format = 'BO3';
+    const formatMatch = matchHtml.match(/\(Bo(\d+)\)/i);
+    if (formatMatch) {
+      format = `BO${formatMatch[1]}`;
+    }
+    
+    // 判断状态
+    let status = 'scheduled';
+    if (matchHtml.includes('match-info-header-winner') || matchHtml.includes('match-info-header-loser')) {
+      status = 'finished';
+    }
+    
+    // 提取 tournament name
+    let tournament = '';
+    const tourneyMatch = block.match(/match-info-tournament-name[^>]*><a[^>]*><span>([^<]+)</);
+    if (tourneyMatch) {
+      tournament = tourneyMatch[1].trim();
+    }
+    
+    // 提取 match_id - 从 match 页面链接或 opendota/stratz 链接
+    let matchId = null;
+    
+    // 方法1: 从 match page 链接提取
+    const matchPageMatch = block.match(/Match:ID_([^"]+)/);
+    if (matchPageMatch) {
+      matchId = `lp_${matchPageMatch[1]}`;
+    }
+    
+    // 方法2: 从 opendota 链接提取
+    if (!matchId) {
+      const opendotaLink = block.match(/opendota\.com\/matches\/(\d+)/);
+      if (opendotaLink) {
+        matchId = opendotaLink[1];
+      }
+    }
+    
+    // 方法3: 从 stratz 链接提取
     if (!matchId) {
       const stratzLink = block.match(/stratz\.com\/matches\/(\d+)/);
       if (stratzLink) {
@@ -140,50 +188,22 @@ function parseMatchesFromHtml(html) {
       }
     }
     
-    // 提取赛事名称
-    let tournament = '';
-    const tournamentMatch = block.match(/class="tournament-text"[^>]*><a[^>]*>([^<]+)</);
-    if (tournamentMatch) {
-      tournament = tournamentMatch[1].trim();
+    // 生成唯一 ID
+    if (!matchId) {
+      matchId = `lp_${Date.now()}_${i}`;
     }
     
-    // 提取时间
-    let timestamp = null;
-    const timeMatch = block.match(/data-timestamp="(\d+)"/);
-    if (timeMatch) {
-      timestamp = parseInt(timeMatch[1]);
-    }
-    
-    // 提取赛制 (Bo3, Bo5)
-    let format = 'BO3';
-    const formatMatch = block.match(/\(Bo(\d+)\)/i);
-    if (formatMatch) {
-      format = `BO${formatMatch[1]}`;
-    }
-    
-    // 判断状态
-    let status = 'scheduled';
-    if (score1 > 0 || score2 > 0) {
-      status = 'finished';
-    }
-    if (block.includes('Live') || block.includes('live')) {
-      status = 'live';
-    }
-    
-    // 只保留有效比赛
-    if (team1 && team2 && team1 !== 'TBD' && team2 !== 'TBD') {
-      matches.push({
-        team1,
-        team2,
-        score1,
-        score2,
-        matchId,
-        tournament,
-        timestamp,
-        format,
-        status
-      });
-    }
+    matches.push({
+      team1,
+      team2,
+      score1: typeof score1 === 'number' ? score1 : 0,
+      score2: typeof score2 === 'number' ? score2 : 0,
+      matchId,
+      tournament,
+      timestamp,
+      format,
+      status
+    });
   }
   
   return matches;
@@ -193,6 +213,9 @@ function parseMatchesFromHtml(html) {
  * 从 OpenDota 获取比赛的 BP 数据
  */
 async function fetchMatchBP(matchId) {
+  // 如果是 liquipedia 内部 ID，跳过
+  if (matchId.startsWith('lp_')) return null;
+  
   try {
     const headers = {};
     if (OPENDOTA_API_KEY) {
@@ -248,10 +271,8 @@ async function saveMatch(match, bpData = null) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
-  const matchId = match.matchId || `lp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
   insertMatch.run(
-    matchId,
+    match.matchId,
     team1Info.id,
     team2Info.id,
     match.team1,
@@ -272,29 +293,17 @@ async function saveMatch(match, bpData = null) {
   
   // 如果有 BP 数据，保存到 bp_data 表
   if (bpData && bpData.picks_bans) {
-    const insertBP = db.prepare(`
-      INSERT OR REPLACE INTO bp_data (match_id, picks_bans, radiant_win)
-      VALUES (?, ?, ?)
-    `);
-    
-    insertBP.run(matchId, JSON.stringify(bpData.picks_bans), bpData.radiant_win ? 1 : 0);
+    try {
+      const insertBP = db.prepare(`
+        INSERT OR REPLACE INTO bp_data (match_id, picks_bans, radiant_win)
+        VALUES (?, ?, ?)
+      `);
+      
+      insertBP.run(match.matchId, JSON.stringify(bpData.picks_bans), bpData.radiant_win ? 1 : 0);
+    } catch (error) {
+      // bp_data 表可能不存在，忽略错误
+    }
   }
-  
-  return matchId;
-}
-
-/**
- * 创建 bp_data 表（如果不存在）
- */
-function ensureBPTable() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS bp_data (
-      match_id TEXT PRIMARY KEY,
-      picks_bans TEXT NOT NULL,
-      radiant_win INTEGER DEFAULT 0,
-      updated_at INTEGER DEFAULT (unixepoch())
-    )
-  `);
 }
 
 async function fetchLiquipediaMatches() {
@@ -302,11 +311,7 @@ async function fetchLiquipediaMatches() {
   
   const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
   
-  // 尝试多个页面
-  const pages = [
-    'Liquipedia:Matches',
-    'Liquipedia:Upcoming_and_ongoing_matches'
-  ];
+  const pages = ['Liquipedia:Matches'];
   
   let allMatches = [];
   
@@ -319,7 +324,7 @@ async function fetchLiquipediaMatches() {
     });
     
     try {
-      console.log(`  Trying page: ${page}`);
+      console.log(`  Fetching: ${page}`);
       const url = `${LIQUIPEDIA_API}?${params}`;
       const responseText = await fetchWithGzip(url);
       const data = JSON.parse(responseText);
@@ -330,19 +335,17 @@ async function fetchLiquipediaMatches() {
       }
       
       const html = data.parse?.text?.['*'] || '';
+      console.log(`    HTML length: ${html.length}`);
       
-      // 跳过重定向页面
-      if (html.includes('redirectMsg') || html.length < 1000) {
-        console.log(`    Skipped (redirect or empty)`);
+      if (html.length < 1000) {
+        console.log(`    Skipped (empty or redirect)`);
         continue;
       }
       
       const matches = parseMatchesFromHtml(html);
-      console.log(`    Found ${matches.length} matches`);
+      console.log(`    Parsed ${matches.length} matches`);
       allMatches = allMatches.concat(matches);
       
-      // Liquipedia 要求：parse 请求间隔至少 30 秒
-      await new Promise(r => setTimeout(r, 30000));
     } catch (error) {
       console.error(`  Error fetching ${page}:`, error.message);
     }
@@ -357,12 +360,9 @@ async function main() {
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
-  // 确保 BP 表存在
-  ensureBPTable();
-  
   // 获取比赛数据
   const matches = await fetchLiquipediaMatches();
-  console.log(`Found ${matches.length} total matches\n`);
+  console.log(`\nTotal matches found: ${matches.length}`);
   
   // 筛选中国战队比赛
   const cnMatches = matches.filter(m => {
@@ -371,7 +371,7 @@ async function main() {
     return team1Info.is_cn || team2Info.is_cn;
   });
   
-  console.log(`Found ${cnMatches.length} CN team matches:\n`);
+  console.log(`CN team matches: ${cnMatches.length}\n`);
   
   let savedCount = 0;
   let bpCount = 0;
@@ -383,20 +383,19 @@ async function main() {
     
     console.log(`  ${cnTeam}: ${m.team1} ${m.score1}:${m.score2} ${m.team2} (${m.format}) [${m.status}]`);
     if (m.tournament) console.log(`    Tournament: ${m.tournament}`);
-    if (m.matchId) console.log(`    Match ID: ${m.matchId}`);
     
-    // 获取 BP 数据（只对已结束且有 match_id 的比赛）
+    // 获取 BP 数据（只对已结束且有真实 match_id 的比赛）
     let bpData = null;
-    if (m.matchId && m.status === 'finished') {
-      console.log(`    Fetching BP data...`);
+    if (m.matchId && !m.matchId.startsWith('lp_') && m.status === 'finished') {
+      console.log(`    Fetching BP data for ${m.matchId}...`);
       bpData = await fetchMatchBP(m.matchId);
       
       if (bpData) {
         bpCount++;
-        console.log(`    ✓ BP data: ${bpData.picks_bans.length} picks/bans`);
+        console.log(`    ✓ BP: ${bpData.picks_bans.length} picks/bans`);
       }
       
-      // OpenDota 限流：1秒1次
+      // OpenDota 限流
       await new Promise(r => setTimeout(r, 1000));
     }
     
