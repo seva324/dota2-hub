@@ -1,8 +1,8 @@
 {
   "upcoming": [
     {
-      "id": 2612,
-      "match_id": "lp_1771248600_28",
+      "id": 2617,
+      "match_id": "lp_1771248600_27",
       "radiant_team_id": "unknown",
       "dire_team_id": "xtreme-gaming",
       "radiant_team_name": "Team Spirit",
@@ -17,18 +17,18 @@
       "duration": 0,
       "series_type": "BO2",
       "league_id": null,
-      "tournament_id": null,
+      "tournament_id": "DreamLeague S28 - February 16-B",
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770994476,
+      "created_at": 1770996122,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     },
     {
-      "id": 2613,
-      "match_id": "lp_1771326000_38",
+      "id": 2618,
+      "match_id": "lp_1771326000_37",
       "radiant_team_id": "unknown",
       "dire_team_id": "yakult-brothers",
       "radiant_team_name": "OG",
@@ -43,18 +43,18 @@
       "duration": 0,
       "series_type": "BO2",
       "league_id": null,
-      "tournament_id": null,
+      "tournament_id": "DreamLeague S28 - February 17-A",
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770994476,
+      "created_at": 1770996122,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     },
     {
-      "id": 2614,
-      "match_id": "lp_1771344000_46",
+      "id": 2619,
+      "match_id": "lp_1771344000_45",
       "radiant_team_id": "unknown",
       "dire_team_id": "yakult-brothers",
       "radiant_team_name": "Team Liquid",
@@ -69,18 +69,18 @@
       "duration": 0,
       "series_type": "BO2",
       "league_id": null,
-      "tournament_id": null,
+      "tournament_id": "DreamLeague S28 - February 17-A",
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770994476,
+      "created_at": 1770996122,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     },
     {
-      "id": 2615,
-      "match_id": "lp_1771353000_48",
+      "id": 2620,
+      "match_id": "lp_1771353000_47",
       "radiant_team_id": "unknown",
       "dire_team_id": "xtreme-gaming",
       "radiant_team_name": "Tundra Esports",
@@ -95,44 +95,17 @@
       "duration": 0,
       "series_type": "BO2",
       "league_id": null,
-      "tournament_id": null,
+      "tournament_id": "DreamLeague S28 - February 17-B",
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770994476,
+      "created_at": 1770996122,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     }
   ],
-  "cnMatches": [
-    {
-      "id": 2616,
-      "match_id": "lp_1770481800_100",
-      "radiant_team_id": "unknown",
-      "dire_team_id": "xtreme-gaming",
-      "radiant_team_name": "Team Falcons",
-      "radiant_team_name_cn": null,
-      "dire_team_name": "Xtreme Gaming",
-      "dire_team_name_cn": "XG",
-      "radiant_score": 0,
-      "dire_score": 0,
-      "radiant_game_wins": 0,
-      "dire_game_wins": 0,
-      "start_time": 1770481800,
-      "duration": 0,
-      "series_type": "BO3",
-      "league_id": null,
-      "tournament_id": null,
-      "status": "finished",
-      "lobby_type": 7,
-      "game_mode": null,
-      "created_at": 1770994476,
-      "tournament_name": null,
-      "tournament_name_cn": null,
-      "tournament_tier": null
-    }
-  ],
+  "cnMatches": [],
   "tournaments": [
     {
       "id": "ti-2025",
@@ -259,5 +232,5 @@
       "created_at": 1770511741
     }
   ],
-  "lastUpdated": "2026-02-13T15:01:38.704Z"
+  "lastUpdated": "2026-02-13T15:24:53.574Z"
 }

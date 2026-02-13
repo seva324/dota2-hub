@@ -125,6 +125,13 @@ function parseMatches(html) {
     const formatMatch = block.match(/\(Bo(\d+)\)/i);
     const format = formatMatch ? `BO${formatMatch[1]}` : 'BO3';
     
+    // 提取赛事名称
+    let tournament = null;
+    const tourneyMatch = block.match(/match-info-tournament-name[^>]*>[\s\S]*?<span>([^<]+)<\/span>/);
+    if (tourneyMatch) {
+      tournament = tourneyMatch[1].trim();
+    }
+    
     // 生成 match_id
     const matchId = `lp_${timestamp}_${i}`;
     
@@ -136,7 +143,8 @@ function parseMatches(html) {
       score2: parseInt(score2) || 0,
       timestamp,
       format,
-      status
+      status,
+      tournament
     });
   }
   
@@ -157,8 +165,8 @@ function saveMatch(match) {
       dire_team_name, dire_team_name_cn,
       radiant_score, dire_score,
       radiant_game_wins, dire_game_wins,
-      start_time, duration, series_type, status, lobby_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      start_time, duration, series_type, tournament_id, status, lobby_type
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   stmt.run(
@@ -176,6 +184,7 @@ function saveMatch(match) {
     match.timestamp,
     0,
     match.format,
+    match.tournament || null,
     match.status,
     7
   );
@@ -192,8 +201,8 @@ async function main() {
   console.log('Cleaning old match data for XG/YB/VG...');
   const deleteResult = db.prepare(`
     DELETE FROM matches 
-    WHERE radiant_team_id IN ('xtreme-gaming', 'yakult-brother', 'vici-gaming')
-       OR dire_team_id IN ('xtreme-gaming', 'yakult-brother', 'vici-gaming')
+    WHERE radiant_team_id IN ('xtreme-gaming', 'yakult-brothers', 'vici-gaming')
+       OR dire_team_id IN ('xtreme-gaming', 'yakult-brothers', 'vici-gaming')
   `).run();
   console.log(`Deleted ${deleteResult.changes} old matches.\n`);
   
@@ -219,7 +228,7 @@ async function main() {
     const t1Str = t1Info.is_cn ? `🔴${m.team1}` : m.team1;
     const t2Str = t2Info.is_cn ? `🔴${m.team2}` : m.team2;
     
-    console.log(`${date} | ${t1Str} vs ${t2Str} | ${m.score1}:${m.score2} | ${m.status}`);
+    console.log(`${date} | ${t1Str} vs ${t2Str} | ${m.score1}:${m.score2} | ${m.tournament || '未知'} | ${m.status}`);
     
     try {
       saveMatch(m);
