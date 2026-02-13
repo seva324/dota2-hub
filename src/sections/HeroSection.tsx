@@ -152,7 +152,7 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
         </div>
 
         {/* Next Match Countdown */}
-        {nextMatch && (
+        {nextMatch && nextMatch.radiant_team_name && nextMatch.dire_team_name && (
           <div className="bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 max-w-2xl mx-auto border border-red-600/30">
             <p className="text-sm text-red-400 mb-3 flex items-center justify-center gap-2">
               <Clock className="w-4 h-4" />
@@ -174,7 +174,7 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                 <p className="text-xs text-slate-400">{nextMatch.dire_team_name}</p>
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-3">{nextMatch.tournament_name_cn || nextMatch.tournament_name} · {nextMatch.series_type}</p>
+            <p className="text-xs text-slate-500 mt-3">{nextMatch.tournament_name_cn || nextMatch.tournament_name || '待定赛事'} · {nextMatch.series_type}</p>
           </div>
         )}
 

@@ -50,7 +50,8 @@ function Countdown({ targetTime }: { targetTime: number }) {
   return <span className="tabular-nums">{timeLeft}</span>;
 }
 
-function isChineseTeam(teamName: string): boolean {
+function isChineseTeam(teamName: string | null | undefined): boolean {
+  if (!teamName) return false;
   const name = teamName.toLowerCase();
   return ['xg', 'yb', 'vg', 'xtreme', 'yakult', 'vici', 'azure'].some(cn => name.includes(cn));
 }
@@ -88,13 +89,15 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
             {upcoming.slice(0, 6).map((match) => {
               const radiantIsCN = isChineseTeam(match.radiant_team_name);
               const direIsCN = isChineseTeam(match.dire_team_name);
+              const radiantName = match.radiant_team_name_cn || match.radiant_team_name || '待定';
+              const direName = match.dire_team_name_cn || match.dire_team_name || '待定';
               
               return (
                 <Card key={match.id} className="border-slate-800 bg-slate-950/50 hover:border-blue-500/30 transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <Badge variant="outline" className="border-slate-700 text-slate-400">
-                        {match.tournament_name_cn || match.tournament_name}
+                        {match.tournament_name_cn || match.tournament_name || '待定赛事'}
                       </Badge>
                       <span className="text-xs text-slate-500">{match.series_type}</span>
                     </div>
@@ -102,7 +105,7 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className={`font-medium ${radiantIsCN ? 'text-red-400' : 'text-white'}`}>
-                          {match.radiant_team_name_cn || match.radiant_team_name}
+                          {radiantName}
                         </span>
                         {radiantIsCN && <Badge className="bg-red-600/20 text-red-400 text-xs">CN</Badge>}
                       </div>
@@ -112,7 +115,7 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                       <div className="flex items-center gap-2">
                         {direIsCN && <Badge className="bg-red-600/20 text-red-400 text-xs">CN</Badge>}
                         <span className={`font-medium ${direIsCN ? 'text-red-400' : 'text-white'}`}>
-                          {match.dire_team_name_cn || match.dire_team_name}
+                          {direName}
                         </span>
                       </div>
                     </div>

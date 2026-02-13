@@ -52,7 +52,8 @@ const statusMap: Record<string, { label: string; color: string }> = {
 
 const chineseTeamNames = ['xg', 'yb', 'vg', 'xtreme', 'yakult', 'vici', 'azure'];
 
-function isChineseTeam(teamName: string): boolean {
+function isChineseTeam(teamName: string | null | undefined): boolean {
+  if (!teamName) return false;
   return chineseTeamNames.some(cn => teamName.toLowerCase().includes(cn));
 }
 
