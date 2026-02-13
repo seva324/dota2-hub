@@ -42,6 +42,7 @@ jobs:
 
       - name: Setup Database
         run: |
+          rm -rf data
           mkdir -p data
           node scripts/init-db.js
 

@@ -55,7 +55,7 @@ db.exec(`
 db.exec(`
   CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    match_id INTEGER UNIQUE,
+    match_id TEXT UNIQUE,
     radiant_team_id TEXT,
     dire_team_id TEXT,
     radiant_team_name TEXT,
