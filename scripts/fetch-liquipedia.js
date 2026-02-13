@@ -19,8 +19,8 @@ db.pragma('journal_mode = WAL');
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || 'ab01b0b0-c459-4524-92eb-0b6af0cdc415';
 
-// 中国战队关键词
-const CN_KEYWORDS = ['xtreme gaming', 'xg', 'yakult', 'yb', 'vici', 'vg', 'azure', 'lgd', 'psg'];
+// 中国战队关键词 (AR/LGD 已解散)
+const CN_KEYWORDS = ['xtreme gaming', 'xg', 'yakult', 'yb', 'vici', 'vg'];
 
 function identifyTeam(name) {
   if (!name) return { id: 'unknown', name_cn: null, is_cn: false };
@@ -35,12 +35,6 @@ function identifyTeam(name) {
   }
   if (lower.includes('vici') || lower === 'vg') {
     return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
-  }
-  if (lower.includes('azure') || lower === 'ar') {
-    return { id: 'azure-ray', name_cn: 'AR', is_cn: true };
-  }
-  if (lower.includes('lgd')) {
-    return { id: 'psg-lgd', name_cn: 'LGD', is_cn: true };
   }
   
   return { id: 'unknown', name_cn: null, is_cn: false };
@@ -193,10 +187,15 @@ async function main() {
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
-  // 清理旧的 Liquipedia 数据（以 lp_ 开头的 match_id）
-  console.log('Cleaning old Liquipedia data...');
-  db.prepare(`DELETE FROM matches WHERE match_id LIKE 'lp_%'`).run();
-  console.log('Done.\n');
+  // 清理目标战队的所有旧数据（Liquipedia + OpenDota）
+  // 避免 export 时新旧数据混杂
+  console.log('Cleaning old match data for XG/YB/VG...');
+  const deleteResult = db.prepare(`
+    DELETE FROM matches 
+    WHERE radiant_team_id IN ('xtreme-gaming', 'yakult-brother', 'vici-gaming')
+       OR dire_team_id IN ('xtreme-gaming', 'yakult-brother', 'vici-gaming')
+  `).run();
+  console.log(`Deleted ${deleteResult.changes} old matches.\n`);
   
   console.log('Fetching from Liquipedia:Matches...');
   

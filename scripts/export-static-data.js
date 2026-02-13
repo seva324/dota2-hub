@@ -10,7 +10,7 @@ const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const outputDir = path.join(__dirname, '..', 'public', 'data');
 
 // 目标战队
-const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brother', 'vici-gaming'];
+const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brothers', 'vici-gaming'];
 const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
 
 // 确保输出目录存在
