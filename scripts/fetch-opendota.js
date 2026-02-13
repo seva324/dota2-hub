@@ -20,7 +20,7 @@ db.pragma('journal_mode = WAL');
 // 目标战队
 const TARGET_TEAM_IDS = {
   'xtreme-gaming': { name: 'Xtreme Gaming', name_cn: 'XG', team_id: 8261502 },
-  'yakult-brother': { name: 'Yakult Brother', name_cn: 'YB', team_id: 8255888 },
+  'yakult-brothers': { name: 'Yakult Brothers', name_cn: 'YB', team_id: 8255888 },
   'vici-gaming': { name: 'Vici Gaming', name_cn: 'VG', team_id: 7391077 },
 };
 
@@ -64,7 +64,7 @@ function identifyTeam(name) {
   
   if (upperName === 'YB' || lowerName.includes('yakult') || 
       upperName === 'AR' || lowerName.includes('azure') || lowerName.includes('ray')) {
-    return { id: 'yakult-brother', name_cn: 'YB', is_cn: true };
+    return { id: 'yakult-brothers', name_cn: 'YB', is_cn: true };
   }
   
   if (upperName === 'VG' || lowerName.includes('vici')) {
