@@ -202,6 +202,11 @@ async function main() {
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
+  // 清理旧的 OpenDota 数据（不是 lp_ 开头的）
+  console.log('Cleaning old OpenDota data...');
+  db.prepare(`DELETE FROM matches WHERE match_id NOT LIKE 'lp_%'`).run();
+  console.log('Done.\n');
+  
   let savedCount = 0;
   let allMatchIds = new Set();
   

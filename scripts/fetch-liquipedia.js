@@ -193,6 +193,11 @@ async function main() {
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
+  // 清理旧的 Liquipedia 数据（以 lp_ 开头的 match_id）
+  console.log('Cleaning old Liquipedia data...');
+  db.prepare(`DELETE FROM matches WHERE match_id LIKE 'lp_%'`).run();
+  console.log('Done.\n');
+  
   console.log('Fetching from Liquipedia:Matches...');
   
   const url = 'https://liquipedia.net/dota2/Liquipedia:Matches';
