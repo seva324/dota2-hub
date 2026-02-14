@@ -335,20 +335,35 @@ async function main() {
     'azure-ray': '/dota2-hub/images/teams/azure-ray.png',
   };
   
-  // 需要反色的战队（黑色logo）
-  const invertLogoTeams = ['tundra-esports', 'tundra', 'team-spirit', 'spirit'];
-  
   let updatedCount = 0;
   
   for (const m of matches) {
-    const radiantId = m.radiant_team_id?.toLowerCase();
-    const direId = m.dire_team_id?.toLowerCase();
+    // 使用队伍名称（转小写）来查找 logo
+    const radiantNameLower = (m.radiant_team_name || '').toLowerCase();
+    const direNameLower = (m.dire_team_name || '').toLowerCase();
+    const radiantIdLower = (m.radiant_team_id || '').toLowerCase();
+    const direIdLower = (m.dire_team_id || '').toLowerCase();
     
-    const radiantLogo = teamLogoUrls[radiantId];
-    const direLogo = teamLogoUrls[direId];
+    // 优先使用队伍名称匹配
+    let radiantLogo = teamLogoUrls[radiantNameLower] || teamLogoUrls[radiantIdLower];
+    let direLogo = teamLogoUrls[direNameLower] || teamLogoUrls[direIdLower];
+    
+    // 如果没有匹配到，尝试从名称中提取
+    if (!radiantLogo) {
+      if (radiantNameLower.includes('team spirit') || radiantNameLower === 'spirit') radiantLogo = '/dota2-hub/images/teams/team-spirit.png';
+      else if (radiantNameLower.includes('tundra')) radiantLogo = '/dota2-hub/images/teams/tundra-esports.png';
+    }
+    if (!direLogo) {
+      if (direNameLower.includes('team spirit') || direNameLower === 'spirit') direLogo = '/dota2-hub/images/teams/team-spirit.png';
+      else if (direNameLower.includes('tundra')) direLogo = '/dota2-hub/images/teams/tundra-esports.png';
+    }
     
     if (radiantLogo || direLogo) {
-      updateMatchTeamLogos.run(radiantLogo || null, direLogo || null, m.radiant_team_id, m.dire_team_id);
+      db.prepare(`
+        UPDATE matches 
+        SET radiant_team_logo = ?, dire_team_logo = ?
+        WHERE id = ?
+      `).run(radiantLogo || null, direLogo || null, m.id);
       updatedCount++;
     }
   }
