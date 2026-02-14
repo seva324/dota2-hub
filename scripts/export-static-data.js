@@ -70,11 +70,48 @@ const cnMatches = db.prepare(`
 fs.writeFileSync(path.join(outputDir, 'cn-matches.json'), JSON.stringify(cnMatches, null, 2));
 console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
-// 导出赛事数据
-const tournaments = db.prepare('SELECT * FROM tournaments ORDER BY start_date DESC').all();
+// 导出赛事数据 - 按状态和日期排序：进行中 > 即将开始 > 已结束
+const tournaments = db.prepare(`
+  SELECT * FROM tournaments 
+  ORDER BY 
+    CASE status 
+      WHEN 'ongoing' THEN 0 
+      WHEN 'upcoming' THEN 1 
+      WHEN 'completed' THEN 2 
+      ELSE 3 
+    END,
+    start_date DESC
+`).all();
 console.log(`Exported ${tournaments.length} tournaments`);
 
-fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify(tournaments, null, 2));
+// 为每个赛事添加比赛数据
+const tournamentMatches = db.prepare(`
+  SELECT * FROM matches 
+  WHERE tournament_name LIKE ? OR tournament_id LIKE ?
+  ORDER BY start_time DESC
+  LIMIT 50
+`).all();
+
+// 按赛事分组
+const matchesByTournament = {};
+for (const t of tournaments) {
+  const tournamentNameLower = t.name.toLowerCase();
+  const tournamentIdLower = t.id.toLowerCase();
+  
+  const matches = db.prepare(`
+    SELECT * FROM matches 
+    WHERE tournament_name LIKE ? OR tournament_id LIKE ?
+    ORDER BY start_time DESC
+    LIMIT 20
+  `).all(`%${tournamentNameLower}%`, `%${tournamentIdLower}%`);
+  
+  matchesByTournament[t.id] = matches;
+}
+
+fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify({
+  tournaments,
+  matchesByTournament
+}, null, 2));
 
 // 导出战队数据
 const teams = db.prepare('SELECT * FROM teams').all();

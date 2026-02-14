@@ -130,7 +130,7 @@ async function fetchTeamLogo(teamName, teamId) {
     'vg': 'https://liquipedia.net/commons/images/6/6a/Vici_Gaming_2020_allmode.png',
     'lgd-gaming': 'https://liquipedia.net/commons/images/4/47/PSG.LGD_2021_allmode.png',
     'azure-ray': 'https://liquipedia.net/commons/images/6/60/Azure_Ray_2023_allmode.png',
-    'execration': 'https://liquipedia.net/commons/images/3/3e/Execration_2020_allmode.png',
+    'execration': 'https://liquipedia.net/commons/images/a/af/Execration_2024_full_allmode.png',
   };
   
   // 首先检查直接 URL
