@@ -46,8 +46,15 @@ jobs:
           mkdir -p data
           node scripts/init-db.js
 
+      - name: Fetch Team Logos
+        run: node scripts/fetch-team-logos.js
+        continue-on-error: true
+
       - name: Fetch Tournament Data
         run: node scripts/fetch-tournaments.js
+
+      - name: Fetch Upcoming CN Matches
+        run: node scripts/fetch-upcoming-cn.js
 
       - name: Fetch Data from OpenDota
         run: node scripts/fetch-opendota.js
