@@ -69,6 +69,8 @@ interface Match {
   tournament_name: string;
   status: string;
   stage?: string;
+  radiant_team_logo?: string;
+  dire_team_logo?: string;
 }
 
 interface TournamentSectionProps {
@@ -266,7 +268,7 @@ export function TournamentSection({ tournaments, matchesByTournament }: Tourname
 
                 <TabsContent value="matches">
                   {(matchesByTournament && matchesByTournament[selectedTournament.id] && matchesByTournament[selectedTournament.id].length > 0) ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {matchesByTournament[selectedTournament.id].map((match) => {
                         const teamAIsCN = isChineseTeam(match.radiant_team_name);
                         const teamBIsCN = isChineseTeam(match.dire_team_name);
@@ -280,21 +282,49 @@ export function TournamentSection({ tournaments, matchesByTournament }: Tourname
                             <div className="flex items-center justify-between mb-3">
                               <Badge variant="outline" className="border-slate-700 text-slate-400">{match.stage || 'Match'}</Badge>
                               <div className="flex items-center gap-2">
-                                {hasCN && <Badge className="bg-red-600/20 text-red-400"><Star className="w-3 h-3 mr-1" />中国战队</Badge>}
+                                {hasCN && <Badge className="bg-red-600/20 text-red-400"><Star className="w-3 h-3 mr-1" />中国</Badge>}
                                 <span className="text-sm text-slate-500">{match.series_type}</span>
                               </div>
                             </div>
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <span className={`font-medium ${teamAIsCN ? 'text-red-400' : 'text-white'}`}>{match.radiant_team_name}</span>
+                              <div className="flex items-center gap-3 flex-1">
+                                {match.radiant_team_logo ? (
+                                  <img 
+                                    src={match.radiant_team_logo} 
+                                    alt={match.radiant_team_name}
+                                    className="w-10 h-10 rounded object-contain bg-slate-800"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                    {match.radiant_team_name.substring(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                <div className="flex flex-col">
+                                  <span className={`font-medium text-white`}>{match.radiant_team_name}</span>
+                                  {teamAIsCN && <span className="text-xs text-red-400">中国</span>}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-3">
                                 <span className={`text-2xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>{match.radiant_score}</span>
-                                <span className="text-slate-600">:</span>
+                                <span className="text-slate-600 text-lg">:</span>
                                 <span className={`text-2xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>{match.dire_score}</span>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className={`font-medium ${teamBIsCN ? 'text-red-400' : 'text-white'}`}>{match.dire_team_name}</span>
+                              <div className="flex items-center gap-3 flex-1 justify-end">
+                                <div className="flex flex-col items-end">
+                                  <span className={`font-medium text-white`}>{match.dire_team_name}</span>
+                                  {teamBIsCN && <span className="text-xs text-red-400">中国</span>}
+                                </div>
+                                {match.dire_team_logo ? (
+                                  <img 
+                                    src={match.dire_team_logo} 
+                                    alt={match.dire_team_name}
+                                    className="w-10 h-10 rounded object-contain bg-slate-800"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                    {match.dire_team_name.substring(0, 2).toUpperCase()}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
