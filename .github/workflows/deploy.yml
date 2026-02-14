@@ -69,17 +69,25 @@ jobs:
       - name: Export Data
         run: node scripts/export-static-data.js
         
+      - name: Debug: List all directories
+        run: |
+          echo "=== public directory ==="
+          ls -la public/
+          echo "=== public/data directory ==="
+          ls -la public/data/
+          echo "=== data directory ==="
+          ls -la data/
+        
       - name: Build project
         run: npm run build
         
       - name: Copy data to dist
         run: |
           mkdir -p dist/data dist/images
-          cp -r public/data/* dist/data/ 2>/dev/null || true
-          cp -r public/images dist/ 2>/dev/null || true
-          
-      - name: List dist contents for debug
-        run: ls -la dist/data/
+          ls -la public/data/
+          cp -r public/data/* dist/data/
+          echo "=== dist/data after copy ==="
+          ls -la dist/data/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
