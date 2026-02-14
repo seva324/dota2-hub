@@ -36,8 +36,52 @@ function identifyTeam(name) {
   if (lower.includes('vici') || lower === 'vg') {
     return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
   }
+  if (lower.includes('lgd') || lower.includes('psg.lgd')) {
+    return { id: 'lgd-gaming', name_cn: 'LGD', is_cn: true };
+  }
+  if (lower.includes('azure') || lower.includes('azure ray')) {
+    return { id: 'azure-ray', name_cn: 'AR', is_cn: true };
+  }
+  if (lower.includes('team spirit') || lower === 'ts' || lower.includes('spirit')) {
+    return { id: 'team-spirit', name_cn: 'TS', is_cn: false };
+  }
+  if (lower.includes('team falcons') || lower.includes('falcons')) {
+    return { id: 'team-falcons', name_cn: 'TF', is_cn: false };
+  }
+  if (lower.includes('tundra')) {
+    return { id: 'tundra-esports', name_cn: 'Tundra', is_cn: false };
+  }
+  if (lower.includes('gaimin') || lower === 'gg') {
+    return { id: 'gaimin-gladiators', name_cn: 'GG', is_cn: false };
+  }
+  if (lower.includes('og')) {
+    return { id: 'og', name_cn: 'OG', is_cn: false };
+  }
+  if (lower.includes('team liquid') || lower === 'tl') {
+    return { id: 'team-liquid', name_cn: 'TL', is_cn: false };
+  }
+  if (lower.includes('aurora')) {
+    return { id: 'aurora-gaming', name_cn: 'Aurora', is_cn: false };
+  }
+  if (lower.includes('betera')) {
+    return { id: 'betera', name_cn: 'Betera', is_cn: false };
+  }
+  if (lower.includes('nigma')) {
+    return { id: 'nigma-galaxy', name_cn: 'Nigma', is_cn: false };
+  }
+  if (lower.includes('nouns')) {
+    return { id: 'nouns', name_cn: 'Nouns', is_cn: false };
+  }
+  if (lower.includes('heroic')) {
+    return { id: 'heroic', name_cn: 'Heroic', is_cn: false };
+  }
+  if (lower.includes('t1')) {
+    return { id: 't1', name_cn: 'T1', is_cn: false };
+  }
   
-  return { id: 'unknown', name_cn: null, is_cn: false };
+  // 对于未知队伍，使用规范化名称作为 ID
+  const normalizedId = lower.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return { id: normalizedId, name_cn: name, is_cn: false };
 }
 
 function fetchWithGzip(url) {

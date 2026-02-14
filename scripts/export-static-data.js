@@ -73,7 +73,6 @@ console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 // 导出赛事数据
 const tournaments = db.prepare('SELECT * FROM tournaments ORDER BY start_date DESC').all();
 console.log(`Exported ${tournaments.length} tournaments`);
-console.log('Sample tournament:', tournaments[0]);
 
 fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify(tournaments, null, 2));
 
