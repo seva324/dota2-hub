@@ -114,15 +114,22 @@ async function fetchTeamLogo(teamName, teamId) {
   
   // 已知战队的直接 logo URL 映射（备用方案）
   const directLogoUrls = {
-    'yakult-brothers': 'https://liquipedia.net/commons/images/thumb/a/ac/Yakult_Brothers_allmode.png/128px-Yakult_Brothers_allmode.png',
-    'yakult_brothers': 'https://liquipedia.net/commons/images/thumb/a/ac/Yakult_Brothers_allmode.png/128px-Yakult_Brothers_allmode.png',
-    'yb': 'https://liquipedia.net/commons/images/thumb/a/ac/Yakult_Brothers_allmode.png/128px-Yakult_Brothers_allmode.png',
-    'og': 'https://liquipedia.net/commons/images/thumb/2/2f/OG_Logo.png/128px-OG_Logo.png',
-    'team-liquid': 'https://liquipedia.net/commons/images/thumb/f/fc/Team_Liquid_allmode.png/128px-Team_Liquid_allmode.png',
-    'team-spirit': 'https://liquipedia.net/commons/images/thumb/5/56/Team_Spirit_allmode.png/128px-Team_Spirit_allmode.png',
-    'tundra-esports': 'https://liquipedia.net/commons/images/thumb/7/7d/Tundra_Esports_2020_allmode_full.png/128px-Tundra_Esports_2020_allmode_full.png',
-    'aurora-gaming': 'https://liquipedia.net/commons/images/thumb/1/18/Aurora_Gaming_2023_allmode.png/128px-Aurora_Gaming_2023_allmode.png',
-    'xtreme-gaming': 'https://liquipedia.net/commons/images/thumb/7/72/Xtreme_Gaming_%28China%29_allmode.png/128px-Xtreme_Gaming_%28China%29_allmode.png',
+    'yakult-brothers': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
+    'yakult_brothers': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
+    'yb': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
+    'og': 'https://liquipedia.net/commons/images/2/2f/OG_Logo.png',
+    'team-liquid': 'https://liquipedia.net/commons/images/f/fc/Team_Liquid_allmode.png',
+    'team-spirit': 'https://liquipedia.net/commons/images/c/c6/Team_Spirit_2023_allmode.png',
+    'spirit': 'https://liquipedia.net/commons/images/c/c6/Team_Spirit_2023_allmode.png',
+    'tundra-esports': 'https://liquipedia.net/commons/images/8/85/Tundra_Esports_2020_full_lightmode.png',
+    'tundra': 'https://liquipedia.net/commons/images/8/85/Tundra_Esports_2020_full_lightmode.png',
+    'aurora-gaming': 'https://liquipedia.net/commons/images/1/18/Aurora_Gaming_2023_allmode.png',
+    'xtreme-gaming': 'https://liquipedia.net/commons/images/7/72/Xtreme_Gaming_%28China%29_allmode.png',
+    'xg': 'https://liquipedia.net/commons/images/7/72/Xtreme_Gaming_%28China%29_allmode.png',
+    'vici-gaming': 'https://liquipedia.net/commons/images/6/6a/Vici_Gaming_2020_allmode.png',
+    'vg': 'https://liquipedia.net/commons/images/6/6a/Vici_Gaming_2020_allmode.png',
+    'lgd-gaming': 'https://liquipedia.net/commons/images/4/47/PSG.LGD_2021_allmode.png',
+    'azure-ray': 'https://liquipedia.net/commons/images/6/60/Azure_Ray_2023_allmode.png',
   };
   
   // 首先检查直接 URL
@@ -272,7 +279,7 @@ async function main() {
     }
     
     try {
-      const logoUrl = await fetchTeamLogo(team.name);
+      const logoUrl = await fetchTeamLogo(team.name, teamId);
       
       if (logoUrl) {
         console.log(`  Found: ${logoUrl}`);
@@ -292,31 +299,12 @@ async function main() {
           updateTeam.run(logoUrl, teamId);
           teamLogoCache[teamId] = logoUrl;
         }
-        } else {
-          console.log(`  No logo found`);
-          // 使用通用 ID 尝试
-          const genericId = getTeamIdFromName(team.name);
-          if (genericId !== teamId) {
-            console.log(`  Trying generic ID: ${genericId}`);
-            const genericLogo = await fetchTeamLogo(genericId.replace(/-/g, ' '), genericId);
-            if (genericLogo) {
-              const ext = genericLogo.includes('.png') ? '.png' : '.svg';
-              const localPath = path.join(logosDir, `${teamId}${ext}`);
-              try {
-                await downloadImage(genericLogo, localPath);
-                const publicUrl = `/dota2-hub/images/teams/${teamId}${ext}`;
-                updateTeam.run(publicUrl, teamId);
-                teamLogoCache[teamId] = publicUrl;
-              } catch (e) {
-                updateTeam.run(genericLogo, teamId);
-                teamLogoCache[teamId] = genericLogo;
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`  Error: ${error.message}`);
+      } else {
+        console.log(`  No logo found`);
       }
+    } catch (error) {
+      console.error(`  Error: ${error.message}`);
+    }
     
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -327,15 +315,24 @@ async function main() {
   // 获取所有比赛的队伍
   const matches = db.prepare('SELECT id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name FROM matches').all();
   
-  // 已知战队的直接 logo URL 映射（与上面保持一致）
+  // 已知战队的直接 logo URL 映射 - 用于更新比赛记录
   const teamLogoUrls = {
     'yakult-brothers': '/dota2-hub/images/teams/yakult-brothers.png',
+    'yakult_brothers': '/dota2-hub/images/teams/yakult-brothers.png',
+    'yb': '/dota2-hub/images/teams/yakult-brothers.png',
     'og': '/dota2-hub/images/teams/og.png',
     'team-liquid': '/dota2-hub/images/teams/team-liquid.png',
     'team-spirit': '/dota2-hub/images/teams/team-spirit.png',
+    'spirit': '/dota2-hub/images/teams/team-spirit.png',
     'tundra-esports': '/dota2-hub/images/teams/tundra-esports.png',
+    'tundra': '/dota2-hub/images/teams/tundra-esports.png',
     'aurora-gaming': '/dota2-hub/images/teams/aurora-gaming.png',
     'xtreme-gaming': '/dota2-hub/images/teams/xtreme-gaming.png',
+    'xg': '/dota2-hub/images/teams/xtreme-gaming.png',
+    'vici-gaming': '/dota2-hub/images/teams/vici-gaming.png',
+    'vg': '/dota2-hub/images/teams/vici-gaming.png',
+    'lgd-gaming': '/dota2-hub/images/teams/lgd-gaming.png',
+    'azure-ray': '/dota2-hub/images/teams/azure-ray.png',
   };
   
   let updatedCount = 0;
