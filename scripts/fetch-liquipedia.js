@@ -209,8 +209,8 @@ function saveMatch(match) {
       dire_team_name, dire_team_name_cn,
       radiant_score, dire_score,
       radiant_game_wins, dire_game_wins,
-      start_time, duration, series_type, tournament_id, status, lobby_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      start_time, duration, series_type, tournament_id, tournament_name, status, lobby_type
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   stmt.run(
@@ -228,6 +228,7 @@ function saveMatch(match) {
     match.timestamp,
     0,
     match.format,
+    match.tournament || null,
     match.tournament || null,
     match.status,
     7

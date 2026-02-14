@@ -130,6 +130,7 @@ async function fetchTeamLogo(teamName, teamId) {
     'vg': 'https://liquipedia.net/commons/images/6/6a/Vici_Gaming_2020_allmode.png',
     'lgd-gaming': 'https://liquipedia.net/commons/images/4/47/PSG.LGD_2021_allmode.png',
     'azure-ray': 'https://liquipedia.net/commons/images/6/60/Azure_Ray_2023_allmode.png',
+    'execration': 'https://liquipedia.net/commons/images/3/3e/Execration_2020_allmode.png',
   };
   
   // 首先检查直接 URL
@@ -232,6 +233,7 @@ function getTeamIdFromName(name) {
     'nouns': 'nouns',
     'heroic': 'heroic',
     'gaimin': 'gaimin-gladiators',
+    'execration': 'execration',
   };
   
   return teamMappings[nameLower] || nameLower.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -333,6 +335,7 @@ async function main() {
     'vg': '/dota2-hub/images/teams/vici-gaming.png',
     'lgd-gaming': '/dota2-hub/images/teams/lgd-gaming.png',
     'azure-ray': '/dota2-hub/images/teams/azure-ray.png',
+    'execration': '/dota2-hub/images/teams/execration.png',
   };
   
   let updatedCount = 0;
@@ -352,10 +355,12 @@ async function main() {
     if (!radiantLogo) {
       if (radiantNameLower.includes('team spirit') || radiantNameLower === 'spirit') radiantLogo = '/dota2-hub/images/teams/team-spirit.png';
       else if (radiantNameLower.includes('tundra')) radiantLogo = '/dota2-hub/images/teams/tundra-esports.png';
+      else if (radiantNameLower.includes('execration')) radiantLogo = '/dota2-hub/images/teams/execration.png';
     }
     if (!direLogo) {
       if (direNameLower.includes('team spirit') || direNameLower === 'spirit') direLogo = '/dota2-hub/images/teams/team-spirit.png';
       else if (direNameLower.includes('tundra')) direLogo = '/dota2-hub/images/teams/tundra-esports.png';
+      else if (direNameLower.includes('execration')) direLogo = '/dota2-hub/images/teams/execration.png';
     }
     
     if (radiantLogo || direLogo) {

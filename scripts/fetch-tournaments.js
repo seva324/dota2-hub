@@ -143,9 +143,10 @@ function parseTournaments(html) {
         continue;
       }
       
-      // 确定ID
-      const id = page.replace(/\//g, '-').replace(/_\d{4}$/, '').toLowerCase() || 
+      // 确定ID - 清理 HTML 标签
+      const cleanId = page.replace(/<[^>]+>/g, '').replace(/\//g, '-').replace(/_\d{4}$/, '').toLowerCase() || 
                  name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const id = cleanId;
       
       // 解析奖金和Tier（从链接名推断）
       let tier = 'T2';
