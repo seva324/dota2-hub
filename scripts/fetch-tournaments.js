@@ -68,6 +68,8 @@ function parseTournaments(html) {
   
   function parseDate(dateStr, year = currentYear) {
     if (!dateStr) return null;
+    
+    // 尝试 "Feb 16" 格式
     const match = dateStr.match(/(\w+)\s+(\d+)/);
     if (match) {
       const monthNum = monthMap[match[1]];
@@ -78,10 +80,29 @@ function parseTournaments(html) {
       const day = match[2].padStart(2, '0');
       return `${year}-${monthNum}-${day}`;
     }
+    
+    // 尝试只有月份 "Feb" 格式 - 默认设为该月1号
+    const monthOnlyMatch = dateStr.match(/^(\w+)$/);
+    if (monthOnlyMatch && monthMap[monthOnlyMatch[1]]) {
+      const monthNum = monthMap[monthOnlyMatch[1]];
+      return `${year}-${monthNum}-01`;
+    }
+    
     // 尝试直接解析 YYYY-MM-DD 格式
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
       return dateStr;
     }
+    
+    // 尝试 "Feb 16 - Mar 01" 范围格式，提取第一个日期
+    const rangeMatch = dateStr.match(/(\w+)\s+(\d+)/);
+    if (rangeMatch) {
+      const monthNum = monthMap[rangeMatch[1]];
+      if (monthNum) {
+        const day = rangeMatch[2].padStart(2, '0');
+        return `${year}-${monthNum}-${day}`;
+      }
+    }
+    
     console.log('Could not parse date:', dateStr);
     return null;
   }
