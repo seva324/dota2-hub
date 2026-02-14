@@ -69,6 +69,9 @@ jobs:
       - name: Export Data
         run: node scripts/export-static-data.js
         
+      - name: Build project
+        run: npm run build
+        
       - name: Copy data to dist
         run: |
           mkdir -p dist/data dist/images
