@@ -25,7 +25,7 @@ const matches = db.prepare(`
   SELECT m.*, 
          COALESCE(m.tournament_name, t.name) as tournament_name, 
          COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
-         COALESCE(m.tier, t.tier) as tournament_tier
+         t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   ORDER BY m.start_time DESC
@@ -41,7 +41,7 @@ const upcomingMatches = db.prepare(`
   SELECT m.*, 
          COALESCE(m.tournament_name, t.name) as tournament_name, 
          COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
-         COALESCE(m.tier, t.tier) as tournament_tier
+         t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time > ? 
@@ -58,7 +58,7 @@ const cnMatches = db.prepare(`
   SELECT m.*, 
          COALESCE(m.tournament_name, t.name) as tournament_name, 
          COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
-         COALESCE(m.tier, t.tier) as tournament_tier
+         t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time < ?
