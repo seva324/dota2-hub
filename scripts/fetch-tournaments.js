@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Liquipedia 赛事数据抓取脚本
- * 从 Liquipedia 获取当前进行中和即将开始的赛事
+ * 从 Liquipedia 获取赛事数据
+ * 使用与比赛预告相同的方式获取赛事信息
  */
 
 import Database from 'better-sqlite3';
@@ -23,7 +23,7 @@ function fetchWithGzip(url) {
     options.headers = {
       'User-Agent': 'DOTA2-Hub-Bot/1.0 (https://github.com/seva324/dota2-hub)',
       'Accept-Encoding': 'gzip',
-      'Accept': 'text/html'
+      'Accept': 'application/json'
     };
 
     const req = https.get(options, (res) => {
@@ -50,235 +50,188 @@ function fetchWithGzip(url) {
   });
 }
 
-/**
- * 解析 Liquipedia 的赛事列表页面
- */
 function parseTournaments(html) {
   const tournaments = [];
-
-  // 从页面提取赛事信息
-  // 查找 tournament-card 或类似的元素
-  const tournamentBlocks = html.split('<div class="tournament-card');
-
-  for (let i = 1; i < tournamentBlocks.length && i <= 20; i++) {
-    const block = tournamentBlocks[i];
-
-    // 提取赛事名称
-    const nameMatch = block.match(/title="([^"]+)"/);
-    const name = nameMatch ? nameMatch[1] : null;
-
-    if (!name) continue;
-
-    // 提取链接
-    const linkMatch = block.match(/href="\/dota2\/([^"]+)"/);
-    const id = linkMatch ? linkMatch[1].replace(/\//g, '-') : name.toLowerCase().replace(/\s+/g, '-');
-
-    // 提取日期
-    const dateMatch = block.match(/(\d{4}-\d{2}-\d{2})/);
-    const startDate = dateMatch ? dateMatch[1] : null;
-
-    // 提取奖金
-    const prizeMatch = block.match(/\$[\d,]+/);
-    const prize = prizeMatch ? prizeMatch[0] : 'TBD';
-
-    // 提取 Tier
-    const tierMatch = block.match(/Tier\s*(\d)/i);
-    const tier = tierMatch ? `T${tierMatch[1]}` : 'T2';
-
-    tournaments.push({
-      id,
-      name,
-      tier,
-      startDate,
-      prize
-    });
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  
+  // 从 Liquipedia:Tournaments 页面解析结构化数据
+  // 格式类似: DreamLeague/28 | DreamLeague S28 | icon= | ... | startdate=Feb 16 | enddate=Mar 01
+  
+  const monthMap = {
+    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+    'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+    'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+  };
+  
+  function parseDate(dateStr, year = currentYear) {
+    if (!dateStr) return null;
+    const match = dateStr.match(/(\w+)\s+(\d+)/);
+    if (match) {
+      const month = monthMap[match[1]];
+      const day = match[2].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    // 尝试直接解析 YYYY-MM-DD 格式
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+    return null;
   }
-
-  return tournaments;
+  
+  // 解析每个赛事条目
+  const lines = html.split('\n');
+  let currentStatus = 'upcoming';
+  
+  for (const line of lines) {
+    // 检测状态
+    if (line.includes('Upcoming')) {
+      currentStatus = 'upcoming';
+      continue;
+    } else if (line.includes('Ongoing')) {
+      currentStatus = 'ongoing';
+      continue;
+    } else if (line.includes('Completed')) {
+      currentStatus = 'completed';
+      continue;
+    }
+    
+    // 解析赛事条目: page | name | icon=... | startdate=... | enddate=...
+    const match = line.match(/^\s*\*?\s*([^|]+)\s*\|\s*([^|]+)\s*\|.*startdate=([^|\s]+).*enddate=([^|\s]+)/i);
+    if (match) {
+      const page = match[1].trim();
+      const name = match[2].trim();
+      const startDateStr = match[3].trim();
+      const endDateStr = match[4].trim();
+      
+      const startDate = parseDate(startDateStr);
+      const endDate = parseDate(endDateStr);
+      
+      if (!startDate) continue;
+      
+      // 确定ID
+      const id = page.replace(/\//g, '-').replace(/_\d{4}$/, '').toLowerCase() || 
+                 name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
+      // 解析奖金和Tier（从链接名推断）
+      let tier = 'T2';
+      let prizePool = 'TBD';
+      
+      if (name.includes('DreamLeague') || name.includes('PGL') || name.includes('ESL One') || 
+          name.includes('The International') || name.includes('BLAST Slam')) {
+        tier = 'T1';
+        prizePool = '$1,000,000';
+      }
+      if (name.includes('TI') || name.includes('International')) {
+        prizePool = '$2,500,000+';
+      }
+      
+      // 中文名映射
+      let name_cn = name;
+      if (name.includes('DreamLeague')) {
+        name_cn = name.replace(/DreamLeague/i, '梦幻联赛').replace(/Season\s*(\d+)/i, 'S$1');
+      } else if (name.includes('PGL Wallachia')) {
+        name_cn = name.replace(/PGL Wallachia/i, 'PGL瓦拉几亚').replace(/Season\s*(\d+)/i, 'S$1');
+      } else if (name.includes('ESL One')) {
+        name_cn = name.replace('ESL One', 'ESL One');
+      } else if (name.includes('BLAST Slam')) {
+        name_cn = name.replace('BLAST Slam', 'BLAST Slam');
+      } else if (name.includes('The International') || /\bTI\d+\b/.test(name)) {
+        name_cn = name.replace('The International', '国际邀请赛');
+      } else if (name.includes('EPL')) {
+        name_cn = name.replace(/EPL/i, 'EPL');
+      } else if (name.includes('CCT')) {
+        name_cn = name.replace(/CCT/i, 'CCT');
+      }
+      
+      tournaments.push({
+        id: id.substring(0, 50),
+        name: name,
+        name_cn: name_cn,
+        tier: tier,
+        start_date: startDate,
+        end_date: endDate,
+        status: currentStatus,
+        prize_pool: prizePool,
+        location: null,
+        format: null
+      });
+    }
+  }
+  
+  // 去重
+  const seen = new Set();
+  return tournaments.filter(t => {
+    const key = t.name.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
-// 2026年实际赛事数据（根据 Liquipedia 更新）
-// 参考: https://liquipedia.net/dota2/
-const ACTIVE_TOURNAMENTS = [
-  // 已完成的 2025 赛事
-  {
-    id: 'blast-slam-6',
-    name: 'BLAST Slam VI',
-    name_cn: 'BLAST Slam 第六赛季',
-    tier: 'T1',
-    start_date: '2025-02-03',
-    end_date: '2025-02-15',
-    status: 'completed',
-    prize_pool: '$1,000,000',
-    location: 'Malta',
-    format: 'Round-robin Group Stage + Single-elimination Playoffs',
-    winner: 'Team Falcons'
-  },
-  {
-    id: 'dreamleague-28',
-    name: 'DreamLeague Season 28',
-    name_cn: '梦幻联赛 S28',
-    tier: 'T1',
-    start_date: '2025-02-16',
-    end_date: '2025-03-01',
-    status: 'completed',
-    prize_pool: '$1,000,000',
-    location: 'Online (Europe)',
-    format: 'Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs',
-    winner: 'Team Spirit'
-  },
-  {
-    id: 'pgl-wallachia-7',
-    name: 'PGL Wallachia Season 7',
-    name_cn: 'PGL 瓦拉几亚 S7',
-    tier: 'T1',
-    start_date: '2025-03-07',
-    end_date: '2025-03-15',
-    status: 'completed',
-    prize_pool: '$1,000,000',
-    location: 'Bucharest, Romania',
-    format: 'Swiss-system Group Stage (Bo3) + Double-elimination Playoffs',
-    winner: 'Tundra Esports'
-  },
-  {
-    id: 'esl-one-birmingham-2025',
-    name: 'ESL One Birmingham 2025',
-    name_cn: 'ESL One 伯明翰 2025',
-    tier: 'T1',
-    start_date: '2025-04-22',
-    end_date: '2025-04-27',
-    status: 'completed',
-    prize_pool: '$1,000,000',
-    location: 'Birmingham, UK',
-    format: 'Group Stage + Playoffs',
-    winner: 'Team Falcons'
-  },
-  {
-    id: 'ti-2025',
-    name: 'The International 2025',
-    name_cn: '国际邀请赛 2025',
-    tier: 'T1',
-    start_date: '2025-09-04',
-    end_date: '2025-09-14',
-    status: 'completed',
-    prize_pool: '$2,500,000+',
-    location: 'Hamburg, Germany',
-    format: 'Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs',
-    winner: 'Team Spirit'
-  },
-  // 2026 赛事
-  {
-    id: 'dreamleague-s29',
-    name: 'DreamLeague Season 29',
-    name_cn: '梦幻联赛 S29',
-    tier: 'T1',
-    start_date: '2026-02-20',
-    end_date: '2026-03-08',
-    status: 'upcoming',
-    prize_pool: '$1,000,000',
-    location: 'Online (Europe)',
-    format: 'Group Stage + Playoffs'
-  },
-  {
-    id: 'pgl-wallachia-s8',
-    name: 'PGL Wallachia Season 8',
-    name_cn: 'PGL 瓦拉几亚 S8',
-    tier: 'T1',
-    start_date: '2026-03-15',
-    end_date: '2026-03-23',
-    status: 'upcoming',
-    prize_pool: '$1,000,000',
-    location: 'Bucharest, Romania',
-    format: 'Swiss-system + Double-elimination Playoffs'
-  },
-  {
-    id: 'esl-one-2026-spring',
-    name: 'ESL One Spring 2026',
-    name_cn: 'ESL One 春季赛 2026',
-    tier: 'T1',
-    start_date: '2026-04-20',
-    end_date: '2026-04-26',
-    status: 'upcoming',
-    prize_pool: '$1,000,000',
-    location: 'TBD',
-    format: 'Group Stage + Playoffs'
-  },
-  {
-    id: 'ti-2026',
-    name: 'The International 2026',
-    name_cn: '国际邀请赛 2026',
-    tier: 'T1',
-    start_date: '2026-08-15',
-    end_date: '2026-08-25',
-    status: 'upcoming',
-    prize_pool: '$3,000,000+',
-    location: 'TBD',
-    format: 'Swiss Round + Double-elimination Playoffs'
+async function main() {
+  console.log('========================================');
+  console.log('从 Liquipedia 获取赛事信息');
+  console.log('Time:', new Date().toISOString());
+  console.log('========================================\n');
+  
+  const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
+  const params = new URLSearchParams({
+    action: 'parse',
+    page: 'Liquipedia:Tournaments',  // 使用专门的赛事列表页面
+    format: 'json',
+    prop: 'text'
+  });
+  
+  try {
+    const url = `${LIQUIPEDIA_API}?${params}`;
+    console.log('Fetching:', url);
+    const responseText = await fetchWithGzip(url);
+    const data = JSON.parse(responseText);
+    const html = data.parse.text['*'];
+    
+    const tournaments = parseTournaments(html);
+    
+    console.log(`找到 ${tournaments.length} 个赛事\n`);
+    
+    // 显示赛事
+    for (const t of tournaments.slice(0, 20)) {
+      console.log(`📅 ${t.name_cn || t.name}`);
+      console.log(`   状态: ${t.status} | Tier: ${t.tier} | 奖金: ${t.prize_pool}`);
+      if (t.start_date) console.log(`   日期: ${t.start_date} ~ ${t.end_date || 'TBD'}`);
+      console.log();
+    }
+    
+    // 保存到数据库
+    const insertTournament = db.prepare(`
+      INSERT OR REPLACE INTO tournaments
+      (id, name, name_cn, tier, start_date, end_date, status, prize_pool, location, format)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    let savedCount = 0;
+    for (const t of tournaments) {
+      try {
+        insertTournament.run(
+          t.id, t.name, t.name_cn, t.tier, t.start_date, t.end_date,
+          t.status, t.prize_pool, t.location, t.format
+        );
+        savedCount++;
+      } catch (error) {
+        console.error(`Error saving tournament ${t.name}:`, error.message);
+      }
+    }
+    
+    console.log('========================================');
+    console.log(`已保存 ${savedCount} 个赛事到数据库`);
+    console.log('========================================');
+    
+  } catch (error) {
+    console.error('Error:', error.message);
+    console.error(error.stack);
   }
-];
-
-// 插入赛事数据
-const insertTournament = db.prepare(`
-  INSERT OR REPLACE INTO tournaments
-  (id, name, name_cn, tier, start_date, end_date, status, prize_pool, location, format)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-console.log('Updating tournament data...');
-console.log(`Current date: ${new Date().toISOString().split('T')[0]}`);
-console.log();
-
-for (const t of ACTIVE_TOURNAMENTS) {
-  insertTournament.run(
-    t.id, t.name, t.name_cn || null, t.tier, t.start_date, t.end_date,
-    t.status, t.prize_pool, t.location || null, t.format || null
-  );
-  console.log(`✓ ${t.name_cn || t.name}: ${t.status} (${t.start_date} ~ ${t.end_date})`);
+  
+  db.close();
 }
 
-console.log(`\nInserted ${ACTIVE_TOURNAMENTS.length} tournaments`);
-
-// 插入新闻数据
-const NEWS_ITEMS = [
-  {
-    id: 'news-1',
-    title: 'Team Spirit 夺得 TI2025 冠军',
-    summary: 'Team Spirit 在 TI2025 总决赛中 3-1 击败 Team Falcons，时隔三年再次捧起不朽盾。',
-    source: 'Liquipedia',
-    url: 'https://liquipedia.net/dota2/The_International/2025',
-    published_at: Math.floor(Date.now() / 1000) - 86400 * 30,
-    category: 'tournament'
-  },
-  {
-    id: 'news-2',
-    title: 'DreamLeague S29 即将开战',
-    summary: 'DreamLeague 第29赛季将于2月20日开战，XG、YB 已确认参赛，争夺100万美元奖金。',
-    source: 'DreamHack',
-    url: 'https://liquipedia.net/dota2/DreamLeague/Season_29',
-    published_at: Math.floor(Date.now() / 1000) - 86400 * 3,
-    category: 'tournament'
-  },
-  {
-    id: 'news-3',
-    title: '2026年DOTA2赛事日历公布',
-    summary: 'Valve 公布2026年DPC赛程，TI2026 将于8月举行，总奖金池预计超过300万美元。',
-    source: 'Valve',
-    url: 'https://www.dota2.com',
-    published_at: Math.floor(Date.now() / 1000) - 86400 * 7,
-    category: 'tournament'
-  }
-];
-
-const insertNews = db.prepare(`
-  INSERT OR REPLACE INTO news
-  (id, title, summary, source, url, published_at, category)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-`);
-
-for (const n of NEWS_ITEMS) {
-  insertNews.run(n.id, n.title, n.summary, n.source, n.url, n.published_at, n.category);
-}
-console.log(`Inserted ${NEWS_ITEMS.length} news items`);
-
-console.log('\n✓ Tournament data update complete!');
-db.close();
+main();
