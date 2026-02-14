@@ -72,8 +72,10 @@ console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
 // 导出赛事数据
 const tournaments = db.prepare('SELECT * FROM tournaments ORDER BY start_date DESC').all();
-fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify(tournaments, null, 2));
 console.log(`Exported ${tournaments.length} tournaments`);
+console.log('Sample tournament:', tournaments[0]);
+
+fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify(tournaments, null, 2));
 
 // 导出战队数据
 const teams = db.prepare('SELECT * FROM teams').all();

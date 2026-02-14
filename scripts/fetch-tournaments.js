@@ -55,6 +55,8 @@ function parseTournaments(html) {
   const now = new Date();
   const currentYear = now.getFullYear();
   
+  console.log('Parsing tournaments from HTML, length:', html.length);
+  
   // 从 Liquipedia:Tournaments 页面解析结构化数据
   // 格式类似: DreamLeague/28 | DreamLeague S28 | icon= | ... | startdate=Feb 16 | enddate=Mar 01
   
@@ -68,20 +70,27 @@ function parseTournaments(html) {
     if (!dateStr) return null;
     const match = dateStr.match(/(\w+)\s+(\d+)/);
     if (match) {
-      const month = monthMap[match[1]];
+      const monthNum = monthMap[match[1]];
+      if (!monthNum) {
+        console.log('Unknown month:', match[1], 'in dateStr:', dateStr);
+        return null;
+      }
       const day = match[2].padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${year}-${monthNum}-${day}`;
     }
     // 尝试直接解析 YYYY-MM-DD 格式
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
       return dateStr;
     }
+    console.log('Could not parse date:', dateStr);
     return null;
   }
   
   // 解析每个赛事条目
   const lines = html.split('\n');
   let currentStatus = 'upcoming';
+  let matchCount = 0;
+  let parseFailCount = 0;
   
   for (const line of lines) {
     // 检测状态
@@ -99,6 +108,7 @@ function parseTournaments(html) {
     // 解析赛事条目: page | name | icon=... | startdate=... | enddate=...
     const match = line.match(/^\s*\*?\s*([^|]+)\s*\|\s*([^|]+)\s*\|.*startdate=([^|\s]+).*enddate=([^|\s]+)/i);
     if (match) {
+      matchCount++;
       const page = match[1].trim();
       const name = match[2].trim();
       const startDateStr = match[3].trim();
@@ -107,7 +117,10 @@ function parseTournaments(html) {
       const startDate = parseDate(startDateStr);
       const endDate = parseDate(endDateStr);
       
-      if (!startDate) continue;
+      if (!startDate) {
+        parseFailCount++;
+        continue;
+      }
       
       // 确定ID
       const id = page.replace(/\//g, '-').replace(/_\d{4}$/, '').toLowerCase() || 
@@ -158,6 +171,9 @@ function parseTournaments(html) {
       });
     }
   }
+  
+  console.log(`Parsed: ${matchCount} matches found, ${parseFailCount} failed to parse`);
+  console.log(`Tournaments array length: ${tournaments.length}`);
   
   // 去重
   const seen = new Set();
