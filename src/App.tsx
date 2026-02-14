@@ -61,6 +61,7 @@ interface HomeData {
     series_type: string;
     tournament_name: string;
     status: string;
+    stage?: string;
   }>>;
   news: Array<{
     id: string;
@@ -138,7 +139,7 @@ function App() {
       <Navbar />
       <main>
         <HeroSection upcoming={data.upcoming} />
-        <TournamentSection tournaments={data.tournaments} />
+        <TournamentSection tournaments={data.tournaments} matchesByTournament={data.matchesByTournament} />
         <UpcomingSection upcoming={data.upcoming} />
         <NewsSection news={data.news} />
         <CommunitySection posts={data.community} />

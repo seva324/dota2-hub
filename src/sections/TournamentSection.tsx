@@ -57,7 +57,26 @@ function isChineseTeam(teamName: string | null | undefined): boolean {
   return chineseTeamNames.some(cn => teamName.toLowerCase().includes(cn));
 }
 
-export function TournamentSection({ tournaments }: { tournaments: Tournament[] }) {
+interface Match {
+  id: number;
+  match_id: string;
+  radiant_team_name: string;
+  dire_team_name: string;
+  radiant_score: number;
+  dire_score: number;
+  start_time: number;
+  series_type: string;
+  tournament_name: string;
+  status: string;
+  stage?: string;
+}
+
+interface TournamentSectionProps {
+  tournaments: Tournament[];
+  matchesByTournament?: Record<string, Match[]>;
+}
+
+export function TournamentSection({ tournaments, matchesByTournament }: TournamentSectionProps) {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournaments[0] || null);
 
   if (!tournaments.length) {

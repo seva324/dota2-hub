@@ -53,6 +53,10 @@ jobs:
         run: node scripts/fetch-liquipedia.js
         continue-on-error: true
 
+      - name: Fetch Tournament Matches from Liquipedia
+        run: node scripts/fetch-tournament-matches.js
+        continue-on-error: true
+
       - name: Fetch Team Logos and Update Match Logos
         run: node scripts/fetch-team-logos.js
         continue-on-error: true
