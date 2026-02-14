@@ -1,17 +1,73 @@
 [
   {
+    "id": "ti-2026",
+    "name": "The International 2026",
+    "name_cn": "国际邀请赛 2026",
+    "tier": "T1",
+    "start_date": "2026-08-15",
+    "end_date": "2026-08-25",
+    "status": "upcoming",
+    "prize_pool": "$3,000,000+",
+    "location": "TBD",
+    "format": "Swiss Round + Double-elimination Playoffs",
+    "logo_url": null,
+    "created_at": 1771043619
+  },
+  {
+    "id": "esl-one-2026-spring",
+    "name": "ESL One Spring 2026",
+    "name_cn": "ESL One 春季赛 2026",
+    "tier": "T1",
+    "start_date": "2026-04-20",
+    "end_date": "2026-04-26",
+    "status": "upcoming",
+    "prize_pool": "$1,000,000",
+    "location": "TBD",
+    "format": "Group Stage + Playoffs",
+    "logo_url": null,
+    "created_at": 1771043619
+  },
+  {
+    "id": "pgl-wallachia-s8",
+    "name": "PGL Wallachia Season 8",
+    "name_cn": "PGL 瓦拉几亚 S8",
+    "tier": "T1",
+    "start_date": "2026-03-15",
+    "end_date": "2026-03-23",
+    "status": "upcoming",
+    "prize_pool": "$1,000,000",
+    "location": "Bucharest, Romania",
+    "format": "Swiss-system + Double-elimination Playoffs",
+    "logo_url": null,
+    "created_at": 1771043619
+  },
+  {
+    "id": "dreamleague-s29",
+    "name": "DreamLeague Season 29",
+    "name_cn": "梦幻联赛 S29",
+    "tier": "T1",
+    "start_date": "2026-02-20",
+    "end_date": "2026-03-08",
+    "status": "upcoming",
+    "prize_pool": "$1,000,000",
+    "location": "Online (Europe)",
+    "format": "Group Stage + Playoffs",
+    "logo_url": null,
+    "created_at": 1771043619
+  },
+  {
     "id": "ti-2025",
     "name": "The International 2025",
     "name_cn": "国际邀请赛 2025",
     "tier": "T1",
     "start_date": "2025-09-04",
     "end_date": "2025-09-14",
-    "status": "upcoming",
+    "status": "completed",
     "prize_pool": "$2,500,000+",
     "location": "Hamburg, Germany",
     "format": "Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs",
     "logo_url": null,
-    "created_at": 1771038267
+    "created_at": 1771043619
   },
   {
     "id": "esl-one-birmingham-2025",
@@ -20,12 +76,12 @@
     "tier": "T1",
     "start_date": "2025-04-22",
     "end_date": "2025-04-27",
-    "status": "upcoming",
+    "status": "completed",
     "prize_pool": "$1,000,000",
     "location": "Birmingham, UK",
     "format": "Group Stage + Playoffs",
     "logo_url": null,
-    "created_at": 1771038267
+    "created_at": 1771043619
   },
   {
     "id": "pgl-wallachia-7",
@@ -34,12 +90,12 @@
     "tier": "T1",
     "start_date": "2025-03-07",
     "end_date": "2025-03-15",
-    "status": "upcoming",
+    "status": "completed",
     "prize_pool": "$1,000,000",
     "location": "Bucharest, Romania",
     "format": "Swiss-system Group Stage (Bo3) + Double-elimination Playoffs",
     "logo_url": null,
-    "created_at": 1771038267
+    "created_at": 1771043619
   },
   {
     "id": "dreamleague-28",
@@ -48,12 +104,12 @@
     "tier": "T1",
     "start_date": "2025-02-16",
     "end_date": "2025-03-01",
-    "status": "upcoming",
+    "status": "completed",
     "prize_pool": "$1,000,000",
     "location": "Online (Europe)",
     "format": "Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs",
     "logo_url": null,
-    "created_at": 1771038267
+    "created_at": 1771043619
   },
   {
     "id": "blast-slam-6",
@@ -62,11 +118,11 @@
     "tier": "T1",
     "start_date": "2025-02-03",
     "end_date": "2025-02-15",
-    "status": "ongoing",
+    "status": "completed",
     "prize_pool": "$1,000,000",
     "location": "Malta",
     "format": "Round-robin Group Stage + Single-elimination Playoffs",
     "logo_url": null,
-    "created_at": 1771038267
+    "created_at": 1771043619
   }
 ]
