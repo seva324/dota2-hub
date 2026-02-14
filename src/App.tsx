@@ -50,6 +50,18 @@ interface HomeData {
     location?: string;
     format?: string;
   }>;
+  matchesByTournament?: Record<string, Array<{
+    id: number;
+    match_id: string;
+    radiant_team_name: string;
+    dire_team_name: string;
+    radiant_score: number;
+    dire_score: number;
+    start_time: number;
+    series_type: string;
+    tournament_name: string;
+    status: string;
+  }>>;
   news: Array<{
     id: string;
     title: string;

@@ -84,14 +84,6 @@ const tournaments = db.prepare(`
 `).all();
 console.log(`Exported ${tournaments.length} tournaments`);
 
-// 为每个赛事添加比赛数据
-const tournamentMatches = db.prepare(`
-  SELECT * FROM matches 
-  WHERE tournament_name LIKE ? OR tournament_id LIKE ?
-  ORDER BY start_time DESC
-  LIMIT 50
-`).all();
-
 // 按赛事分组
 const matchesByTournament = {};
 for (const t of tournaments) {
@@ -128,6 +120,7 @@ const homeData = {
   upcoming: upcomingMatches,
   cnMatches,
   tournaments,
+  matchesByTournament,
   news,
   lastUpdated: new Date().toISOString()
 };
