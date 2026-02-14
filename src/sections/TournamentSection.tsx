@@ -265,17 +265,49 @@ export function TournamentSection({ tournaments, matchesByTournament }: Tourname
                 </TabsContent>
 
                 <TabsContent value="matches">
-                  {selectedTournament.series && selectedTournament.series.length > 0 ? (
+                  {(matchesByTournament && matchesByTournament[selectedTournament.id] && matchesByTournament[selectedTournament.id].length > 0) ? (
                     <div className="space-y-4">
-                      {selectedTournament.series.map((series) => {
-                        const teamAIsCN = isChineseTeam(series.teamA.name);
-                        const teamBIsCN = isChineseTeam(series.teamB.name);
+                      {matchesByTournament[selectedTournament.id].map((match) => {
+                        const teamAIsCN = isChineseTeam(match.radiant_team_name);
+                        const teamBIsCN = isChineseTeam(match.dire_team_name);
                         const hasCN = teamAIsCN || teamBIsCN;
                         
                         return (
                           <div
-                            key={series.seriesId}
+                            key={match.match_id}
                             className={`rounded-lg p-4 border ${hasCN ? 'bg-red-900/10 border-red-600/30' : 'bg-slate-800/30 border-slate-800'}`}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <Badge variant="outline" className="border-slate-700 text-slate-400">{match.stage || 'Match'}</Badge>
+                              <div className="flex items-center gap-2">
+                                {hasCN && <Badge className="bg-red-600/20 text-red-400"><Star className="w-3 h-3 mr-1" />中国战队</Badge>}
+                                <span className="text-sm text-slate-500">{match.series_type}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className={`font-medium ${teamAIsCN ? 'text-red-400' : 'text-white'}`}>{match.radiant_team_name}</span>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className={`text-2xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>{match.radiant_score}</span>
+                                <span className="text-slate-600">:</span>
+                                <span className={`text-2xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>{match.dire_score}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className={`font-medium ${teamBIsCN ? 'text-red-400' : 'text-white'}`}>{match.dire_team_name}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-slate-500">
+                      <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>比赛数据尚未公布</p>
+                    </div>
+                  )}
+                </TabsContent>
                           >
                             <div className="flex items-center justify-between mb-3">
                               <Badge variant="outline" className="border-slate-700 text-slate-400">{series.stage}</Badge>
