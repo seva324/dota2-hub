@@ -308,44 +308,6 @@ export function TournamentSection({ tournaments, matchesByTournament }: Tourname
                     </div>
                   )}
                 </TabsContent>
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <Badge variant="outline" className="border-slate-700 text-slate-400">{series.stage}</Badge>
-                              <div className="flex items-center gap-2">
-                                {hasCN && <Badge className="bg-red-600/20 text-red-400"><Star className="w-3 h-3 mr-1" />中国战队</Badge>}
-                                <span className="text-sm text-slate-500">{series.format}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded flex items-center justify-center text-sm font-bold ${teamAIsCN ? 'bg-red-600/30 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
-                                  {series.teamA.tag}
-                                </div>
-                                <span className={`font-medium ${teamAIsCN ? 'text-red-400' : 'text-white'}`}>{series.teamA.name}</span>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <span className={`text-2xl font-bold ${series.scoreA > series.scoreB ? 'text-green-400' : 'text-slate-400'}`}>{series.scoreA}</span>
-                                <span className="text-slate-600">:</span>
-                                <span className={`text-2xl font-bold ${series.scoreB > series.scoreA ? 'text-green-400' : 'text-slate-400'}`}>{series.scoreB}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className={`font-medium ${teamBIsCN ? 'text-red-400' : 'text-white'}`}>{series.teamB.name}</span>
-                                <div className={`w-10 h-10 rounded flex items-center justify-center text-sm font-bold ${teamBIsCN ? 'bg-red-600/30 text-red-400' : 'bg-slate-800 text-slate-400'}`}>
-                                  {series.teamB.tag}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-slate-500">
-                      <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>比赛数据尚未公布</p>
-                    </div>
-                  )}
-                </TabsContent>
 
                 <TabsContent value="format">
                   <div className="bg-slate-800/30 rounded-lg p-6 border border-slate-800">
