@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 从 Liquipedia 获取战队 Logo
+ * 从 Liquipedia 获取战队 Logo，并更新比赛记录中的队伍logo
  */
 
 import Database from 'better-sqlite3';
@@ -76,7 +76,9 @@ async function downloadImage(url, filepath) {
         resolve(filepath);
       });
     }).on('error', (err) => {
-      fs.unlinkSync(filepath);
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
       reject(err);
     });
   });
@@ -94,7 +96,6 @@ async function fetchTeamLogo(teamName) {
     
     const html = data.parse.text?.['*'] || '';
     
-    // 查找 logo 图片
     const logoPatterns = [
       /<div class="infobox-image[^"]*"[^>]*>\s*<a[^>]*>\s*<img[^>]*src="([^"]+)"/i,
       /<img[^>]*class="[^"]*infobox-image[^"]*"[^>]*src="([^"]+)"/i,
@@ -113,7 +114,6 @@ async function fetchTeamLogo(teamName) {
       }
     }
     
-    // 尝试从 images 列表中找 logo
     const images = data.parse.images || [];
     const logoImage = images.find(img => 
       img.toLowerCase().includes('logo') || 
@@ -122,7 +122,6 @@ async function fetchTeamLogo(teamName) {
     );
     
     if (logoImage) {
-      // 获取图片 URL
       const imageApiUrl = `https://liquipedia.net/dota2/api.php?action=query&titles=File:${logoImage}&prop=imageinfo&iiprop=url&format=json`;
       try {
         const imgResponse = await fetchWithGzip(imageApiUrl);
@@ -145,22 +144,46 @@ async function fetchTeamLogo(teamName) {
   }
 }
 
-const TARGET_TEAMS = [
-  { id: 'xtreme-gaming', name: 'Xtreme Gaming', page: 'Xtreme_Gaming' },
-  { id: 'yakult-brother', name: 'Yakult Brothers', page: 'Yakult_Brothers' },
-  { id: 'yakult-brothers', name: 'Yakult Brothers', page: 'Yakult_Brothers' },
-  { id: 'vici-gaming', name: 'Vici Gaming', page: 'Vici_Gaming' },
-  { id: 'lgd-gaming', name: 'LGD Gaming', page: 'PSG.LGD' },
-  { id: 'azure-ray', name: 'Azure Ray', page: 'Azure_Ray' },
-  { id: 'team-spirit', name: 'Team Spirit', page: 'Team_Spirit' },
-  { id: 'team-falcons', name: 'Team Falcons', page: 'Team_Falcons' },
-  { id: 'tundra-esports', name: 'Tundra Esports', page: 'Tundra_Esports' },
-  { id: 'gaimin-gladiators', name: 'Gaimin Gladiators', page: 'Gaimin_Gladiators' },
-];
+function getTeamIdFromName(name) {
+  if (!name) return null;
+  const nameLower = name.toLowerCase();
+  
+  const teamMappings = {
+    'xtreme gaming': 'xtreme-gaming',
+    'xg': 'xtreme-gaming',
+    'yakult brothers': 'yakult-brothers',
+    'yb': 'yakult-brothers',
+    'vici gaming': 'vici-gaming',
+    'vg': 'vici-gaming',
+    'lgd gaming': 'lgd-gaming',
+    'psg.lgd': 'lgd-gaming',
+    'azure ray': 'azure-ray',
+    'ar': 'azure-ray',
+    'team spirit': 'team-spirit',
+    'ts': 'team-spirit',
+    'team falcons': 'team-falcons',
+    'tundra esports': 'tundra-esports',
+    'gaimin gladiators': 'gaimin-gladiators',
+    'gg': 'gaimin-gladiators',
+    'og': 'og',
+    'team liquid': 'team-liquid',
+    'tl': 'team-liquid',
+    'betera': 'betera',
+    'nigma galaxy': 'nigma-galaxy',
+    'spirit': 'team-spirit',
+    't1': 't1',
+    'aurora gaming': 'aurora-gaming',
+    'nouns': 'nouns',
+    'heroic': 'heroic',
+    'gaimin': 'gaimin-gladiators',
+  };
+  
+  return teamMappings[nameLower] || nameLower.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
 
 async function main() {
   console.log('========================================');
-  console.log('从 Liquipedia 获取战队 Logo');
+  console.log('从 Liquipedia 获取战队 Logo 并更新比赛');
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
@@ -168,42 +191,110 @@ async function main() {
     UPDATE teams SET logo_url = ?, updated_at = unixepoch() WHERE id = ?
   `);
   
-  for (const team of TARGET_TEAMS) {
-    console.log(`Fetching logo for ${team.name}...`);
+  const updateMatchTeamLogos = db.prepare(`
+    UPDATE matches 
+    SET radiant_team_logo = ?, dire_team_logo = ?
+    WHERE radiant_team_id = ? OR dire_team_id = ?
+  `);
+  
+  // 获取所有在比赛中出现过的队伍
+  const matchTeams = db.prepare(`
+    SELECT DISTINCT radiant_team_name as name, radiant_team_id as id FROM matches WHERE radiant_team_name IS NOT NULL
+    UNION
+    SELECT DISTINCT dire_team_name as name, dire_team_id as id FROM matches WHERE dire_team_name IS NOT NULL
+  `).all();
+  
+  console.log(`Found ${matchTeams.length} unique teams in matches\n`);
+  
+  const teamLogoCache = {};
+  
+  for (const team of matchTeams) {
+    if (!team.name || team.name === 'unknown') continue;
+    
+    const teamId = team.id || getTeamIdFromName(team.name);
+    console.log(`Processing logo for ${team.name} (${teamId})...`);
+    
+    // 检查是否已有 logo
+    const existingLogo = db.prepare('SELECT logo_url FROM teams WHERE id = ?').get(teamId);
+    if (existingLogo?.logo_url) {
+      console.log(`  Already has logo: ${existingLogo.logo_url}`);
+      teamLogoCache[teamId] = existingLogo.logo_url;
+      continue;
+    }
     
     try {
-      const logoUrl = await fetchTeamLogo(team.page);
+      const logoUrl = await fetchTeamLogo(team.name);
       
       if (logoUrl) {
         console.log(`  Found: ${logoUrl}`);
         
-        // 下载 logo 到本地
         const ext = logoUrl.includes('.png') ? '.png' : '.svg';
-        const localPath = path.join(logosDir, `${team.id}${ext}`);
+        const localPath = path.join(logosDir, `${teamId}${ext}`);
         
         try {
           await downloadImage(logoUrl, localPath);
-          console.log(`  Saved to: images/teams/${team.id}${ext}`);
+          console.log(`  Saved to: images/teams/${teamId}${ext}`);
           
-          // 更新数据库
-          const publicUrl = `/dota2-hub/images/teams/${team.id}${ext}`;
-          updateTeam.run(publicUrl, team.id);
-          console.log(`  Updated database: ${publicUrl}`);
+          const publicUrl = `/dota2-hub/images/teams/${teamId}${ext}`;
+          updateTeam.run(publicUrl, teamId);
+          teamLogoCache[teamId] = publicUrl;
         } catch (downloadErr) {
           console.log(`  Download failed: ${downloadErr.message}`);
-          // 仍然保存远程 URL
-          updateTeam.run(logoUrl, team.id);
+          updateTeam.run(logoUrl, teamId);
+          teamLogoCache[teamId] = logoUrl;
         }
       } else {
         console.log(`  No logo found`);
+        // 使用通用 ID 尝试
+        const genericId = getTeamIdFromName(team.name);
+        if (genericId !== teamId) {
+          console.log(`  Trying generic ID: ${genericId}`);
+          const genericLogo = await fetchTeamLogo(genericId.replace(/-/g, ' '));
+          if (genericLogo) {
+            const ext = genericLogo.includes('.png') ? '.png' : '.svg';
+            const localPath = path.join(logosDir, `${teamId}${ext}`);
+            try {
+              await downloadImage(genericLogo, localPath);
+              const publicUrl = `/dota2-hub/images/teams/${teamId}${ext}`;
+              updateTeam.run(publicUrl, teamId);
+              teamLogoCache[teamId] = publicUrl;
+            } catch (e) {
+              updateTeam.run(genericLogo, teamId);
+              teamLogoCache[teamId] = genericLogo;
+            }
+          }
+        }
       }
     } catch (error) {
       console.error(`  Error: ${error.message}`);
     }
     
-    // 避免请求过快
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
+  
+  // 更新所有比赛的队伍 logo
+  console.log('\nUpdating match team logos...');
+  
+  const allTeams = db.prepare('SELECT id, logo_url FROM teams WHERE logo_url IS NOT NULL').all();
+  const teamLogoMap = {};
+  for (const t of allTeams) {
+    teamLogoMap[t.id] = t.logo_url;
+  }
+  
+  const matches = db.prepare('SELECT id, radiant_team_id, dire_team_id FROM matches').all();
+  let updatedCount = 0;
+  
+  for (const m of matches) {
+    const radiantLogo = teamLogoMap[m.radiant_team_id] || teamLogoMap[getTeamIdFromName(m.radiant_team_id)];
+    const direLogo = teamLogoMap[m.dire_team_id] || teamLogoMap[getTeamIdFromName(m.dire_team_id)];
+    
+    if (radiantLogo || direLogo) {
+      updateMatchTeamLogos.run(radiantLogo || null, direLogo || null, m.radiant_team_id, m.dire_team_id);
+      updatedCount++;
+    }
+  }
+  
+  console.log(`Updated ${updatedCount} matches with team logos`);
   
   console.log('\n========================================');
   console.log('Logo 更新完成');

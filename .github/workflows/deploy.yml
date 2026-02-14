@@ -66,6 +66,17 @@ jobs:
       - name: Fetch Upcoming CN Matches
         run: node scripts/fetch-upcoming-cn.js
 
+      - name: Fetch Team Logos and Update Match Logos
+        run: node scripts/fetch-team-logos.js
+        continue-on-error: true
+
+      - name: Fetch Match Data from Liquipedia
+        run: node scripts/fetch-liquipedia.js
+        continue-on-error: true
+
+      - name: Fetch Upcoming CN Matches
+        run: node scripts/fetch-upcoming-cn.js
+
       - name: Export Data
         run: node scripts/export-static-data.js
 

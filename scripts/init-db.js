@@ -62,6 +62,8 @@ db.exec(`
     radiant_team_name_cn TEXT,
     dire_team_name TEXT,
     dire_team_name_cn TEXT,
+    radiant_team_logo TEXT,
+    dire_team_logo TEXT,
     radiant_score INTEGER DEFAULT 0,
     dire_score INTEGER DEFAULT 0,
     radiant_game_wins INTEGER DEFAULT 0,
@@ -79,6 +81,14 @@ db.exec(`
     created_at INTEGER DEFAULT (unixepoch())
   );
 `);
+
+// 为 matches 表添加 logo 字段（如果不存在）
+try {
+  db.exec(`ALTER TABLE matches ADD COLUMN radiant_team_logo TEXT`);
+  db.exec(`ALTER TABLE matches ADD COLUMN dire_team_logo TEXT`);
+} catch (e) {
+  // 字段可能已存在
+}
 
 // 创建新闻表
 db.exec(`
