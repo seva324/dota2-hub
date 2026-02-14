@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Liquidpedia 赛事数据抓取脚本 - 精简版
+ * Liquipedia 赛事数据抓取脚本 - 精简版
  * 只维护赛事信息，不插入假数据
  * 比赛数据从 fetch-liquipedia.js 实时抓取
  */
@@ -86,7 +86,7 @@ const ACTIVE_TOURNAMENTS = [
 ];
 
 // 注意：不插入假比赛数据！比赛数据从 fetch-liquipedia.js 实时抓取
-// const UPCOMING_MATCHES = []; // 已删除假数据
+console.log('Using real match data from fetch-liquipedia.js (no fake data)');
 
 // 新闻数据（只保留真实新闻，删除假新闻）
 const NEWS_ITEMS = [
@@ -122,7 +122,7 @@ const NEWS_ITEMS = [
 
 // 插入赛事数据
 const insertTournament = db.prepare(`
-  INSERT OR REPLACE INTO tournaments 
+  INSERT OR REPLACE INTO tournaments
   (id, name, name_cn, tier, start_date, end_date, status, prize_pool, location, format)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
@@ -135,23 +135,16 @@ for (const t of ACTIVE_TOURNAMENTS) {
 }
 console.log(`Inserted ${ACTIVE_TOURNAMENTS.length} tournaments`);
 
-// 不再插入假比赛数据
-// 比赛数据从 fetch-liquipedia.js 实时抓取
-console.log('Skipped fake match data (using real data from fetch-liquipedia.js)');
-
-// 删除数据库中的假比赛数据（match_id > 9000000000）
-const deleteFake = db.prepare(`DELETE FROM matches WHERE match_id > 9000000000`);
-const deleted = deleteFake.run();
-console.log(`Deleted ${deleted.changes} fake matches from database`);
-
-// 删除假新闻
+// 删除假新闻（如果存在）
 const deleteFakeNews = db.prepare(`DELETE FROM news WHERE id = 'news-4'`);
 const deletedNews = deleteFakeNews.run();
-console.log(`Deleted ${deletedNews.changes} fake news items`);
+if (deletedNews.changes > 0) {
+  console.log(`Deleted ${deletedNews.changes} fake news items`);
+}
 
 // 插入新闻数据
 const insertNews = db.prepare(`
-  INSERT OR REPLACE INTO news 
+  INSERT OR REPLACE INTO news
   (id, title, summary, source, url, published_at, category)
   VALUES (?, ?, ?, ?, ?, ?, ?)
 `);
@@ -161,5 +154,5 @@ for (const n of NEWS_ITEMS) {
 }
 console.log(`Inserted ${NEWS_ITEMS.length} news items`);
 
-console.log('\n✓ Liquidpedia data import complete! (No fake data)');
+console.log('\n✓ Tournament and news data import complete!');
 db.close();
