@@ -8,8 +8,10 @@ interface Match {
   match_id: number;
   radiant_team_name: string;
   radiant_team_name_cn?: string;
+  radiant_team_logo?: string;
   dire_team_name: string;
   dire_team_name_cn?: string;
+  dire_team_logo?: string;
   start_time: number;
   series_type: string;
   tournament_name: string;
@@ -159,9 +161,18 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
               下场比赛倒计时
             </p>
             <div className="flex items-center justify-between">
-              <div className="text-left">
-                <p className="font-bold text-white text-lg">{nextMatch.radiant_team_name_cn || nextMatch.radiant_team_name}</p>
-                <p className="text-xs text-slate-400">{nextMatch.radiant_team_name}</p>
+              <div className="text-left flex items-center gap-3">
+                {nextMatch.radiant_team_logo && (
+                  <img 
+                    src={nextMatch.radiant_team_logo} 
+                    alt={nextMatch.radiant_team_name}
+                    className="w-12 h-12 object-contain"
+                  />
+                )}
+                <div>
+                  <p className="font-bold text-white text-lg">{nextMatch.radiant_team_name}</p>
+                  <p className="text-xs text-slate-400">{nextMatch.radiant_team_name_cn}</p>
+                </div>
               </div>
               <div className="text-center px-6">
                 <p className="text-2xl font-bold text-red-500">VS</p>
@@ -169,9 +180,18 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                   <Countdown targetTime={nextMatch.start_time} />
                 </p>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-white text-lg">{nextMatch.dire_team_name_cn || nextMatch.dire_team_name}</p>
-                <p className="text-xs text-slate-400">{nextMatch.dire_team_name}</p>
+              <div className="text-right flex items-center gap-3">
+                <div>
+                  <p className="font-bold text-white text-lg">{nextMatch.dire_team_name}</p>
+                  <p className="text-xs text-slate-400">{nextMatch.dire_team_name_cn}</p>
+                </div>
+                {nextMatch.dire_team_logo && (
+                  <img 
+                    src={nextMatch.dire_team_logo} 
+                    alt={nextMatch.dire_team_name}
+                    className="w-12 h-12 object-contain"
+                  />
+                )}
               </div>
             </div>
             <p className="text-xs text-slate-500 mt-3">{nextMatch.tournament_name_cn || nextMatch.tournament_name || '待定赛事'} · {nextMatch.series_type}</p>

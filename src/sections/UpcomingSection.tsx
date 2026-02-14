@@ -8,8 +8,10 @@ interface Match {
   match_id: number;
   radiant_team_name: string;
   radiant_team_name_cn?: string;
+  radiant_team_logo?: string;
   dire_team_name: string;
   dire_team_name_cn?: string;
+  dire_team_logo?: string;
   start_time: number;
   series_type: string;
   tournament_name: string;
@@ -86,11 +88,12 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
 
         {upcoming.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {upcoming.slice(0, 6).map((match) => {
+          {upcoming.slice(0, 6).map((match) => {
               const radiantIsCN = isChineseTeam(match.radiant_team_name);
               const direIsCN = isChineseTeam(match.dire_team_name);
-              const radiantName = match.radiant_team_name_cn || match.radiant_team_name || '待定';
-              const direName = match.dire_team_name_cn || match.dire_team_name || '待定';
+              // 使用全名，不使用缩写
+              const radiantName = match.radiant_team_name || match.radiant_team_name_cn || '待定';
+              const direName = match.dire_team_name || match.dire_team_name_cn || '待定';
               
               return (
                 <Card key={match.id} className="border-slate-800 bg-slate-950/50 hover:border-blue-500/30 transition-all">
@@ -104,6 +107,13 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        {match.radiant_team_logo && (
+                          <img 
+                            src={match.radiant_team_logo} 
+                            alt={radiantName}
+                            className="w-8 h-8 object-contain"
+                          />
+                        )}
                         <span className={`font-medium ${radiantIsCN ? 'text-red-400' : 'text-white'}`}>
                           {radiantName}
                         </span>
@@ -117,6 +127,13 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                         <span className={`font-medium ${direIsCN ? 'text-red-400' : 'text-white'}`}>
                           {direName}
                         </span>
+                        {match.dire_team_logo && (
+                          <img 
+                            src={match.dire_team_logo} 
+                            alt={direName}
+                            className="w-8 h-8 object-contain"
+                          />
+                        )}
                       </div>
                     </div>
                     

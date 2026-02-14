@@ -13,8 +13,10 @@ interface HomeData {
     match_id: number;
     radiant_team_name: string;
     radiant_team_name_cn?: string;
+    radiant_team_logo?: string;
     dire_team_name: string;
     dire_team_name_cn?: string;
+    dire_team_logo?: string;
     start_time: number;
     series_type: string;
     tournament_name: string;
@@ -25,8 +27,10 @@ interface HomeData {
     match_id: number;
     radiant_team_name: string;
     radiant_team_name_cn?: string;
+    radiant_team_logo?: string;
     dire_team_name: string;
     dire_team_name_cn?: string;
+    dire_team_logo?: string;
     radiant_game_wins: number;
     dire_game_wins: number;
     start_time: number;
