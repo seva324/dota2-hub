@@ -1,29 +1,16 @@
 [
   {
-    "id": "news-4",
-    "title": "BLAST Slam VI小组赛：XG首战对阵Team Falcons",
-    "summary": "XG将在BLAST Slam VI小组赛首轮对阵世界排名第一的Team Falcons，比赛将于2月5日进行。",
-    "content": null,
-    "source": "Liquipedia",
-    "url": "https://liquipedia.net",
-    "published_at": 1770425341,
-    "keywords": null,
-    "category": "tournament",
-    "image": null,
-    "created_at": 1770511741
-  },
-  {
     "id": "news-2",
     "title": "电竞国家杯ENC官宣DOTA2项目，11月利雅得开战",
     "summary": "2025年1月29日，电竞国家杯官方正式宣布Dota 2将成为16个参赛项目之一。比赛将于11月2日-8日在沙特阿拉伯利雅得举办。",
     "content": null,
     "source": "直播吧",
     "url": "https://www.zhibo8.com",
-    "published_at": 1770252541,
+    "published_at": 1770779067,
     "keywords": null,
     "category": "tournament",
     "image": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   },
   {
     "id": "news-1",
@@ -32,11 +19,11 @@
     "content": null,
     "source": "17173",
     "url": "https://www.17173.com",
-    "published_at": 1770079741,
+    "published_at": 1770606267,
     "keywords": null,
     "category": "tournament",
     "image": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   },
   {
     "id": "news-3",
@@ -45,10 +32,10 @@
     "content": null,
     "source": "Valve",
     "url": "https://www.dota2.com",
-    "published_at": 1769906941,
+    "published_at": 1770433467,
     "keywords": null,
     "category": "tournament",
     "image": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   }
 ]

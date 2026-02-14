@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Liquidpedia 赛事数据抓取脚本 - 简化版
- * 添加当前正在进行的赛事
+ * Liquidpedia 赛事数据抓取脚本 - 精简版
+ * 只维护赛事信息，不插入假数据
+ * 比赛数据从 fetch-liquipedia.js 实时抓取
  */
 
 import Database from 'better-sqlite3';
@@ -84,53 +85,10 @@ const ACTIVE_TOURNAMENTS = [
   }
 ];
 
-// 添加一些即将开始的比赛（模拟数据）
-const UPCOMING_MATCHES = [
-  {
-    match_id: 9999999991,
-    radiant_team_id: 'xtreme-gaming',
-    dire_team_id: 'team-falcons',
-    radiant_team_name: 'Xtreme Gaming',
-    radiant_team_name_cn: 'XG',
-    dire_team_name: 'Team Falcons',
-    dire_team_name_cn: 'Falcons',
-    start_time: Math.floor(Date.now() / 1000) + 86400 * 2, // 2天后
-    series_type: 'BO3',
-    tournament_name: 'BLAST Slam VI',
-    tournament_name_cn: 'BLAST Slam 第六赛季',
-    status: 'scheduled'
-  },
-  {
-    match_id: 9999999992,
-    radiant_team_id: 'yakult-brother',
-    dire_team_id: 'tundra-esports',
-    radiant_team_name: 'Yakult Brother',
-    radiant_team_name_cn: 'YB',
-    dire_team_name: 'Tundra Esports',
-    dire_team_name_cn: 'Tundra',
-    start_time: Math.floor(Date.now() / 1000) + 86400 * 3, // 3天后
-    series_type: 'BO3',
-    tournament_name: 'DreamLeague Season 28',
-    tournament_name_cn: '梦幻联赛 S28',
-    status: 'scheduled'
-  },
-  {
-    match_id: 9999999993,
-    radiant_team_id: 'vici-gaming',
-    dire_team_id: 'team-spirit',
-    radiant_team_name: 'Vici Gaming',
-    radiant_team_name_cn: 'VG',
-    dire_team_name: 'Team Spirit',
-    dire_team_name_cn: 'Spirit',
-    start_time: Math.floor(Date.now() / 1000) + 86400 * 5, // 5天后
-    series_type: 'BO1',
-    tournament_name: 'BLAST Slam VI',
-    tournament_name_cn: 'BLAST Slam 第六赛季',
-    status: 'scheduled'
-  }
-];
+// 注意：不插入假比赛数据！比赛数据从 fetch-liquipedia.js 实时抓取
+// const UPCOMING_MATCHES = []; // 已删除假数据
 
-// 添加新闻数据
+// 新闻数据（只保留真实新闻，删除假新闻）
 const NEWS_ITEMS = [
   {
     id: 'news-1',
@@ -158,16 +116,8 @@ const NEWS_ITEMS = [
     url: 'https://www.dota2.com',
     published_at: Math.floor(Date.now() / 1000) - 86400 * 7,
     category: 'tournament'
-  },
-  {
-    id: 'news-4',
-    title: 'BLAST Slam VI小组赛：XG首战对阵Team Falcons',
-    summary: 'XG将在BLAST Slam VI小组赛首轮对阵世界排名第一的Team Falcons，比赛将于2月5日进行。',
-    source: 'Liquipedia',
-    url: 'https://liquipedia.net',
-    published_at: Math.floor(Date.now() / 1000) - 86400,
-    category: 'tournament'
   }
+  // 已删除假新闻 news-4 "BLAST Slam VI小组赛：XG首战对阵Team Falcons"
 ];
 
 // 插入赛事数据
@@ -185,22 +135,19 @@ for (const t of ACTIVE_TOURNAMENTS) {
 }
 console.log(`Inserted ${ACTIVE_TOURNAMENTS.length} tournaments`);
 
-// 插入即将开始的比赛
-const insertMatch = db.prepare(`
-  INSERT OR REPLACE INTO matches 
-  (match_id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name,
-   start_time, series_type, status, radiant_score, dire_score, radiant_game_wins, dire_game_wins)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
-`);
+// 不再插入假比赛数据
+// 比赛数据从 fetch-liquipedia.js 实时抓取
+console.log('Skipped fake match data (using real data from fetch-liquipedia.js)');
 
-for (const m of UPCOMING_MATCHES) {
-  insertMatch.run(
-    m.match_id, m.radiant_team_id, m.dire_team_id,
-    m.radiant_team_name, m.dire_team_name,
-    m.start_time, m.series_type, m.status
-  );
-}
-console.log(`Inserted ${UPCOMING_MATCHES.length} upcoming matches`);
+// 删除数据库中的假比赛数据（match_id > 9000000000）
+const deleteFake = db.prepare(`DELETE FROM matches WHERE match_id > 9000000000`);
+const deleted = deleteFake.run();
+console.log(`Deleted ${deleted.changes} fake matches from database`);
+
+// 删除假新闻
+const deleteFakeNews = db.prepare(`DELETE FROM news WHERE id = 'news-4'`);
+const deletedNews = deleteFakeNews.run();
+console.log(`Deleted ${deletedNews.changes} fake news items`);
 
 // 插入新闻数据
 const insertNews = db.prepare(`
@@ -214,5 +161,5 @@ for (const n of NEWS_ITEMS) {
 }
 console.log(`Inserted ${NEWS_ITEMS.length} news items`);
 
-console.log('\n✓ Liquidpedia data import complete!');
+console.log('\n✓ Liquidpedia data import complete! (No fake data)');
 db.close();

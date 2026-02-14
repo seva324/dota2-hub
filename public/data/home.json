@@ -1,8 +1,8 @@
 {
   "upcoming": [
     {
-      "id": 2617,
-      "match_id": "lp_1771248600_27",
+      "id": 2621,
+      "match_id": "lp_1771248600_24",
       "radiant_team_id": "unknown",
       "dire_team_id": "xtreme-gaming",
       "radiant_team_name": "Team Spirit",
@@ -21,14 +21,14 @@
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770996122,
+      "created_at": 1771038382,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     },
     {
-      "id": 2618,
-      "match_id": "lp_1771326000_37",
+      "id": 2622,
+      "match_id": "lp_1771326000_34",
       "radiant_team_id": "unknown",
       "dire_team_id": "yakult-brothers",
       "radiant_team_name": "OG",
@@ -47,14 +47,14 @@
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770996122,
+      "created_at": 1771038382,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     },
     {
-      "id": 2619,
-      "match_id": "lp_1771344000_45",
+      "id": 2623,
+      "match_id": "lp_1771344000_42",
       "radiant_team_id": "unknown",
       "dire_team_id": "yakult-brothers",
       "radiant_team_name": "Team Liquid",
@@ -73,14 +73,14 @@
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770996122,
+      "created_at": 1771038382,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
     },
     {
-      "id": 2620,
-      "match_id": "lp_1771353000_47",
+      "id": 2624,
+      "match_id": "lp_1771353000_44",
       "radiant_team_id": "unknown",
       "dire_team_id": "xtreme-gaming",
       "radiant_team_name": "Tundra Esports",
@@ -99,7 +99,7 @@
       "status": "scheduled",
       "lobby_type": 7,
       "game_mode": null,
-      "created_at": 1770996122,
+      "created_at": 1771038382,
       "tournament_name": null,
       "tournament_name_cn": null,
       "tournament_tier": null
@@ -119,7 +119,7 @@
       "location": "Hamburg, Germany",
       "format": "Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs",
       "logo_url": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     },
     {
       "id": "esl-one-birmingham-2025",
@@ -133,7 +133,7 @@
       "location": "Birmingham, UK",
       "format": "Group Stage + Playoffs",
       "logo_url": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     },
     {
       "id": "pgl-wallachia-7",
@@ -147,7 +147,7 @@
       "location": "Bucharest, Romania",
       "format": "Swiss-system Group Stage (Bo3) + Double-elimination Playoffs",
       "logo_url": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     },
     {
       "id": "dreamleague-28",
@@ -161,7 +161,7 @@
       "location": "Online (Europe)",
       "format": "Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs",
       "logo_url": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     },
     {
       "id": "blast-slam-6",
@@ -175,23 +175,10 @@
       "location": "Malta",
       "format": "Round-robin Group Stage + Single-elimination Playoffs",
       "logo_url": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     }
   ],
   "news": [
-    {
-      "id": "news-4",
-      "title": "BLAST Slam VI小组赛：XG首战对阵Team Falcons",
-      "summary": "XG将在BLAST Slam VI小组赛首轮对阵世界排名第一的Team Falcons，比赛将于2月5日进行。",
-      "content": null,
-      "source": "Liquipedia",
-      "url": "https://liquipedia.net",
-      "published_at": 1770425341,
-      "keywords": null,
-      "category": "tournament",
-      "image": null,
-      "created_at": 1770511741
-    },
     {
       "id": "news-2",
       "title": "电竞国家杯ENC官宣DOTA2项目，11月利雅得开战",
@@ -199,11 +186,11 @@
       "content": null,
       "source": "直播吧",
       "url": "https://www.zhibo8.com",
-      "published_at": 1770252541,
+      "published_at": 1770779067,
       "keywords": null,
       "category": "tournament",
       "image": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     },
     {
       "id": "news-1",
@@ -212,11 +199,11 @@
       "content": null,
       "source": "17173",
       "url": "https://www.17173.com",
-      "published_at": 1770079741,
+      "published_at": 1770606267,
       "keywords": null,
       "category": "tournament",
       "image": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     },
     {
       "id": "news-3",
@@ -225,12 +212,12 @@
       "content": null,
       "source": "Valve",
       "url": "https://www.dota2.com",
-      "published_at": 1769906941,
+      "published_at": 1770433467,
       "keywords": null,
       "category": "tournament",
       "image": null,
-      "created_at": 1770511741
+      "created_at": 1771038267
     }
   ],
-  "lastUpdated": "2026-02-13T15:24:53.574Z"
+  "lastUpdated": "2026-02-14T03:06:23.011Z"
 }

@@ -11,7 +11,7 @@
     "location": "Hamburg, Germany",
     "format": "Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs",
     "logo_url": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   },
   {
     "id": "esl-one-birmingham-2025",
@@ -25,7 +25,7 @@
     "location": "Birmingham, UK",
     "format": "Group Stage + Playoffs",
     "logo_url": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   },
   {
     "id": "pgl-wallachia-7",
@@ -39,7 +39,7 @@
     "location": "Bucharest, Romania",
     "format": "Swiss-system Group Stage (Bo3) + Double-elimination Playoffs",
     "logo_url": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   },
   {
     "id": "dreamleague-28",
@@ -53,7 +53,7 @@
     "location": "Online (Europe)",
     "format": "Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs",
     "logo_url": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   },
   {
     "id": "blast-slam-6",
@@ -67,6 +67,6 @@
     "location": "Malta",
     "format": "Round-robin Group Stage + Single-elimination Playoffs",
     "logo_url": null,
-    "created_at": 1770511741
+    "created_at": 1771038267
   }
 ]
