@@ -20,10 +20,12 @@ if (!fs.existsSync(outputDir)) {
 
 const db = new Database(dbPath);
 
-// 导出比赛数据 - 直接用 matches 表里的字段
+// 导出比赛数据
 const matches = db.prepare(`
   SELECT m.*, 
-         t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
+         COALESCE(m.tournament_name, t.name) as tournament_name, 
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+         COALESCE(m.tier, t.tier) as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   ORDER BY m.start_time DESC
@@ -37,7 +39,9 @@ console.log(`Exported ${matches.length} matches`);
 const now = Math.floor(Date.now() / 1000);
 const upcomingMatches = db.prepare(`
   SELECT m.*, 
-         t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
+         COALESCE(m.tournament_name, t.name) as tournament_name, 
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+         COALESCE(m.tier, t.tier) as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time > ? 
@@ -52,7 +56,9 @@ console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
 // 导出中国战队近期比赛
 const cnMatches = db.prepare(`
   SELECT m.*, 
-         t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
+         COALESCE(m.tournament_name, t.name) as tournament_name, 
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+         COALESCE(m.tier, t.tier) as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time < ?

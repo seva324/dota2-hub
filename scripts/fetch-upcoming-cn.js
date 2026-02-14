@@ -186,12 +186,36 @@ async function main() {
     const insertMatch = db.prepare(`
       INSERT OR REPLACE INTO matches 
       (match_id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name,
-       start_time, series_type, status, radiant_score, dire_score, radiant_game_wins, dire_game_wins)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)
+       start_time, series_type, status, radiant_score, dire_score, radiant_game_wins, dire_game_wins,
+       tournament_name, tournament_name_cn)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?)
     `);
     
+    // 赛事名称映射（英文名 -> 中文名）
+    const tournamentNames = {
+      'DreamLeague': '梦幻联赛',
+      'PGL Wallachia': 'PGL瓦拉几亚',
+      'ESL One': 'ESL One',
+      'BLAST Slam': 'BLAST Slam',
+      'The International': '国际邀请赛',
+      'EPL': 'EPL',
+      'CCT': 'CCT',
+      'Fissure': 'Fissure',
+    };
+    
+    function getTournamentCN(name) {
+      if (!name) return null;
+      for (const [en, cn] of Object.entries(tournamentNames)) {
+        if (name.includes(en)) {
+          return name.replace(en, cn);
+        }
+      }
+      return name;
+    }
+    
     for (const m of matches) {
-      const id = `upcoming_${Date.now()}_${savedCount}`;
+      const id = `upcoming_${m.matchTime}_${m.team1Info.id}_${m.team2Info.id}`;
+      const tournamentCN = getTournamentCN(m.tournament);
       
       try {
         insertMatch.run(
@@ -202,7 +226,9 @@ async function main() {
           m.team2,
           m.matchTime,
           'BO3',
-          'scheduled'
+          'scheduled',
+          m.tournament || null,
+          tournamentCN
         );
         savedCount++;
       } catch (error) {

@@ -71,6 +71,8 @@ db.exec(`
     series_type TEXT,
     league_id INTEGER,
     tournament_id TEXT,
+    tournament_name TEXT,
+    tournament_name_cn TEXT,
     status TEXT DEFAULT 'upcoming',
     lobby_type INTEGER DEFAULT 0,
     game_mode INTEGER,

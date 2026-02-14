@@ -25,11 +25,17 @@ jobs:
     - name: Initialize database
       run: node scripts/init-db.js
       
+    - name: Fetch team logos
+      run: node scripts/fetch-team-logos.js
+      
     - name: Fetch latest tournament data
       run: node scripts/fetch-tournaments.js
       
     - name: Fetch upcoming CN matches
       run: node scripts/fetch-upcoming-cn.js
+      
+    - name: Export static data
+      run: node scripts/export-static-data.js
       
     - name: Build project
       run: npm run build
