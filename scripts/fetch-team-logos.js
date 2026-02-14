@@ -84,8 +84,27 @@ async function downloadImage(url, filepath) {
   });
 }
 
-async function fetchTeamLogo(teamName) {
-  const pageName = teamName.replace(/\s+/g, '_');
+async function fetchTeamLogo(teamName, teamId) {
+  // 特殊战队名称映射
+  const pageNameMap = {
+    'yakult brothers': 'Yakult_Brothers',
+    'yakult-brothers': 'Yakult_Brothers',
+    'yb': 'Yakult_Brothers',
+    'xtreme gaming': 'Xtreme_Gaming',
+    'xtreme-gaming': 'Xtreme_Gaming',
+    'xg': 'Xtreme_Gaming',
+    'vici gaming': 'Vici_Gaming',
+    'vici-gaming': 'Vici_Gaming',
+    'vg': 'Vici_Gaming',
+    'lgd gaming': 'PSG.LGD',
+    'psg.lgd': 'PSG.LGD',
+    'azure ray': 'Azure_Ray',
+    'azure-ray': 'Azure_Ray',
+    'ar': 'Azure_Ray',
+  };
+  
+  const lowerName = teamName.toLowerCase();
+  const pageName = (pageNameMap[lowerName] || pageNameMap[teamId] || teamName).replace(/\s+/g, '_');
   const apiUrl = `https://liquipedia.net/dota2/api.php?action=parse&page=${pageName}&format=json&prop=images|text`;
   
   try {
@@ -243,31 +262,31 @@ async function main() {
           updateTeam.run(logoUrl, teamId);
           teamLogoCache[teamId] = logoUrl;
         }
-      } else {
-        console.log(`  No logo found`);
-        // 使用通用 ID 尝试
-        const genericId = getTeamIdFromName(team.name);
-        if (genericId !== teamId) {
-          console.log(`  Trying generic ID: ${genericId}`);
-          const genericLogo = await fetchTeamLogo(genericId.replace(/-/g, ' '));
-          if (genericLogo) {
-            const ext = genericLogo.includes('.png') ? '.png' : '.svg';
-            const localPath = path.join(logosDir, `${teamId}${ext}`);
-            try {
-              await downloadImage(genericLogo, localPath);
-              const publicUrl = `/dota2-hub/images/teams/${teamId}${ext}`;
-              updateTeam.run(publicUrl, teamId);
-              teamLogoCache[teamId] = publicUrl;
-            } catch (e) {
-              updateTeam.run(genericLogo, teamId);
-              teamLogoCache[teamId] = genericLogo;
+        } else {
+          console.log(`  No logo found`);
+          // 使用通用 ID 尝试
+          const genericId = getTeamIdFromName(team.name);
+          if (genericId !== teamId) {
+            console.log(`  Trying generic ID: ${genericId}`);
+            const genericLogo = await fetchTeamLogo(genericId.replace(/-/g, ' '), genericId);
+            if (genericLogo) {
+              const ext = genericLogo.includes('.png') ? '.png' : '.svg';
+              const localPath = path.join(logosDir, `${teamId}${ext}`);
+              try {
+                await downloadImage(genericLogo, localPath);
+                const publicUrl = `/dota2-hub/images/teams/${teamId}${ext}`;
+                updateTeam.run(publicUrl, teamId);
+                teamLogoCache[teamId] = publicUrl;
+              } catch (e) {
+                updateTeam.run(genericLogo, teamId);
+                teamLogoCache[teamId] = genericLogo;
+              }
             }
           }
         }
+      } catch (error) {
+        console.error(`  Error: ${error.message}`);
       }
-    } catch (error) {
-      console.error(`  Error: ${error.message}`);
-    }
     
     await new Promise(resolve => setTimeout(resolve, 500));
   }
