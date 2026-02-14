@@ -68,12 +68,15 @@ jobs:
 
       - name: Export Data
         run: node scripts/export-static-data.js
-
+        
       - name: Copy data to dist
         run: |
-          mkdir -p dist/data
-          cp public/data/* dist/data/ 2>/dev/null || true
+          mkdir -p dist/data dist/images
+          cp -r public/data/* dist/data/ 2>/dev/null || true
           cp -r public/images dist/ 2>/dev/null || true
+          
+      - name: List dist contents for debug
+        run: ls -la dist/data/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
