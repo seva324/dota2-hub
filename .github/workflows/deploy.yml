@@ -53,9 +53,6 @@ jobs:
       - name: Fetch Tournament Data
         run: node scripts/fetch-tournaments.js
 
-      - name: Fetch Upcoming CN Matches
-        run: node scripts/fetch-upcoming-cn.js
-
       - name: Fetch Data from OpenDota
         run: node scripts/fetch-opendota.js
         env:
@@ -65,6 +62,9 @@ jobs:
       - name: Fetch Match Data from Liquipedia
         run: node scripts/fetch-liquipedia.js
         continue-on-error: true
+
+      - name: Fetch Upcoming CN Matches
+        run: node scripts/fetch-upcoming-cn.js
 
       - name: Export Data
         run: node scripts/export-static-data.js
