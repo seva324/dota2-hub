@@ -85,11 +85,11 @@ async function downloadImage(url, filepath) {
 }
 
 async function fetchTeamLogo(teamName, teamId) {
-  // 特殊战队名称映射
+  // 特殊战队名称映射 - 队名到 Liquipedia 页面
   const pageNameMap = {
-    'yakult brothers': 'Yakult_Brothers',
-    'yakult-brothers': 'Yakult_Brothers',
-    'yb': 'Yakult_Brothers',
+    'yakult brothers': 'Yakult_Brothers_Dota2',
+    'yakult-brothers': 'Yakult_Brothers_Dota2',
+    'yb': 'Yakult_Brothers_Dota2',
     'xtreme gaming': 'Xtreme_Gaming',
     'xtreme-gaming': 'Xtreme_Gaming',
     'xg': 'Xtreme_Gaming',
@@ -101,7 +101,37 @@ async function fetchTeamLogo(teamName, teamId) {
     'azure ray': 'Azure_Ray',
     'azure-ray': 'Azure_Ray',
     'ar': 'Azure_Ray',
+    'og': 'OG',
+    'team liquid': 'Team_Liquid',
+    'team-liquid': 'Team_Liquid',
+    'team spirit': 'Team_Spirit',
+    'team-spirit': 'Team_Spirit',
+    'tundra esports': 'Tundra_Esports',
+    'tundra-esports': 'Tundra_Esports',
+    'aurora gaming': 'Aurora_Gaming',
+    'aurora-gaming': 'Aurora_Gaming',
   };
+  
+  // 已知战队的直接 logo URL 映射（备用方案）
+  const directLogoUrls = {
+    'yakult-brothers': 'https://liquipedia.net/commons/images/thumb/a/ac/Yakult_Brothers_allmode.png/128px-Yakult_Brothers_allmode.png',
+    'yakult_brothers': 'https://liquipedia.net/commons/images/thumb/a/ac/Yakult_Brothers_allmode.png/128px-Yakult_Brothers_allmode.png',
+    'yb': 'https://liquipedia.net/commons/images/thumb/a/ac/Yakult_Brothers_allmode.png/128px-Yakult_Brothers_allmode.png',
+    'og': 'https://liquipedia.net/commons/images/thumb/2/2f/OG_Logo.png/128px-OG_Logo.png',
+    'team-liquid': 'https://liquipedia.net/commons/images/thumb/f/fc/Team_Liquid_allmode.png/128px-Team_Liquid_allmode.png',
+    'team-spirit': 'https://liquipedia.net/commons/images/thumb/5/56/Team_Spirit_allmode.png/128px-Team_Spirit_allmode.png',
+    'tundra-esports': 'https://liquipedia.net/commons/images/thumb/7/7d/Tundra_Esports_2020_allmode_full.png/128px-Tundra_Esports_2020_allmode_full.png',
+    'aurora-gaming': 'https://liquipedia.net/commons/images/thumb/1/18/Aurora_Gaming_2023_allmode.png/128px-Aurora_Gaming_2023_allmode.png',
+    'xtreme-gaming': 'https://liquipedia.net/commons/images/thumb/7/72/Xtreme_Gaming_%28China%29_allmode.png/128px-Xtreme_Gaming_%28China%29_allmode.png',
+  };
+  
+  // 首先检查直接 URL
+  if (directLogoUrls[teamId]) {
+    return directLogoUrls[teamId];
+  }
+  if (directLogoUrls[teamName.toLowerCase()]) {
+    return directLogoUrls[teamName.toLowerCase()];
+  }
   
   const lowerName = teamName.toLowerCase();
   const pageName = (pageNameMap[lowerName] || pageNameMap[teamId] || teamName).replace(/\s+/g, '_');
@@ -291,21 +321,31 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   
-  // 更新所有比赛的队伍 logo
+  // 更新所有比赛的队伍 logo - 基于本地文件
   console.log('\nUpdating match team logos...');
   
-  const allTeams = db.prepare('SELECT id, logo_url FROM teams WHERE logo_url IS NOT NULL').all();
-  const teamLogoMap = {};
-  for (const t of allTeams) {
-    teamLogoMap[t.id] = t.logo_url;
-  }
+  // 获取所有比赛的队伍
+  const matches = db.prepare('SELECT id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name FROM matches').all();
   
-  const matches = db.prepare('SELECT id, radiant_team_id, dire_team_id FROM matches').all();
+  // 已知战队的直接 logo URL 映射（与上面保持一致）
+  const teamLogoUrls = {
+    'yakult-brothers': '/dota2-hub/images/teams/yakult-brothers.png',
+    'og': '/dota2-hub/images/teams/og.png',
+    'team-liquid': '/dota2-hub/images/teams/team-liquid.png',
+    'team-spirit': '/dota2-hub/images/teams/team-spirit.png',
+    'tundra-esports': '/dota2-hub/images/teams/tundra-esports.png',
+    'aurora-gaming': '/dota2-hub/images/teams/aurora-gaming.png',
+    'xtreme-gaming': '/dota2-hub/images/teams/xtreme-gaming.png',
+  };
+  
   let updatedCount = 0;
   
   for (const m of matches) {
-    const radiantLogo = teamLogoMap[m.radiant_team_id] || teamLogoMap[getTeamIdFromName(m.radiant_team_id)];
-    const direLogo = teamLogoMap[m.dire_team_id] || teamLogoMap[getTeamIdFromName(m.dire_team_id)];
+    const radiantId = m.radiant_team_id?.toLowerCase();
+    const direId = m.dire_team_id?.toLowerCase();
+    
+    const radiantLogo = teamLogoUrls[radiantId];
+    const direLogo = teamLogoUrls[direId];
     
     if (radiantLogo || direLogo) {
       updateMatchTeamLogos.run(radiantLogo || null, direLogo || null, m.radiant_team_id, m.dire_team_id);
