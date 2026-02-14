@@ -112,6 +112,10 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                             src={match.radiant_team_logo} 
                             alt={radiantName}
                             className="w-8 h-8 object-contain"
+                            style={{
+                              filter: radiantName.toLowerCase().includes('tundra') || radiantName.toLowerCase().includes('spirit') 
+                                ? 'invert(1) brightness(2)' : 'none'
+                            }}
                           />
                         )}
                         <span className={`font-medium ${radiantIsCN ? 'text-red-400' : 'text-white'}`}>
@@ -132,6 +136,10 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                             src={match.dire_team_logo} 
                             alt={direName}
                             className="w-8 h-8 object-contain"
+                            style={{
+                              filter: direName.toLowerCase().includes('tundra') || direName.toLowerCase().includes('spirit') 
+                                ? 'invert(1) brightness(2)' : 'none'
+                            }}
                           />
                         )}
                       </div>

@@ -167,6 +167,10 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                     src={nextMatch.radiant_team_logo} 
                     alt={nextMatch.radiant_team_name}
                     className="w-12 h-12 object-contain"
+                    style={{
+                      filter: nextMatch.radiant_team_name?.toLowerCase().includes('tundra') || nextMatch.radiant_team_name?.toLowerCase().includes('spirit') 
+                        ? 'invert(1) brightness(2)' : 'none'
+                    }}
                   />
                 )}
                 <div>
@@ -190,6 +194,10 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                     src={nextMatch.dire_team_logo} 
                     alt={nextMatch.dire_team_name}
                     className="w-12 h-12 object-contain"
+                    style={{
+                      filter: nextMatch.dire_team_name?.toLowerCase().includes('tundra') || nextMatch.dire_team_name?.toLowerCase().includes('spirit') 
+                        ? 'invert(1) brightness(2)' : 'none'
+                    }}
                   />
                 )}
               </div>

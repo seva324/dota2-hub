@@ -119,8 +119,8 @@ async function fetchTeamLogo(teamName, teamId) {
     'yb': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
     'og': 'https://liquipedia.net/commons/images/2/2f/OG_Logo.png',
     'team-liquid': 'https://liquipedia.net/commons/images/f/fc/Team_Liquid_allmode.png',
-    'team-spirit': 'https://liquipedia.net/commons/images/c/c6/Team_Spirit_2023_allmode.png',
-    'spirit': 'https://liquipedia.net/commons/images/c/c6/Team_Spirit_2023_allmode.png',
+    'team-spirit': 'https://liquipedia.net/commons/images/f/f2/Team_Spirit_2022_full_lightmode.png',
+    'spirit': 'https://liquipedia.net/commons/images/f/f2/Team_Spirit_2022_full_lightmode.png',
     'tundra-esports': 'https://liquipedia.net/commons/images/8/85/Tundra_Esports_2020_full_lightmode.png',
     'tundra': 'https://liquipedia.net/commons/images/8/85/Tundra_Esports_2020_full_lightmode.png',
     'aurora-gaming': 'https://liquipedia.net/commons/images/1/18/Aurora_Gaming_2023_allmode.png',
@@ -334,6 +334,9 @@ async function main() {
     'lgd-gaming': '/dota2-hub/images/teams/lgd-gaming.png',
     'azure-ray': '/dota2-hub/images/teams/azure-ray.png',
   };
+  
+  // 需要反色的战队（黑色logo）
+  const invertLogoTeams = ['tundra-esports', 'tundra', 'team-spirit', 'spirit'];
   
   let updatedCount = 0;
   
