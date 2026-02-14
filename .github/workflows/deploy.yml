@@ -68,7 +68,9 @@ jobs:
           mkdir -p dist/data dist/images
           ls -la public/data/
           cp -r public/data/* dist/data/
-          ls -la dist/data/
+          ls -la public/images/
+          cp -r public/images/* dist/images/
+          ls -la dist/images/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
