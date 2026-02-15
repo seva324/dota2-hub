@@ -61,8 +61,39 @@ const upcomingMatches = db.prepare(`
   LIMIT 10
 `).all([now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
 
-fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(upcomingMatches, null, 2));
-console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
+// 获取所有未来比赛（不限战队）用于去重
+const allUpcomingMatches = db.prepare(`
+  SELECT m.*, 
+         COALESCE(m.tournament_name, t.name) as tournament_name, 
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+         t.tier as tournament_tier
+  FROM matches m
+  LEFT JOIN tournaments t ON m.tournament_id = t.id
+  WHERE m.start_time > ?
+  ORDER BY m.start_time ASC
+  LIMIT 20
+`).all(now);
+
+// 去重函数 - 优先保留有 tournament 信息的
+function dedupMatches(matches) {
+  const seen = new Map();
+  const sorted = [...matches].sort((a, b) => {
+    const aHasT = a.tournament_name ? 1 : 0;
+    const bHasT = b.tournament_name ? 1 : 0;
+    return bHasT - aHasT;
+  });
+  for (const m of sorted) {
+    if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
+    const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
+    if (!seen.has(key)) seen.set(key, m);
+  }
+  return Array.from(seen.values()).sort((a, b) => a.start_time - b.start_time);
+}
+
+// 合并去重后写入 upcoming.json
+const dedupedUpcoming = dedupMatches([...allUpcomingMatches, ...upcomingMatches]);
+fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(dedupedUpcoming, null, 2));
+console.log(`Exported ${dedupedUpcoming.length} upcoming matches (deduped)`);
 
 // 导出中国战队近期比赛
 const cnMatches = db.prepare(`
@@ -134,44 +165,6 @@ fs.writeFileSync(path.join(outputDir, 'news.json'), JSON.stringify(news, null, 2
 console.log(`Exported ${news.length} news items`);
 
 // 导出首页数据（合并所有数据）
-// 去重：只保留有 tournament 信息的比赛
-function dedupMatches(matches) {
-  const seen = new Map();
-  
-  // 按 tournament_name 排序，有值的排前面
-  const sorted = [...matches].sort((a, b) => {
-    const aHasT = a.tournament_name ? 1 : 0;
-    const bHasT = b.tournament_name ? 1 : 0;
-    return bHasT - aHasT; // 有 tournament 的排前面
-  });
-  
-  for (const m of sorted) {
-    if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
-    const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
-    if (!seen.has(key)) {
-      seen.set(key, m);
-    }
-  }
-  
-  return Array.from(seen.values()).sort((a, b) => a.start_time - b.start_time);
-}
-
-// 获取所有未来比赛（不限战队）
-const allUpcomingMatches = db.prepare(`
-  SELECT m.*, 
-         COALESCE(m.tournament_name, t.name) as tournament_name, 
-         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
-         t.tier as tournament_tier
-  FROM matches m
-  LEFT JOIN tournaments t ON m.tournament_id = t.id
-  WHERE m.start_time > ?
-  ORDER BY m.start_time ASC
-  LIMIT 20
-`).all(now);
-
-// 合并去重
-const dedupedUpcoming = dedupMatches([...allUpcomingMatches, ...upcomingMatches]);
-
 const homeData = {
   upcoming: dedupedUpcoming,
   cnMatches,
