@@ -539,6 +539,11 @@ async function main() {
   
   console.log(`找到 ${tournaments.length} 个进行中/即将开始的赛事\n`);
   
+  // 清空旧比赛数据，避免脏数据累积
+  console.log('清空旧比赛数据...');
+  db.exec('DELETE FROM matches');
+  console.log('旧数据已清除\n');
+  
   const insertMatch = db.prepare(`
     INSERT OR REPLACE INTO matches 
     (match_id, radiant_team_name, dire_team_name, radiant_score, dire_score, 
@@ -572,7 +577,7 @@ async function main() {
           m.dire_score,
           m.start_time,
           m.series_type,
-          m.tournament_id,
+          t.id,  // 使用数据库中的 tournament id
           t.name_cn || t.name,
           m.status,
           m.stage,
