@@ -465,7 +465,12 @@ function getLiquipediaPage(tournament) {
     'blast-slam-7': 'BLAST/Slam/7',
     'esl-one': 'ESL_One',
     'the-international': 'The_International',
-    'dreamleague': 'DreamLeague',
+    'pgl-wallachia': 'PGL_Wallachia/7',
+    'cct-season': 'CCT/Season_2',
+    'epl-world': 'EPL/World_Series/12',
+    'european_pro': 'European_Pro_League/Season_34',
+    'cringe_station': 'Cringe_Station',
+    'lunar_snake': 'Lunar_Snake/6',
   };
   
   const idLower = id.toLowerCase();
@@ -473,6 +478,12 @@ function getLiquipediaPage(tournament) {
     if (idLower.includes(key)) {
       return page;
     }
+  }
+  
+  // 尝试从ID中提取 DreamLeague 赛季号
+  const dlMatch = idLower.match(/dreamleague-(\d+)/);
+  if (dlMatch) {
+    return `DreamLeague/${dlMatch[1]}`;
   }
   
   // 尝试从名称推断
@@ -539,10 +550,10 @@ async function main() {
   
   console.log(`找到 ${tournaments.length} 个进行中/即将开始的赛事\n`);
   
-  // 清空旧比赛数据，避免脏数据累积
-  console.log('清空旧比赛数据...');
-  db.exec('DELETE FROM matches');
-  console.log('旧数据已清除\n');
+  // 只清空 Liquipedia 抓取的赛事比赛（避免删除其他来源的数据）
+  console.log('清空旧赛事比赛数据...');
+  db.exec("DELETE FROM matches WHERE match_id LIKE 'lp_%' OR match_id LIKE 'lp_table_%'");
+  console.log('旧赛事数据已清除\n');
   
   const insertMatch = db.prepare(`
     INSERT OR REPLACE INTO matches 
