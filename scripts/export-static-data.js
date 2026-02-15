@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const outputDir = path.join(__dirname, '..', 'public', 'data');
 
-// 目标战队
+// 目标战队 (仅用于首页推荐)
 const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brothers', 'vici-gaming'];
 const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
 
@@ -123,8 +123,49 @@ fs.writeFileSync(path.join(outputDir, 'news.json'), JSON.stringify(news, null, 2
 console.log(`Exported ${news.length} news items`);
 
 // 导出首页数据（合并所有数据）
+// 去重：合并 Liquipedia 和 CN upcoming 的比赛，保留信息更全的
+function mergeAndDedupMatches(allMatches, upcomingOnly) {
+  const seen = new Map(); // key: start_time_radiant_dire -> match
+  
+  // 先处理所有比赛（包含 tournament 信息）
+  for (const m of allMatches) {
+    if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
+    const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
+    if (!seen.has(key)) {
+      seen.set(key, m);
+    }
+  }
+  
+  // 再处理只有时间的比赛
+  for (const m of upcomingOnly) {
+    if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
+    const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
+    if (!seen.has(key)) {
+      seen.set(key, m);
+    }
+  }
+  
+  return Array.from(seen.values()).sort((a, b) => a.start_time - b.start_time);
+}
+
+// 获取所有未来比赛（不限战队）
+const allUpcomingMatches = db.prepare(`
+  SELECT m.*, 
+         COALESCE(m.tournament_name, t.name) as tournament_name, 
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+         t.tier as tournament_tier
+  FROM matches m
+  LEFT JOIN tournaments t ON m.tournament_id = t.id
+  WHERE m.start_time > ?
+  ORDER BY m.start_time ASC
+  LIMIT 20
+`).all(now);
+
+// 合并去重
+const dedupedUpcoming = mergeAndDedupMatches(allUpcomingMatches, upcomingMatches);
+
 const homeData = {
-  upcoming: upcomingMatches,
+  upcoming: dedupedUpcoming,
   cnMatches,
   tournaments,
   matchesByTournament,
