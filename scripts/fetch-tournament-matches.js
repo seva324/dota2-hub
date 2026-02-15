@@ -520,13 +520,16 @@ async function fetchTournamentMatches(tournament) {
   }
   
   const url = `https://liquipedia.net/dota2/api.php?action=parse&page=${pageName}&format=json&prop=text`;
+  console.log(`  正在获取: ${url}`);
   
   try {
     const html = await fetchWithGzip(url);
+    console.log(`  获取到 HTML 长度: ${html.length}`);
+    
     const { stages, matches } = parseTournamentPage(html, tournament.id);
     const filteredMatches = filterMatches(matches);
     
-    console.log(`  找到 ${filteredMatches.length} 场比赛 (${stages.join(', ')})`);
+    console.log(`  解析到 ${filteredMatches.length} 场比赛 (${stages.join(', ')})`);
     return { stages, matches: filteredMatches };
   } catch (error) {
     console.error(`  错误: ${error.message}`);
@@ -550,10 +553,10 @@ async function main() {
   
   console.log(`找到 ${tournaments.length} 个进行中/即将开始的赛事\n`);
   
-  // 只清空 Liquipedia 抓取的赛事比赛（避免删除其他来源的数据）
-  console.log('清空旧赛事比赛数据...');
-  db.exec("DELETE FROM matches WHERE match_id LIKE 'lp_%' OR match_id LIKE 'lp_table_%'");
-  console.log('旧赛事数据已清除\n');
+  // 清空所有比赛数据
+  console.log('清空所有比赛数据...');
+  db.exec('DELETE FROM matches');
+  console.log('所有比赛数据已清除\n');
   
   const insertMatch = db.prepare(`
     INSERT OR REPLACE INTO matches 
