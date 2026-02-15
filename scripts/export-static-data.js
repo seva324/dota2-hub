@@ -87,22 +87,34 @@ console.log(`Exported ${tournaments.length} tournaments`);
 // 按赛事分组
 const matchesByTournament = {};
 for (const t of tournaments) {
-  // 匹配策略：1) tournament_id 匹配 2) tournament_name 包含赛事名 3) 不区分大小写
-  const tournamentNameLower = t.name.toLowerCase().replace(/\s+/g, '');
-  const tournamentIdLower = t.id.toLowerCase();
+  // 匹配策略：不区分大小写，支持多种格式
+  // tournament_id 可能是 "dreamleague-28" 或 "DreamLeague S28 - February 18-A" 等
+  const tNameLower = t.name.toLowerCase();
+  const tIdLower = t.id.toLowerCase();
   
-  // 提取赛事关键词用于匹配 (如 "dreamleague-28" -> "dreamleague")
-  const tournamentKey = tournamentIdLower.split('-')[0];
+  // 提取关键词: "dreamleague-28" -> "dreamleague", "DreamLeague S28" -> "dreamleague"
+  const keywords = [];
+  keywords.push(tIdLower);
+  keywords.push(tNameLower.replace(/\s+/g, ''));
+  // 从 name 提取主要关键词: "DreamLeague S28" -> "dreamleague"
+  const mainKeyword = tNameLower.replace(/s\d+.*$/, '').replace(/\s+/g, '').trim();
+  if (mainKeyword) keywords.push(mainKeyword);
   
-  const matches = db.prepare(`
-    SELECT * FROM matches 
-    WHERE tournament_id = ? 
-       OR LOWER(tournament_id) LIKE ?
-       OR LOWER(tournament_name) LIKE ?
-       OR LOWER(tournament_name) LIKE ?
-    ORDER BY start_time DESC
-    LIMIT 20
-  `).all(t.id, `%${tournamentIdLower}%`, `%${tournamentNameLower}%`, `%${tournamentKey}%`);
+  // 构建 OR 条件
+  const conditions = [];
+  const params = [];
+  for (const kw of keywords) {
+    if (kw.length > 2) {
+      conditions.push('(LOWER(tournament_id) LIKE ? OR LOWER(tournament_name) LIKE ?)');
+      params.push(`%${kw}%`, `%${kw}%`);
+    }
+  }
+  
+  let matches = [];
+  if (conditions.length > 0) {
+    const sql = `SELECT * FROM matches WHERE ${conditions.join(' OR ')} ORDER BY start_time DESC LIMIT 20`;
+    matches = db.prepare(sql).all(...params);
+  }
   
   matchesByTournament[t.id] = matches;
 }
