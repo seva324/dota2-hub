@@ -134,22 +134,18 @@ fs.writeFileSync(path.join(outputDir, 'news.json'), JSON.stringify(news, null, 2
 console.log(`Exported ${news.length} news items`);
 
 // 导出首页数据（合并所有数据）
-// 去重：合并 Liquipedia 和 CN upcoming 的比赛，优先保留有 tournament 信息的
-function mergeAndDedupMatches(allMatches, upcomingOnly) {
-  const seen = new Map(); // key: start_time_radiant_dire -> match
+// 去重：只保留有 tournament 信息的比赛
+function dedupMatches(matches) {
+  const seen = new Map();
   
-  // 先处理所有比赛（包含 tournament 信息）
-  for (const m of allMatches) {
-    if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
-    const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
-    // 优先保留有 tournament 信息的
-    if (!seen.has(key) || (seen.get(key).tournament_name === null)) {
-      seen.set(key, m);
-    }
-  }
+  // 按 tournament_name 排序，有值的排前面
+  const sorted = [...matches].sort((a, b) => {
+    const aHasT = a.tournament_name ? 1 : 0;
+    const bHasT = b.tournament_name ? 1 : 0;
+    return bHasT - aHasT; // 有 tournament 的排前面
+  });
   
-  // 再处理只有时间的比赛 - 只添加不存在的
-  for (const m of upcomingOnly) {
+  for (const m of sorted) {
     if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
     const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
     if (!seen.has(key)) {
@@ -174,7 +170,7 @@ const allUpcomingMatches = db.prepare(`
 `).all(now);
 
 // 合并去重
-const dedupedUpcoming = mergeAndDedupMatches(allUpcomingMatches, upcomingMatches);
+const dedupedUpcoming = dedupMatches([...allUpcomingMatches, ...upcomingMatches]);
 
 const homeData = {
   upcoming: dedupedUpcoming,
