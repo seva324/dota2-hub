@@ -87,15 +87,22 @@ console.log(`Exported ${tournaments.length} tournaments`);
 // 按赛事分组
 const matchesByTournament = {};
 for (const t of tournaments) {
-  const tournamentNameLower = t.name.toLowerCase();
+  // 匹配策略：1) tournament_id 匹配 2) tournament_name 包含赛事名 3) 不区分大小写
+  const tournamentNameLower = t.name.toLowerCase().replace(/\s+/g, '');
   const tournamentIdLower = t.id.toLowerCase();
+  
+  // 提取赛事关键词用于匹配 (如 "dreamleague-28" -> "dreamleague")
+  const tournamentKey = tournamentIdLower.split('-')[0];
   
   const matches = db.prepare(`
     SELECT * FROM matches 
-    WHERE tournament_name LIKE ? OR tournament_id LIKE ?
+    WHERE tournament_id = ? 
+       OR LOWER(tournament_id) LIKE ?
+       OR LOWER(tournament_name) LIKE ?
+       OR LOWER(tournament_name) LIKE ?
     ORDER BY start_time DESC
     LIMIT 20
-  `).all(`%${tournamentNameLower}%`, `%${tournamentIdLower}%`);
+  `).all(t.id, `%${tournamentIdLower}%`, `%${tournamentNameLower}%`, `%${tournamentKey}%`);
   
   matchesByTournament[t.id] = matches;
 }
