@@ -87,27 +87,27 @@ console.log(`Exported ${tournaments.length} tournaments`);
 // 按赛事分组
 const matchesByTournament = {};
 for (const t of tournaments) {
-  // 匹配策略：不区分大小写，支持多种格式
-  // tournament_id 可能是 "dreamleague-28" 或 "DreamLeague S28 - February 18-A" 等
-  const tNameLower = t.name.toLowerCase();
+  // 提取赛事核心关键词用于模糊匹配
+  // "dreamleague-28" -> "dreamleague", "DreamLeague S28 - February 18-A" -> "dreamleague"
   const tIdLower = t.id.toLowerCase();
+  const tNameLower = t.name.toLowerCase();
   
-  // 提取关键词: "dreamleague-28" -> "dreamleague", "DreamLeague S28" -> "dreamleague"
-  const keywords = [];
-  keywords.push(tIdLower);
-  keywords.push(tNameLower.replace(/\s+/g, ''));
-  // 从 name 提取主要关键词: "DreamLeague S28" -> "dreamleague"
-  const mainKeyword = tNameLower.replace(/s\d+.*$/, '').replace(/\s+/g, '').trim();
-  if (mainKeyword) keywords.push(mainKeyword);
+  // 提取核心词: 取 id 或 name 的第一部分
+  const extractCore = (s) => {
+    s = s.toLowerCase().replace(/[_\-\s].*$/, '').trim(); // 去掉第一个分隔符后的所有内容
+    return s;
+  };
+  const coreFromId = extractCore(tIdLower);
+  const coreFromName = extractCore(tNameLower);
   
-  // 构建 OR 条件
+  const keywords = [coreFromId, coreFromName].filter(k => k.length > 2);
+  
+  // 匹配: tournament_id 或 tournament_name 包含任意关键词
   const conditions = [];
   const params = [];
   for (const kw of keywords) {
-    if (kw.length > 2) {
-      conditions.push('(LOWER(tournament_id) LIKE ? OR LOWER(tournament_name) LIKE ?)');
-      params.push(`%${kw}%`, `%${kw}%`);
-    }
+    conditions.push('(LOWER(tournament_id) LIKE ? OR LOWER(tournament_name) LIKE ?)');
+    params.push(`%${kw}%`, `%${kw}%`);
   }
   
   let matches = [];
