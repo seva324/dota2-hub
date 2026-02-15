@@ -88,21 +88,19 @@ console.log(`Exported ${tournaments.length} tournaments`);
 const matchesByTournament = {};
 for (const t of tournaments) {
   // 提取赛事核心关键词用于模糊匹配
-  // "dreamleague-28" -> "dreamleague", "DreamLeague S28 - February 18-A" -> "dreamleague"
   const tIdLower = t.id.toLowerCase();
   const tNameLower = t.name.toLowerCase();
   
-  // 提取核心词: 取 id 或 name 的第一部分
   const extractCore = (s) => {
-    s = s.toLowerCase().replace(/[_\-\s].*$/, '').trim(); // 去掉第一个分隔符后的所有内容
+    s = s.toLowerCase().replace(/[_\-\s].*$/, '').trim();
     return s;
   };
   const coreFromId = extractCore(tIdLower);
   const coreFromName = extractCore(tNameLower);
   
   const keywords = [coreFromId, coreFromName].filter(k => k.length > 2);
+  console.log(`Tournament ${t.id}: keywords = ${keywords.join(', ')}`);
   
-  // 匹配: tournament_id 或 tournament_name 包含任意关键词
   const conditions = [];
   const params = [];
   for (const kw of keywords) {
@@ -113,7 +111,10 @@ for (const t of tournaments) {
   let matches = [];
   if (conditions.length > 0) {
     const sql = `SELECT * FROM matches WHERE ${conditions.join(' OR ')} ORDER BY start_time DESC LIMIT 20`;
+    console.log(`  SQL: ${sql}`);
+    console.log(`  Params: ${params.join(', ')}`);
     matches = db.prepare(sql).all(...params);
+    console.log(`  Found: ${matches.length} matches`);
   }
   
   matchesByTournament[t.id] = matches;
