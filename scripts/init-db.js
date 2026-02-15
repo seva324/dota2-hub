@@ -82,12 +82,21 @@ db.exec(`
   );
 `);
 
-// 为 matches 表添加 logo 字段（如果不存在）
-try {
-  db.exec(`ALTER TABLE matches ADD COLUMN radiant_team_logo TEXT`);
-  db.exec(`ALTER TABLE matches ADD COLUMN dire_team_logo TEXT`);
-} catch (e) {
-  // 字段可能已存在
+// 为 matches 表添加缺失的字段（如果不存在）
+const matchColumnsToAdd = [
+  'radiant_team_logo',
+  'dire_team_logo', 
+  'tournament_name',
+  'tournament_name_cn'
+];
+
+for (const col of matchColumnsToAdd) {
+  try {
+    db.exec(`ALTER TABLE matches ADD COLUMN ${col} TEXT`);
+    console.log(`Added column: ${col}`);
+  } catch (e) {
+    // 字段可能已存在，忽略
+  }
 }
 
 // 创建新闻表
