@@ -274,168 +274,149 @@ function parseTournamentPage(html, tournamentId) {
     defaultFormat = 'BO1';
   }
   
-  const stagePatterns = [
-    /<span[^>]*class="match-info-stage[^"]*"[^>]*>([^<]+)<\/span>/gi,
-    /<span[^>]*class="bracket-stage[^"]*"[^>]*>([^<]+)<\/span>/gi,
-    /<h2[^>]*>(Group Stage|Playoffs|Play in|Lower Bracket|Upper Bracket|Grand Final)[^<]*<\/h2>/gi
-  ];
+  // 新的 Liquipedia 格式: timer-object 包含 timestamp
+  // 格式: <span class="timer-object" data-timestamp="1772287200">...内容...</span>
   
-  for (const pattern of stagePatterns) {
-    let match;
-    while ((match = pattern.exec(html)) !== null) {
-      const stageName = match[1].trim();
-      if (!stages.includes(stageName)) {
-        stages.push(stageName);
-      }
-    }
-  }
+  // 1. 解析所有 timer-object 元素 (Playoffs 格式)
+  const timerPattern = /<span[^>]*class="timer-object[^"]*"[^>]*data-timestamp="(\d+)"[^>]*>([\s\S]*?)<\/span>/gi;
+  let timerMatch;
   
-  // Carousel 格式
-  const carouselBlocks = html.split(/<div[^>]*class="[^"]*carousel-item[^"]*"[^>]*>/);
-  
-  for (let i = 1; i < carouselBlocks.length; i++) {
-    const block = carouselBlocks[i];
+  while ((timerMatch = timerPattern.exec(html)) !== null) {
+    const timestamp = parseInt(timerMatch[1]);
+    const content = timerMatch[2];
     
-    const tsMatch = block.match(/data-timestamp="(\d+)"/);
-    if (!tsMatch) continue;
-    const timestamp = parseInt(tsMatch[1]);
-    
-    const teamMatches = block.match(/<a[^>]*href="\/dota2\/([^"]+)"[^>]*>([^<]+)<\/a>/g);
-    let team1 = null, team2 = null;
-    
-    if (teamMatches) {
-      const uniqueTeams = [];
-      for (const tm of teamMatches) {
-        const hrefMatch = tm.match(/href="\/dota2\/([^"]+)"[^>]*>([^<]+)<\/a>/);
-        if (hrefMatch && hrefMatch[2] !== 'Watch now' && hrefMatch[2] !== 'View match details') {
-          if (!uniqueTeams.includes(hrefMatch[2])) {
-            uniqueTeams.push(hrefMatch[2]);
-          }
-        }
-      }
-      if (uniqueTeams.length >= 2) {
-        team1 = uniqueTeams[0];
-        team2 = uniqueTeams[1];
+    // 提取队伍名 (data-highlightingclass)
+    const teamMatches = content.match(/data-highlightingclass="([^"]+)"/g) || [];
+    const teams = [];
+    for (const tm of teamMatches) {
+      const match = tm.match(/data-highlightingclass="([^"]+)"/);
+      if (match && match[1] && !match[1].includes('TBD')) {
+        teams.push(match[1]);
       }
     }
     
-    if (!team1 || !team2) continue;
+    if (teams.length < 2) continue;
     
-    const scoreMatches = block.match(/<span class="match-info-opponent-score[^"]*"[^>]*>([^<]*)<\/span>/g);
+    // 提取 format
+    const formatMatch = content.match(/\(Bo(\d+)\)/i);
+    const format = formatMatch ? 'BO' + formatMatch[1] : defaultFormat;
+    
+    // 提取 Round
+    let round = 'Playoffs';
+    const roundMatch = content.match(/<td[^>]*class="Round"[^>]*>([^<]+)</);
+    if (roundMatch) {
+      round = roundMatch[1].trim();
+    }
+    
+    if (!stages.includes(round)) {
+      stages.push(round);
+    }
+    
+    // 提取比分 (如果比赛已结束)
     let score1 = 0, score2 = 0;
-    if (scoreMatches) {
-      const scores = [];
-      for (const sm of scoreMatches) {
-        const s = sm.replace(/<[^>]+>/g, '').trim();
-        if (s) scores.push(parseInt(s) || 0);
-      }
-      if (scores.length >= 2) {
-        score1 = scores[0];
-        score2 = scores[1];
-      }
+    const scoreMatch = content.match(/<div[^>]*class="score[^"]*"[^>]*>(\d+):(\d+)/);
+    if (scoreMatch) {
+      score1 = parseInt(scoreMatch[1]) || 0;
+      score2 = parseInt(scoreMatch[2]) || 0;
     }
     
-    let status = 'scheduled';
-    if (score1 > 0 || score2 > 0) {
-      status = 'finished';
-    } else if (timestamp * 1000 < Date.now()) {
-      status = 'live';
-    }
+    const status = (score1 > 0 || score2 > 0) ? 'finished' : 'scheduled';
     
-    const formatMatch = block.match(/\(Bo(\d+)\)/i);
-    const format = formatMatch ? `BO${formatMatch[1]}` : defaultFormat;
-    
-    const stageMatch = block.match(/<span class="match-info-stage[^"]*"[^>]*>([^<]+)<\/span>/i);
-    const stage = stageMatch ? stageMatch[1].trim() : null;
-    
-    const matchId = `lp_${tournamentId}_${timestamp}_${i}`;
+    const matchId = 'lp_' + tournamentId + '_' + timestamp + '_' + matches.length;
     
     matches.push({
       match_id: matchId,
       tournament_id: tournamentId,
-      radiant_team_name: team1,
-      dire_team_name: team2,
+      radiant_team_name: teams[0],
+      dire_team_name: teams[1],
       radiant_score: score1,
       dire_score: score2,
       start_time: timestamp,
       series_type: format,
       status,
-      stage
+      stage: round
     });
   }
   
-  // 表格格式
-  const tableBlocks = html.split(/<table[^>]*class="[^"]*wikitable[^"]*"/);
+  // 2. 解析 Crosstable 格式 (Group Stage)
+  const crosstableMatches = html.match(/<table[^>]*class="[^"]*crosstable[^"]*"[^>]*>[\s\S]*?<\/table>/gi) || [];
   
-  for (let i = 1; i < tableBlocks.length; i++) {
-    const block = tableBlocks[i];
-    const rows = block.split(/<tr[^>]*class="[^"]*Match[^"]*"/);
+  for (const table of crosstableMatches) {
+    // 获取表头中的 timestamp
+    const headerTimers = table.match(/<th[^>]*data-timestamp="(\d+)"[^>]*>/g) || [];
+    const timestamps = [];
+    for (const t of headerTimers) {
+      const m = t.match(/data-timestamp="(\d+)"/);
+      if (m) timestamps.push(parseInt(m[1]));
+    }
     
-    for (let j = 1; j < rows.length; j++) {
-      const row = rows[j];
+    if (timestamps.length === 0) continue;
+    
+    // 获取所有行
+    const rows = table.match(/<tr[^>]*class="crosstable-tr[^"]*"[^>]*>[\s\S]*?<\/tr>/gi) || [];
+    
+    for (const row of rows) {
+      // 获取队伍名
+      const teamMatch = row.match(/data-highlightingclass="([^"]+)"/);
+      if (!teamMatch || !teamMatch[1] || teamMatch[1] === 'TBD') continue;
       
-      const tsMatch = row.match(/data-timestamp="(\d+)"/);
-      if (!tsMatch) continue;
-      const timestamp = parseInt(tsMatch[1]);
+      const teamName = teamMatch[1];
       
-      const teamLeftMatch = row.match(/<span class="team-template-text"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/);
-      const teamRightMatch = row.match(/<td class="TeamRight"[^>]*>[\s\S]*?<span class="team-template-text"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/);
+      // 解析每个有日期的单元格
+      const cells = row.split('</td>');
+      let colIndex = 0;
       
-      const team1 = teamLeftMatch ? teamLeftMatch[1] : null;
-      const team2 = teamRightMatch ? teamRightMatch[1] : null;
-      
-      if (!team1 || !team2) continue;
-      
-      let score1 = 0, score2 = 0;
-      
-      let scoreMatch = row.match(/<td class="Score"[^>]*>[\s\S]*?<div[^>]*>(\d+):<b>(\d+)<\/b><\/div>/);
-      if (scoreMatch) {
-        score1 = parseInt(scoreMatch[1]) || 0;
-        score2 = parseInt(scoreMatch[2]) || 0;
-      } else {
-        scoreMatch = row.match(/<td class="Score"[^>]*>[\s\S]*?<div[^>]*><b>(\d+)<\/b>:(\d+)<\/div>/);
-        if (scoreMatch) {
-          score1 = parseInt(scoreMatch[1]) || 0;
-          score2 = parseInt(scoreMatch[2]) || 0;
-        } else {
-          const simpleScoreMatch = row.match(/<td class="Score"[^>]*>[\s\S]*?<div[^>]*>([^<]+)<\/div>/);
-          if (simpleScoreMatch) {
-            const scores = simpleScoreMatch[1].replace(/<[^>]+>/g, '').trim().split(':');
-            score1 = parseInt(scores[0]) || 0;
-            score2 = parseInt(scores[1]) || 0;
+      for (const cell of cells) {
+        if (cell.includes('crosstable-bgc-r-r') && cell.includes('crosstable-bgc-span')) {
+          const dateMatch = cell.match(/class="crosstable-bgc-span"[^>]*>([^<]+)</);
+          if (dateMatch && timestamps[colIndex] && timestamps[colIndex] > Math.floor(Date.now() / 1000)) {
+            // 在表头中找对应的队伍
+            const headerRows = table.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
+            let otherTeam = null;
+            
+            for (const hr of headerRows) {
+              if (hr.includes(dateMatch[1]) && hr.includes('data-highlightingclass')) {
+                const om = hr.match(/data-highlightingclass="([^"]+)"/);
+                if (om && om[1] !== teamName) {
+                  otherTeam = om[1];
+                  break;
+                }
+              }
+            }
+            
+            if (otherTeam && otherTeam !== 'TBD') {
+              const timestamp = timestamps[colIndex];
+              const matchId = 'lp_cs_' + tournamentId + '_' + timestamp + '_' + matches.length;
+              
+              matches.push({
+                match_id: matchId,
+                tournament_id: tournamentId,
+                radiant_team_name: teamName,
+                dire_team_name: otherTeam,
+                radiant_score: 0,
+                dire_score: 0,
+                start_time: timestamp,
+                series_type: defaultFormat,
+                status: 'scheduled',
+                stage: 'Group Stage'
+              });
+              
+              if (!stages.includes('Group Stage')) {
+                stages.push('Group Stage');
+              }
+            }
           }
         }
+        if (cell.includes('crosstable-bgc-r-r')) {
+          colIndex++;
+        }
       }
-      
-      const roundMatch = row.match(/<td class="Round"[^>]*>([^<]+)<\/td>/);
-      const round = roundMatch ? roundMatch[1].trim() : null;
-      
-      let status = 'finished';
-      if (score1 === 0 && score2 === 0) {
-        status = 'scheduled';
-      }
-      
-      const formatMatch = row.match(/<abbr[^>]*title="Best of (\d+)"[^>]*>/i);
-      const format = formatMatch ? `BO${formatMatch[1]}` : defaultFormat;
-      
-      const matchId = `lp_table_${timestamp}_${i}_${j}`;
-      
-      matches.push({
-        match_id: matchId,
-        tournament_id: tournamentId,
-        radiant_team_name: team1,
-        dire_team_name: team2,
-        radiant_score: score1,
-        dire_score: score2,
-        start_time: timestamp,
-        series_type: format,
-        status,
-        stage: round
-      });
     }
   }
   
   return { stages, matches };
+}
+
 }
 
 // 过滤和去重
