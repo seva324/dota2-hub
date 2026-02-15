@@ -148,7 +148,7 @@ function mergeAndDedupMatches(allMatches, upcomingOnly) {
     }
   }
   
-  // 再处理只有时间的比赛
+  // 再处理只有时间的比赛 - 只添加不存在的
   for (const m of upcomingOnly) {
     if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
     const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
