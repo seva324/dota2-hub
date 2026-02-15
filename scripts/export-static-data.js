@@ -84,38 +84,25 @@ const tournaments = db.prepare(`
 `).all();
 console.log(`Exported ${tournaments.length} tournaments`);
 
-// 按赛事分组
+// 按赛事分组 - 简化匹配逻辑
 const matchesByTournament = {};
 for (const t of tournaments) {
-  // 提取赛事核心关键词用于模糊匹配
-  const tIdLower = t.id.toLowerCase();
-  const tNameLower = t.name.toLowerCase();
+  // 简单匹配: tournament_id 或 tournament_name 包含 tournament id 或 name 的任意部分
+  const tid = t.id.toLowerCase();
+  const tname = t.name.toLowerCase();
   
-  const extractCore = (s) => {
-    s = s.toLowerCase().replace(/[_\-\s].*$/, '').trim();
-    return s;
-  };
-  const coreFromId = extractCore(tIdLower);
-  const coreFromName = extractCore(tNameLower);
+  // 提取主要词 (去掉数字后缀)
+  const mainWord = tid.replace(/\d+$/, '').replace(/-.*$/, '').trim();
   
-  const keywords = [coreFromId, coreFromName].filter(k => k.length > 2);
-  console.log(`Tournament ${t.id}: keywords = ${keywords.join(', ')}`);
-  
-  const conditions = [];
-  const params = [];
-  for (const kw of keywords) {
-    conditions.push('(LOWER(tournament_id) LIKE ? OR LOWER(tournament_name) LIKE ?)');
-    params.push(`%${kw}%`, `%${kw}%`);
-  }
-  
-  let matches = [];
-  if (conditions.length > 0) {
-    const sql = `SELECT * FROM matches WHERE ${conditions.join(' OR ')} ORDER BY start_time DESC LIMIT 20`;
-    console.log(`  SQL: ${sql}`);
-    console.log(`  Params: ${params.join(', ')}`);
-    matches = db.prepare(sql).all(...params);
-    console.log(`  Found: ${matches.length} matches`);
-  }
+  const matches = db.prepare(`
+    SELECT * FROM matches 
+    WHERE LOWER(tournament_id) LIKE ? 
+       OR LOWER(tournament_id) LIKE ?
+       OR LOWER(tournament_name) LIKE ?
+       OR LOWER(tournament_name) LIKE ?
+    ORDER BY start_time DESC
+    LIMIT 20
+  `).all(`%${tid}%`, `%${mainWord}%`, `%${tname}%`, `%${mainWord}%`);
   
   matchesByTournament[t.id] = matches;
 }
