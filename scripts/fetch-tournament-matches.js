@@ -19,6 +19,7 @@ const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
+const GITHUB_PAGES_BASE = '/dota2-hub';
 const logosDir = path.join(__dirname, '..', 'public', 'images', 'teams');
 if (!fs.existsSync(logosDir)) {
   fs.mkdirSync(logosDir, { recursive: true });
@@ -93,6 +94,7 @@ const teamLogoUrls = {
   'g2 esports': 'https://liquipedia.net/commons/images/thumb/5/5e/G2_Esports_2024_allmode.png/120px-G2_Esports_2024_allmode.png',
   'mouz': 'https://liquipedia.net/commons/images/thumb/c/c2/MOUZ_2021_allmode.png/120px-MOUZ_2021_allmode.png',
   'heroic': 'https://liquipedia.net/commons/images/thumb/0/03/Heroic_2023_allmode.png/120px-Heroic_2023_allmode.png',
+  'rkx': 'https://liquipedia.net/commons/images/thumb/4/49/Xtreme_Gaming_2020_full.png/180px-Xtreme_Gaming_2020_full.png',
   'execration': 'https://liquipedia.net/commons/images/thumb/a/af/Execration_2024_full_allmode.png/120px-Execration_2024_full_allmode.png',
 };
 
@@ -185,7 +187,7 @@ async function getTeamLogo(teamName) {
   
   // 生成本地文件路径
   const teamId = teamNameToId(normalizedName);
-  const localPath = `/images/teams/${teamId}.png`;
+  const localPath = `${GITHUB_PAGES_BASE}/images/teams/${teamId}.png`;
   const localFilePath = path.join(__dirname, '..', 'public', localPath);
   
   // 如果本地文件已存在，直接返回本地路径
