@@ -17,13 +17,13 @@
   "seriesByTournament": {
     "blast-slam-vi": [
       {
-        "series_id": "2163_36_1771169368",
+        "series_id": "1064947",
         "series_type": "BO3",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
         "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
-        "radiant_score": 3,
+        "radiant_score": 2,
         "dire_score": 1,
         "games": [
           {
@@ -55,22 +55,12 @@
             "radiant_win": false,
             "start_time": 1771181772,
             "duration": 2040
-          },
-          {
-            "match_id": "8692761931",
-            "radiant_team_name": "Team Liquid",
-            "dire_team_name": "Natus Vincere",
-            "radiant_score": 33,
-            "dire_score": 10,
-            "radiant_win": true,
-            "start_time": 1771185630,
-            "duration": 1947
           }
         ],
         "stage": "Playoffs"
       },
       {
-        "series_id": "9823272_36_1771089661",
+        "series_id": "1064645",
         "series_type": "BO5",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Natus Vincere",
@@ -133,7 +123,7 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "2586976_2163_1771074038",
+        "series_id": "1064569",
         "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Liquid",
@@ -176,7 +166,7 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "9823272_9303484_1771010701",
+        "series_id": "1064393",
         "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "HEROIC",
@@ -229,7 +219,7 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "9247354_2163_1770987833",
+        "series_id": "1064245",
         "series_type": "BO5",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "Team Liquid",
@@ -292,25 +282,15 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "9964962_9338413_1770308910",
+        "series_id": "1062162",
         "series_type": "BO3",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
         "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
-        "radiant_score": 3,
+        "radiant_score": 2,
         "dire_score": 1,
         "games": [
-          {
-            "match_id": "8678833793",
-            "radiant_team_name": "MOUZ",
-            "dire_team_name": "GamerLegion",
-            "radiant_score": 37,
-            "dire_score": 42,
-            "radiant_win": false,
-            "start_time": 1770308910,
-            "duration": 3405
-          },
           {
             "match_id": "8680195641",
             "radiant_team_name": "MOUZ",
@@ -340,49 +320,6 @@
             "radiant_win": false,
             "start_time": 1770405695,
             "duration": 2320
-          }
-        ],
-        "stage": "Playoffs"
-      },
-      {
-        "series_id": "9828897_9303484_1770289501",
-        "series_type": "BO3",
-        "radiant_team_name": "REKONIX",
-        "dire_team_name": "HEROIC",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16170413258693955016/5ABDC787F5CF4BBDD603F15933D9F5B0F8EB0D8A/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
-        "radiant_score": 0,
-        "dire_score": 3,
-        "games": [
-          {
-            "match_id": "8678406332",
-            "radiant_team_name": "HEROIC",
-            "dire_team_name": "REKONIX",
-            "radiant_score": 23,
-            "dire_score": 7,
-            "radiant_win": true,
-            "start_time": 1770289501,
-            "duration": 1434
-          },
-          {
-            "match_id": "8679911370",
-            "radiant_team_name": "HEROIC",
-            "dire_team_name": "REKONIX",
-            "radiant_score": 44,
-            "dire_score": 27,
-            "radiant_win": true,
-            "start_time": 1770386155,
-            "duration": 3812
-          },
-          {
-            "match_id": "8680063852",
-            "radiant_team_name": "REKONIX",
-            "dire_team_name": "HEROIC",
-            "radiant_score": 27,
-            "dire_score": 41,
-            "radiant_win": false,
-            "start_time": 1770391993,
-            "duration": 3125
           }
         ],
         "stage": "Playoffs"
