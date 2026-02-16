@@ -432,103 +432,196 @@ function EconomySection({ match, radiantTeamName, direTeamName }: { match: Match
   const maxGold = Math.max(...goldAdv.map(Math.abs), 1);
   const maxXP = Math.max(...xpAdv.map(Math.abs), 1);
   
-  // Generate SVG path for the graph
-  const generatePath = (data: number[], maxVal: number) => {
-    if (data.length === 0) return '';
+  // Generate SVG area path for the graph (fills from center)
+  const generateAreaPath = (data: number[], maxVal: number) => {
+    if (data.length === 0) return { positive: '', negative: '' };
     const width = 100;
     const height = 50;
     const step = width / (data.length - 1);
     
-    let path = '';
+    let positivePath = '';
+    let negativePath = '';
+    
     data.forEach((val, i) => {
       const x = i * step;
       const y = height / 2 - (val / maxVal) * (height / 2);
-      path += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+      const centerY = height / 2;
+      
+      if (val >= 0) {
+        positivePath += i === 0 ? `M ${x} ${centerY} L ${x} ${y}` : ` L ${x} ${y}`;
+      } else {
+        negativePath += i === 0 ? `M ${x} ${centerY} L ${x} ${y}` : ` L ${x} ${y}`;
+      }
     });
-    return path;
+    
+    // Close paths
+    if (positivePath) {
+      positivePath += ` L ${width} ${height / 2} L 0 ${height / 2} Z`;
+    }
+    if (negativePath) {
+      negativePath += ` L ${width} ${height / 2} L 0 ${height / 2} Z`;
+    }
+    
+    return { positive: positivePath, negative: negativePath };
   };
   
-  const goldPath = generatePath(goldAdv, maxGold);
-  const xpPath = generatePath(xpAdv, maxXP);
+  const goldArea = generateAreaPath(goldAdv, maxGold);
+  const xpArea = generateAreaPath(xpAdv, maxXP);
   
-  const radiantWon = match.radiant_win;
+  const radiantColor = "#4ade80";
+  const direColor = "#f87171";
+  
+  // Player gold data for graph
+  const radiantPlayers = match.players.filter(p => p.player_slot < 128);
+  const direPlayers = match.players.filter(p => p.player_slot >= 128);
+  
+  const getPlayerGold = (player: typeof match.players[0]) => {
+    return (player as any).gold_t || [];
+  };
+  
+  const maxPlayerGold = Math.max(
+    ...match.players.map(p => Math.max(...(getPlayerGold(p) || [0])))
+  );
   
   return (
     <div className="space-y-4">
       {/* Team Gold Advantage */}
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-slate-800/30 rounded-lg p-3 sm:p-4 border border-slate-800">
+        <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-slate-300">团队经济曲线</span>
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-3 text-xs">
             <span className="text-green-400">{radiantTeamName || 'Radiant'}</span>
             <span className="text-red-400">{direTeamName || 'Dire'}</span>
           </div>
         </div>
-        <div className="relative h-24 bg-slate-900/50 rounded overflow-hidden">
+        <div className="relative h-28 bg-slate-900/50 rounded overflow-hidden">
           {/* Zero line */}
-          <div className="absolute top-1/2 left-0 right-0 border-t border-slate-700 border-dashed"></div>
-          {/* Gold advantage line */}
+          <div className="absolute top-1/2 left-0 right-0 border-t border-slate-600"></div>
+          {/* Gold advantage - green for radiant lead, red for dire lead */}
           <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
-            <path d={goldPath} fill="none" stroke={radiantWon ? "#4ade80" : "#f87171"} strokeWidth="2" />
+            <path d={goldArea.positive} fill={radiantColor} fillOpacity="0.3" stroke={radiantColor} strokeWidth="1.5" />
+            <path d={goldArea.negative} fill={direColor} fillOpacity="0.3" stroke={direColor} strokeWidth="1.5" />
           </svg>
+          {/* Y-axis labels */}
+          <div className="absolute top-1 left-1 text-[8px] text-green-400">+{maxGold.toLocaleString()}</div>
+          <div className="absolute bottom-1 left-1 text-[8px] text-red-400">-{maxGold.toLocaleString()}</div>
         </div>
-        <div className="flex justify-between mt-2 text-xs text-slate-500">
+        <div className="flex justify-between mt-1 text-[10px] text-slate-500">
           <span>0:00</span>
           <span>{formatDuration(match.duration)}</span>
         </div>
         <div className="flex justify-center mt-1">
           {goldAdv.length > 0 && (
-            <span className={goldAdv[goldAdv.length - 1] > 0 ? 'text-green-400' : 'text-red-400'}>
-              {goldAdv[goldAdv.length - 1] > 0 ? '+' : ''}{goldAdv[goldAdv.length - 1]} Gold
+            <span className={`text-sm font-medium ${goldAdv[goldAdv.length - 1] > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {goldAdv[goldAdv.length - 1] > 0 ? '+' : ''}{goldAdv[goldAdv.length - 1].toLocaleString()} Gold
             </span>
           )}
         </div>
       </div>
       
       {/* Team XP Advantage */}
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-slate-800/30 rounded-lg p-3 sm:p-4 border border-slate-800">
+        <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-slate-300">团队经验曲线</span>
         </div>
-        <div className="relative h-24 bg-slate-900/50 rounded overflow-hidden">
-          <div className="absolute top-1/2 left-0 right-0 border-t border-slate-700 border-dashed"></div>
+        <div className="relative h-28 bg-slate-900/50 rounded overflow-hidden">
+          <div className="absolute top-1/2 left-0 right-0 border-t border-slate-600"></div>
           <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
-            <path d={xpPath} fill="none" stroke={radiantWon ? "#4ade80" : "#f87171"} strokeWidth="2" />
+            <path d={xpArea.positive} fill={radiantColor} fillOpacity="0.3" stroke={radiantColor} strokeWidth="1.5" />
+            <path d={xpArea.negative} fill={direColor} fillOpacity="0.3" stroke={direColor} strokeWidth="1.5" />
           </svg>
+          <div className="absolute top-1 left-1 text-[8px] text-green-400">+{maxXP.toLocaleString()}</div>
+          <div className="absolute bottom-1 left-1 text-[8px] text-red-400">-{maxXP.toLocaleString()}</div>
         </div>
-        <div className="flex justify-between mt-2 text-xs text-slate-500">
+        <div className="flex justify-between mt-1 text-[10px] text-slate-500">
           <span>0:00</span>
           <span>{formatDuration(match.duration)}</span>
         </div>
         <div className="flex justify-center mt-1">
           {xpAdv.length > 0 && (
-            <span className={xpAdv[xpAdv.length - 1] > 0 ? 'text-green-400' : 'text-red-400'}>
-              {xpAdv[xpAdv.length - 1] > 0 ? '+' : ''}{xpAdv[xpAdv.length - 1]} XP
+            <span className={`text-sm font-medium ${xpAdv[xpAdv.length - 1] > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {xpAdv[xpAdv.length - 1] > 0 ? '+' : ''}{xpAdv[xpAdv.length - 1].toLocaleString()} XP
             </span>
           )}
         </div>
       </div>
       
-      {/* Net Worth by Player */}
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="text-sm font-medium text-slate-300 mb-3">选手经济排行</div>
-        <div className="space-y-2">
-          {[...match.players]
-            .sort((a, b) => (b.gold || 0) - (a.gold || 0))
-            .slice(0, 5)
-            .map((p, idx) => {
-              const isRadiant = p.player_slot < 128;
-              return (
-                <div key={p.player_slot} className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-500 w-4">{idx + 1}</span>
-                  <HeroIcon heroId={p.hero_id} size="sm" />
-                  <span className={`flex-1 truncate ${isRadiant ? 'text-green-400' : 'text-red-400'}`}>
-                    {p.personaname || p.account_id || 'Unknown'}
-                  </span>
-                  <span className="text-yellow-400 font-medium">{p.gold || 0}</span>
-                </div>
-              );
+      {/* Player Net Worth Graph */}
+      <div className="bg-slate-800/30 rounded-lg p-3 sm:p-4 border border-slate-800">
+        <div className="text-sm font-medium text-slate-300 mb-2">选手经济曲线</div>
+        <div className="relative h-40 bg-slate-900/50 rounded overflow-hidden">
+          <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
+            {/* Radiant players - green shades */}
+            {radiantPlayers.map((p, i) => {
+              const data = getPlayerGold(p);
+              if (!data || data.length === 0) return null;
+              const path = data.map((val: number, idx: number) => {
+                const x = (idx / (data.length - 1)) * 100;
+                const y = 50 - (val / maxPlayerGold) * 50;
+                return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+              }).join(' ');
+              return <path key={p.player_slot} d={path} fill="none" stroke={radiantColor} strokeWidth="1" strokeOpacity={0.9 - i * 0.15} />;
             })}
+            {/* Dire players - red shades */}
+            {direPlayers.map((p, i) => {
+              const data = getPlayerGold(p);
+              if (!data || data.length === 0) return null;
+              const path = data.map((val: number, idx: number) => {
+                const x = (idx / (data.length - 1)) * 100;
+                const y = 50 - (val / maxPlayerGold) * 50;
+                return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+              }).join(' ');
+              return <path key={p.player_slot} d={path} fill="none" stroke={direColor} strokeWidth="1" strokeOpacity={0.9 - i * 0.15} />;
+            })}
+          </svg>
+          {/* Legend */}
+          <div className="absolute top-1 right-1 text-[8px] space-y-0.5">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-0.5 bg-green-400"></div>
+              <span className="text-green-400">{radiantTeamName?.substring(0, 6) || 'Radiant'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-0.5 bg-red-400"></div>
+              <span className="text-red-400">{direTeamName?.substring(0, 6) || 'Dire'}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-between mt-1 text-[10px] text-slate-500">
+          <span>0:00</span>
+          <span>{formatDuration(match.duration)}</span>
+        </div>
+      </div>
+      
+      {/* Net Worth by Player */}
+      <div className="bg-slate-800/30 rounded-lg p-3 sm:p-4 border border-slate-800">
+        <div className="text-sm font-medium text-slate-300 mb-2">选手经济排行</div>
+        <div className="grid grid-cols-2 gap-2">
+          {/* Radiant */}
+          <div className="space-y-1">
+            <div className="text-xs text-green-400 font-medium">{radiantTeamName || 'Radiant'}</div>
+            {[...radiantPlayers]
+              .sort((a, b) => (b.gold || 0) - (a.gold || 0))
+              .map((p) => (
+                <div key={p.player_slot} className="flex items-center gap-1 text-xs">
+                  <HeroIcon heroId={p.hero_id} size="sm" />
+                  <span className="flex-1 truncate text-green-400">{p.personaname?.substring(0, 10) || p.account_id?.toString() || '?'}</span>
+                  <span className="text-yellow-400">{((p.gold || 0) / 1000).toFixed(1)}k</span>
+                </div>
+              ))}
+          </div>
+          {/* Dire */}
+          <div className="space-y-1">
+            <div className="text-xs text-red-400 font-medium">{direTeamName || 'Dire'}</div>
+            {[...direPlayers]
+              .sort((a, b) => (b.gold || 0) - (a.gold || 0))
+              .map((p) => (
+                <div key={p.player_slot} className="flex items-center gap-1 text-xs">
+                  <HeroIcon heroId={p.hero_id} size="sm" />
+                  <span className="flex-1 truncate text-red-400">{p.personaname?.substring(0, 10) || p.account_id?.toString() || '?'}</span>
+                  <span className="text-yellow-400">{((p.gold || 0) / 1000).toFixed(1)}k</span>
+                </div>
+              ))}
+          </div>
         </div>
       </div>
     </div>
