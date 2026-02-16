@@ -3,6 +3,7 @@ import { Trophy, Calendar, MapPin, DollarSign, Medal, Target, Star } from 'lucid
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 
 interface Tournament {
   id: string;
@@ -80,6 +81,7 @@ interface TournamentSectionProps {
 
 export function TournamentSection({ tournaments, matchesByTournament }: TournamentSectionProps) {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournaments[0] || null);
+  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
 
   if (!tournaments.length) {
     return (
@@ -277,7 +279,13 @@ export function TournamentSection({ tournaments, matchesByTournament }: Tourname
                         return (
                           <div
                             key={match.match_id}
-                            className={`rounded-lg p-4 border ${hasCN ? 'bg-red-900/10 border-red-600/30' : 'bg-slate-800/30 border-slate-800'}`}
+                            className={`rounded-lg p-4 border cursor-pointer hover:border-red-500/50 transition-colors ${hasCN ? 'bg-red-900/10 border-red-600/30' : 'bg-slate-800/30 border-slate-800'}`}
+                            onClick={() => {
+                              const numericId = parseInt(match.match_id.replace(/\D/g, ''));
+                              if (!isNaN(numericId) && numericId > 1000000000) {
+                                setSelectedMatchId(numericId);
+                              }
+                            }}
                           >
                             <div className="flex items-center justify-between mb-3">
                               <Badge variant="outline" className="border-slate-700 text-slate-400">{match.stage || 'Match'}</Badge>
@@ -363,6 +371,15 @@ export function TournamentSection({ tournaments, matchesByTournament }: Tourname
             </CardContent>
           </Card>
         )}
+        
+        {/* Match Detail Modal */}
+        <MatchDetailModal 
+          matchId={selectedMatchId} 
+          open={selectedMatchId !== null} 
+          onOpenChange={(open) => {
+            if (!open) setSelectedMatchId(null);
+          }} 
+        />
       </div>
     </section>
   );
