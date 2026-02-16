@@ -334,7 +334,9 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                         {isExpanded && (
                           <div className="border-t border-slate-800 bg-slate-900/50 p-2 sm:p-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                              {series.games.map((game, idx) => (
+                              {series.games.map((game, idx) => {
+                                const winnerName = game.radiant_win ? game.radiant_team_name : game.dire_team_name;
+                                return (
                                 <div
                                   key={game.match_id}
                                   className={`p-2 sm:p-3 rounded-lg border cursor-pointer hover:border-red-500 transition-colors ${
@@ -353,22 +355,26 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                   </div>
                                   <div className="flex items-center justify-between text-xs sm:text-sm">
                                     <span className={game.radiant_win ? 'text-green-400 font-bold' : 'text-slate-400'}>
-              <span className="xs:hidden">{getTeamAbbrev(game.radiant_team_name)}</span>
-              <span className="hidden xs:inline">{game.radiant_team_name?.substring(0, 8)}</span>
-            </span>
+                                      <span className="xs:hidden">{getTeamAbbrev(game.radiant_team_name)}</span>
+                                      <span className="hidden xs:inline">{game.radiant_team_name?.substring(0, 8)}</span>
+                                    </span>
                                     <span className="text-slate-600">:</span>
                                     <span className={!game.radiant_win ? 'text-green-400 font-bold' : 'text-slate-400'}>
-              <span className="xs:hidden">{getTeamAbbrev(game.dire_team_name)}</span>
-              <span className="hidden xs:inline">{game.dire_team_name?.substring(0, 8)}</span>
-            </span>
+                                      <span className="xs:hidden">{getTeamAbbrev(game.dire_team_name)}</span>
+                                      <span className="hidden xs:inline">{game.dire_team_name?.substring(0, 8)}</span>
+                                    </span>
                                   </div>
                                   <div className="flex items-center justify-center gap-1 sm:gap-2 mt-1 text-xs sm:text-sm">
                                     <span className={game.radiant_win ? 'text-green-400' : 'text-slate-400'}>{game.radiant_score}</span>
                                     <span className="text-slate-600">-</span>
                                     <span className={!game.radiant_win ? 'text-green-400' : 'text-slate-400'}>{game.dire_score}</span>
                                   </div>
+                                  <div className="text-center mt-1">
+                                    <span className="text-xs text-green-400 font-medium">胜: {getTeamAbbrev(winnerName)}</span>
+                                  </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
