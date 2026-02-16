@@ -40,29 +40,29 @@ jobs:
       - name: Rebuild better-sqlite3
         run: npm rebuild better-sqlite3
 
-      - name: Setup Database
-        run: |
-          rm -rf data
-          mkdir -p data
-          node scripts/init-db.js
+      # - name: Setup Database
+      #   run: |
+      #     rm -rf data
+      #     mkdir -p data
+      #     node scripts/init-db.js
 
-      - name: Fetch Tournament Data
-        run: node scripts/fetch-tournaments.js
+      # - name: Fetch Tournament Data
+      #   run: node scripts/fetch-tournaments.js
 
-      - name: Fetch Match Data from Liquipedia
-        run: node scripts/fetch-liquipedia.js
-        continue-on-error: true
+      # - name: Fetch Match Data from Liquipedia
+      #   run: node scripts/fetch-liquipedia.js
+      #   continue-on-error: true
 
-      - name: Fetch Tournament Matches from Liquipedia
-        run: node scripts/fetch-tournament-matches.js
-        continue-on-error: true
+      # - name: Fetch Tournament Matches from Liquipedia
+      #   run: node scripts/fetch-tournament-matches.js
+      #   continue-on-error: true
 
-      - name: Fetch Team Logos and Update Match Logos
-        run: node scripts/fetch-team-logos.js
-        continue-on-error: true
+      # - name: Fetch Team Logos and Update Match Logos
+      #   run: node scripts/fetch-team-logos.js
+      #   continue-on-error: true
 
-      - name: Export Data
-        run: node scripts/export-static-data.js
+      # - name: Export Data
+      #   run: node scripts/export-static-data.js
 
       - name: Build project
         run: npm run build
