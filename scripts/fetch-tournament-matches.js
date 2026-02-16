@@ -417,8 +417,6 @@ function parseTournamentPage(html, tournamentId) {
   return { stages, matches };
 }
 
-}
-
 // 过滤和去重
 function filterMatches(matches) {
   const seen = new Set();
