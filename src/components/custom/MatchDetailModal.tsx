@@ -46,6 +46,8 @@ interface MatchDetail {
   radiant_team_name: string;
   dire_team_id: number;
   dire_team_name: string;
+  radiant_team?: { team_id: number; name: string; tag: string; logo_url: string };
+  dire_team?: { team_id: number; name: string; tag: string; logo_url: string };
   radiant_score: number;
   dire_score: number;
   radiant_win: boolean;
@@ -144,6 +146,18 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
   const radiantPlayers = match?.players.filter(p => p.player_slot < 128) || [];
   const direPlayers = match?.players.filter(p => p.player_slot >= 128) || [];
 
+  // Get team names from nested object or direct field
+  const getTeamName = (match: MatchDetail | null, side: 'radiant' | 'dire'): string => {
+    if (!match) return side === 'radiant' ? 'Radiant' : 'Dire';
+    if (side === 'radiant') {
+      return match.radiant_team?.name || match.radiant_team_name || 'Radiant';
+    }
+    return match.dire_team?.name || match.dire_team_name || 'Dire';
+  };
+
+  const radiantTeamName = getTeamName(match, 'radiant');
+  const direTeamName = getTeamName(match, 'dire');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
@@ -162,22 +176,22 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
         {match && !loading && (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-              <div className="flex items-center gap-4">
-                <div className={`text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
-                  {match.radiant_team_name || 'Radiant'}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 pb-4 border-b border-slate-800 gap-4">
+              <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+                <div className={`text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
+                  {radiantTeamName}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
+                  <span className={`text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
                     {match.radiant_score}
                   </span>
-                  <span className="text-slate-600 text-xl">:</span>
-                  <span className={`text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
+                  <span className="text-slate-600 text-lg md:text-xl">:</span>
+                  <span className={`text-2xl md:text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
                     {match.dire_score}
                   </span>
                 </div>
-                <div className={`text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
-                  {match.dire_team_name || 'Dire'}
+                <div className={`text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
+                  {direTeamName}
                 </div>
               </div>
               <div className="text-right text-sm text-slate-400">
@@ -211,17 +225,17 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
               {/* Players Tab */}
               <TabsContent value="players">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {/* Radiant */}
                   <div className="space-y-2">
-                    <div className="text-center font-bold text-green-400 mb-3">{match.radiant_team_name || 'Radiant'}</div>
+                    <div className="text-center font-bold text-green-400 mb-3">{radiantTeamName}</div>
                     {radiantPlayers.map((player, idx) => (
                       <PlayerCard key={idx} player={player} isWinner={match.radiant_win} />
                     ))}
                   </div>
                   {/* Dire */}
                   <div className="space-y-2">
-                    <div className="text-center font-bold text-red-400 mb-3">{match.dire_team_name || 'Dire'}</div>
+                    <div className="text-center font-bold text-red-400 mb-3">{direTeamName}</div>
                     {direPlayers.map((player, idx) => (
                       <PlayerCard key={idx} player={player} isWinner={!match.radiant_win} />
                     ))}
@@ -231,7 +245,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
               {/* BP Tab */}
               <TabsContent value="bp">
-                <BPSection picksBans={match.picks_bans || []} />
+                <BPSection picksBans={match.picks_bans || []} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
               </TabsContent>
 
               {/* Overview Tab */}
@@ -281,7 +295,7 @@ function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean })
   );
 }
 
-function BPSection({ picksBans }: { picksBans: PicksBans[] }) {
+function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: PicksBans[]; radiantTeamName: string; direTeamName: string }) {
   const radiantBans = picksBans.filter(pb => pb.team === 0 && !pb.is_pick).map(pb => pb.hero_id);
   const radiantPicks = picksBans.filter(pb => pb.team === 0 && pb.is_pick).map(pb => pb.hero_id);
   const direBans = picksBans.filter(pb => pb.team === 1 && !pb.is_pick).map(pb => pb.hero_id);
@@ -300,7 +314,7 @@ function BPSection({ picksBans }: { picksBans: PicksBans[] }) {
     <div className="grid grid-cols-2 gap-6">
       {/* Radiant */}
       <div>
-        <div className="text-center font-bold text-green-400 mb-3">Radiant</div>
+        <div className="text-center font-bold text-green-400 mb-3">{radiantTeamName}</div>
         <div className="space-y-4">
           <div>
             <div className="text-sm text-slate-400 mb-2">Ban</div>
@@ -328,7 +342,7 @@ function BPSection({ picksBans }: { picksBans: PicksBans[] }) {
 
       {/* Dire */}
       <div>
-        <div className="text-center font-bold text-red-400 mb-3">Dire</div>
+        <div className="text-center font-bold text-red-400 mb-3">{direTeamName}</div>
         <div className="space-y-4">
           <div>
             <div className="text-sm text-slate-400 mb-2">Ban</div>
