@@ -148,15 +148,15 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                   {statusMap[tournament.status]?.label || '即将开始'}
                 </Badge>
               </div>
-              <CardContent className="p-4">
-                <h3 className="font-bold text-white mb-2">{tournament.name_cn || tournament.name}</h3>
-                <div className="flex items-center gap-4 text-sm text-slate-400">
+              <CardContent className="p-3 sm:p-4">
+                <h3 className="font-bold text-white mb-2 line-clamp-2 text-sm sm:text-base">{tournament.name_cn || tournament.name}</h3>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-slate-400">
                   <span className="flex items-center gap-1">
-                    <DollarSign className="w-4 h-4" />
+                    <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" />
                     {tournament.prize_pool || 'TBD'}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                     {tournament.start_date?.slice(5) || '-'}
                   </span>
                 </div>
@@ -172,13 +172,13 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedTournament.name_cn || selectedTournament.name}</h3>
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-slate-400">
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-4 mt-1 sm:mt-2 text-xs text-slate-400">
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-4" />
+                      <MapPin className="w-3 h-3" />
                       {selectedTournament.location || 'TBD'}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-4" />
+                    <span className="hidden xs:inline">
+                      <Calendar className="w-3 h-3 inline mr-1" />
                       {selectedTournament.start_date} ~ {selectedTournament.end_date}
                     </span>
                   </div>
@@ -189,7 +189,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
               </div>
             </CardHeader>
 
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-6">
               {currentSeries.length > 0 ? (
                 <div className="space-y-3">
                   {currentSeries.map((series) => {
