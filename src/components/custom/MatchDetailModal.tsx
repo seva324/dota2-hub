@@ -182,31 +182,31 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
         {match && !loading && (
           <>
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 pb-4 border-b border-slate-800 gap-4">
-              <div className="flex items-center gap-2 md:gap-4 flex-wrap">
-                <div className={`text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-800 gap-2 sm:gap-4">
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} truncate max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
                   {radiantTeamName}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <span className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
                     {match.radiant_score}
                   </span>
-                  <span className="text-slate-600 text-lg md:text-xl">:</span>
-                  <span className={`text-2xl md:text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
+                  <span className="text-slate-600 text-base sm:text-lg md:text-xl">:</span>
+                  <span className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
                     {match.dire_score}
                   </span>
                 </div>
-                <div className={`text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} truncate max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
                   {direTeamName}
                 </div>
               </div>
-              <div className="text-right text-sm text-slate-400">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+              <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
+                <div className="flex items-center gap-1 sm:gap-2 justify-center md:justify-end">
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                   {formatDuration(match.duration)}
                 </div>
-                <div>{formatDate(match.start_time)}</div>
-                <Badge variant="outline" className="border-slate-700 text-slate-400 mt-1">
+                <div className="hidden xs:block">{formatDate(match.start_time)}</div>
+                <Badge variant="outline" className="border-slate-700 text-slate-400 mt-1 text-xs">
                   {match.league_name || 'Professional Match'}
                 </Badge>
               </div>
@@ -214,18 +214,18 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
             {/* Tabs */}
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4">
-                <TabsTrigger value="players" className="data-[state=active]:bg-slate-700">
-                  <Users className="w-4 h-4 mr-2" />
-                  选手数据
+              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-3">
+                <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">选手数据</span>
                 </TabsTrigger>
-                <TabsTrigger value="bp" className="data-[state=active]:bg-slate-700">
-                  <Target className="w-4 h-4 mr-2" />
-                  BP 阵容
+                <TabsTrigger value="bp" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                  <Target className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">BP</span>
                 </TabsTrigger>
-                <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700">
-                  <Sword className="w-4 h-4 mr-2" />
-                  概览
+                <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                  <Sword className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">概览</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -273,26 +273,26 @@ function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean })
   const teamName = proInfo?.team_name || '';
 
   return (
-    <div className={`p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-medium text-white">{displayName}</span>
-          {teamName && <Badge className="bg-slate-700 text-slate-300 text-xs">{teamName}</Badge>}
+    <div className={`p-2 sm:p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
+      <div className="flex items-center justify-between mb-1 sm:mb-2">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+          <span className="text-sm sm:text-base font-medium text-white truncate">{displayName}</span>
+          {teamName && <Badge className="bg-slate-700 text-slate-300 text-xs flex-shrink-0">{teamName}</Badge>}
         </div>
-        <Badge className={isWinner ? 'bg-green-600/20 text-green-400' : 'bg-slate-700 text-slate-400'}>
+        <Badge className={`flex-shrink-0 ${isWinner ? 'bg-green-600/20 text-green-400' : 'bg-slate-700 text-slate-400'} text-xs`}>
           Lv.{player.level}
         </Badge>
       </div>
-      <div className="flex items-center gap-3">
-        <HeroIcon heroId={player.hero_id} size="lg" />
-        <div className="text-xl font-bold text-yellow-400">{getHeroName(player.hero_id)}</div>
-        <div className="flex-1 text-center">
-          <span className={`text-xl font-bold ${player.kills > player.deaths ? 'text-green-400' : player.kills < player.deaths ? 'text-red-400' : 'text-slate-400'}`}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <HeroIcon heroId={player.hero_id} size="sm" />
+        <span className="text-xs sm:text-base font-bold text-yellow-400 truncate flex-shrink-0 max-w-[60px] sm:max-w-[80px]">{getHeroName(player.hero_id)}</span>
+        <div className="flex-1 text-center min-w-0">
+          <span className={`text-sm sm:text-xl font-bold ${player.kills > player.deaths ? 'text-green-400' : player.kills < player.deaths ? 'text-red-400' : 'text-slate-400'}`}>
             {player.kills} / {player.deaths} / {player.assists}
           </span>
         </div>
       </div>
-      <div className="mt-2 text-xs text-slate-400 flex justify-between">
+      <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-slate-400 flex flex-wrap justify-between gap-x-2">
         <span>GPM: {player.gold_per_min}</span>
         <span>XPM: {player.xp_per_min}</span>
         <span>HD: {player.hero_damage}</span>
