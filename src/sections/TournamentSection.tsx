@@ -121,7 +121,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         </div>
 
         {/* Tournament Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {tournaments.map((tournament) => (
             <Card
               key={tournament.id}
@@ -232,20 +232,20 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
 
                           <div className="flex items-center justify-between mt-3">
                             {/* Team A */}
-                            <div className="flex items-center gap-3 flex-1">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                               {series.radiant_team_logo ? (
                                 <img 
                                   src={series.radiant_team_logo} 
                                   alt={series.radiant_team_name}
-                                  className="w-10 h-10 rounded object-contain bg-slate-800"
+                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded object-contain bg-slate-800 flex-shrink-0"
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold flex-shrink-0">
                                   {series.radiant_team_name.substring(0, 2).toUpperCase()}
                                 </div>
                               )}
-                              <div className="flex flex-col">
-                                <span className={`font-medium ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-white'}`}>
+                              <div className="flex flex-col min-w-0">
+                                <span className={`font-medium text-sm sm:text-base truncate ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-white'}`}>
                                   {series.radiant_team_name}
                                 </span>
                                 {teamAIsCN && <span className="text-xs text-red-400">中国</span>}
@@ -253,20 +253,20 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                             </div>
 
                             {/* Score */}
-                            <div className="flex items-center gap-3 px-4">
-                              <span className={`text-2xl font-bold ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
+                            <div className="flex items-center gap-1 sm:gap-3 px-2 sm:px-4">
+                              <span className={`text-lg sm:text-2xl font-bold ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
                                 {series.radiant_score}
                               </span>
-                              <span className="text-slate-600 text-lg">:</span>
-                              <span className={`text-2xl font-bold ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
+                              <span className="text-slate-600 text-sm sm:text-lg">:</span>
+                              <span className={`text-lg sm:text-2xl font-bold ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
                                 {series.dire_score}
                               </span>
                             </div>
 
                             {/* Team B */}
-                            <div className="flex items-center gap-3 flex-1 justify-end">
-                              <div className="flex flex-col items-end">
-                                <span className={`font-medium ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-white'}`}>
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-end min-w-0">
+                              <div className="flex flex-col items-end min-w-0">
+                                <span className={`font-medium text-sm sm:text-base truncate ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-white'}`}>
                                   {series.dire_team_name}
                                 </span>
                                 {teamBIsCN && <span className="text-xs text-red-400">中国</span>}
@@ -275,7 +275,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                 <img 
                                   src={series.dire_team_logo} 
                                   alt={series.dire_team_name}
-                                  className="w-10 h-10 rounded object-contain bg-slate-800"
+                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded object-contain bg-slate-800 flex-shrink-0"
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
