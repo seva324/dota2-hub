@@ -139,6 +139,17 @@
       "status": "completed",
       "prize_pool": ",000,000",
       "location": "线上"
+    },
+    {
+      "id": "pgl-wallachia-7",
+      "name": "PGL Wallachia Season 7",
+      "name_cn": "PGL 瓦拉几亚 S7",
+      "tier": "S",
+      "start_date": "2025-02-09",
+      "end_date": "2025-02-16",
+      "status": "completed",
+      "prize_pool": "$500,000",
+      "location": "罗马尼亚"
     }
   ],
   "news": [
@@ -184,8 +195,7 @@
   ],
   "lastUpdated": "2026-02-14T04:33:39.898Z",
   "matchesByTournament": {
-    "dreamleague-28": [],
-    "blast-slam-6": [
+    "blast-slam-vi": [
       {
         "id": 8692761931,
         "match_id": "8692761931",
@@ -447,6 +457,8 @@
         "stage": "Group Stage"
       }
     ],
+    "esl-challenger-china": [],
+    "dreamleague-s26": [],
     "pgl-wallachia-7": [
       {
         "id": 8573489164,
