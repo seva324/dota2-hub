@@ -213,6 +213,11 @@ async function main() {
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
+  // 清空旧赛事数据
+  console.log('清空旧赛事数据...');
+  db.exec('DELETE FROM tournaments');
+  console.log('旧数据已清除\n');
+  
   const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
   const params = new URLSearchParams({
     action: 'parse',

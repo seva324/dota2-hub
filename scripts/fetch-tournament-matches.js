@@ -2,6 +2,7 @@
 /**
  * 赛事比赛数据抓取脚本
  * 从 Liquipedia 赛事页面获取比赛进程和结果
+ * 优化：本地存储战队logo，使用完整队名
  */
 
 import Database from 'better-sqlite3';
@@ -9,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import zlib from 'zlib';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +19,12 @@ const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
+const GITHUB_PAGES_BASE = '/dota2-hub';
+const logosDir = path.join(__dirname, '..', 'public', 'images', 'teams');
+if (!fs.existsSync(logosDir)) {
+  fs.mkdirSync(logosDir, { recursive: true });
+}
+
 // 添加 stage 列（如果不存在）
 try {
   db.exec(`ALTER TABLE matches ADD COLUMN stage TEXT`);
@@ -24,43 +32,70 @@ try {
   // 列可能已存在
 }
 
-// 已知战队的直接 Logo URL
-const directLogoUrls = {
-  'xg': 'https://liquipedia.net/commons/images/thumb/4/49/Xtreme_Gaming_2020_full.png/180px-Xtreme_Gaming_2020_full.png',
-  'xtreme gaming': 'https://liquipedia.net/commons/images/thumb/4/49/Xtreme_Gaming_2020_full.png/180px-Xtreme_Gaming_2020_full.png',
-  'yb': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
-  'yakult brothers': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
-  'vg': 'https://liquipedia.net/commons/images/thumb/e/e0/Vici_Gaming_2020_full.png/180px-Vici_Gaming_2020_full.png',
-  'vici gaming': 'https://liquipedia.net/commons/images/thumb/e/e0/Vici_Gaming_2020_full.png/180px-Vici_Gaming_2020_full.png',
-  'team spirit': 'https://liquipedia.net/commons/images/f/f2/Team_Spirit_2022_full_lightmode.png',
-  'tundra': 'https://liquipedia.net/commons/images/8/85/Tundra_Esports_2020_full_lightmode.png',
-  'tundra esports': 'https://liquipedia.net/commons/images/8/85/Tundra_Esports_2020_full_lightmode.png',
-  'execration': 'https://liquipedia.net/commons/images/a/af/Execration_2024_full_allmode.png',
-  'og': 'https://liquipedia.net/commons/images/thumb/7/7b/OG_2026_allmode.png/120px-OG_2026_allmode.png',
+// 战队名称映射：短名 -> 全称
+const teamNameMapping = {
+  'liquid': 'Team Liquid',
+  'lgd': 'PSG.LGD',
+  'lgd gaming': 'PSG.LGD',
+  'spirit': 'Team Spirit',
+  'tundra': 'Tundra Esports',
+  'tundra esports': 'Tundra Esports',
+  'navi': 'Natus Vincere',
+  'natus vincere': 'Natus Vincere',
+  'falcons': 'Team Falcons',
+  'team falcons': 'Team Falcons',
+  'gg': 'Gaimin Gladiators',
+  'gaimin gladiators': 'Gaimin Gladiators',
+  'bb': 'BetBoom Team',
+  'betboom': 'BetBoom Team',
+  'gl': 'GamerLegion',
+  'gamerlegion': 'GamerLegion',
+  'og': 'OG',
+  'xg': 'Xtreme Gaming',
+  'xtreme gaming': 'Xtreme Gaming',
+  'yb': 'Yakult Brothers',
+  'yakult brothers': 'Yakult Brothers',
+  'vg': 'Vici Gaming',
+  'vici gaming': 'Vici Gaming',
+  'aurora': 'Aurora Gaming',
+  'yandex': 'Team Yandex',
+  'team yandex': 'Team Yandex',
+  '9p': '9 Pandas',
+  '9pandas': '9 Pandas',
+  'entity': 'Entity',
+  'g2': 'G2 Esports',
+  'g2 esc': 'G2 Esports',
+  'mouz': 'MOUZ',
+  'heroic': 'Heroic',
+  'execration': 'Execration',
+  'sr': 'Team Spirit',
+  'tspirit': 'Team Spirit',
+};
+
+// 已知战队的 Logo URL（用于下载）
+const teamLogoUrls = {
   'team liquid': 'https://liquipedia.net/commons/images/thumb/0/01/Team_Liquid_2024_lightmode.png/120px-Team_Liquid_2024_lightmode.png',
-  'liquid': 'https://liquipedia.net/commons/images/thumb/0/01/Team_Liquid_2024_lightmode.png/120px-Team_Liquid_2024_lightmode.png',
+  'psg.lgd': 'https://liquipedia.net/commons/images/thumb/3/3e/PSG.LGD_2020_allmode.png/120px-PSG.LGD_2020_allmode.png',
+  'team spirit': 'https://liquipedia.net/commons/images/thumb/f/f2/Team_Spirit_2022_full_lightmode.png/120px-Team_Spirit_2022_full_lightmode.png',
+  'tundra esports': 'https://liquipedia.net/commons/images/thumb/8/85/Tundra_Esports_2020_full_lightmode.png/120px-Tundra_Esports_2020_full_lightmode.png',
   'natus vincere': 'https://liquipedia.net/commons/images/thumb/3/3f/Natus_Vincere_2021_lightmode.png/120px-Natus_Vincere_2021_lightmode.png',
-  'navi': 'https://liquipedia.net/commons/images/thumb/3/3f/Natus_Vincere_2021_lightmode.png/120px-Natus_Vincere_2021_lightmode.png',
   'team falcons': 'https://liquipedia.net/commons/images/thumb/8/83/Team_Falcons_2022_allmode.png/120px-Team_Falcons_2022_allmode.png',
-  'falcons': 'https://liquipedia.net/commons/images/thumb/8/83/Team_Falcons_2022_allmode.png/120px-Team_Falcons_2022_allmode.png',
   'gaimin gladiators': 'https://liquipedia.net/commons/images/thumb/c/c6/Gaimin_Gladiators_2023_allmode.png/120px-Gaimin_Gladiators_2023_allmode.png',
-  'gg': 'https://liquipedia.net/commons/images/thumb/c/c6/Gaimin_Gladiators_2023_allmode.png/120px-Gaimin_Gladiators_2023_allmode.png',
   'betboom team': 'https://liquipedia.net/commons/images/thumb/7/77/BetBoom_Team_2023_allmode.png/120px-BetBoom_Team_2023_allmode.png',
-  'bb': 'https://liquipedia.net/commons/images/thumb/7/77/BetBoom_Team_2023_allmode.png/120px-BetBoom_Team_2023_allmode.png',
-  'heroic': 'https://liquipedia.net/commons/images/thumb/0/03/Heroic_2023_allmode.png/120px-Heroic_2023_allmode.png',
   'gamerlegion': 'https://liquipedia.net/commons/images/thumb/6/69/GamerLegion_2023_lightmode.png/120px-GamerLegion_2023_lightmode.png',
-  'gl': 'https://liquipedia.net/commons/images/thumb/6/69/GamerLegion_2023_lightmode.png/120px-GamerLegion_2023_lightmode.png',
-  'mouz': 'https://liquipedia.net/commons/images/thumb/c/c2/MOUZ_2021_allmode.png/120px-MOUZ_2021_allmode.png',
-  'Aurora': 'https://liquipedia.net/commons/images/thumb/9/9c/Aurora_2024_allmode.png/120px-Aurora_2024_allmode.png',
+  'og': 'https://liquipedia.net/commons/images/thumb/7/7b/OG_2026_allmode.png/120px-OG_2026_allmode.png',
+  'xtreme gaming': 'https://liquipedia.net/commons/images/thumb/4/49/Xtreme_Gaming_2020_full.png/180px-Xtreme_Gaming_2020_full.png',
+  'yakult brothers': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
+  'vici gaming': 'https://liquipedia.net/commons/images/thumb/e/e0/Vici_Gaming_2020_full.png/180px-Vici_Gaming_2020_full.png',
+  'aurora gaming': 'https://liquipedia.net/commons/images/thumb/9/9c/Aurora_2024_allmode.png/120px-Aurora_2024_allmode.png',
   'team yandex': 'https://liquipedia.net/commons/images/thumb/e/e9/Team_Yandex_lightmode.png/120px-Team_Yandex_lightmode.png',
-  'yandex': 'https://liquipedia.net/commons/images/thumb/e/e9/Team_Yandex_lightmode.png/120px-Team_Yandex_lightmode.png',
+  '9 pandas': 'https://liquipedia.net/commons/images/thumb/3/3b/9pandas_2023_allmode.png/120px-9pandas_2023_allmode.png',
   'entity': 'https://liquipedia.net/commons/images/thumb/c/c4/Entity_2023_allmode.png/120px-Entity_2023_allmode.png',
-  '9p': 'https://liquipedia.net/commons/images/thumb/3/3b/9pandas_2023_allmode.png/120px-9pandas_2023_allmode.png',
-  'spirit': 'https://liquipedia.net/commons/images/f/f2/Team_Spirit_2022_full_lightmode.png',
-  'tspirit': 'https://liquipedia.net/commons/images/f/f2/Team_Spirit_2022_full_lightmode.png',
-  'sr': 'https://liquipedia.net/commons/images/thumb/c/c1/Team_Spirit_2022_full_lightmode.png/120px-Team_Spirit_2022_full_lightmode.png',
-  'g2': 'https://liquipedia.net/commons/images/thumb/5/5e/G2_Esports_2024_allmode.png/120px-G2_Esports_2024_allmode.png',
-  'g2 esc': 'https://liquipedia.net/commons/images/thumb/5/5e/G2_Esports_2024_allmode.png/120px-G2_Esports_2024_allmode.png',
+  'g2 esports': 'https://liquipedia.net/commons/images/thumb/5/5e/G2_Esports_2024_allmode.png/120px-G2_Esports_2024_allmode.png',
+  'mouz': 'https://liquipedia.net/commons/images/thumb/c/c2/MOUZ_2021_allmode.png/120px-MOUZ_2021_allmode.png',
+  'heroic': 'https://liquipedia.net/commons/images/thumb/0/03/Heroic_2023_allmode.png/120px-Heroic_2023_allmode.png',
+  'rkx': 'https://liquipedia.net/commons/images/thumb/4/49/Xtreme_Gaming_2020_full.png/180px-Xtreme_Gaming_2020_full.png',
+  'execration': 'https://liquipedia.net/commons/images/thumb/a/af/Execration_2024_full_allmode.png/120px-Execration_2024_full_allmode.png',
 };
 
 // Logo 缓存
@@ -94,66 +129,133 @@ function fetchWithGzip(url) {
   });
 }
 
+function downloadImage(url, filepath) {
+  return new Promise((resolve, reject) => {
+    const options = new URL(url);
+    options.headers = {
+      'User-Agent': 'DOTA2-Hub-Bot/1.0 (https://github.com/seva324/dota2-hub)',
+      'Accept': 'image/png,image/*,*/*'
+    };
+
+    const req = https.get(options, (res) => {
+      if (res.statusCode === 404 || res.statusCode === 403) {
+        reject(new Error(`Image not found: ${res.statusCode}`));
+        return;
+      }
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        fs.writeFileSync(filepath, buffer);
+        resolve(true);
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(30000, () => {
+      req.destroy();
+      reject(new Error('Timeout'));
+    });
+  });
+}
+
+// 将队名转换为 ID（用于文件名）
+function teamNameToId(teamName) {
+  if (!teamName) return 'unknown';
+  return teamName.toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function normalizeTeamName(teamName) {
+  if (!teamName) return teamName;
+  const lower = teamName.toLowerCase().trim();
+  return teamNameMapping[lower] || teamName;
+}
+
 async function getTeamLogo(teamName) {
   if (!teamName) return null;
   
-  const lowerName = teamName.toLowerCase();
-  
-  // 先检查直接 URL 映射
-  if (directLogoUrls[lowerName]) {
-    return directLogoUrls[lowerName];
-  }
+  // 先标准化队名
+  const normalizedName = normalizeTeamName(teamName);
+  const lowerName = normalizedName.toLowerCase();
   
   // 检查缓存
   if (logoCache[lowerName]) {
     return logoCache[lowerName];
   }
   
-  // 从数据库获取已保存的 logo
-  try {
-    const existing = db.prepare('SELECT logo_url FROM teams WHERE name LIKE ? OR id LIKE ?').get(`%${teamName}%`, `%${lowerName}%`);
-    if (existing?.logo_url) {
-      logoCache[lowerName] = existing.logo_url;
-      return existing.logo_url;
-    }
-  } catch (e) {}
+  // 生成本地文件路径
+  const teamId = teamNameToId(normalizedName);
+  const localPath = `${GITHUB_PAGES_BASE}/images/teams/${teamId}.png`;
+  const localFilePath = path.join(__dirname, '..', 'public', localPath);
   
-  // 从 Liquipedia 获取
-  try {
-    const pageName = teamName.replace(/\s+/g, '_');
-    const apiUrl = `https://liquipedia.net/dota2/api.php?action=parse&page=${pageName}&format=json&prop=images`;
+  // 如果本地文件已存在，直接返回本地路径
+  if (fs.existsSync(localFilePath)) {
+    logoCache[lowerName] = localPath;
+    return localPath;
+  }
+  
+  // 尝试下载 logo
+  let logoUrl = teamLogoUrls[lowerName];
+  
+  if (!logoUrl) {
+    // 从数据库获取已保存的 logo
+    try {
+      const existing = db.prepare('SELECT logo_url FROM teams WHERE name LIKE ? OR id LIKE ?').get(`%${normalizedName}%`, `%${lowerName}%`);
+      if (existing?.logo_url) {
+        logoUrl = existing.logo_url;
+      }
+    } catch (e) {}
     
-    const responseText = await fetchWithGzip(apiUrl);
-    const data = JSON.parse(responseText);
-    
-    if (!data.parse) return null;
-    
-    const images = data.parse.images || [];
-    const logoImage = images.find(img => 
-      img.toLowerCase().includes('logo') || 
-      img.toLowerCase().includes('allmode') ||
-      img.toLowerCase().includes('lightmode')
-    );
-    
-    if (logoImage) {
-      const imageApiUrl = `https://liquipedia.net/dota2/api.php?action=query&titles=File:${logoImage}&prop=imageinfo&iiprop=url&format=json`;
-      const imgResponse = await fetchWithGzip(imageApiUrl);
-      const imgData = JSON.parse(imgResponse);
-      const pages = imgData.query?.pages || {};
-      
-      for (const pageId in pages) {
-        if (pages[pageId].imageinfo?.[0]?.url) {
-          let logoUrl = pages[pageId].imageinfo[0].url;
-          if (logoUrl.startsWith('//')) {
-            logoUrl = 'https:' + logoUrl;
+    // 如果还没有，从 Liquipedia 获取
+    if (!logoUrl) {
+      try {
+        const pageName = normalizedName.replace(/\s+/g, '_');
+        const apiUrl = `https://liquipedia.net/dota2/api.php?action=parse&page=${pageName}&format=json&prop=images`;
+        const responseText = await fetchWithGzip(apiUrl);
+        const data = JSON.parse(responseText);
+        
+        if (data.parse?.images) {
+          const logoImage = data.parse.images.find(img => 
+            img.toLowerCase().includes('logo') || 
+            img.toLowerCase().includes('allmode') ||
+            img.toLowerCase().includes('lightmode')
+          );
+          
+          if (logoImage) {
+            const imageApiUrl = `https://liquipedia.net/dota2/api.php?action=query&titles=File:${logoImage}&prop=imageinfo&iiprop=url&format=json`;
+            const imgResponse = await fetchWithGzip(imageApiUrl);
+            const imgData = JSON.parse(imgResponse);
+            const pages = imgData.query?.pages || {};
+            
+            for (const pageId in pages) {
+              if (pages[pageId].imageinfo?.[0]?.url) {
+                logoUrl = pages[pageId].imageinfo[0].url;
+                if (logoUrl.startsWith('//')) {
+                  logoUrl = 'https:' + logoUrl;
+                }
+                break;
+              }
+            }
           }
-          logoCache[lowerName] = logoUrl;
-          return logoUrl;
         }
+      } catch (e) {
+        // 忽略错误
       }
     }
-  } catch (e) {
-    // 忽略错误
+  }
+  
+  // 下载并保存到本地
+  if (logoUrl) {
+    try {
+      await downloadImage(logoUrl, localFilePath);
+      console.log(`  Downloaded logo: ${teamId}.png`);
+      logoCache[lowerName] = localPath;
+      return localPath;
+    } catch (e) {
+      console.log(`  Failed to download logo for ${teamName}: ${e.message}`);
+    }
   }
   
   return null;
@@ -172,164 +274,143 @@ function parseTournamentPage(html, tournamentId) {
     defaultFormat = 'BO1';
   }
   
-  const stagePatterns = [
-    /<span[^>]*class="match-info-stage[^"]*"[^>]*>([^<]+)<\/span>/gi,
-    /<span[^>]*class="bracket-stage[^"]*"[^>]*>([^<]+)<\/span>/gi,
-    /<h2[^>]*>(Group Stage|Playoffs|Play in|Lower Bracket|Upper Bracket|Grand Final)[^<]*<\/h2>/gi
-  ];
+  // 新的 Liquipedia 格式: timer-object 包含 timestamp
+  // 格式: <span class="timer-object" data-timestamp="1772287200">...内容...</span>
   
-  for (const pattern of stagePatterns) {
-    let match;
-    while ((match = pattern.exec(html)) !== null) {
-      const stageName = match[1].trim();
-      if (!stages.includes(stageName)) {
-        stages.push(stageName);
-      }
-    }
-  }
+  // 1. 解析所有 timer-object 元素 (Playoffs 格式)
+  const timerPattern = /<span[^>]*class="timer-object[^"]*"[^>]*data-timestamp="(\d+)"[^>]*>([\s\S]*?)<\/span>/gi;
+  let timerMatch;
   
-  // Carousel 格式
-  const carouselBlocks = html.split(/<div[^>]*class="[^"]*carousel-item[^"]*"[^>]*>/);
-  
-  for (let i = 1; i < carouselBlocks.length; i++) {
-    const block = carouselBlocks[i];
+  while ((timerMatch = timerPattern.exec(html)) !== null) {
+    const timestamp = parseInt(timerMatch[1]);
+    const content = timerMatch[2];
     
-    const tsMatch = block.match(/data-timestamp="(\d+)"/);
-    if (!tsMatch) continue;
-    const timestamp = parseInt(tsMatch[1]);
-    
-    const teamMatches = block.match(/<a[^>]*href="\/dota2\/([^"]+)"[^>]*>([^<]+)<\/a>/g);
-    let team1 = null, team2 = null;
-    
-    if (teamMatches) {
-      const uniqueTeams = [];
-      for (const tm of teamMatches) {
-        const hrefMatch = tm.match(/href="\/dota2\/([^"]+)"[^>]*>([^<]+)<\/a>/);
-        if (hrefMatch && hrefMatch[2] !== 'Watch now' && hrefMatch[2] !== 'View match details') {
-          if (!uniqueTeams.includes(hrefMatch[2])) {
-            uniqueTeams.push(hrefMatch[2]);
-          }
-        }
-      }
-      if (uniqueTeams.length >= 2) {
-        team1 = uniqueTeams[0];
-        team2 = uniqueTeams[1];
+    // 提取队伍名 (data-highlightingclass)
+    const teamMatches = content.match(/data-highlightingclass="([^"]+)"/g) || [];
+    const teams = [];
+    for (const tm of teamMatches) {
+      const match = tm.match(/data-highlightingclass="([^"]+)"/);
+      if (match && match[1] && !match[1].includes('TBD')) {
+        teams.push(match[1]);
       }
     }
     
-    if (!team1 || !team2) continue;
+    if (teams.length < 2) continue;
     
-    const scoreMatches = block.match(/<span class="match-info-opponent-score[^"]*"[^>]*>([^<]*)<\/span>/g);
+    // 提取 format
+    const formatMatch = content.match(/\(Bo(\d+)\)/i);
+    const format = formatMatch ? 'BO' + formatMatch[1] : defaultFormat;
+    
+    // 提取 Round
+    let round = 'Playoffs';
+    const roundMatch = content.match(/<td[^>]*class="Round"[^>]*>([^<]+)</);
+    if (roundMatch) {
+      round = roundMatch[1].trim();
+    }
+    
+    if (!stages.includes(round)) {
+      stages.push(round);
+    }
+    
+    // 提取比分 (如果比赛已结束)
     let score1 = 0, score2 = 0;
-    if (scoreMatches) {
-      const scores = [];
-      for (const sm of scoreMatches) {
-        const s = sm.replace(/<[^>]+>/g, '').trim();
-        if (s) scores.push(parseInt(s) || 0);
-      }
-      if (scores.length >= 2) {
-        score1 = scores[0];
-        score2 = scores[1];
-      }
+    const scoreMatch = content.match(/<div[^>]*class="score[^"]*"[^>]*>(\d+):(\d+)/);
+    if (scoreMatch) {
+      score1 = parseInt(scoreMatch[1]) || 0;
+      score2 = parseInt(scoreMatch[2]) || 0;
     }
     
-    let status = 'scheduled';
-    if (score1 > 0 || score2 > 0) {
-      status = 'finished';
-    } else if (timestamp * 1000 < Date.now()) {
-      status = 'live';
-    }
+    const status = (score1 > 0 || score2 > 0) ? 'finished' : 'scheduled';
     
-    const formatMatch = block.match(/\(Bo(\d+)\)/i);
-    const format = formatMatch ? `BO${formatMatch[1]}` : defaultFormat;
-    
-    const stageMatch = block.match(/<span class="match-info-stage[^"]*"[^>]*>([^<]+)<\/span>/i);
-    const stage = stageMatch ? stageMatch[1].trim() : null;
-    
-    const matchId = `lp_${tournamentId}_${timestamp}_${i}`;
+    const matchId = 'lp_' + tournamentId + '_' + timestamp + '_' + matches.length;
     
     matches.push({
       match_id: matchId,
       tournament_id: tournamentId,
-      radiant_team_name: team1,
-      dire_team_name: team2,
+      radiant_team_name: teams[0],
+      dire_team_name: teams[1],
       radiant_score: score1,
       dire_score: score2,
       start_time: timestamp,
       series_type: format,
       status,
-      stage
+      stage: round
     });
   }
   
-  // 表格格式
-  const tableBlocks = html.split(/<table[^>]*class="[^"]*wikitable[^"]*"/);
+  // 2. 解析 Crosstable 格式 (Group Stage)
+  const crosstableMatches = html.match(/<table[^>]*class="[^"]*crosstable[^"]*"[^>]*>[\s\S]*?<\/table>/gi) || [];
   
-  for (let i = 1; i < tableBlocks.length; i++) {
-    const block = tableBlocks[i];
-    const rows = block.split(/<tr[^>]*class="[^"]*Match[^"]*"/);
+  for (const table of crosstableMatches) {
+    // 获取表头中的 timestamp
+    const headerTimers = table.match(/<th[^>]*data-timestamp="(\d+)"[^>]*>/g) || [];
+    const timestamps = [];
+    for (const t of headerTimers) {
+      const m = t.match(/data-timestamp="(\d+)"/);
+      if (m) timestamps.push(parseInt(m[1]));
+    }
     
-    for (let j = 1; j < rows.length; j++) {
-      const row = rows[j];
+    if (timestamps.length === 0) continue;
+    
+    // 获取所有行
+    const rows = table.match(/<tr[^>]*class="crosstable-tr[^"]*"[^>]*>[\s\S]*?<\/tr>/gi) || [];
+    
+    for (const row of rows) {
+      // 获取队伍名
+      const teamMatch = row.match(/data-highlightingclass="([^"]+)"/);
+      if (!teamMatch || !teamMatch[1] || teamMatch[1] === 'TBD') continue;
       
-      const tsMatch = row.match(/data-timestamp="(\d+)"/);
-      if (!tsMatch) continue;
-      const timestamp = parseInt(tsMatch[1]);
+      const teamName = teamMatch[1];
       
-      const teamLeftMatch = row.match(/<span class="team-template-text"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/);
-      const teamRightMatch = row.match(/<td class="TeamRight"[^>]*>[\s\S]*?<span class="team-template-text"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/);
+      // 解析每个有日期的单元格
+      const cells = row.split('</td>');
+      let colIndex = 0;
       
-      const team1 = teamLeftMatch ? teamLeftMatch[1] : null;
-      const team2 = teamRightMatch ? teamRightMatch[1] : null;
-      
-      if (!team1 || !team2) continue;
-      
-      let score1 = 0, score2 = 0;
-      
-      let scoreMatch = row.match(/<td class="Score"[^>]*>[\s\S]*?<div[^>]*>(\d+):<b>(\d+)<\/b><\/div>/);
-      if (scoreMatch) {
-        score1 = parseInt(scoreMatch[1]) || 0;
-        score2 = parseInt(scoreMatch[2]) || 0;
-      } else {
-        scoreMatch = row.match(/<td class="Score"[^>]*>[\s\S]*?<div[^>]*><b>(\d+)<\/b>:(\d+)<\/div>/);
-        if (scoreMatch) {
-          score1 = parseInt(scoreMatch[1]) || 0;
-          score2 = parseInt(scoreMatch[2]) || 0;
-        } else {
-          const simpleScoreMatch = row.match(/<td class="Score"[^>]*>[\s\S]*?<div[^>]*>([^<]+)<\/div>/);
-          if (simpleScoreMatch) {
-            const scores = simpleScoreMatch[1].replace(/<[^>]+>/g, '').trim().split(':');
-            score1 = parseInt(scores[0]) || 0;
-            score2 = parseInt(scores[1]) || 0;
+      for (const cell of cells) {
+        if (cell.includes('crosstable-bgc-r-r') && cell.includes('crosstable-bgc-span')) {
+          const dateMatch = cell.match(/class="crosstable-bgc-span"[^>]*>([^<]+)</);
+          if (dateMatch && timestamps[colIndex] && timestamps[colIndex] > Math.floor(Date.now() / 1000)) {
+            // 在表头中找对应的队伍
+            const headerRows = table.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
+            let otherTeam = null;
+            
+            for (const hr of headerRows) {
+              if (hr.includes(dateMatch[1]) && hr.includes('data-highlightingclass')) {
+                const om = hr.match(/data-highlightingclass="([^"]+)"/);
+                if (om && om[1] !== teamName) {
+                  otherTeam = om[1];
+                  break;
+                }
+              }
+            }
+            
+            if (otherTeam && otherTeam !== 'TBD') {
+              const timestamp = timestamps[colIndex];
+              const matchId = 'lp_cs_' + tournamentId + '_' + timestamp + '_' + matches.length;
+              
+              matches.push({
+                match_id: matchId,
+                tournament_id: tournamentId,
+                radiant_team_name: teamName,
+                dire_team_name: otherTeam,
+                radiant_score: 0,
+                dire_score: 0,
+                start_time: timestamp,
+                series_type: defaultFormat,
+                status: 'scheduled',
+                stage: 'Group Stage'
+              });
+              
+              if (!stages.includes('Group Stage')) {
+                stages.push('Group Stage');
+              }
+            }
           }
         }
+        if (cell.includes('crosstable-bgc-r-r')) {
+          colIndex++;
+        }
       }
-      
-      const roundMatch = row.match(/<td class="Round"[^>]*>([^<]+)<\/td>/);
-      const round = roundMatch ? roundMatch[1].trim() : null;
-      
-      let status = 'finished';
-      if (score1 === 0 && score2 === 0) {
-        status = 'scheduled';
-      }
-      
-      const formatMatch = row.match(/<abbr[^>]*title="Best of (\d+)"[^>]*>/i);
-      const format = formatMatch ? `BO${formatMatch[1]}` : defaultFormat;
-      
-      const matchId = `lp_table_${timestamp}_${i}_${j}`;
-      
-      matches.push({
-        match_id: matchId,
-        tournament_id: tournamentId,
-        radiant_team_name: team1,
-        dire_team_name: team2,
-        radiant_score: score1,
-        dire_score: score2,
-        start_time: timestamp,
-        series_type: format,
-        status,
-        stage: round
-      });
     }
   }
   
@@ -363,7 +444,12 @@ function getLiquipediaPage(tournament) {
     'blast-slam-7': 'BLAST/Slam/7',
     'esl-one': 'ESL_One',
     'the-international': 'The_International',
-    'dreamleague': 'DreamLeague',
+    'pgl-wallachia': 'PGL_Wallachia/7',
+    'cct-season': 'CCT/Season_2',
+    'epl-world': 'EPL/World_Series/12',
+    'european_pro': 'European_Pro_League/Season_34',
+    'cringe_station': 'Cringe_Station',
+    'lunar_snake': 'Lunar_Snake/6',
   };
   
   const idLower = id.toLowerCase();
@@ -371,6 +457,12 @@ function getLiquipediaPage(tournament) {
     if (idLower.includes(key)) {
       return page;
     }
+  }
+  
+  // 尝试从ID中提取 DreamLeague 赛季号
+  const dlMatch = idLower.match(/dreamleague-(\d+)/);
+  if (dlMatch) {
+    return `DreamLeague/${dlMatch[1]}`;
   }
   
   // 尝试从名称推断
@@ -407,13 +499,16 @@ async function fetchTournamentMatches(tournament) {
   }
   
   const url = `https://liquipedia.net/dota2/api.php?action=parse&page=${pageName}&format=json&prop=text`;
+  console.log(`  正在获取: ${url}`);
   
   try {
     const html = await fetchWithGzip(url);
+    console.log(`  获取到 HTML 长度: ${html.length}`);
+    
     const { stages, matches } = parseTournamentPage(html, tournament.id);
     const filteredMatches = filterMatches(matches);
     
-    console.log(`  找到 ${filteredMatches.length} 场比赛 (${stages.join(', ')})`);
+    console.log(`  解析到 ${filteredMatches.length} 场比赛 (${stages.join(', ')})`);
     return { stages, matches: filteredMatches };
   } catch (error) {
     console.error(`  错误: ${error.message}`);
@@ -437,6 +532,11 @@ async function main() {
   
   console.log(`找到 ${tournaments.length} 个进行中/即将开始的赛事\n`);
   
+  // 清空所有比赛数据
+  console.log('清空所有比赛数据...');
+  db.exec('DELETE FROM matches');
+  console.log('所有比赛数据已清除\n');
+  
   const insertMatch = db.prepare(`
     INSERT OR REPLACE INTO matches 
     (match_id, radiant_team_name, dire_team_name, radiant_score, dire_score, 
@@ -455,18 +555,22 @@ async function main() {
     
     for (const m of result.matches) {
       try {
-        const radiantLogo = await getTeamLogo(m.radiant_team_name);
-        const direLogo = await getTeamLogo(m.dire_team_name);
+        // 标准化队名
+        const radiantName = normalizeTeamName(m.radiant_team_name);
+        const direName = normalizeTeamName(m.dire_team_name);
+        
+        const radiantLogo = await getTeamLogo(radiantName);
+        const direLogo = await getTeamLogo(direName);
         
         insertMatch.run(
           m.match_id,
-          m.radiant_team_name,
-          m.dire_team_name,
+          radiantName,  // 使用标准化后的队名
+          direName,
           m.radiant_score,
           m.dire_score,
           m.start_time,
           m.series_type,
-          m.tournament_id,
+          t.id,  // 使用数据库中的 tournament id
           t.name_cn || t.name,
           m.status,
           m.stage,

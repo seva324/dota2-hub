@@ -4,12 +4,21 @@ on:
   schedule:
     # 每天 UTC 00:00 运行 (北京时间 08:00)
     - cron: '0 0 * * *'
-  workflow_dispatch:
+  # Disable automatic run on push - only manual trigger
+  # workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages-daily'
+  cancel-in-progress: false
 
 jobs:
-  update:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -17,19 +26,37 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '23'
+        cache: 'npm'
         
+    - name: Install build tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential python3
+        
+    - name: Clean node_modules
+      run: rm -rf node_modules package-lock.json
+      
     - name: Install dependencies
-      run: npm ci
+      run: npm install
       
     - name: Initialize database
       run: node scripts/init-db.js
       
-    - name: Fetch team logos
-      run: node scripts/fetch-team-logos.js
-      
-    - name: Fetch latest tournament data
+    - name: Fetch Tournament Data
       run: node scripts/fetch-tournaments.js
+      
+    - name: Fetch Match Data from Liquipedia
+      run: node scripts/fetch-liquipedia.js
+      continue-on-error: true
+      
+    - name: Fetch Tournament Matches from Liquipedia
+      run: node scripts/fetch-tournament-matches.js
+      continue-on-error: true
+      
+    - name: Fetch Team Logos and Update Match Logos
+      run: node scripts/fetch-team-logos.js
+      continue-on-error: true
       
     - name: Fetch upcoming CN matches
       run: node scripts/fetch-upcoming-cn.js
@@ -40,21 +67,24 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-        
-    - name: Commit changes
+    - name: Copy data to dist
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add -A
-        git diff --quiet && git diff --staged --quiet || git commit -m "Daily update: $(date +'%Y-%m-%d')"
+        mkdir -p dist/data dist/images
+        cp -r public/data/* dist/data/
+        cp -r public/images/* dist/images/
         
-    - name: Push changes
-      uses: ad-m/github-push-action@master
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
+        path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

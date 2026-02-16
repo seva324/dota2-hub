@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const outputDir = path.join(__dirname, '..', 'public', 'data');
 
-// 目标战队
+// 目标战队 (仅用于首页推荐)
 const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brothers', 'vici-gaming'];
 const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
 
@@ -20,20 +20,120 @@ if (!fs.existsSync(outputDir)) {
 
 const db = new Database(dbPath);
 
+// 系列赛类型映射
+const SERIES_TYPE_MAP = {
+  0: 'BO1',
+  1: 'BO3', 
+  2: 'BO5',
+  3: 'BO2'
+};
+
+/**
+ * 清洗和聚合系列赛数据
+ * 规则：相同对手 + 相同赛事 + 24小时内 + 相同series_type → 合并为同一个series
+ */
+function aggregateSeries(matches) {
+  // 按赛事和对手分组
+  const groups = {};
+  
+  for (const match of matches) {
+    // 标准化战队名（排序，确保A_vs_B和B_vs_A是同一个key）
+    const teamA = match.radiant_team_name || '';
+    const teamB = match.dire_team_name || '';
+    const teamsKey = [teamA, teamB].sort().join('_vs_');
+    
+    // 赛事key
+    const tournamentKey = match.tournament_id || match.tournament_name || 'unknown';
+    
+    // series_type
+    const seriesType = match.series_type || 'BO3';
+    
+    // 时间窗口（按天分组，24小时内）
+    const dayKey = Math.floor((match.start_time || 0) / 86400);
+    
+    // 组合key
+    const groupKey = `${tournamentKey}_${teamsKey}_${seriesType}_${dayKey}`;
+    
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        series_id: `cleaned_${groupKey}`,
+        series_type: seriesType,
+        radiant_team_name: teamA,
+        dire_team_name: teamB,
+        games: [],
+        radiant_wins: 0,
+        dire_wins: 0,
+        tournament_id: match.tournament_id,
+        tournament_name: match.tournament_name,
+        stage: match.stage || ''
+      };
+    }
+    
+    // 记录这场谁赢了（按战队名，不按radiant/dire，因为每局会换边）
+    const radiantWin = match.radiant_win !== undefined ? match.radiant_win : (match.radiant_score > match.dire_score);
+    const winner = radiantWin ? teamA : teamB;
+    
+    if (winner === groups[groupKey].radiant_team_name) {
+      groups[groupKey].radiant_wins++;
+    } else {
+      groups[groupKey].dire_wins++;
+    }
+    
+    // 添加比赛详情
+    groups[groupKey].games.push({
+      match_id: match.match_id,
+      radiant_team_name: match.radiant_team_name,
+      dire_team_name: match.dire_team_name,
+      radiant_score: match.radiant_score || 0,
+      dire_score: match.dire_score || 0,
+      radiant_win: radiantWin,
+      start_time: match.start_time,
+      duration: match.duration || 0
+    });
+  }
+  
+  // 转换为数组，按时间排序
+  return Object.values(groups).map(series => ({
+    ...series,
+    radiant_score: series.radiant_wins,
+    dire_score: series.dire_wins,
+    games: series.games.sort((a, b) => a.start_time - b.start_time)
+  })).sort((a, b) => {
+    const timeA = a.games[0]?.start_time || 0;
+    const timeB = b.games[0]?.start_time || 0;
+    return timeB - timeA;
+  });
+}
+
 // 导出比赛数据
 const matches = db.prepare(`
   SELECT m.*, 
          COALESCE(m.tournament_name, t.name) as tournament_name, 
          COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
-         t.tier as tournament_tier
+         t.tier as tournament_tier,
+         CASE 
+           WHEN m.radiant_score > m.dire_score THEN 1 
+           ELSE 0 
+         END as radiant_win
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   ORDER BY m.start_time DESC
-  LIMIT 100
+  LIMIT 200
 `).all();
 
-fs.writeFileSync(path.join(outputDir, 'matches.json'), JSON.stringify(matches, null, 2));
-console.log(`Exported ${matches.length} matches`);
+// 去重 matches
+const matchesDeduped = [];
+const matchSeen = new Set();
+for (const m of matches) {
+  const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
+  if (!matchSeen.has(key)) {
+    matchSeen.add(key);
+    matchesDeduped.push(m);
+  }
+}
+
+fs.writeFileSync(path.join(outputDir, 'matches.json'), JSON.stringify(matchesDeduped, null, 2));
+console.log(`Exported ${matchesDeduped.length} matches (${matchesDeduped.length}/${matches.length} after dedup)`);
 
 // 导出即将开始的比赛（带倒计时）- 只包含 XG/YB/VG
 const now = Math.floor(Date.now() / 1000);
@@ -50,8 +150,39 @@ const upcomingMatches = db.prepare(`
   LIMIT 10
 `).all([now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
 
-fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(upcomingMatches, null, 2));
-console.log(`Exported ${upcomingMatches.length} upcoming XG/YB/VG matches`);
+// 获取所有未来比赛（不限战队）用于去重
+const allUpcomingMatches = db.prepare(`
+  SELECT m.*, 
+         COALESCE(m.tournament_name, t.name) as tournament_name, 
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+         t.tier as tournament_tier
+  FROM matches m
+  LEFT JOIN tournaments t ON m.tournament_id = t.id
+  WHERE m.start_time > ?
+  ORDER BY m.start_time ASC
+  LIMIT 20
+`).all(now);
+
+// 去重函数 - 优先保留有 tournament 信息的
+function dedupMatches(matches) {
+  const seen = new Map();
+  const sorted = [...matches].sort((a, b) => {
+    const aHasT = a.tournament_name ? 1 : 0;
+    const bHasT = b.tournament_name ? 1 : 0;
+    return bHasT - aHasT;
+  });
+  for (const m of sorted) {
+    if (!m.start_time || !m.radiant_team_name || !m.dire_team_name) continue;
+    const key = `${m.start_time}_${m.radiant_team_name}_${m.dire_team_name}`;
+    if (!seen.has(key)) seen.set(key, m);
+  }
+  return Array.from(seen.values()).sort((a, b) => a.start_time - b.start_time);
+}
+
+// 合并去重后写入 upcoming.json
+const dedupedUpcoming = dedupMatches([...allUpcomingMatches, ...upcomingMatches]);
+fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(dedupedUpcoming, null, 2));
+console.log(`Exported ${dedupedUpcoming.length} upcoming matches (deduped)`);
 
 // 导出中国战队近期比赛
 const cnMatches = db.prepare(`
@@ -84,26 +215,38 @@ const tournaments = db.prepare(`
 `).all();
 console.log(`Exported ${tournaments.length} tournaments`);
 
-// 按赛事分组
-const matchesByTournament = {};
+// 按赛事分组并聚合系列赛
+const seriesByTournament = {};
 for (const t of tournaments) {
-  const tournamentNameLower = t.name.toLowerCase();
-  const tournamentIdLower = t.id.toLowerCase();
+  const tid = t.id.toLowerCase();
+  const tname = t.name.toLowerCase();
+  const mainWord = tid.replace(/\d+$/, '').replace(/-.*$/, '').trim();
   
-  const matches = db.prepare(`
-    SELECT * FROM matches 
-    WHERE tournament_name LIKE ? OR tournament_id LIKE ?
-    ORDER BY start_time DESC
-    LIMIT 20
-  `).all(`%${tournamentNameLower}%`, `%${tournamentIdLower}%`);
+  // 获取该赛事的所有比赛
+  const tournamentMatches = db.prepare(`
+    SELECT m.*, 
+           CASE 
+             WHEN m.radiant_score > m.dire_score THEN 1 
+             ELSE 0 
+           END as radiant_win
+    FROM matches m
+    WHERE LOWER(m.tournament_id) LIKE ? 
+       OR LOWER(m.tournament_id) LIKE ?
+       OR LOWER(m.tournament_name) LIKE ?
+       OR LOWER(m.tournament_name) LIKE ?
+    ORDER BY m.start_time DESC
+    LIMIT 50
+  `).all(`%${tid}%`, `%${mainWord}%`, `%${tname}%`, `%${mainWord}%`);
   
-  matchesByTournament[t.id] = matches;
+  // 聚合为系列赛
+  seriesByTournament[t.id] = aggregateSeries(tournamentMatches);
 }
 
 fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify({
   tournaments,
-  matchesByTournament
+  seriesByTournament
 }, null, 2));
+console.log(`Exported series data for ${Object.keys(seriesByTournament).length} tournaments`);
 
 // 导出战队数据
 const teams = db.prepare('SELECT * FROM teams').all();
@@ -117,10 +260,10 @@ console.log(`Exported ${news.length} news items`);
 
 // 导出首页数据（合并所有数据）
 const homeData = {
-  upcoming: upcomingMatches,
+  upcoming: dedupedUpcoming,
   cnMatches,
   tournaments,
-  matchesByTournament,
+  seriesByTournament,
   news,
   lastUpdated: new Date().toISOString()
 };
