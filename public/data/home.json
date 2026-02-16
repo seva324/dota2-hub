@@ -3,28 +3,6 @@
   "cnMatches": [],
   "tournaments": [
     {
-      "id": "blast-slam-vi",
-      "name": "BLAST Slam VI",
-      "name_cn": "BLAST 锦标赛 VI",
-      "tier": "S",
-      "start_date": "2025-01-28",
-      "end_date": "2025-02-02",
-      "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "线上"
-    },
-    {
-      "id": "dreamleague-s27",
-      "name": "DreamLeague Season 27",
-      "name_cn": "梦联赛 S27",
-      "tier": "S",
-      "start_date": "2025-11-10",
-      "end_date": "2025-12-08",
-      "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "线上"
-    },
-    {
       "id": "dreamleague-s28",
       "name": "DreamLeague Season 28",
       "name_cn": "梦联赛 S28",
@@ -45,6 +23,28 @@
       "status": "completed",
       "prize_pool": "$100,000",
       "location": "中国"
+    },
+    {
+      "id": "dreamleague-s27",
+      "name": "DreamLeague Season 27",
+      "name_cn": "梦联赛 S27",
+      "tier": "S",
+      "start_date": "2025-11-10",
+      "end_date": "2025-12-08",
+      "status": "completed",
+      "prize_pool": "$1,000,000",
+      "location": "线上"
+    },
+    {
+      "id": "blast-slam-vi",
+      "name": "BLAST Slam VI",
+      "name_cn": "BLAST 锦标赛 VI",
+      "tier": "S",
+      "start_date": "2025-01-28",
+      "end_date": "2025-02-02",
+      "status": "completed",
+      "prize_pool": "$1,000,000",
+      "location": "线上"
     }
   ],
   "seriesByTournament": {
