@@ -108,6 +108,17 @@
   "cnMatches": [],
   "tournaments": [
     {
+      "id": "blast-slam-vi",
+      "name": "BLAST Slam VI",
+      "name_cn": "BLAST 锦标赛 VI",
+      "tier": "S",
+      "start_date": "2025-01-28",
+      "end_date": "2025-02-02",
+      "status": "completed",
+      "prize_pool": ",000,000",
+      "location": "线上"
+    },
+    {
       "id": "esl-challenger-china",
       "name": "ESL Challenger China",
       "name_cn": "ESL 挑战者杯 中国",
@@ -214,6 +225,34 @@
         "tournament_name": "DreamLeague S26",
         "status": "completed",
         "stage": "Grand Final"
+      }
+    ],
+    "blast-slam-vi": [
+      {
+        "id": 1,
+        "match_id": "8669491857",
+        "radiant_team_name": "Team Spirit",
+        "dire_team_name": "Xtreme Gaming",
+        "radiant_score": 2,
+        "dire_score": 1,
+        "start_time": 1769683200,
+        "series_type": "BO3",
+        "tournament_name": "BLAST Slam VI",
+        "status": "completed",
+        "stage": "Finals"
+      },
+      {
+        "id": 2,
+        "match_id": "8669491858",
+        "radiant_team_name": "BetBoom Team",
+        "dire_team_name": "PARIVISION",
+        "radiant_score": 0,
+        "dire_score": 2,
+        "start_time": 1769596800,
+        "series_type": "BO3",
+        "tournament_name": "BLAST Slam VI",
+        "status": "completed",
+        "stage": "Semifinals"
       }
     ]
   }
