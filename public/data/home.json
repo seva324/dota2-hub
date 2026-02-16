@@ -14,12 +14,12 @@
       "location": "线上"
     },
     {
-      "id": "esl-challenger-china",
+      "id": "esl-challenger-china-2026",
       "name": "ESL Challenger China",
       "name_cn": "ESL 挑战者杯 中国",
       "tier": "S",
-      "start_date": "2025-01-13",
-      "end_date": "2025-01-19",
+      "start_date": "2026-01-27",
+      "end_date": "2026-02-02",
       "status": "completed",
       "prize_pool": "$100,000",
       "location": "中国"
@@ -501,512 +501,426 @@
         "stage": "Group Stage"
       }
     ],
-    "esl-challenger-china": [
+    "esl-challenger-china-2026": [
       {
-        "series_id": "976379",
-        "series_type": "BO5",
-        "radiant_team_name": "Team Tidebound",
-        "dire_team_name": "Xtreme Gaming",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12094940740270677482/9AD05F0A80A562EE4A833375BF1783B52B3D4C30/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
-        "radiant_score": 2,
-        "dire_score": 3,
-        "games": [
-          {
-            "match_id": "8294958274",
-            "radiant_team_name": "Team Tidebound",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 17,
-            "dire_score": 2,
-            "radiant_win": true,
-            "start_time": 1747378832,
-            "duration": 1581
-          },
-          {
-            "match_id": "8294996536",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Team Tidebound",
-            "radiant_score": 19,
-            "dire_score": 4,
-            "radiant_win": true,
-            "start_time": 1747382228,
-            "duration": 1611
-          },
-          {
-            "match_id": "8295032116",
-            "radiant_team_name": "Team Tidebound",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 29,
-            "dire_score": 24,
-            "radiant_win": false,
-            "start_time": 1747385408,
-            "duration": 3066
-          },
-          {
-            "match_id": "8295091867",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Team Tidebound",
-            "radiant_score": 9,
-            "dire_score": 19,
-            "radiant_win": false,
-            "start_time": 1747390383,
-            "duration": 2107
-          },
-          {
-            "match_id": "8295141154",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Team Tidebound",
-            "radiant_score": 24,
-            "dire_score": 6,
-            "radiant_win": true,
-            "start_time": 1747394126,
-            "duration": 2340
-          }
-        ],
-        "stage": "Playoffs"
-      },
-      {
-        "series_id": "976364",
-        "series_type": "BO2",
-        "radiant_team_name": "Excel Esports",
-        "dire_team_name": "Xtreme Gaming",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/63714709027428287/61D8BD9ED4973E21E99687F3412182CD749067B7/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
-        "radiant_score": 0,
-        "dire_score": 2,
-        "games": [
-          {
-            "match_id": "8294838621",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Excel Esports",
-            "radiant_score": 13,
-            "dire_score": 6,
-            "radiant_win": true,
-            "start_time": 1747366472,
-            "duration": 1694
-          },
-          {
-            "match_id": "8294885946",
-            "radiant_team_name": "Excel Esports",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 9,
-            "dire_score": 22,
-            "radiant_win": false,
-            "start_time": 1747370756,
-            "duration": 2052
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "973144",
+        "series_id": "1060486",
         "series_type": "BO3",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
         "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
         "radiant_score": 3,
-        "dire_score": 0,
+        "dire_score": 1,
         "games": [
           {
-            "match_id": "8278526602",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 43,
-            "dire_score": 20,
-            "radiant_win": true,
-            "start_time": 1746266997,
-            "duration": 2298
-          },
-          {
-            "match_id": "8278592044",
+            "match_id": "8673036135",
             "radiant_team_name": "Yakult Brothers",
             "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 22,
-            "dire_score": 44,
+            "radiant_score": 9,
+            "dire_score": 33,
             "radiant_win": false,
-            "start_time": 1746270805,
-            "duration": 2725
+            "start_time": 1769937325,
+            "duration": 2499
           },
           {
-            "match_id": "8278668699",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 28,
-            "dire_score": 17,
-            "radiant_win": true,
-            "start_time": 1746274797,
-            "duration": 1689
-          }
-        ],
-        "stage": "Playoffs"
-      },
-      {
-        "series_id": "973080",
-        "series_type": "BO3",
-        "radiant_team_name": "Excel Esports",
-        "dire_team_name": "Yakult Brothers",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/63714709027428287/61D8BD9ED4973E21E99687F3412182CD749067B7/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
-        "radiant_score": 1,
-        "dire_score": 2,
-        "games": [
-          {
-            "match_id": "8278271532",
+            "match_id": "8673144672",
             "radiant_team_name": "Yakult Brothers",
-            "dire_team_name": "Excel Esports",
-            "radiant_score": 34,
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 29,
+            "dire_score": 7,
+            "radiant_win": true,
+            "start_time": 1769941643,
+            "duration": 1733
+          },
+          {
+            "match_id": "8673199919",
+            "radiant_team_name": "Yakult Brothers",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 9,
+            "dire_score": 19,
+            "radiant_win": false,
+            "start_time": 1769945146,
+            "duration": 1762
+          },
+          {
+            "match_id": "8673303676",
+            "radiant_team_name": "Yakult Brothers",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 13,
             "dire_score": 31,
-            "radiant_win": true,
-            "start_time": 1746248971,
-            "duration": 3372
-          },
-          {
-            "match_id": "8278331551",
-            "radiant_team_name": "Excel Esports",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 52,
-            "dire_score": 13,
-            "radiant_win": true,
-            "start_time": 1746254009,
-            "duration": 3793
-          },
-          {
-            "match_id": "8278403917",
-            "radiant_team_name": "Excel Esports",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 14,
-            "dire_score": 32,
             "radiant_win": false,
-            "start_time": 1746259285,
-            "duration": 2794
+            "start_time": 1769948706,
+            "duration": 2672
           }
         ],
         "stage": "Playoffs"
       },
       {
-        "series_id": "972874",
+        "series_id": "1060458",
         "series_type": "BO2",
-        "radiant_team_name": "Team Tidebound",
+        "radiant_team_name": "Vici Gaming",
         "dire_team_name": "Yakult Brothers",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12094940740270677482/9AD05F0A80A562EE4A833375BF1783B52B3D4C30/",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/726228.png",
         "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
         "radiant_score": 0,
         "dire_score": 2,
         "games": [
           {
-            "match_id": "8277163552",
+            "match_id": "8672809706",
             "radiant_team_name": "Yakult Brothers",
-            "dire_team_name": "Team Tidebound",
-            "radiant_score": 36,
-            "dire_score": 19,
-            "radiant_win": true,
-            "start_time": 1746180710,
-            "duration": 2535
-          },
-          {
-            "match_id": "8277231759",
-            "radiant_team_name": "Team Tidebound",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 23,
-            "dire_score": 36,
-            "radiant_win": false,
-            "start_time": 1746184897,
-            "duration": 2666
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "972835",
-        "series_type": "BO2",
-        "radiant_team_name": "Excel Esports",
-        "dire_team_name": "Xtreme Gaming",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/63714709027428287/61D8BD9ED4973E21E99687F3412182CD749067B7/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
-        "radiant_score": 0,
-        "dire_score": 2,
-        "games": [
-          {
-            "match_id": "8277014408",
-            "radiant_team_name": "Excel Esports",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 17,
+            "dire_team_name": "Vici Gaming",
+            "radiant_score": 39,
             "dire_score": 29,
-            "radiant_win": false,
-            "start_time": 1746170432,
-            "duration": 2999
+            "radiant_win": true,
+            "start_time": 1769921993,
+            "duration": 3717
           },
           {
-            "match_id": "8277077030",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Excel Esports",
-            "radiant_score": 23,
-            "dire_score": 21,
-            "radiant_win": true,
-            "start_time": 1746174971,
-            "duration": 2331
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "972819",
-        "series_type": "BO2",
-        "radiant_team_name": "Team Tidebound",
-        "dire_team_name": "tearlaments",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12094940740270677482/9AD05F0A80A562EE4A833375BF1783B52B3D4C30/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13054916969328839/7663A2A47B72EF63B9ACE9860B377CF97B35D98C/",
-        "radiant_score": 2,
-        "dire_score": 0,
-        "games": [
-          {
-            "match_id": "8276919289",
-            "radiant_team_name": "tearlaments",
-            "dire_team_name": "Team Tidebound",
-            "radiant_score": 3,
-            "dire_score": 21,
-            "radiant_win": false,
-            "start_time": 1746162062,
-            "duration": 1531
-          },
-          {
-            "match_id": "8276953038",
-            "radiant_team_name": "Team Tidebound",
-            "dire_team_name": "tearlaments",
-            "radiant_score": 31,
-            "dire_score": 19,
-            "radiant_win": true,
-            "start_time": 1746165306,
-            "duration": 2219
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "972817",
-        "series_type": "BO3",
-        "radiant_team_name": "Yakult Brothers",
-        "dire_team_name": "future gaming",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
-        "dire_team_logo": null,
-        "radiant_score": 2,
-        "dire_score": 1,
-        "games": [
-          {
-            "match_id": "8276902368",
-            "radiant_team_name": "future gaming",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 34,
-            "dire_score": 10,
-            "radiant_win": true,
-            "start_time": 1746160366,
-            "duration": 2830
-          },
-          {
-            "match_id": "8276960143",
+            "match_id": "8672893029",
             "radiant_team_name": "Yakult Brothers",
-            "dire_team_name": "future gaming",
-            "radiant_score": 38,
-            "dire_score": 19,
-            "radiant_win": true,
-            "start_time": 1746165959,
-            "duration": 2377
-          },
-          {
-            "match_id": "8277010600",
-            "radiant_team_name": "future gaming",
-            "dire_team_name": "Yakult Brothers",
-            "radiant_score": 18,
-            "dire_score": 45,
-            "radiant_win": false,
-            "start_time": 1746170193,
-            "duration": 2831
-          }
-        ],
-        "stage": "Playoffs"
-      },
-      {
-        "series_id": "972616",
-        "series_type": "BO2",
-        "radiant_team_name": "Excel Esports",
-        "dire_team_name": "future gaming",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/63714709027428287/61D8BD9ED4973E21E99687F3412182CD749067B7/",
-        "dire_team_logo": null,
-        "radiant_score": 2,
-        "dire_score": 0,
-        "games": [
-          {
-            "match_id": "8275958633",
-            "radiant_team_name": "future gaming",
-            "dire_team_name": "Excel Esports",
-            "radiant_score": 11,
-            "dire_score": 35,
-            "radiant_win": false,
-            "start_time": 1746102435,
-            "duration": 2345
-          },
-          {
-            "match_id": "8276038941",
-            "radiant_team_name": "Excel Esports",
-            "dire_team_name": "future gaming",
-            "radiant_score": 28,
-            "dire_score": 10,
-            "radiant_win": true,
-            "start_time": 1746106064,
-            "duration": 2292
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "972549",
-        "series_type": "BO3",
-        "radiant_team_name": "Xtreme Gaming",
-        "dire_team_name": "tearlaments",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13054916969328839/7663A2A47B72EF63B9ACE9860B377CF97B35D98C/",
-        "radiant_score": 2,
-        "dire_score": 1,
-        "games": [
-          {
-            "match_id": "8275693676",
-            "radiant_team_name": "tearlaments",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 29,
-            "dire_score": 14,
-            "radiant_win": true,
-            "start_time": 1746087170,
-            "duration": 2825
-          },
-          {
-            "match_id": "8275785675",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "tearlaments",
-            "radiant_score": 29,
+            "dire_team_name": "Vici Gaming",
+            "radiant_score": 30,
             "dire_score": 13,
             "radiant_win": true,
-            "start_time": 1746092825,
-            "duration": 2864
-          },
-          {
-            "match_id": "8275854465",
-            "radiant_team_name": "tearlaments",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 14,
-            "dire_score": 30,
-            "radiant_win": false,
-            "start_time": 1746097048,
-            "duration": 2059
-          }
-        ],
-        "stage": "Playoffs"
-      },
-      {
-        "series_id": "962683",
-        "series_type": "BO3",
-        "radiant_team_name": "calm",
-        "dire_team_name": "future gaming",
-        "radiant_team_logo": null,
-        "dire_team_logo": null,
-        "radiant_score": 1,
-        "dire_score": 2,
-        "games": [
-          {
-            "match_id": "8235032872",
-            "radiant_team_name": "future gaming",
-            "dire_team_name": "calm",
-            "radiant_score": 26,
-            "dire_score": 11,
-            "radiant_win": true,
-            "start_time": 1743324774,
-            "duration": 1926
-          },
-          {
-            "match_id": "8235103481",
-            "radiant_team_name": "calm",
-            "dire_team_name": "future gaming",
-            "radiant_score": 39,
-            "dire_score": 22,
-            "radiant_win": true,
-            "start_time": 1743328385,
-            "duration": 2429
-          },
-          {
-            "match_id": "8235177799",
-            "radiant_team_name": "future gaming",
-            "dire_team_name": "calm",
-            "radiant_score": 28,
-            "dire_score": 14,
-            "radiant_win": true,
-            "start_time": 1743332591,
-            "duration": 2524
-          }
-        ],
-        "stage": "Playoffs"
-      },
-      {
-        "series_id": "960469",
-        "series_type": "BO2",
-        "radiant_team_name": "Excel Esports",
-        "dire_team_name": "近月少女",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/63714709027428287/61D8BD9ED4973E21E99687F3412182CD749067B7/",
-        "dire_team_logo": null,
-        "radiant_score": 2,
-        "dire_score": 0,
-        "games": [
-          {
-            "match_id": "8225668435",
-            "radiant_team_name": "Excel Esports",
-            "dire_team_name": "近月少女",
-            "radiant_score": 26,
-            "dire_score": 25,
-            "radiant_win": true,
-            "start_time": 1742719951,
-            "duration": 2940
-          },
-          {
-            "match_id": "8225757265",
-            "radiant_team_name": "近月少女",
-            "dire_team_name": "Excel Esports",
-            "radiant_score": 10,
-            "dire_score": 37,
-            "radiant_win": false,
-            "start_time": 1742724303,
-            "duration": 1581
+            "start_time": 1769927437,
+            "duration": 2143
           }
         ],
         "stage": "Group Stage"
       },
       {
-        "series_id": "958281",
+        "series_id": "1060135",
         "series_type": "BO2",
-        "radiant_team_name": "tearlaments",
-        "dire_team_name": "Raiders Gaming",
-        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13054916969328839/7663A2A47B72EF63B9ACE9860B377CF97B35D98C/",
-        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/31067412450844084/972B0042EA95A31DE33B5BA4C8241CC71A8ADC29/",
+        "radiant_team_name": "Yakult Brothers",
+        "dire_team_name": "Roar",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/18408146465981986437/CCA9A02305890B647AD50B62CC974C83CC87B551/",
         "radiant_score": 2,
         "dire_score": 0,
         "games": [
           {
-            "match_id": "8216263304",
-            "radiant_team_name": "Raiders Gaming",
-            "dire_team_name": "tearlaments",
+            "match_id": "8671634776",
+            "radiant_team_name": "Roar",
+            "dire_team_name": "Yakult Brothers",
             "radiant_score": 10,
             "dire_score": 23,
             "radiant_win": false,
-            "start_time": 1742115255,
-            "duration": 1735
+            "start_time": 1769859722,
+            "duration": 2020
           },
           {
-            "match_id": "8216338010",
-            "radiant_team_name": "Raiders Gaming",
-            "dire_team_name": "tearlaments",
-            "radiant_score": 21,
-            "dire_score": 32,
+            "match_id": "8671739319",
+            "radiant_team_name": "Yakult Brothers",
+            "dire_team_name": "Roar",
+            "radiant_score": 20,
+            "dire_score": 4,
+            "radiant_win": true,
+            "start_time": 1769863745,
+            "duration": 1294
+          }
+        ],
+        "stage": "Group Stage"
+      },
+      {
+        "series_id": "1060083",
+        "series_type": "BO3",
+        "radiant_team_name": "Xtreme Gaming",
+        "dire_team_name": "Vici Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/726228.png",
+        "radiant_score": 2,
+        "dire_score": 1,
+        "games": [
+          {
+            "match_id": "8671387969",
+            "radiant_team_name": "Vici Gaming",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 7,
+            "dire_score": 24,
             "radiant_win": false,
-            "start_time": 1742118600,
-            "duration": 2390
+            "start_time": 1769845725,
+            "duration": 2426
+          },
+          {
+            "match_id": "8671470068",
+            "radiant_team_name": "Vici Gaming",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 21,
+            "dire_score": 7,
+            "radiant_win": true,
+            "start_time": 1769850222,
+            "duration": 1620
+          },
+          {
+            "match_id": "8671533033",
+            "radiant_team_name": "Vici Gaming",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 15,
+            "dire_score": 21,
+            "radiant_win": false,
+            "start_time": 1769853900,
+            "duration": 2889
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1060044",
+        "series_type": "BO2",
+        "radiant_team_name": "Yakult Brothers",
+        "dire_team_name": "Team Refuser",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13167292190185607570/FE3D86EA91DCA49AF9D671BA3B8F340A4C966C04/",
+        "radiant_score": 2,
+        "dire_score": 0,
+        "games": [
+          {
+            "match_id": "8671246426",
+            "radiant_team_name": "Yakult Brothers",
+            "dire_team_name": "Team Refuser",
+            "radiant_score": 29,
+            "dire_score": 12,
+            "radiant_win": true,
+            "start_time": 1769835643,
+            "duration": 2498
+          },
+          {
+            "match_id": "8671313399",
+            "radiant_team_name": "Team Refuser",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 7,
+            "dire_score": 29,
+            "radiant_win": false,
+            "start_time": 1769840104,
+            "duration": 2134
+          }
+        ],
+        "stage": "Group Stage"
+      },
+      {
+        "series_id": "1060041",
+        "series_type": "BO3",
+        "radiant_team_name": "YB.Tearlaments",
+        "dire_team_name": "Roar",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/17004155546796246644/C6D54B03FB7B2254E30CFB3E579B82A6B3D95774/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/18408146465981986437/CCA9A02305890B647AD50B62CC974C83CC87B551/",
+        "radiant_score": 1,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8671242591",
+            "radiant_team_name": "YB.Tearlaments",
+            "dire_team_name": "Roar",
+            "radiant_score": 28,
+            "dire_score": 12,
+            "radiant_win": true,
+            "start_time": 1769835303,
+            "duration": 2574
+          },
+          {
+            "match_id": "8671311689",
+            "radiant_team_name": "Roar",
+            "dire_team_name": "YB.Tearlaments",
+            "radiant_score": 29,
+            "dire_score": 18,
+            "radiant_win": true,
+            "start_time": 1769839976,
+            "duration": 2308
+          },
+          {
+            "match_id": "8671373589",
+            "radiant_team_name": "Roar",
+            "dire_team_name": "YB.Tearlaments",
+            "radiant_score": 28,
+            "dire_score": 19,
+            "radiant_win": true,
+            "start_time": 1769844308,
+            "duration": 2636
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1059817",
+        "series_type": "BO2",
+        "radiant_team_name": "Vici Gaming",
+        "dire_team_name": "Roar",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/726228.png",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/18408146465981986437/CCA9A02305890B647AD50B62CC974C83CC87B551/",
+        "radiant_score": 2,
+        "dire_score": 0,
+        "games": [
+          {
+            "match_id": "8670265936",
+            "radiant_team_name": "Vici Gaming",
+            "dire_team_name": "Roar",
+            "radiant_score": 37,
+            "dire_score": 14,
+            "radiant_win": true,
+            "start_time": 1769778443,
+            "duration": 2821
+          },
+          {
+            "match_id": "8670387675",
+            "radiant_team_name": "Roar",
+            "dire_team_name": "Vici Gaming",
+            "radiant_score": 12,
+            "dire_score": 31,
+            "radiant_win": false,
+            "start_time": 1769782999,
+            "duration": 1842
+          }
+        ],
+        "stage": "Group Stage"
+      },
+      {
+        "series_id": "1059789",
+        "series_type": "BO3",
+        "radiant_team_name": "Game Master",
+        "dire_team_name": "Yakult Brothers",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10502392439287170768/D351D750A5AA0D6627DD892E19978FB35216AF43/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "radiant_score": 1,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8670099262",
+            "radiant_team_name": "Yakult Brothers",
+            "dire_team_name": "Game Master",
+            "radiant_score": 33,
+            "dire_score": 11,
+            "radiant_win": true,
+            "start_time": 1769769007,
+            "duration": 2008
+          },
+          {
+            "match_id": "8670168174",
+            "radiant_team_name": "Game Master",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 28,
+            "dire_score": 12,
+            "radiant_win": true,
+            "start_time": 1769773080,
+            "duration": 2316
+          },
+          {
+            "match_id": "8670244221",
+            "radiant_team_name": "Game Master",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 10,
+            "dire_score": 19,
+            "radiant_win": false,
+            "start_time": 1769777408,
+            "duration": 2260
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1059775",
+        "series_type": "BO3",
+        "radiant_team_name": "Xtreme Gaming",
+        "dire_team_name": "Team Refuser",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13167292190185607570/FE3D86EA91DCA49AF9D671BA3B8F340A4C966C04/",
+        "radiant_score": 2,
+        "dire_score": 1,
+        "games": [
+          {
+            "match_id": "8670005206",
+            "radiant_team_name": "Team Refuser",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 34,
+            "dire_score": 34,
+            "radiant_win": true,
+            "start_time": 1769761549,
+            "duration": 5884
+          },
+          {
+            "match_id": "8670115105",
+            "radiant_team_name": "Team Refuser",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 13,
+            "dire_score": 27,
+            "radiant_win": false,
+            "start_time": 1769769803,
+            "duration": 2534
+          },
+          {
+            "match_id": "8670182786",
+            "radiant_team_name": "Team Refuser",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 5,
+            "dire_score": 24,
+            "radiant_win": false,
+            "start_time": 1769774264,
+            "duration": 1274
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1059773",
+        "series_type": "BO2",
+        "radiant_team_name": "Thriving",
+        "dire_team_name": "YB.Tearlaments",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/15300721713845547564/341D7E2065039C83E348D88E6C28C229B2B01C63/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/17004155546796246644/C6D54B03FB7B2254E30CFB3E579B82A6B3D95774/",
+        "radiant_score": 0,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8669974662",
+            "radiant_team_name": "Thriving",
+            "dire_team_name": "YB.Tearlaments",
+            "radiant_score": 6,
+            "dire_score": 26,
+            "radiant_win": false,
+            "start_time": 1769758802,
+            "duration": 2131
+          },
+          {
+            "match_id": "8670023505",
+            "radiant_team_name": "YB.Tearlaments",
+            "dire_team_name": "Thriving",
+            "radiant_score": 37,
+            "dire_score": 16,
+            "radiant_win": true,
+            "start_time": 1769762763,
+            "duration": 2485
+          }
+        ],
+        "stage": "Group Stage"
+      },
+      {
+        "series_id": "1054276",
+        "series_type": "BO2",
+        "radiant_team_name": "Thriving",
+        "dire_team_name": "Roar",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/15300721713845547564/341D7E2065039C83E348D88E6C28C229B2B01C63/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/18408146465981986437/CCA9A02305890B647AD50B62CC974C83CC87B551/",
+        "radiant_score": 0,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8644806049",
+            "radiant_team_name": "Roar",
+            "dire_team_name": "Thriving",
+            "radiant_score": 20,
+            "dire_score": 6,
+            "radiant_win": true,
+            "start_time": 1768125565,
+            "duration": 1008
+          },
+          {
+            "match_id": "8644866351",
+            "radiant_team_name": "Thriving",
+            "dire_team_name": "Roar",
+            "radiant_score": 31,
+            "dire_score": 27,
+            "radiant_win": false,
+            "start_time": 1768128255,
+            "duration": 3988
           }
         ],
         "stage": "Group Stage"
