@@ -72,15 +72,17 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
   return (
     <section id="upcoming" className="py-20 bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4 mb-12">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
-            <Calendar className="w-6 h-6 text-white" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">赛事预告</h2>
+              <p className="text-slate-400 text-sm">即将开始的比赛</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-3xl font-bold text-white">赛事预告</h2>
-            <p className="text-slate-400">即将开始的比赛</p>
-          </div>
-          <Badge className="ml-auto bg-red-600/20 text-red-400 border-red-600/30">
+          <Badge className="ml-auto bg-red-600/20 text-red-400 border-red-600/30 text-xs">
             <Star className="w-3 h-3 mr-1" />
             关注中国战队
           </Badge>
@@ -106,36 +108,36 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         {match.radiant_team_logo && (
                           <img 
                             src={match.radiant_team_logo} 
                             alt={radiantName}
-                            className="w-8 h-8 object-contain"
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
                             style={{
                               filter: radiantName.toLowerCase().includes('tundra') || radiantName.toLowerCase().includes('spirit') 
                                 ? 'invert(1) brightness(2)' : 'none'
                             }}
                           />
                         )}
-                        <span className={`font-medium ${radiantIsCN ? 'text-red-400' : 'text-white'}`}>
+                        <span className={`font-medium text-sm sm:text-base truncate ${radiantIsCN ? 'text-red-400' : 'text-white'}`}>
                           {radiantName}
                         </span>
-                        {radiantIsCN && <Badge className="bg-red-600/20 text-red-400 text-xs">CN</Badge>}
+                        {radiantIsCN && <Badge className="bg-red-600/20 text-red-400 text-xs flex-shrink-0">CN</Badge>}
                       </div>
-                      <div className="text-center px-4">
-                        <p className="text-lg font-bold text-blue-400">VS</p>
+                      <div className="text-center px-2 sm:px-4 flex-shrink-0">
+                        <p className="text-sm sm:text-lg font-bold text-blue-400">VS</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {direIsCN && <Badge className="bg-red-600/20 text-red-400 text-xs">CN</Badge>}
-                        <span className={`font-medium ${direIsCN ? 'text-red-400' : 'text-white'}`}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {direIsCN && <Badge className="bg-red-600/20 text-red-400 text-xs flex-shrink-0">CN</Badge>}
+                        <span className={`font-medium text-sm sm:text-base truncate ${direIsCN ? 'text-red-400' : 'text-white'}`}>
                           {direName}
                         </span>
                         {match.dire_team_logo && (
                           <img 
                             src={match.dire_team_logo} 
                             alt={direName}
-                            className="w-8 h-8 object-contain"
+                            className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0"
                             style={{
                               filter: direName.toLowerCase().includes('tundra') || direName.toLowerCase().includes('spirit') 
                                 ? 'invert(1) brightness(2)' : 'none'

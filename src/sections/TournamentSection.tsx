@@ -85,15 +85,15 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
 
   if (!tournaments.length) {
     return (
-      <section id="tournaments" className="py-20 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 mb-12">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-white" />
+      <section id="tournaments" className="py-12 sm:py-20 bg-slate-950">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-white">赛事战报</h2>
-              <p className="text-slate-400">T1级别赛事实时比分与排名</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">赛事战报</h2>
+              <p className="text-slate-400 text-sm">T1级别赛事实时比分</p>
             </div>
           </div>
           <div className="text-center py-12 text-slate-500">
@@ -108,15 +108,15 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
   const currentSeries = selectedTournament ? (seriesByTournament?.[selectedTournament.id] || []) : [];
 
   return (
-    <section id="tournaments" className="py-20 bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4 mb-12">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-            <Trophy className="w-6 h-6 text-white" />
+    <section id="tournaments" className="py-12 sm:py-20 bg-slate-950">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
+            <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-white">赛事战报</h2>
-            <p className="text-slate-400">T1级别赛事实时比分与排名</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">赛事战报</h2>
+            <p className="text-slate-400 text-sm sm:text-base">T1级别赛事实时比分</p>
           </div>
         </div>
 
@@ -168,17 +168,17 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         {/* Series List */}
         {selectedTournament && (
           <Card className="border-slate-800 bg-slate-900/50">
-            <CardHeader className="border-b border-slate-800">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-white">{selectedTournament.name_cn || selectedTournament.name}</h3>
-                  <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-slate-400">
+            <CardHeader className="border-b border-slate-800 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedTournament.name_cn || selectedTournament.name}</h3>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-slate-400">
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
+                      <MapPin className="w-3 h-4" />
                       {selectedTournament.location || 'TBD'}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-3 h-4" />
                       {selectedTournament.start_date} ~ {selectedTournament.end_date}
                     </span>
                   </div>

@@ -40,13 +40,13 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
+              <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">DOTA2 Pro Hub</h1>
-              <p className="text-xs text-slate-400">专业战报与赛事预测</p>
+            <div className="leading-tight">
+              <h1 className="text-base sm:text-xl font-bold text-white">DOTA2 Pro Hub</h1>
+              <p className="text-[10px] sm:text-xs text-slate-400 hidden xs:block">专业战报</p>
             </div>
           </div>
 
