@@ -51,7 +51,16 @@ const statusMap: Record<string, { label: string; color: string }> = {
   completed: { label: '已结束', color: 'bg-slate-600/20 text-slate-400 border-slate-600/30' },
 };
 
-const chineseTeamNames = ['xg', 'yb', 'vg', 'xtreme', 'yakult', 'vici', 'azure', 'spirit', 'natus'];
+const chineseTeamNames = [
+  'xg', 'xtreme', 
+  'yb', 'yakult', 'tearlaments', 
+  'vg', 'vici', 
+  'game master', 
+  'tidebound', 
+  'refuser', 
+  'thriving',
+  'azure'
+];
 
 function isChineseTeam(teamName: string | null | undefined): boolean {
   if (!teamName) return false;

@@ -55,7 +55,7 @@ function Countdown({ targetTime }: { targetTime: number }) {
 function isChineseTeam(teamName: string | null | undefined): boolean {
   if (!teamName) return false;
   const name = teamName.toLowerCase();
-  return ['xg', 'yb', 'vg', 'xtreme', 'yakult', 'vici', 'azure'].some(cn => name.includes(cn));
+  return ['xg', 'xtreme', 'yb', 'yakult', 'tearlaments', 'vg', 'vici', 'game master', 'tidebound', 'refuser', 'thriving', 'azure'].some(cn => name.includes(cn));
 }
 
 export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
