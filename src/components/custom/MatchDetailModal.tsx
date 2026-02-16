@@ -60,37 +60,43 @@ interface MatchDetail {
   picks_bans: PicksBans[];
 }
 
-// Hero name mapping
-const heroNames: Record<number, string> = {
-  1: 'Anti-Mage', 2: 'Axe', 3: 'Bane', 4: 'Bloodseeker', 5: 'Crystal Maiden',
-  6: 'Drow Ranger', 7: 'Earthshaker', 8: 'Juggernaut', 9: 'Mirana', 10: 'Morphling',
-  11: 'Shadow Fiend', 12: 'Phantom Lancer', 13: 'Puck', 14: 'Pudge', 15: 'Razor',
-  16: 'Sand King', 17: 'Storm Spirit', 18: 'Sven', 19: 'Tiny', 20: 'Vengeful Spirit',
-  21: 'Windranger', 22: 'Zeus', 23: 'Kunkka', 25: 'Lina', 26: 'Lion',
-  27: 'Shadow Shaman', 28: 'Slardar', 29: 'Tidehunter', 30: 'Witch Doctor', 31: 'Lich',
-  32: 'Riki', 33: 'Enigma', 34: 'Tinker', 35: 'Sniper', 36: 'Necrophos',
-  37: 'Warlock', 38: 'Beastmaster', 39: 'Queen of Pain', 40: 'Venomancer', 41: 'Faceless Void',
-  42: 'Wraith King', 43: 'Death Prophet', 44: 'Phantom Assassin', 45: 'Pugna', 46: 'Templar Assassin',
-  47: 'Viper', 48: 'Luna', 49: 'Dragon Knight', 50: 'Dazzle', 51: 'Clockwerk',
-  52: 'Leshrac', 53: "Nature's Prophet", 54: 'Lifestealer', 55: 'Dark Seer', 56: 'Clinkz',
-  57: 'Omniknight', 58: 'Enchantress', 59: 'Huskar', 60: 'Night Stalker', 61: 'Broodmother',
-  62: 'Bounty Hunter', 63: 'Weaver', 64: 'Jakiro', 65: 'Batrider', 66: 'Chen',
-  67: 'Spectre', 68: 'Ancient Apparition', 69: 'Doom', 70: 'Ursa', 71: 'Spirit Breaker',
-  72: 'Gyrocopter', 73: 'Alchemist', 74: 'Invoker', 75: 'Silencer', 76: 'Outworld Destroyer',
-  77: 'Lycan', 78: 'Brewmaster', 79: 'Shadow Demon', 80: 'Lone Druid', 81: 'Chaos Knight',
-  82: 'Meepo', 83: 'Treant Protector', 84: 'Ogre Magi', 85: 'Undying', 86: 'Rubick',
-  87: 'Disruptor', 88: 'Nyx Assassin', 89: 'Naga Siren', 90: 'Keeper of the Light', 91: 'Io',
-  92: 'Visage', 93: 'Slark', 94: 'Medusa', 95: 'Troll Warlord', 96: 'Centaur Warrunner',
-  97: 'Magnus', 98: 'Timbersaw', 99: 'Bristleback', 100: 'Tusk', 101: 'Skywrath Mage',
-  102: 'Abaddon', 103: 'Elder Titan', 104: 'Legion Commander', 105: 'Techies', 106: 'Ember Spirit',
-  107: 'Earth Spirit', 108: 'Underlord', 109: 'Terrorblade', 110: 'Phoenix', 111: 'Oracle',
-  112: 'Winter Wyvern', 113: 'Arc Warden', 114: 'Monkey King', 119: 'Dark Willow', 120: 'Pangolier',
-  121: 'Grimstroke', 123: 'Hoodwink', 126: 'Void Spirit', 128: 'Snapfire', 129: 'Mars',
-  131: 'Ringmaster', 135: 'Dawnbreaker', 136: 'Marci', 137: 'Primal Beast', 138: 'Muerta', 145: 'Kez', 155: 'Largo'
-};
+// Hero data - loaded from data file
+let heroesData: Record<number, { name: string; img: string }> = {};
+
+// Load heroes data
+fetch('/dota2-hub/data/heroes.json')
+  .then(res => res.json())
+  .then(data => { heroesData = data; })
+  .catch(() => {});
 
 function getHeroName(id: number): string {
-  return heroNames[id] || `Hero ${id}`;
+  return heroesData[id]?.name || `Hero ${id}`;
+}
+
+function getHeroImg(id: number): string {
+  const img = heroesData[id]?.img || `hero_${id}`;
+  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
+}
+
+function HeroIcon({ heroId, size = 'md' }: { heroId: number; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16'
+  };
+  
+  return (
+    <div className={`${sizeClasses[size]} rounded bg-slate-800 overflow-hidden flex-shrink-0`}>
+      <img 
+        src={getHeroImg(heroId)} 
+        alt={getHeroName(heroId)}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+    </div>
+  );
 }
 
 function formatDuration(seconds: number): string {
@@ -278,7 +284,8 @@ function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean })
         </Badge>
       </div>
       <div className="flex items-center gap-3">
-        <div className="text-2xl font-bold text-yellow-400">{getHeroName(player.hero_id)}</div>
+        <HeroIcon heroId={player.hero_id} size="lg" />
+        <div className="text-xl font-bold text-yellow-400">{getHeroName(player.hero_id)}</div>
         <div className="flex-1 text-center">
           <span className={`text-xl font-bold ${player.kills > player.deaths ? 'text-green-400' : player.kills < player.deaths ? 'text-red-400' : 'text-slate-400'}`}>
             {player.kills} / {player.deaths} / {player.assists}
@@ -320,8 +327,11 @@ function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: Pi
             <div className="text-sm text-slate-400 mb-2">Ban</div>
             <div className="flex flex-wrap gap-2">
               {radiantBans.map((heroId, idx) => (
-                <div key={idx} className="w-12 h-12 rounded bg-red-900/50 flex items-center justify-center text-xs text-red-300 border border-red-700/50">
-                  {getHeroName(heroId).substring(0, 3)}
+                <div key={idx} className="relative group">
+                  <HeroIcon heroId={heroId} size="md" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                    {getHeroName(heroId)}
+                  </div>
                 </div>
               ))}
               {radiantBans.length === 0 && <span className="text-slate-500 text-sm">-</span>}
@@ -331,8 +341,11 @@ function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: Pi
             <div className="text-sm text-slate-400 mb-2">Pick</div>
             <div className="flex flex-wrap gap-2">
               {radiantPicks.map((heroId, idx) => (
-                <div key={idx} className="w-12 h-12 rounded bg-green-900/50 flex items-center justify-center text-xs text-green-300 border border-green-700/50">
-                  {getHeroName(heroId).substring(0, 3)}
+                <div key={idx} className="relative group">
+                  <HeroIcon heroId={heroId} size="md" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                    {getHeroName(heroId)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -348,8 +361,11 @@ function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: Pi
             <div className="text-sm text-slate-400 mb-2">Ban</div>
             <div className="flex flex-wrap gap-2">
               {direBans.map((heroId, idx) => (
-                <div key={idx} className="w-12 h-12 rounded bg-red-900/50 flex items-center justify-center text-xs text-red-300 border border-red-700/50">
-                  {getHeroName(heroId).substring(0, 3)}
+                <div key={idx} className="relative group">
+                  <HeroIcon heroId={heroId} size="md" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                    {getHeroName(heroId)}
+                  </div>
                 </div>
               ))}
               {direBans.length === 0 && <span className="text-slate-500 text-sm">-</span>}
@@ -359,8 +375,11 @@ function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: Pi
             <div className="text-sm text-slate-400 mb-2">Pick</div>
             <div className="flex flex-wrap gap-2">
               {direPicks.map((heroId, idx) => (
-                <div key={idx} className="w-12 h-12 rounded bg-green-900/50 flex items-center justify-center text-xs text-green-300 border border-green-700/50">
-                  {getHeroName(heroId).substring(0, 3)}
+                <div key={idx} className="relative group">
+                  <HeroIcon heroId={heroId} size="md" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
+                    {getHeroName(heroId)}
+                  </div>
                 </div>
               ))}
             </div>
