@@ -14,6 +14,17 @@
       "location": "线上"
     },
     {
+      "id": "blast-slam-vi",
+      "name": "BLAST Slam VI",
+      "name_cn": "BLAST 锦标赛 VI",
+      "tier": "S",
+      "start_date": "2026-02-03",
+      "end_date": "2026-02-16",
+      "status": "completed",
+      "prize_pool": "$1,000,000",
+      "location": "线上"
+    },
+    {
       "id": "esl-challenger-china",
       "name": "ESL Challenger China",
       "name_cn": "ESL 挑战者杯 中国",
@@ -34,24 +45,13 @@
       "status": "completed",
       "prize_pool": "$1,000,000",
       "location": "线上"
-    },
-    {
-      "id": "blast-slam-vi",
-      "name": "BLAST Slam VI",
-      "name_cn": "BLAST 锦标赛 VI",
-      "tier": "S",
-      "start_date": "2025-01-28",
-      "end_date": "2025-02-02",
-      "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "线上"
     }
   ],
   "seriesByTournament": {
     "blast-slam-vi": [
       {
         "series_id": "1064947",
-        "series_type": "BO3",
+        "series_type": "BO5",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
@@ -157,7 +157,7 @@
       },
       {
         "series_id": "1064569",
-        "series_type": "BO3",
+        "series_type": "BO5",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -200,7 +200,7 @@
       },
       {
         "series_id": "1064393",
-        "series_type": "BO3",
+        "series_type": "BO5",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "HEROIC",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -316,7 +316,7 @@
       },
       {
         "series_id": "1062892",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -349,7 +349,7 @@
       },
       {
         "series_id": "1062830",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "HEROIC",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
@@ -382,7 +382,7 @@
       },
       {
         "series_id": "1062499",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
@@ -415,7 +415,7 @@
       },
       {
         "series_id": "1062437",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -491,7 +491,7 @@
       },
       {
         "series_id": "1062103",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "REKONIX",
         "dire_team_name": "HEROIC",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16170413258693955016/5ABDC787F5CF4BBDD603F15933D9F5B0F8EB0D8A/",
@@ -526,7 +526,7 @@
     "dreamleague-s27": [
       {
         "series_id": "1048811",
-        "series_type": "BO3",
+        "series_type": "BO5",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -579,7 +579,7 @@
       },
       {
         "series_id": "1048503",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -612,7 +612,7 @@
       },
       {
         "series_id": "1048404",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -688,7 +688,7 @@
       },
       {
         "series_id": "1048097",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
@@ -721,7 +721,7 @@
       },
       {
         "series_id": "1048038",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Virtus.pro",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -754,7 +754,7 @@
       },
       {
         "series_id": "1048004",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
@@ -830,7 +830,7 @@
       },
       {
         "series_id": "1047793",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -906,7 +906,7 @@
       },
       {
         "series_id": "1047598",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -939,7 +939,7 @@
       },
       {
         "series_id": "1047543",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
@@ -972,7 +972,7 @@
       },
       {
         "series_id": "1047499",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -1005,7 +1005,7 @@
       },
       {
         "series_id": "1047091",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -1038,7 +1038,7 @@
       },
       {
         "series_id": "1047079",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Nemesis",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
@@ -1071,7 +1071,7 @@
       },
       {
         "series_id": "1047075",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "HEROIC",
         "dire_team_name": "1w Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
@@ -1104,7 +1104,7 @@
       },
       {
         "series_id": "1047077",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Nigma Galaxy",
         "dire_team_name": "PARIVISION",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
@@ -1137,7 +1137,7 @@
       },
       {
         "series_id": "1047034",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Amaru Gaming",
         "dire_team_name": "Pipsqueak+4",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
@@ -1256,7 +1256,7 @@
       },
       {
         "series_id": "1047032",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
@@ -1332,7 +1332,7 @@
       },
       {
         "series_id": "1046988",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Virtus.pro",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -1365,7 +1365,7 @@
       },
       {
         "series_id": "1046986",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Runa Team",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/23189918875091243/4CEBD73D73236BCAC62F16D2D432532CC2A5D1F2/",
@@ -1441,7 +1441,7 @@
       },
       {
         "series_id": "1046812",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Natus Vincere",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
@@ -1517,7 +1517,7 @@
       },
       {
         "series_id": "1046798",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Pipsqueak+4",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -1550,7 +1550,7 @@
       },
       {
         "series_id": "1046793",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "HEROIC",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -1583,7 +1583,7 @@
       },
       {
         "series_id": "1046722",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -1616,7 +1616,7 @@
       },
       {
         "series_id": "1046711",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Passion UA",
         "dire_team_name": "1w Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/18319865695983129908/E7302CFFC29E4716B28F5BAB4812020B2C61E389/",
@@ -1907,7 +1907,7 @@
       },
       {
         "series_id": "1046354",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -2026,7 +2026,7 @@
       },
       {
         "series_id": "1046356",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Nigma Galaxy",
         "dire_team_name": "1w Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
@@ -2059,7 +2059,7 @@
       },
       {
         "series_id": "1046271",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -2178,7 +2178,7 @@
       },
       {
         "series_id": "1046272",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Nemesis",
         "dire_team_name": "Passion UA",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
@@ -2211,7 +2211,7 @@
       },
       {
         "series_id": "1046189",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -2244,7 +2244,7 @@
       },
       {
         "series_id": "1046185",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Runa Team",
         "dire_team_name": "Amaru Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/23189918875091243/4CEBD73D73236BCAC62F16D2D432532CC2A5D1F2/",
@@ -2277,7 +2277,7 @@
       },
       {
         "series_id": "1046187",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -2310,7 +2310,7 @@
       },
       {
         "series_id": "1046184",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Tidebound",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12094940740270677482/9AD05F0A80A562EE4A833375BF1783B52B3D4C30/",
@@ -2386,7 +2386,7 @@
       },
       {
         "series_id": "1045940",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -2419,7 +2419,7 @@
       },
       {
         "series_id": "1045930",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Pipsqueak+4",
         "dire_team_name": "HEROIC",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
@@ -2495,7 +2495,7 @@
       },
       {
         "series_id": "1045873",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Amaru Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -2571,7 +2571,7 @@
       },
       {
         "series_id": "1045863",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "1w Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -2647,7 +2647,7 @@
       },
       {
         "series_id": "1045821",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "BetBoom Team",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -2723,7 +2723,7 @@
       },
       {
         "series_id": "1045820",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Virtus.pro",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
@@ -2756,7 +2756,7 @@
       },
       {
         "series_id": "1045819",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Tidebound",
         "dire_team_name": "Passion UA",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12094940740270677482/9AD05F0A80A562EE4A833375BF1783B52B3D4C30/",
@@ -2789,7 +2789,7 @@
       },
       {
         "series_id": "1045666",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
@@ -2908,7 +2908,7 @@
       },
       {
         "series_id": "1045661",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Runa Team",
         "dire_team_name": "Nigma Galaxy",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/23189918875091243/4CEBD73D73236BCAC62F16D2D432532CC2A5D1F2/",
@@ -2941,7 +2941,7 @@
       },
       {
         "series_id": "1045608",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -3103,7 +3103,7 @@
       },
       {
         "series_id": "1045543",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
@@ -3222,7 +3222,7 @@
       },
       {
         "series_id": "1045541",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Virtus.pro",
         "dire_team_name": "Team Tidebound",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
@@ -3255,7 +3255,7 @@
       },
       {
         "series_id": "1045338",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "GamerLegion",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -3288,7 +3288,7 @@
       },
       {
         "series_id": "1045335",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Nigma Galaxy",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
@@ -3321,7 +3321,7 @@
       },
       {
         "series_id": "1045339",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "HEROIC",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
@@ -3354,7 +3354,7 @@
       },
       {
         "series_id": "1045333",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Amaru Gaming",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
@@ -3387,7 +3387,7 @@
       },
       {
         "series_id": "1045279",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Virtus.pro",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
@@ -3420,7 +3420,7 @@
       },
       {
         "series_id": "1045274",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -3453,7 +3453,7 @@
       },
       {
         "series_id": "1045271",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Pipsqueak+4",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
@@ -3529,7 +3529,7 @@
       },
       {
         "series_id": "1045207",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Tidebound",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -3562,7 +3562,7 @@
       },
       {
         "series_id": "1045209",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Team Spirit",
         "dire_team_name": "1w Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
@@ -3595,7 +3595,7 @@
       },
       {
         "series_id": "1045205",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Runa Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -3708,7 +3708,7 @@
     "esl-challenger-china": [
       {
         "series_id": "1060486",
-        "series_type": "BO3",
+        "series_type": "BO5",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
@@ -3761,7 +3761,7 @@
       },
       {
         "series_id": "1060458",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Vici Gaming",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/726228.png",
@@ -3794,7 +3794,7 @@
       },
       {
         "series_id": "1060135",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Yakult Brothers",
         "dire_team_name": "Roar",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
@@ -3870,7 +3870,7 @@
       },
       {
         "series_id": "1060044",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Yakult Brothers",
         "dire_team_name": "Team Refuser",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
@@ -3946,7 +3946,7 @@
       },
       {
         "series_id": "1059817",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Vici Gaming",
         "dire_team_name": "Roar",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/726228.png",
@@ -4065,7 +4065,7 @@
       },
       {
         "series_id": "1059773",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Thriving",
         "dire_team_name": "YB.Tearlaments",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/15300721713845547564/341D7E2065039C83E348D88E6C28C229B2B01C63/",
@@ -4098,7 +4098,7 @@
       },
       {
         "series_id": "1054276",
-        "series_type": "BO2",
+        "series_type": "BO3",
         "radiant_team_name": "Thriving",
         "dire_team_name": "Roar",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/15300721713845547564/341D7E2065039C83E348D88E6C28C229B2B01C63/",
