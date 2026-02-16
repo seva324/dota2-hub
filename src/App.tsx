@@ -96,8 +96,14 @@ function App() {
         const response = await fetch('/dota2-hub/data/home.json');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const homeData = await response.json();
+        console.log('Data loaded:', {
+          tournaments: homeData.tournaments?.length,
+          matchesByTournament: Object.keys(homeData.matchesByTournament || {}).length,
+          upcoming: homeData.upcoming?.length
+        });
         setData(homeData);
       } catch (err) {
+        console.error('Fetch error:', err);
         setError(err instanceof Error ? err.message : '加载失败');
       } finally {
         setLoading(false);
