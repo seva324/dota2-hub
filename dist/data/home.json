@@ -17,12 +17,12 @@
   "seriesByTournament": {
     "blast-slam-vi": [
       {
-        "series_id": "1064947",
-        "series_type": "BO5",
-        "radiant_team_name": "Natus Vincere",
-        "dire_team_name": "Team Liquid",
-        "radiant_score": 0,
-        "dire_score": 3,
+        "series_id": "2163_36_1771169368",
+        "series_type": "BO3",
+        "radiant_team_name": "Team Liquid",
+        "dire_team_name": "Natus Vincere",
+        "radiant_score": 3,
+        "dire_score": 1,
         "games": [
           {
             "match_id": "8692381181",
@@ -53,17 +53,27 @@
             "radiant_win": false,
             "start_time": 1771181772,
             "duration": 2040
+          },
+          {
+            "match_id": "8692761931",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 33,
+            "dire_score": 10,
+            "radiant_win": true,
+            "start_time": 1771185630,
+            "duration": 1947
           }
         ],
         "stage": "Playoffs"
       },
       {
-        "series_id": "1064645",
+        "series_id": "9823272_36_1771089661",
         "series_type": "BO5",
-        "radiant_team_name": "Natus Vincere",
-        "dire_team_name": "Team Yandex",
-        "radiant_score": 3,
-        "dire_score": 2,
+        "radiant_team_name": "Team Yandex",
+        "dire_team_name": "Natus Vincere",
+        "radiant_score": 2,
+        "dire_score": 3,
         "games": [
           {
             "match_id": "8691060575",
@@ -119,12 +129,12 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "1064569",
-        "series_type": "BO5",
-        "radiant_team_name": "Team Liquid",
-        "dire_team_name": "OG",
-        "radiant_score": 2,
-        "dire_score": 1,
+        "series_id": "2586976_2163_1771074038",
+        "series_type": "BO3",
+        "radiant_team_name": "OG",
+        "dire_team_name": "Team Liquid",
+        "radiant_score": 0,
+        "dire_score": 3,
         "games": [
           {
             "match_id": "8690685211",
@@ -160,12 +170,12 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "1064393",
-        "series_type": "BO5",
+        "series_id": "9823272_9303484_1771010701",
+        "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "HEROIC",
-        "radiant_score": 2,
-        "dire_score": 2,
+        "radiant_score": 3,
+        "dire_score": 1,
         "games": [
           {
             "match_id": "8689821393",
@@ -211,7 +221,7 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "1064245",
+        "series_id": "9247354_2163_1770987833",
         "series_type": "BO5",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "Team Liquid",
@@ -272,137 +282,23 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "1062892",
+        "series_id": "9964962_9338413_1770308910",
         "series_type": "BO3",
-        "radiant_team_name": "Team Liquid",
-        "dire_team_name": "GamerLegion",
-        "radiant_score": 1,
+        "radiant_team_name": "GamerLegion",
+        "dire_team_name": "MOUZ",
+        "radiant_score": 3,
         "dire_score": 1,
         "games": [
           {
-            "match_id": "8683239884",
-            "radiant_team_name": "GamerLegion",
-            "dire_team_name": "Team Liquid",
-            "radiant_score": 9,
-            "dire_score": 34,
-            "radiant_win": false,
-            "start_time": 1770569139,
-            "duration": 1645
-          },
-          {
-            "match_id": "8683333901",
-            "radiant_team_name": "Team Liquid",
+            "match_id": "8678833793",
+            "radiant_team_name": "MOUZ",
             "dire_team_name": "GamerLegion",
-            "radiant_score": 23,
-            "dire_score": 18,
-            "radiant_win": true,
-            "start_time": 1770572739,
-            "duration": 2204
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "1062830",
-        "series_type": "BO3",
-        "radiant_team_name": "Tundra Esports",
-        "dire_team_name": "HEROIC",
-        "radiant_score": 0,
-        "dire_score": 2,
-        "games": [
-          {
-            "match_id": "8682972538",
-            "radiant_team_name": "Tundra Esports",
-            "dire_team_name": "HEROIC",
-            "radiant_score": 9,
-            "dire_score": 25,
+            "radiant_score": 37,
+            "dire_score": 42,
             "radiant_win": false,
-            "start_time": 1770559010,
-            "duration": 3387
+            "start_time": 1770308910,
+            "duration": 3405
           },
-          {
-            "match_id": "8683127512",
-            "radiant_team_name": "Tundra Esports",
-            "dire_team_name": "HEROIC",
-            "radiant_score": 11,
-            "dire_score": 36,
-            "radiant_win": false,
-            "start_time": 1770564385,
-            "duration": 2384
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "1062499",
-        "series_type": "BO3",
-        "radiant_team_name": "Team Falcons",
-        "dire_team_name": "Xtreme Gaming",
-        "radiant_score": 1,
-        "dire_score": 1,
-        "games": [
-          {
-            "match_id": "8681659188",
-            "radiant_team_name": "Xtreme Gaming",
-            "dire_team_name": "Team Falcons",
-            "radiant_score": 16,
-            "dire_score": 24,
-            "radiant_win": false,
-            "start_time": 1770481846,
-            "duration": 2325
-          },
-          {
-            "match_id": "8681759092",
-            "radiant_team_name": "Team Falcons",
-            "dire_team_name": "Xtreme Gaming",
-            "radiant_score": 21,
-            "dire_score": 13,
-            "radiant_win": true,
-            "start_time": 1770486161,
-            "duration": 3227
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "1062437",
-        "series_type": "BO3",
-        "radiant_team_name": "Team Spirit",
-        "dire_team_name": "Team Yandex",
-        "radiant_score": 0,
-        "dire_score": 2,
-        "games": [
-          {
-            "match_id": "8681420176",
-            "radiant_team_name": "Team Spirit",
-            "dire_team_name": "Team Yandex",
-            "radiant_score": 10,
-            "dire_score": 26,
-            "radiant_win": false,
-            "start_time": 1770472548,
-            "duration": 2253
-          },
-          {
-            "match_id": "8681524068",
-            "radiant_team_name": "Team Spirit",
-            "dire_team_name": "Team Yandex",
-            "radiant_score": 18,
-            "dire_score": 32,
-            "radiant_win": false,
-            "start_time": 1770476687,
-            "duration": 3111
-          }
-        ],
-        "stage": "Group Stage"
-      },
-      {
-        "series_id": "1062162",
-        "series_type": "BO3",
-        "radiant_team_name": "MOUZ",
-        "dire_team_name": "GamerLegion",
-        "radiant_score": 0,
-        "dire_score": 3,
-        "games": [
           {
             "match_id": "8680195641",
             "radiant_team_name": "MOUZ",
@@ -437,13 +333,23 @@
         "stage": "Playoffs"
       },
       {
-        "series_id": "1062103",
+        "series_id": "9828897_9303484_1770289501",
         "series_type": "BO3",
         "radiant_team_name": "REKONIX",
         "dire_team_name": "HEROIC",
-        "radiant_score": 1,
-        "dire_score": 1,
+        "radiant_score": 0,
+        "dire_score": 3,
         "games": [
+          {
+            "match_id": "8678406332",
+            "radiant_team_name": "HEROIC",
+            "dire_team_name": "REKONIX",
+            "radiant_score": 23,
+            "dire_score": 7,
+            "radiant_win": true,
+            "start_time": 1770289501,
+            "duration": 1434
+          },
           {
             "match_id": "8679911370",
             "radiant_team_name": "HEROIC",
@@ -465,7 +371,7 @@
             "duration": 3125
           }
         ],
-        "stage": "Group Stage"
+        "stage": "Playoffs"
       }
     ]
   },
