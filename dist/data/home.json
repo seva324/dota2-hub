@@ -14,7 +14,7 @@
       "location": "线上"
     },
     {
-      "id": "esl-challenger-china-2026",
+      "id": "esl-challenger-china",
       "name": "ESL Challenger China",
       "name_cn": "ESL 挑战者杯 中国",
       "tier": "S",
@@ -501,7 +501,7 @@
         "stage": "Group Stage"
       }
     ],
-    "esl-challenger-china-2026": [
+    "esl-challenger-china": [
       {
         "series_id": "1060486",
         "series_type": "BO3",
