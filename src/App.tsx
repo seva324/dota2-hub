@@ -55,6 +55,8 @@ interface HomeData {
     series_type: string;
     radiant_team_name: string;
     dire_team_name: string;
+    radiant_team_logo?: string;
+    dire_team_logo?: string;
     radiant_score: number;
     dire_score: number;
     games: Array<{

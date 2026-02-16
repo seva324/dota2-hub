@@ -32,6 +32,8 @@ interface Series {
   series_type: string;
   radiant_team_name: string;
   dire_team_name: string;
+  radiant_team_logo?: string;
+  dire_team_logo?: string;
   radiant_score: number;
   dire_score: number;
   games: Game[];
@@ -231,9 +233,17 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                           <div className="flex items-center justify-between mt-3">
                             {/* Team A */}
                             <div className="flex items-center gap-3 flex-1">
-                              <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
-                                {series.radiant_team_name.substring(0, 2).toUpperCase()}
-                              </div>
+                              {series.radiant_team_logo ? (
+                                <img 
+                                  src={series.radiant_team_logo} 
+                                  alt={series.radiant_team_name}
+                                  className="w-10 h-10 rounded object-contain bg-slate-800"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                  {series.radiant_team_name.substring(0, 2).toUpperCase()}
+                                </div>
+                              )}
                               <div className="flex flex-col">
                                 <span className={`font-medium ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-white'}`}>
                                   {series.radiant_team_name}
@@ -261,9 +271,17 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                 </span>
                                 {teamBIsCN && <span className="text-xs text-red-400">中国</span>}
                               </div>
-                              <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
-                                {series.dire_team_name.substring(0, 2).toUpperCase()}
-                              </div>
+                              {series.dire_team_logo ? (
+                                <img 
+                                  src={series.dire_team_logo} 
+                                  alt={series.dire_team_name}
+                                  className="w-10 h-10 rounded object-contain bg-slate-800"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                  {series.dire_team_name.substring(0, 2).toUpperCase()}
+                                </div>
+                              )}
                             </div>
                           </div>
 

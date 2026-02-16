@@ -21,6 +21,8 @@
         "series_type": "BO3",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
         "radiant_score": 3,
         "dire_score": 1,
         "games": [
@@ -72,6 +74,8 @@
         "series_type": "BO5",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
         "radiant_score": 2,
         "dire_score": 3,
         "games": [
@@ -133,6 +137,8 @@
         "series_type": "BO3",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
         "radiant_score": 0,
         "dire_score": 3,
         "games": [
@@ -174,6 +180,8 @@
         "series_type": "BO3",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "HEROIC",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
         "radiant_score": 3,
         "dire_score": 1,
         "games": [
@@ -225,6 +233,8 @@
         "series_type": "BO5",
         "radiant_team_name": "Team Falcons",
         "dire_team_name": "Team Liquid",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
         "radiant_score": 2,
         "dire_score": 3,
         "games": [
@@ -286,6 +296,8 @@
         "series_type": "BO3",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "MOUZ",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
         "radiant_score": 3,
         "dire_score": 1,
         "games": [
@@ -337,6 +349,8 @@
         "series_type": "BO3",
         "radiant_team_name": "REKONIX",
         "dire_team_name": "HEROIC",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16170413258693955016/5ABDC787F5CF4BBDD603F15933D9F5B0F8EB0D8A/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
         "radiant_score": 0,
         "dire_score": 3,
         "games": [
