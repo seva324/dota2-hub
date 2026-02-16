@@ -4,6 +4,15 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 
+// Pro player mapping (loaded from data file)
+let proPlayersMap: Record<number, { name: string; team_name: string; realname: string }> = {};
+
+// Load pro players
+fetch('/dota2-hub/data/pro_players.json')
+  .then(res => res.json())
+  .then(data => { proPlayersMap = data; })
+  .catch(() => {});
+
 interface Player {
   player_slot: number;
   account_id: number;
@@ -238,11 +247,17 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 }
 
 function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean }) {
+  // Try to get pro player name
+  const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
+  const displayName = proInfo?.name || player.personaname || (player.account_id ? `ID: ${player.account_id}` : 'Unknown');
+  const teamName = proInfo?.team_name || '';
+
   return (
     <div className={`p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-medium text-white">{player.personaname || `Player ${player.account_id}`}</span>
+          <span className="text-lg font-medium text-white">{displayName}</span>
+          {teamName && <Badge className="bg-slate-700 text-slate-300 text-xs">{teamName}</Badge>}
         </div>
         <Badge className={isWinner ? 'bg-green-600/20 text-green-400' : 'bg-slate-700 text-slate-400'}>
           Lv.{player.level}

@@ -50,18 +50,24 @@ interface HomeData {
     location?: string;
     format?: string;
   }>;
-  matchesByTournament?: Record<string, Array<{
-    id: number;
-    match_id: string;
+  seriesByTournament?: Record<string, Array<{
+    series_id: string;
+    series_type: string;
     radiant_team_name: string;
     dire_team_name: string;
     radiant_score: number;
     dire_score: number;
-    start_time: number;
-    series_type: string;
-    tournament_name: string;
-    status: string;
-    stage?: string;
+    games: Array<{
+      match_id: string;
+      radiant_team_name: string;
+      dire_team_name: string;
+      radiant_score: number;
+      dire_score: number;
+      radiant_win: boolean;
+      start_time: number;
+      duration: number;
+    }>;
+    stage: string;
   }>>;
   news: Array<{
     id: string;
@@ -145,7 +151,7 @@ function App() {
       <Navbar />
       <main>
         <HeroSection upcoming={data.upcoming} />
-        <TournamentSection tournaments={data.tournaments} matchesByTournament={data.matchesByTournament} />
+        <TournamentSection tournaments={data.tournaments} seriesByTournament={data.seriesByTournament} />
         <UpcomingSection upcoming={data.upcoming} />
         <NewsSection news={data.news} />
         <CommunitySection posts={data.community} />

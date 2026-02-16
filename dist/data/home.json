@@ -1,110 +1,5 @@
 {
-  "upcoming": [
-    {
-      "id": 2621,
-      "match_id": "lp_1771248600_24",
-      "radiant_team_id": "unknown",
-      "dire_team_id": "xtreme-gaming",
-      "radiant_team_name": "Team Spirit",
-      "radiant_team_name_cn": null,
-      "dire_team_name": "Xtreme Gaming",
-      "dire_team_name_cn": "XG",
-      "radiant_score": 0,
-      "dire_score": 0,
-      "radiant_game_wins": 0,
-      "dire_game_wins": 0,
-      "start_time": 1771248600,
-      "duration": 0,
-      "series_type": "BO2",
-      "league_id": null,
-      "tournament_id": "DreamLeague S28 - February 16-B",
-      "status": "scheduled",
-      "lobby_type": 7,
-      "game_mode": null,
-      "created_at": 1771038382,
-      "tournament_name": null,
-      "tournament_name_cn": null,
-      "tournament_tier": null
-    },
-    {
-      "id": 2622,
-      "match_id": "lp_1771326000_34",
-      "radiant_team_id": "unknown",
-      "dire_team_id": "yakult-brothers",
-      "radiant_team_name": "OG",
-      "radiant_team_name_cn": null,
-      "dire_team_name": "Yakult Brothers",
-      "dire_team_name_cn": "YB",
-      "radiant_score": 0,
-      "dire_score": 0,
-      "radiant_game_wins": 0,
-      "dire_game_wins": 0,
-      "start_time": 1771326000,
-      "duration": 0,
-      "series_type": "BO2",
-      "league_id": null,
-      "tournament_id": "DreamLeague S28 - February 17-A",
-      "status": "scheduled",
-      "lobby_type": 7,
-      "game_mode": null,
-      "created_at": 1771038382,
-      "tournament_name": null,
-      "tournament_name_cn": null,
-      "tournament_tier": null
-    },
-    {
-      "id": 2623,
-      "match_id": "lp_1771344000_42",
-      "radiant_team_id": "unknown",
-      "dire_team_id": "yakult-brothers",
-      "radiant_team_name": "Team Liquid",
-      "radiant_team_name_cn": null,
-      "dire_team_name": "Yakult Brothers",
-      "dire_team_name_cn": "YB",
-      "radiant_score": 0,
-      "dire_score": 0,
-      "radiant_game_wins": 0,
-      "dire_game_wins": 0,
-      "start_time": 1771344000,
-      "duration": 0,
-      "series_type": "BO2",
-      "league_id": null,
-      "tournament_id": "DreamLeague S28 - February 17-A",
-      "status": "scheduled",
-      "lobby_type": 7,
-      "game_mode": null,
-      "created_at": 1771038382,
-      "tournament_name": null,
-      "tournament_name_cn": null,
-      "tournament_tier": null
-    },
-    {
-      "id": 2624,
-      "match_id": "lp_1771353000_44",
-      "radiant_team_id": "unknown",
-      "dire_team_id": "xtreme-gaming",
-      "radiant_team_name": "Tundra Esports",
-      "radiant_team_name_cn": null,
-      "dire_team_name": "Xtreme Gaming",
-      "dire_team_name_cn": "XG",
-      "radiant_score": 0,
-      "dire_score": 0,
-      "radiant_game_wins": 0,
-      "dire_game_wins": 0,
-      "start_time": 1771353000,
-      "duration": 0,
-      "series_type": "BO2",
-      "league_id": null,
-      "tournament_id": "DreamLeague S28 - February 17-B",
-      "status": "scheduled",
-      "lobby_type": 7,
-      "game_mode": null,
-      "created_at": 1771038382,
-      "tournament_name": null,
-      "tournament_name_cn": null,
-      "tournament_tier": null
-    }
-  ],
+  "upcoming": [],
   "cnMatches": [],
   "tournaments": [
     {
@@ -115,124 +10,434 @@
       "start_date": "2025-01-28",
       "end_date": "2025-02-02",
       "status": "completed",
-      "prize_pool": ",000,000",
+      "prize_pool": "$1,000,000",
       "location": "线上"
-    },
-    {
-      "id": "esl-challenger-china",
-      "name": "ESL Challenger China",
-      "name_cn": "ESL 挑战者杯 中国",
-      "tier": "S",
-      "start_date": "2025-01-13",
-      "end_date": "2025-01-19",
-      "status": "completed",
-      "prize_pool": "00,000",
-      "location": "中国"
-    },
-    {
-      "id": "dreamleague-s26",
-      "name": "DreamLeague Season 26",
-      "name_cn": "梦幻联赛 S26",
-      "tier": "S",
-      "start_date": "2025-06-01",
-      "end_date": "2025-06-15",
-      "status": "completed",
-      "prize_pool": ",000,000",
-      "location": "线上"
-    },
-    {
-      "id": "pgl-wallachia-7",
-      "name": "PGL Wallachia Season 7",
-      "name_cn": "PGL 瓦拉几亚 S7",
-      "tier": "S",
-      "start_date": "2025-02-09",
-      "end_date": "2025-02-16",
-      "status": "completed",
-      "prize_pool": "$500,000",
-      "location": "罗马尼亚"
     }
   ],
-  "news": [
-    {
-      "id": "news-2",
-      "title": "DreamLeague S29 即将开战",
-      "summary": "DreamLeague 第29赛季将于2月20日开战，XG、YB 已确认参赛，争夺100万美元奖金。",
-      "content": null,
-      "source": "DreamHack",
-      "url": "https://liquipedia.net/dota2/DreamLeague/Season_29",
-      "published_at": 1770784419,
-      "keywords": null,
-      "category": "tournament",
-      "image": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "news-3",
-      "title": "2026年DOTA2赛事日历公布",
-      "summary": "Valve 公布2026年DPC赛程，TI2026 将于8月举行，总奖金池预计超过300万美元。",
-      "content": null,
-      "source": "Valve",
-      "url": "https://www.dota2.com",
-      "published_at": 1770438819,
-      "keywords": null,
-      "category": "tournament",
-      "image": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "news-1",
-      "title": "Team Spirit 夺得 TI2025 冠军",
-      "summary": "Team Spirit 在 TI2025 总决赛中 3-1 击败 Team Falcons，时隔三年再次捧起不朽盾。",
-      "content": null,
-      "source": "Liquipedia",
-      "url": "https://liquipedia.net/dota2/The_International/2025",
-      "published_at": 1768451619,
-      "keywords": null,
-      "category": "tournament",
-      "image": null,
-      "created_at": 1771043619
-    }
-  ],
-  "lastUpdated": "2026-02-14T04:33:39.898Z",
-  "matchesByTournament": {
+  "seriesByTournament": {
     "blast-slam-vi": [
       {
-        "match_id": "8692761931",
-        "radiant_team_name": "Team Liquid",
-        "dire_team_name": "Natus Vincere",
-        "radiant_score": 33,
-        "dire_score": 10,
+        "series_id": "1064947",
         "series_type": "BO5",
-        "start_time": 1771185630,
-        "status": "completed",
+        "radiant_team_name": "Natus Vincere",
+        "dire_team_name": "Team Liquid",
+        "radiant_score": 0,
+        "dire_score": 3,
+        "games": [
+          {
+            "match_id": "8692381181",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 16,
+            "dire_score": 29,
+            "radiant_win": false,
+            "start_time": 1771169368,
+            "duration": 1982
+          },
+          {
+            "match_id": "8692497249",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 43,
+            "dire_score": 49,
+            "radiant_win": false,
+            "start_time": 1771174570,
+            "duration": 3808
+          },
+          {
+            "match_id": "8692691067",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 17,
+            "dire_score": 42,
+            "radiant_win": false,
+            "start_time": 1771181772,
+            "duration": 2040
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1064645",
+        "series_type": "BO5",
+        "radiant_team_name": "Natus Vincere",
+        "dire_team_name": "Team Yandex",
+        "radiant_score": 3,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8691060575",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 28,
+            "dire_score": 6,
+            "radiant_win": true,
+            "start_time": 1771089661,
+            "duration": 2021
+          },
+          {
+            "match_id": "8691152810",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 11,
+            "dire_score": 28,
+            "radiant_win": false,
+            "start_time": 1771093523,
+            "duration": 1435
+          },
+          {
+            "match_id": "8691221504",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 36,
+            "dire_score": 22,
+            "radiant_win": true,
+            "start_time": 1771096808,
+            "duration": 2935
+          },
+          {
+            "match_id": "8691341665",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 38,
+            "dire_score": 31,
+            "radiant_win": false,
+            "start_time": 1771103039,
+            "duration": 3645
+          },
+          {
+            "match_id": "8691428241",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 27,
+            "dire_score": 10,
+            "radiant_win": true,
+            "start_time": 1771108666,
+            "duration": 2426
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1064569",
+        "series_type": "BO5",
+        "radiant_team_name": "Team Liquid",
+        "dire_team_name": "OG",
+        "radiant_score": 2,
+        "dire_score": 1,
+        "games": [
+          {
+            "match_id": "8690685211",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "OG",
+            "radiant_score": 20,
+            "dire_score": 8,
+            "radiant_win": true,
+            "start_time": 1771074038,
+            "duration": 1459
+          },
+          {
+            "match_id": "8690770904",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "OG",
+            "radiant_score": 17,
+            "dire_score": 27,
+            "radiant_win": false,
+            "start_time": 1771077425,
+            "duration": 2301
+          },
+          {
+            "match_id": "8690871387",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "OG",
+            "radiant_score": 32,
+            "dire_score": 36,
+            "radiant_win": true,
+            "start_time": 1771081498,
+            "duration": 5107
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1064393",
+        "series_type": "BO5",
+        "radiant_team_name": "Team Yandex",
+        "dire_team_name": "HEROIC",
+        "radiant_score": 2,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8689821393",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 10,
+            "dire_score": 26,
+            "radiant_win": false,
+            "start_time": 1771010701,
+            "duration": 2011
+          },
+          {
+            "match_id": "8689898665",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 21,
+            "dire_score": 30,
+            "radiant_win": false,
+            "start_time": 1771014662,
+            "duration": 2754
+          },
+          {
+            "match_id": "8689976673",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 40,
+            "dire_score": 21,
+            "radiant_win": true,
+            "start_time": 1771019456,
+            "duration": 2764
+          },
+          {
+            "match_id": "8690043972",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 30,
+            "dire_score": 20,
+            "radiant_win": true,
+            "start_time": 1771024868,
+            "duration": 2795
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1064245",
+        "series_type": "BO5",
+        "radiant_team_name": "Team Falcons",
+        "dire_team_name": "Team Liquid",
+        "radiant_score": 2,
+        "dire_score": 3,
+        "games": [
+          {
+            "match_id": "8689312274",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 12,
+            "dire_score": 26,
+            "radiant_win": false,
+            "start_time": 1770987833,
+            "duration": 2673
+          },
+          {
+            "match_id": "8689410743",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 18,
+            "dire_score": 46,
+            "radiant_win": false,
+            "start_time": 1770992458,
+            "duration": 1951
+          },
+          {
+            "match_id": "8689505222",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 35,
+            "dire_score": 17,
+            "radiant_win": true,
+            "start_time": 1770996345,
+            "duration": 2087
+          },
+          {
+            "match_id": "8689610128",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 37,
+            "dire_score": 18,
+            "radiant_win": true,
+            "start_time": 1771000883,
+            "duration": 2581
+          },
+          {
+            "match_id": "8689716934",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 19,
+            "dire_score": 35,
+            "radiant_win": false,
+            "start_time": 1771005677,
+            "duration": 2254
+          }
+        ],
+        "stage": "Playoffs"
+      },
+      {
+        "series_id": "1062892",
+        "series_type": "BO3",
+        "radiant_team_name": "Team Liquid",
+        "dire_team_name": "GamerLegion",
+        "radiant_score": 1,
+        "dire_score": 1,
+        "games": [
+          {
+            "match_id": "8683239884",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "GamerLegion",
+            "radiant_score": 9,
+            "dire_score": 34,
+            "radiant_win": false,
+            "start_time": 1770569139,
+            "duration": 1645
+          },
+          {
+            "match_id": "8683333901",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "GamerLegion",
+            "radiant_score": 23,
+            "dire_score": 18,
+            "radiant_win": true,
+            "start_time": 1770572739,
+            "duration": 2204
+          }
+        ],
         "stage": "Group Stage"
       },
       {
-        "match_id": "8692701234",
-        "radiant_team_name": "Natus Vincere",
-        "dire_team_name": "Team Liquid",
-        "radiant_score": 2,
-        "dire_score": 1,
+        "series_id": "1062830",
         "series_type": "BO3",
-        "start_time": 1771100000,
-        "status": "completed",
+        "radiant_team_name": "Tundra Esports",
+        "dire_team_name": "HEROIC",
+        "radiant_score": 0,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8682972538",
+            "radiant_team_name": "Tundra Esports",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 9,
+            "dire_score": 25,
+            "radiant_win": false,
+            "start_time": 1770559010,
+            "duration": 3387
+          },
+          {
+            "match_id": "8683127512",
+            "radiant_team_name": "Tundra Esports",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 11,
+            "dire_score": 36,
+            "radiant_win": false,
+            "start_time": 1770564385,
+            "duration": 2384
+          }
+        ],
         "stage": "Group Stage"
-      }
-    ],
-    "pgl-wallachia-7": [
+      },
       {
-        "match_id": "8692000001",
-        "radiant_team_name": "MOUZ",
-        "dire_team_name": "Team Spirit",
-        "radiant_score": 2,
-        "dire_score": 0,
+        "series_id": "1062499",
         "series_type": "BO3",
-        "start_time": 1771000000,
-        "status": "completed",
+        "radiant_team_name": "Team Falcons",
+        "dire_team_name": "Xtreme Gaming",
+        "radiant_score": 1,
+        "dire_score": 1,
+        "games": [
+          {
+            "match_id": "8681659188",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 16,
+            "dire_score": 24,
+            "radiant_win": false,
+            "start_time": 1770481846,
+            "duration": 2325
+          },
+          {
+            "match_id": "8681759092",
+            "radiant_team_name": "Team Falcons",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 21,
+            "dire_score": 13,
+            "radiant_win": true,
+            "start_time": 1770486161,
+            "duration": 3227
+          }
+        ],
+        "stage": "Group Stage"
+      },
+      {
+        "series_id": "1062437",
+        "series_type": "BO3",
+        "radiant_team_name": "Team Spirit",
+        "dire_team_name": "Team Yandex",
+        "radiant_score": 0,
+        "dire_score": 2,
+        "games": [
+          {
+            "match_id": "8681420176",
+            "radiant_team_name": "Team Spirit",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 10,
+            "dire_score": 26,
+            "radiant_win": false,
+            "start_time": 1770472548,
+            "duration": 2253
+          },
+          {
+            "match_id": "8681524068",
+            "radiant_team_name": "Team Spirit",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 18,
+            "dire_score": 32,
+            "radiant_win": false,
+            "start_time": 1770476687,
+            "duration": 3111
+          }
+        ],
+        "stage": "Group Stage"
+      },
+      {
+        "series_id": "1062162",
+        "series_type": "BO3",
+        "radiant_team_name": "MOUZ",
+        "dire_team_name": "GamerLegion",
+        "radiant_score": 0,
+        "dire_score": 3,
+        "games": [
+          {
+            "match_id": "8680195641",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "GamerLegion",
+            "radiant_score": 8,
+            "dire_score": 29,
+            "radiant_win": false,
+            "start_time": 1770397338,
+            "duration": 2570
+          },
+          {
+            "match_id": "8680299422",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "GamerLegion",
+            "radiant_score": 16,
+            "dire_score": 34,
+            "radiant_win": false,
+            "start_time": 1770401793,
+            "duration": 2109
+          },
+          {
+            "match_id": "8680386178",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "GamerLegion",
+            "radiant_score": 11,
+            "dire_score": 42,
+            "radiant_win": false,
+            "start_time": 1770405695,
+            "duration": 2320
+          }
+        ],
         "stage": "Playoffs"
       }
-    ],
-    "esl-challenger-china": [],
-    "dreamleague-s26": []
-  }
+    ]
+  },
+  "news": [],
+  "lastUpdated": "2026-02-16"
 }
