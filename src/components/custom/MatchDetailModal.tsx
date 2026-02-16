@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sword, Users, Target, Clock } from 'lucide-react';
+import { Sword, Users, Target, Clock, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ interface Player {
   kills: number;
   deaths: number;
   assists: number;
+  gold?: number;
   gold_per_min: number;
   xp_per_min: number;
   last_hits: number;
@@ -58,6 +59,8 @@ interface MatchDetail {
   series_type: number;
   players: Player[];
   picks_bans: PicksBans[];
+  radiant_gold_adv?: number[];
+  radiant_xp_adv?: number[];
 }
 
 // Hero data - loaded from data file
@@ -227,6 +230,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   <Sword className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">概览</span>
                 </TabsTrigger>
+                <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">经济</span>
+                </TabsTrigger>
               </TabsList>
 
               {/* Players Tab */}
@@ -257,6 +264,9 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               {/* Overview Tab */}
               <TabsContent value="overview">
                 <OverviewSection match={match} />
+              </TabsContent>
+              <TabsContent value="economy">
+                <EconomySection match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
               </TabsContent>
             </Tabs>
           </>
@@ -410,6 +420,116 @@ function OverviewSection({ match }: { match: MatchDetail }) {
       <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
         <div className="text-sm text-slate-400 mb-1">Match ID</div>
         <div className="text-xl font-bold text-white">{match.match_id}</div>
+      </div>
+    </div>
+  );
+}
+
+function EconomySection({ match, radiantTeamName, direTeamName }: { match: MatchDetail; radiantTeamName: string; direTeamName: string }) {
+  const goldAdv = match.radiant_gold_adv || [];
+  const xpAdv = match.radiant_xp_adv || [];
+  
+  const maxGold = Math.max(...goldAdv.map(Math.abs), 1);
+  const maxXP = Math.max(...xpAdv.map(Math.abs), 1);
+  
+  // Generate SVG path for the graph
+  const generatePath = (data: number[], maxVal: number) => {
+    if (data.length === 0) return '';
+    const width = 100;
+    const height = 50;
+    const step = width / (data.length - 1);
+    
+    let path = '';
+    data.forEach((val, i) => {
+      const x = i * step;
+      const y = height / 2 - (val / maxVal) * (height / 2);
+      path += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+    });
+    return path;
+  };
+  
+  const goldPath = generatePath(goldAdv, maxGold);
+  const xpPath = generatePath(xpAdv, maxXP);
+  
+  const radiantWon = match.radiant_win;
+  
+  return (
+    <div className="space-y-4">
+      {/* Team Gold Advantage */}
+      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-slate-300">团队经济曲线</span>
+          <div className="flex items-center gap-4 text-xs">
+            <span className="text-green-400">{radiantTeamName || 'Radiant'}</span>
+            <span className="text-red-400">{direTeamName || 'Dire'}</span>
+          </div>
+        </div>
+        <div className="relative h-24 bg-slate-900/50 rounded overflow-hidden">
+          {/* Zero line */}
+          <div className="absolute top-1/2 left-0 right-0 border-t border-slate-700 border-dashed"></div>
+          {/* Gold advantage line */}
+          <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
+            <path d={goldPath} fill="none" stroke={radiantWon ? "#4ade80" : "#f87171"} strokeWidth="2" />
+          </svg>
+        </div>
+        <div className="flex justify-between mt-2 text-xs text-slate-500">
+          <span>0:00</span>
+          <span>{formatDuration(match.duration)}</span>
+        </div>
+        <div className="flex justify-center mt-1">
+          {goldAdv.length > 0 && (
+            <span className={goldAdv[goldAdv.length - 1] > 0 ? 'text-green-400' : 'text-red-400'}>
+              {goldAdv[goldAdv.length - 1] > 0 ? '+' : ''}{goldAdv[goldAdv.length - 1]} Gold
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Team XP Advantage */}
+      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-slate-300">团队经验曲线</span>
+        </div>
+        <div className="relative h-24 bg-slate-900/50 rounded overflow-hidden">
+          <div className="absolute top-1/2 left-0 right-0 border-t border-slate-700 border-dashed"></div>
+          <svg className="w-full h-full" viewBox="0 0 100 50" preserveAspectRatio="none">
+            <path d={xpPath} fill="none" stroke={radiantWon ? "#4ade80" : "#f87171"} strokeWidth="2" />
+          </svg>
+        </div>
+        <div className="flex justify-between mt-2 text-xs text-slate-500">
+          <span>0:00</span>
+          <span>{formatDuration(match.duration)}</span>
+        </div>
+        <div className="flex justify-center mt-1">
+          {xpAdv.length > 0 && (
+            <span className={xpAdv[xpAdv.length - 1] > 0 ? 'text-green-400' : 'text-red-400'}>
+              {xpAdv[xpAdv.length - 1] > 0 ? '+' : ''}{xpAdv[xpAdv.length - 1]} XP
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Net Worth by Player */}
+      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
+        <div className="text-sm font-medium text-slate-300 mb-3">选手经济排行</div>
+        <div className="space-y-2">
+          {[...match.players]
+            .sort((a, b) => (b.gold || 0) - (a.gold || 0))
+            .slice(0, 5)
+            .map((p, idx) => {
+              const isRadiant = p.player_slot < 128;
+              return (
+                <div key={p.player_slot} className="flex items-center gap-2 text-xs">
+                  <span className="text-slate-500 w-4">{idx + 1}</span>
+                  <HeroIcon heroId={p.hero_id} size="sm" />
+                  <span className={`flex-1 truncate ${isRadiant ? 'text-green-400' : 'text-red-400'}`}>
+                    {p.personaname || p.account_id || 'Unknown'}
+                  </span>
+                  <span className="text-yellow-400 font-medium">{p.gold || 0}</span>
+                </div>
+              );
+            })}
+        </div>
       </div>
     </div>
   );
