@@ -36,8 +36,8 @@
           },
           {
             "match_id": "8692497249",
-            "radiant_team_name": "Natus Vincere",
-            "dire_team_name": "Team Liquid",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Natus Vincere",
             "radiant_score": 43,
             "dire_score": 49,
             "radiant_win": false,
@@ -67,8 +67,8 @@
         "games": [
           {
             "match_id": "8691060575",
-            "radiant_team_name": "Natus Vincere",
-            "dire_team_name": "Team Yandex",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "Natus Vincere",
             "radiant_score": 28,
             "dire_score": 6,
             "radiant_win": true,
@@ -77,8 +77,8 @@
           },
           {
             "match_id": "8691152810",
-            "radiant_team_name": "Natus Vincere",
-            "dire_team_name": "Team Yandex",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "Natus Vincere",
             "radiant_score": 11,
             "dire_score": 28,
             "radiant_win": false,
@@ -87,8 +87,8 @@
           },
           {
             "match_id": "8691221504",
-            "radiant_team_name": "Natus Vincere",
-            "dire_team_name": "Team Yandex",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "Natus Vincere",
             "radiant_score": 36,
             "dire_score": 22,
             "radiant_win": true,
@@ -97,8 +97,8 @@
           },
           {
             "match_id": "8691341665",
-            "radiant_team_name": "Natus Vincere",
-            "dire_team_name": "Team Yandex",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "Natus Vincere",
             "radiant_score": 38,
             "dire_score": 31,
             "radiant_win": false,
@@ -138,8 +138,8 @@
           },
           {
             "match_id": "8690770904",
-            "radiant_team_name": "Team Liquid",
-            "dire_team_name": "OG",
+            "radiant_team_name": "OG",
+            "dire_team_name": "Team Liquid",
             "radiant_score": 17,
             "dire_score": 27,
             "radiant_win": false,
@@ -179,8 +179,8 @@
           },
           {
             "match_id": "8689898665",
-            "radiant_team_name": "Team Yandex",
-            "dire_team_name": "HEROIC",
+            "radiant_team_name": "HEROIC",
+            "dire_team_name": "Team Yandex",
             "radiant_score": 21,
             "dire_score": 30,
             "radiant_win": false,
@@ -220,8 +220,8 @@
         "games": [
           {
             "match_id": "8689312274",
-            "radiant_team_name": "Team Falcons",
-            "dire_team_name": "Team Liquid",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Team Falcons",
             "radiant_score": 12,
             "dire_score": 26,
             "radiant_win": false,
@@ -240,8 +240,8 @@
           },
           {
             "match_id": "8689505222",
-            "radiant_team_name": "Team Falcons",
-            "dire_team_name": "Team Liquid",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Team Falcons",
             "radiant_score": 35,
             "dire_score": 17,
             "radiant_win": true,
@@ -281,8 +281,8 @@
         "games": [
           {
             "match_id": "8683239884",
-            "radiant_team_name": "Team Liquid",
-            "dire_team_name": "GamerLegion",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "Team Liquid",
             "radiant_score": 9,
             "dire_score": 34,
             "radiant_win": false,
@@ -343,8 +343,8 @@
         "games": [
           {
             "match_id": "8681659188",
-            "radiant_team_name": "Team Falcons",
-            "dire_team_name": "Xtreme Gaming",
+            "radiant_team_name": "Xtreme Gaming",
+            "dire_team_name": "Team Falcons",
             "radiant_score": 16,
             "dire_score": 24,
             "radiant_win": false,
@@ -415,8 +415,8 @@
           },
           {
             "match_id": "8680299422",
-            "radiant_team_name": "MOUZ",
-            "dire_team_name": "GamerLegion",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "MOUZ",
             "radiant_score": 16,
             "dire_score": 34,
             "radiant_win": false,
@@ -435,6 +435,37 @@
           }
         ],
         "stage": "Playoffs"
+      },
+      {
+        "series_id": "1062103",
+        "series_type": "BO3",
+        "radiant_team_name": "REKONIX",
+        "dire_team_name": "HEROIC",
+        "radiant_score": 1,
+        "dire_score": 1,
+        "games": [
+          {
+            "match_id": "8679911370",
+            "radiant_team_name": "HEROIC",
+            "dire_team_name": "REKONIX",
+            "radiant_score": 44,
+            "dire_score": 27,
+            "radiant_win": true,
+            "start_time": 1770386155,
+            "duration": 3812
+          },
+          {
+            "match_id": "8680063852",
+            "radiant_team_name": "REKONIX",
+            "dire_team_name": "HEROIC",
+            "radiant_score": 27,
+            "dire_score": 41,
+            "radiant_win": false,
+            "start_time": 1770391993,
+            "duration": 3125
+          }
+        ],
+        "stage": "Group Stage"
       }
     ]
   },
