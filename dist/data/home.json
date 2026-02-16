@@ -108,130 +108,37 @@
   "cnMatches": [],
   "tournaments": [
     {
-      "id": "ti-2026",
-      "name": "The International 2026",
-      "name_cn": "国际邀请赛 2026",
-      "tier": "T1",
-      "start_date": "2026-08-15",
-      "end_date": "2026-08-25",
-      "status": "upcoming",
-      "prize_pool": "$3,000,000+",
-      "location": "TBD",
-      "format": "Swiss Round + Double-elimination Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "esl-one-2026-spring",
-      "name": "ESL One Spring 2026",
-      "name_cn": "ESL One 春季赛 2026",
-      "tier": "T1",
-      "start_date": "2026-04-20",
-      "end_date": "2026-04-26",
-      "status": "upcoming",
-      "prize_pool": "$1,000,000",
-      "location": "TBD",
-      "format": "Group Stage + Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "pgl-wallachia-s8",
-      "name": "PGL Wallachia Season 8",
-      "name_cn": "PGL 瓦拉几亚 S8",
-      "tier": "T1",
-      "start_date": "2026-03-15",
-      "end_date": "2026-03-23",
-      "status": "upcoming",
-      "prize_pool": "$1,000,000",
-      "location": "Bucharest, Romania",
-      "format": "Swiss-system + Double-elimination Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "dreamleague-s29",
-      "name": "DreamLeague Season 29",
-      "name_cn": "梦幻联赛 S29",
-      "tier": "T1",
-      "start_date": "2026-02-20",
-      "end_date": "2026-03-08",
-      "status": "upcoming",
-      "prize_pool": "$1,000,000",
-      "location": "Online (Europe)",
-      "format": "Group Stage + Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "ti-2025",
-      "name": "The International 2025",
-      "name_cn": "国际邀请赛 2025",
-      "tier": "T1",
-      "start_date": "2025-09-04",
-      "end_date": "2025-09-14",
-      "status": "completed",
-      "prize_pool": "$2,500,000+",
-      "location": "Hamburg, Germany",
-      "format": "Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "esl-one-birmingham-2025",
-      "name": "ESL One Birmingham 2025",
-      "name_cn": "ESL One 伯明翰 2025",
-      "tier": "T1",
-      "start_date": "2025-04-22",
-      "end_date": "2025-04-27",
-      "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "Birmingham, UK",
-      "format": "Group Stage + Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "pgl-wallachia-7",
-      "name": "PGL Wallachia Season 7",
-      "name_cn": "PGL 瓦拉几亚 S7",
-      "tier": "T1",
-      "start_date": "2025-03-07",
-      "end_date": "2025-03-15",
-      "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "Bucharest, Romania",
-      "format": "Swiss-system Group Stage (Bo3) + Double-elimination Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "dreamleague-28",
-      "name": "DreamLeague Season 28",
-      "name_cn": "梦幻联赛 S28",
-      "tier": "T1",
-      "start_date": "2025-02-16",
-      "end_date": "2025-03-01",
-      "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "Online (Europe)",
-      "format": "Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
-    },
-    {
-      "id": "blast-slam-6",
+      "id": "blast-slam-vi",
       "name": "BLAST Slam VI",
-      "name_cn": "BLAST Slam 第六赛季",
-      "tier": "T1",
-      "start_date": "2025-02-03",
-      "end_date": "2025-02-15",
+      "name_cn": "BLAST 锦标赛 VI",
+      "tier": "S",
+      "start_date": "2025-01-28",
+      "end_date": "2025-02-02",
       "status": "completed",
-      "prize_pool": "$1,000,000",
-      "location": "Malta",
-      "format": "Round-robin Group Stage + Single-elimination Playoffs",
-      "logo_url": null,
-      "created_at": 1771043619
+      "prize_pool": ",000,000",
+      "location": "线上"
+    },
+    {
+      "id": "esl-challenger-china",
+      "name": "ESL Challenger China",
+      "name_cn": "ESL 挑战者杯 中国",
+      "tier": "S",
+      "start_date": "2025-01-13",
+      "end_date": "2025-01-19",
+      "status": "completed",
+      "prize_pool": "00,000",
+      "location": "中国"
+    },
+    {
+      "id": "dreamleague-s26",
+      "name": "DreamLeague Season 26",
+      "name_cn": "梦幻联赛 S26",
+      "tier": "S",
+      "start_date": "2025-06-01",
+      "end_date": "2025-06-15",
+      "status": "completed",
+      "prize_pool": ",000,000",
+      "location": "线上"
     }
   ],
   "news": [
@@ -275,5 +182,78 @@
       "created_at": 1771043619
     }
   ],
-  "lastUpdated": "2026-02-14T04:33:39.898Z"
+  "lastUpdated": "2026-02-14T04:33:39.898Z",
+  "matchesByTournament": {
+    "esl-challenger-china": [
+      {
+        "id": 1,
+        "match_id": "8670005206",
+        "radiant_team_name": "Team Refuser",
+        "dire_team_name": "Xtreme Gaming",
+        "radiant_score": 34,
+        "dire_score": 34,
+        "start_time": 1769761549,
+        "series_type": "BO5",
+        "tournament_name": "ESL Challenger China",
+        "status": "completed",
+        "stage": "Playoffs"
+      },
+      {
+        "id": 2,
+        "match_id": "8684048189",
+        "radiant_team_name": "XG",
+        "dire_team_name": "Spirit",
+        "radiant_score": 2,
+        "dire_score": 1,
+        "start_time": 1770123456,
+        "series_type": "BO3",
+        "tournament_name": "ESL Challenger China",
+        "status": "completed",
+        "stage": "Group Stage"
+      }
+    ],
+    "dreamleague-s26": [
+      {
+        "id": 3,
+        "match_id": "8317288887",
+        "radiant_team_name": "BetBoom Team",
+        "dire_team_name": "PARIVISION",
+        "radiant_score": 21,
+        "dire_score": 23,
+        "start_time": 1748796481,
+        "series_type": "BO5",
+        "tournament_name": "DreamLeague S26",
+        "status": "completed",
+        "stage": "Grand Final"
+      }
+    ],
+    "blast-slam-vi": [
+      {
+        "id": 1,
+        "match_id": "8669491857",
+        "radiant_team_name": "Team Spirit",
+        "dire_team_name": "Xtreme Gaming",
+        "radiant_score": 2,
+        "dire_score": 1,
+        "start_time": 1769683200,
+        "series_type": "BO3",
+        "tournament_name": "BLAST Slam VI",
+        "status": "completed",
+        "stage": "Finals"
+      },
+      {
+        "id": 2,
+        "match_id": "8669491858",
+        "radiant_team_name": "BetBoom Team",
+        "dire_team_name": "PARIVISION",
+        "radiant_score": 0,
+        "dire_score": 2,
+        "start_time": 1769596800,
+        "series_type": "BO3",
+        "tournament_name": "BLAST Slam VI",
+        "status": "completed",
+        "stage": "Semifinals"
+      }
+    ]
+  }
 }
