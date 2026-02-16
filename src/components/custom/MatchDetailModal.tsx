@@ -269,15 +269,13 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean }) {
   // Try to get pro player name
   const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
-  const displayName = proInfo?.name || player.personaname || (player.account_id ? `ID: ${player.account_id}` : 'Unknown');
-  const teamName = proInfo?.team_name || '';
+  const displayName = proInfo?.name || player.personaname || (player.account_id ? `${player.account_id}` : 'Unknown');
 
   return (
     <div className={`p-2 sm:p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
       <div className="flex items-center justify-between mb-1 sm:mb-2">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           <span className="text-sm sm:text-base font-medium text-white truncate">{displayName}</span>
-          {teamName && <Badge className="bg-slate-700 text-slate-300 text-xs flex-shrink-0">{teamName}</Badge>}
         </div>
         <Badge className={`flex-shrink-0 ${isWinner ? 'bg-green-600/20 text-green-400' : 'bg-slate-700 text-slate-400'} text-xs`}>
           Lv.{player.level}
@@ -285,8 +283,8 @@ function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean })
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         <HeroIcon heroId={player.hero_id} size="sm" />
-        <span className="text-xs sm:text-base font-bold text-yellow-400 truncate flex-shrink-0 max-w-[60px] sm:max-w-[80px]">{getHeroName(player.hero_id)}</span>
-        <div className="flex-1 text-center min-w-0">
+        <span className="text-xs sm:text-sm md:text-base font-bold text-yellow-400 truncate flex-1 min-w-0">{getHeroName(player.hero_id)}</span>
+        <div className="flex-shrink-0 text-right">
           <span className={`text-sm sm:text-xl font-bold ${player.kills > player.deaths ? 'text-green-400' : player.kills < player.deaths ? 'text-red-400' : 'text-slate-400'}`}>
             {player.kills} / {player.deaths} / {player.assists}
           </span>
