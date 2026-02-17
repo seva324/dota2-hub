@@ -219,7 +219,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-800 gap-2 sm:gap-4">
               <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
-                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-all max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
                   {radiantTeamName}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -231,7 +231,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     {match.dire_score}
                   </span>
                 </div>
-                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-all max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
                   {direTeamName}
                 </div>
               </div>

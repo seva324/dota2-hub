@@ -195,7 +195,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10">
         <div className="flex items-center justify-between gap-2">
           {/* Radiant Team */}
-          <div className="text-xl font-bold text-green-400 break-all text-center flex-1">{getTeamAbbr(radiantTeamName)}</div>
+          <div className="text-xl font-bold text-green-400 break-words text-center flex-1">{getTeamAbbr(radiantTeamName)}</div>
           
           {/* Match Info */}
           <div className="flex items-center gap-2 text-slate-400 shrink-0">
@@ -204,7 +204,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
           </div>
           
           {/* Dire Team */}
-          <div className="text-xl font-bold text-red-400 break-all text-center flex-1">{getTeamAbbr(direTeamName)}</div>
+          <div className="text-xl font-bold text-red-400 break-words text-center flex-1">{getTeamAbbr(direTeamName)}</div>
         </div>
       </div>
 
