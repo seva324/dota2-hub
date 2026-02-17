@@ -1,128 +1,219 @@
-[
-  {
-    "id": "ti-2026",
-    "name": "The International 2026",
-    "name_cn": "国际邀请赛 2026",
-    "tier": "T1",
-    "start_date": "2026-08-15",
-    "end_date": "2026-08-25",
-    "status": "upcoming",
-    "prize_pool": "$3,000,000+",
-    "location": "TBD",
-    "format": "Swiss Round + Double-elimination Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "esl-one-2026-spring",
-    "name": "ESL One Spring 2026",
-    "name_cn": "ESL One 春季赛 2026",
-    "tier": "T1",
-    "start_date": "2026-04-20",
-    "end_date": "2026-04-26",
-    "status": "upcoming",
-    "prize_pool": "$1,000,000",
-    "location": "TBD",
-    "format": "Group Stage + Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "pgl-wallachia-s8",
-    "name": "PGL Wallachia Season 8",
-    "name_cn": "PGL 瓦拉几亚 S8",
-    "tier": "T1",
-    "start_date": "2026-03-15",
-    "end_date": "2026-03-23",
-    "status": "upcoming",
-    "prize_pool": "$1,000,000",
-    "location": "Bucharest, Romania",
-    "format": "Swiss-system + Double-elimination Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "dreamleague-s29",
-    "name": "DreamLeague Season 29",
-    "name_cn": "梦幻联赛 S29",
-    "tier": "T1",
-    "start_date": "2026-02-20",
-    "end_date": "2026-03-08",
-    "status": "upcoming",
-    "prize_pool": "$1,000,000",
-    "location": "Online (Europe)",
-    "format": "Group Stage + Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "ti-2025",
-    "name": "The International 2025",
-    "name_cn": "国际邀请赛 2025",
-    "tier": "T1",
-    "start_date": "2025-09-04",
-    "end_date": "2025-09-14",
-    "status": "completed",
-    "prize_pool": "$2,500,000+",
-    "location": "Hamburg, Germany",
-    "format": "Swiss Round (Bo3) + Special Elimination + Double-elimination Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "esl-one-birmingham-2025",
-    "name": "ESL One Birmingham 2025",
-    "name_cn": "ESL One 伯明翰 2025",
-    "tier": "T1",
-    "start_date": "2025-04-22",
-    "end_date": "2025-04-27",
-    "status": "completed",
-    "prize_pool": "$1,000,000",
-    "location": "Birmingham, UK",
-    "format": "Group Stage + Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "pgl-wallachia-7",
-    "name": "PGL Wallachia Season 7",
-    "name_cn": "PGL 瓦拉几亚 S7",
-    "tier": "T1",
-    "start_date": "2025-03-07",
-    "end_date": "2025-03-15",
-    "status": "completed",
-    "prize_pool": "$1,000,000",
-    "location": "Bucharest, Romania",
-    "format": "Swiss-system Group Stage (Bo3) + Double-elimination Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "dreamleague-28",
-    "name": "DreamLeague Season 28",
-    "name_cn": "梦幻联赛 S28",
-    "tier": "T1",
-    "start_date": "2025-02-16",
-    "end_date": "2025-03-01",
-    "status": "completed",
-    "prize_pool": "$1,000,000",
-    "location": "Online (Europe)",
-    "format": "Group Stage 1 (Bo2) + Group Stage 2 (Bo3) + Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
-  },
-  {
-    "id": "blast-slam-6",
-    "name": "BLAST Slam VI",
-    "name_cn": "BLAST Slam 第六赛季",
-    "tier": "T1",
-    "start_date": "2025-02-03",
-    "end_date": "2025-02-15",
-    "status": "completed",
-    "prize_pool": "$1,000,000",
-    "location": "Malta",
-    "format": "Round-robin Group Stage + Single-elimination Playoffs",
-    "logo_url": null,
-    "created_at": 1771043619
+{
+  "tournaments": [
+    {
+      "id": "dreamleague-s28",
+      "name": "DreamLeague Season 28",
+      "name_cn": "梦联赛 S28",
+      "tier": "S",
+      "location": "线上",
+      "prize": "$1,000,000",
+      "status": "completed",
+      "start_date": "2026-02-03",
+      "end_date": "2026-03-02",
+      "prize_pool": "$1,000,000"
+    },
+    {
+      "id": "blast-slam-vi",
+      "name": "BLAST Slam VI",
+      "name_cn": "BLAST 锦标赛 VI",
+      "tier": "S",
+      "location": "线上",
+      "prize": "$1,000,000",
+      "status": "completed",
+      "start_date": "2026-02-03",
+      "end_date": "2026-02-16",
+      "prize_pool": "$1,000,000"
+    }
+  ],
+  "seriesByTournament": {
+    "dreamleague-s28": [
+      {
+        "series_id": "cleaned_unknown_MOUZ_vs_Tundra Esports_BO3_20500",
+        "series_type": "BO3",
+        "radiant_team_name": "MOUZ",
+        "dire_team_name": "Tundra Esports",
+        "games": [
+          {
+            "match_id": "8693948351.0",
+            "radiant_team_name": "Tundra Esports",
+            "dire_team_name": "MOUZ",
+            "radiant_score": 31,
+            "dire_score": 7,
+            "radiant_win": 1,
+            "start_time": 1771269062,
+            "duration": 1451
+          },
+          {
+            "match_id": "8694016846.0",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "Tundra Esports",
+            "radiant_score": 28,
+            "dire_score": 21,
+            "radiant_win": 1,
+            "start_time": 1771272480,
+            "duration": 1940
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 1,
+        "tournament_id": null,
+        "tournament_name": null,
+        "stage": "",
+        "radiant_score": 1,
+        "dire_score": 1
+      },
+      {
+        "series_id": "cleaned_unknown_Aurora Gaming_vs_BetBoom Team_BO3_20500",
+        "series_type": "BO3",
+        "radiant_team_name": "BetBoom Team",
+        "dire_team_name": "Aurora Gaming",
+        "games": [
+          {
+            "match_id": "8693723587.0",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "BetBoom Team",
+            "radiant_score": 34,
+            "dire_score": 17,
+            "radiant_win": 1,
+            "start_time": 1771259027,
+            "duration": 2218
+          },
+          {
+            "match_id": "8693833533.0",
+            "radiant_team_name": "BetBoom Team",
+            "dire_team_name": "Aurora Gaming",
+            "radiant_score": 28,
+            "dire_score": 42,
+            "radiant_win": 0,
+            "start_time": 1771263190,
+            "duration": 3397
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 2,
+        "tournament_id": null,
+        "tournament_name": null,
+        "stage": "",
+        "radiant_score": 0,
+        "dire_score": 2
+      },
+      {
+        "series_id": "cleaned_unknown_Team Spirit_vs_Xtreme Gaming_BO3_20500",
+        "series_type": "BO3",
+        "radiant_team_name": "Xtreme Gaming",
+        "dire_team_name": "Team Spirit",
+        "games": [
+          {
+            "match_id": "8693504706.0",
+            "radiant_team_name": "Team Spirit",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 6,
+            "dire_score": 25,
+            "radiant_win": 0,
+            "start_time": 1771248544,
+            "duration": 2385
+          },
+          {
+            "match_id": "8693593278.0",
+            "radiant_team_name": "Xtreme Gaming",
+            "dire_team_name": "Team Spirit",
+            "radiant_score": 31,
+            "dire_score": 15,
+            "radiant_win": 1,
+            "start_time": 1771252800,
+            "duration": 3092
+          }
+        ],
+        "radiant_wins": 2,
+        "dire_wins": 0,
+        "tournament_id": null,
+        "tournament_name": null,
+        "stage": "",
+        "radiant_score": 2,
+        "dire_score": 0
+      },
+      {
+        "series_id": "cleaned_unknown_PARIVISION_vs_paiN Gaming_BO3_20500",
+        "series_type": "BO3",
+        "radiant_team_name": "paiN Gaming",
+        "dire_team_name": "PARIVISION",
+        "games": [
+          {
+            "match_id": "8693354840.0",
+            "radiant_team_name": "paiN Gaming",
+            "dire_team_name": "PARIVISION",
+            "radiant_score": 2,
+            "dire_score": 31,
+            "radiant_win": 0,
+            "start_time": 1771239343,
+            "duration": 1765
+          },
+          {
+            "match_id": "8693417171.0",
+            "radiant_team_name": "paiN Gaming",
+            "dire_team_name": "PARIVISION",
+            "radiant_score": 17,
+            "dire_score": 42,
+            "radiant_win": 0,
+            "start_time": 1771243783,
+            "duration": 2396
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 2,
+        "tournament_id": null,
+        "tournament_name": null,
+        "stage": "",
+        "radiant_score": 0,
+        "dire_score": 2
+      }
+    ],
+    "blast-slam-vi": [
+      {
+        "series_id": "cleaned_unknown_Natus Vincere_vs_Team Liquid_BO3_20499",
+        "series_type": "BO3",
+        "radiant_team_name": "Team Liquid",
+        "dire_team_name": "Natus Vincere",
+        "games": [
+          {
+            "match_id": "8692497249.0",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 43,
+            "dire_score": 49,
+            "radiant_win": 0,
+            "start_time": 1771174570,
+            "duration": 3808
+          },
+          {
+            "match_id": "8692691067.0",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 17,
+            "dire_score": 42,
+            "radiant_win": 0,
+            "start_time": 1771181772,
+            "duration": 2040
+          },
+          {
+            "match_id": "8692761931.0",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 33,
+            "dire_score": 10,
+            "radiant_win": 1,
+            "start_time": 1771185630,
+            "duration": 1947
+          }
+        ],
+        "radiant_wins": 2,
+        "dire_wins": 1,
+        "tournament_id": null,
+        "tournament_name": null,
+        "stage": "",
+        "radiant_score": 2,
+        "dire_score": 1
+      }
+    ]
   }
-]
+}

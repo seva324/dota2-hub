@@ -1,0 +1,73 @@
+# OpenDota Sync - Only sync data, don't rebuild from scratch
+
+name: OpenDota Sync (Every Minute)
+
+on:
+  schedule:
+    # Every minute
+    - cron: '* * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: read
+  id-token: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git diff
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+        
+      - name: Set npm registry
+        run: npm config set registry https://registry.npmjs.org/
+        
+      - name: Install dependencies
+        run: npm install --include=dev
+      
+      - name: Rebuild native modules
+        run: npm rebuild better-sqlite3
+      
+      - name: Sync OpenDota matches
+        run: |
+          # Only fetch new matches, don't rebuild database
+          node scripts/fetch-opendota-incremental.js
+      
+      - name: Export static data
+        run: node scripts/export-static-data.js
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Copy data to dist
+        run: |
+          mkdir -p dist/data dist/images
+          cp -r public/data/* dist/data/
+          cp -r public/images/* dist/images/
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Check if there are changes
+          if git diff --quiet public/data/; then
+            echo "No new data to sync"
+            exit 0
+          fi
+          
+          git add public/data/
+          git commit -m "data: Sync OpenDota matches $(date -u +'%Y-%m-%d %H:%M')"
+          git push origin main
+      
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

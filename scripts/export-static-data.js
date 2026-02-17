@@ -201,28 +201,40 @@ const cnMatches = db.prepare(`
 fs.writeFileSync(path.join(outputDir, 'cn-matches.json'), JSON.stringify(cnMatches, null, 2));
 console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
-// 导出赛事数据 - 按状态和日期排序：进行中 > 即将开始 > 已结束
-const tournaments = db.prepare(`
-  SELECT * FROM tournaments 
-  ORDER BY 
-    CASE status 
-      WHEN 'ongoing' THEN 0 
-      WHEN 'upcoming' THEN 1 
-      WHEN 'completed' THEN 2 
-      ELSE 3 
-    END,
-    start_date DESC
-`).all();
+// 导出赛事数据 - 从 league_id 构建
+const leagueIds = db.prepare('SELECT DISTINCT league_id FROM matches WHERE league_id IS NOT NULL').all();
+
+const tournamentInfo = {
+  19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S', location: '线上', prize: '$1,000,000', status: 'completed', start_date: '2026-02-03', end_date: '2026-03-02' },
+  18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S', location: '线上', prize: '$1,000,000', status: 'completed', start_date: '2025-11-10', end_date: '2025-12-08' },
+  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S', location: '中国', prize: '$100,000', status: 'completed', start_date: '2026-01-27', end_date: '2026-02-02' },
+  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S', location: '线上', prize: '$1,000,000', status: 'completed', start_date: '2026-02-03', end_date: '2026-02-16' },
+};
+
+const leagueIdMap = {
+  'dreamleague-s28': 19269,
+  'dreamleague-s27': 18988,
+  'esl-challenger-china': 19130,
+  'blast-slam-vi': 19099,
+};
+
+const tournaments = leagueIds.map(l => {
+  const info = tournamentInfo[l.league_id];
+  if (!info) return null;
+  return {
+    ...info,
+    prize_pool: info.prize
+  };
+}).filter(Boolean);
+
 console.log(`Exported ${tournaments.length} tournaments`);
 
 // 按赛事分组并聚合系列赛
 const seriesByTournament = {};
 for (const t of tournaments) {
-  const tid = t.id.toLowerCase();
-  const tname = t.name.toLowerCase();
-  const mainWord = tid.replace(/\d+$/, '').replace(/-.*$/, '').trim();
+  const leagueId = leagueIdMap[t.id];
+  if (!leagueId) continue;
   
-  // 获取该赛事的所有比赛
   const tournamentMatches = db.prepare(`
     SELECT m.*, 
            CASE 
@@ -230,15 +242,11 @@ for (const t of tournaments) {
              ELSE 0 
            END as radiant_win
     FROM matches m
-    WHERE LOWER(m.tournament_id) LIKE ? 
-       OR LOWER(m.tournament_id) LIKE ?
-       OR LOWER(m.tournament_name) LIKE ?
-       OR LOWER(m.tournament_name) LIKE ?
+    WHERE m.league_id = ?
     ORDER BY m.start_time DESC
-    LIMIT 50
-  `).all(`%${tid}%`, `%${mainWord}%`, `%${tname}%`, `%${mainWord}%`);
+    LIMIT 100
+  `).all(leagueId);
   
-  // 聚合为系列赛
   seriesByTournament[t.id] = aggregateSeries(tournamentMatches);
 }
 
