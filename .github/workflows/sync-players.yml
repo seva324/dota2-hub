@@ -1,0 +1,47 @@
+# OpenDota Player Mapping Sync - 每天定时同步
+
+name: Sync Player Mappings
+
+on:
+  schedule:
+    # 每天凌晨 3 点运行
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Set npm registry
+        run: npm config set registry https://registry.npmjs.org/
+      
+      - name: Install dependencies
+        run: npm install better-sqlite3
+      
+      - name: Sync player mappings
+        run: node scripts/sync-players.js
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet public/data/pro_players.json; then
+            echo "No changes to sync"
+          else
+            git add public/data/pro_players.json
+            git commit -m "data: Sync player mappings $(date -u +'%Y-%m-%d')"
+            git push origin main
+          fi

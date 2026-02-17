@@ -19,6 +19,11 @@
     "team_name": "CTest",
     "realname": ""
   },
+  "9403474": {
+    "name": "mid two",
+    "team_name": null,
+    "realname": ""
+  },
   "9742724": {
     "name": "HarryM",
     "team_name": "BŮČCI 5 VŮNÍ",
@@ -386,7 +391,7 @@
   },
   "91730177": {
     "name": "Seleri",
-    "team_name": "MOUZ",
+    "team_name": "Gaimin Gladiators",
     "realname": ""
   },
   "92253768": {
@@ -467,6 +472,11 @@
   "97590558": {
     "name": "Ace ♠",
     "team_name": "Team Liquid",
+    "realname": ""
+  },
+  "97658618": {
+    "name": "manta pike bfly",
+    "team_name": null,
     "realname": ""
   },
   "97734219": {
@@ -934,9 +944,19 @@
     "team_name": "CDUB Esports",
     "realname": ""
   },
+  "116585378": {
+    "name": "I SPIT ON YOUR FACE",
+    "team_name": null,
+    "realname": ""
+  },
   "116776337": {
     "name": "eace",
     "team_name": "The Chapulines",
+    "realname": ""
+  },
+  "116865891": {
+    "name": "iceice",
+    "team_name": null,
     "realname": ""
   },
   "116934015": {
@@ -1155,8 +1175,8 @@
     "realname": ""
   },
   "127617979": {
-    "name": "KITR",
-    "team_name": "MOUZ",
+    "name": "Crystallis",
+    "team_name": "Tundra Esports",
     "realname": ""
   },
   "127700840": {
@@ -1452,6 +1472,11 @@
   "140297552": {
     "name": "No!ob™",
     "team_name": "Nigma Galaxy",
+    "realname": ""
+  },
+  "140411011": {
+    "name": "🥀🥀",
+    "team_name": null,
     "realname": ""
   },
   "140613225": {
@@ -1760,7 +1785,7 @@
     "realname": ""
   },
   "157989498": {
-    "name": "Chalise",
+    "name": "Scofield",
     "team_name": "paiN Gaming",
     "realname": ""
   },
@@ -2255,8 +2280,8 @@
     "realname": ""
   },
   "190826739": {
-    "name": "Strach",
-    "team_name": "MOUZ",
+    "name": "BOOM",
+    "team_name": "Team Secret",
     "realname": ""
   },
   "190942586": {
@@ -3756,7 +3781,7 @@
   },
   "325435592": {
     "name": "Draken<",
-    "team_name": "",
+    "team_name": null,
     "realname": ""
   },
   "325496779": {
@@ -4015,8 +4040,8 @@
     "realname": ""
   },
   "352545711": {
-    "name": "Azul",
-    "team_name": "paiN Gaming",
+    "name": "DarkMago♡",
+    "team_name": "BOOM Esports",
     "realname": ""
   },
   "352623024": {
@@ -5416,7 +5441,7 @@
   },
   "863072482": {
     "name": "医者wasted",
-    "team_name": "",
+    "team_name": null,
     "realname": ""
   },
   "865075084": {
@@ -6340,8 +6365,8 @@
     "realname": ""
   },
   "1031547092": {
-    "name": "5-10",
-    "team_name": "paiN Gaming",
+    "name": "Elmisho",
+    "team_name": "beastcoast",
     "realname": ""
   },
   "1031696537": {
@@ -6506,7 +6531,7 @@
   },
   "1044686008": {
     "name": "Toshnota",
-    "team_name": "Outcast",
+    "team_name": "Angetsu",
     "realname": ""
   },
   "1052561562": {
@@ -7360,8 +7385,8 @@
     "realname": ""
   },
   "1171243748": {
-    "name": "14PS",
-    "team_name": "paiN Gaming",
+    "name": "ɹǝʞɹɐd⚔️",
+    "team_name": "HEROIC",
     "realname": ""
   },
   "1171877280": {
@@ -7401,7 +7426,7 @@
   },
   "1180304062": {
     "name": "Quizlusssqm",
-    "team_name": "",
+    "team_name": null,
     "realname": ""
   },
   "1181768694": {
@@ -9186,7 +9211,7 @@
   },
   "1771589916": {
     "name": "Blessed",
-    "team_name": "",
+    "team_name": null,
     "realname": ""
   },
   "1776453826": {
@@ -9481,7 +9506,7 @@
   },
   "1900768027": {
     "name": "Chris Brown<",
-    "team_name": "",
+    "team_name": null,
     "realname": ""
   },
   "1902738528": {
@@ -9582,26 +9607,6 @@
   "1930115322": {
     "name": "Pink Stars",
     "team_name": null,
-    "realname": ""
-  },
-  "116585378": {
-    "name": "I SPIT ON YOUR FACE",
-    "team_name": "MOUZ",
-    "realname": ""
-  },
-  "9403474": {
-    "name": "mid two",
-    "team_name": "MOUZ",
-    "realname": ""
-  },
-  "116865891": {
-    "name": "Mirele",
-    "team_name": "Team Spirit",
-    "realname": ""
-  },
-  "252737052": {
-    "name": "x",
-    "team_name": "paiN Gaming",
     "realname": ""
   }
 }
