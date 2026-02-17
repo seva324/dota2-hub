@@ -3700,12 +3700,22 @@
             "radiant_win": 0,
             "start_time": 1771345981,
             "duration": 3131
+          },
+          {
+            "match_id": "8695145808",
+            "radiant_team_name": "PARIVISION",
+            "dire_team_name": "BetBoom Team",
+            "radiant_score": 29,
+            "dire_score": 14,
+            "radiant_win": 1,
+            "start_time": 1771350960,
+            "duration": 2348
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8695096621",
@@ -3724,11 +3734,21 @@
             "radiant_win": 1,
             "start_time": 1771348861,
             "duration": 1712
+          },
+          {
+            "match_id": "8695177931",
+            "radiant_team_name": "OG",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 28,
+            "dire_score": 12,
+            "radiant_win": 1,
+            "start_time": 1771352460,
+            "duration": 1923
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -3748,12 +3768,22 @@
             "radiant_win": 0,
             "start_time": 1771346663,
             "duration": 1619
+          },
+          {
+            "match_id": "8695126869",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 24,
+            "dire_score": 17,
+            "radiant_win": 1,
+            "start_time": 1771350240,
+            "duration": 2045
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8694893418",
@@ -4522,5 +4552,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T18:30:33.210Z"
+  "lastUpdated": "2026-02-17T19:29:19.442Z"
 }
