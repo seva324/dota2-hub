@@ -3684,6 +3684,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8695219250",
+        "series_type": "BO3",
+        "radiant_team_name": "Execration",
+        "dire_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "games": [
+          {
+            "match_id": "8695219250",
+            "radiant_team_name": "Execration",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 20,
+            "dire_score": 40,
+            "radiant_win": 0,
+            "start_time": 1771354929,
+            "duration": 2490
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8695029034",
         "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
@@ -4552,5 +4576,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T19:29:19.442Z"
+  "lastUpdated": "2026-02-17T19:59:28.773Z"
 }
