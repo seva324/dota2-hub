@@ -35,27 +35,24 @@ interface MatchData {
   players: Player[];
 }
 
-// Hero Chinese names
-let heroesCnData: Record<number, { name_en: string; name_cn: string; nicknames: string[] }> = {};
-
-// Load heroes Chinese names
-fetch('/dota2-hub/data/heroes_cn.json')
-  .then(res => res.json())
-  .then(data => {
-    for (const [key, value] of Object.entries(data)) {
-      heroesCnData[parseInt(key)] = value as { name_en: string; name_cn: string; nicknames: string[] };
-    }
-  })
-  .catch(() => {});
-
-function getHeroName(id: number): string {
-  const cnName = heroesCnData[id]?.name_cn;
-  if (cnName) return cnName;
-  return `Hero ${id}`;
+interface HeroesData {
+  [key: number]: { name: string; img: string };
 }
 
-function getHeroImg(id: number): string {
-  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/hero_${id}_lg.png`;
+interface LaningAnalysisProps {
+  matchId: number;
+  radiantTeamName: string;
+  direTeamName: string;
+  heroesData: HeroesData;
+}
+
+function getHeroName(id: number, heroesData: HeroesData): string {
+  return heroesData[id]?.name || `Hero ${id}`;
+}
+
+function getHeroImg(id: number, heroesData: HeroesData): string {
+  const img = heroesData[id]?.img || `hero_${id}`;
+  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
 }
 
 // Calculate gold at specific minute
@@ -79,13 +76,7 @@ function parsePlayer(player: Player): {
   return { isRadiant, position, lane, laneRole };
 }
 
-interface LaningAnalysisProps {
-  matchId: number;
-  radiantTeamName: string;
-  direTeamName: string;
-}
-
-export function LaningAnalysis({ matchId, radiantTeamName, direTeamName }: LaningAnalysisProps) {
+export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesData }: LaningAnalysisProps) {
   const [match, setMatch] = useState<MatchData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -128,7 +119,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName }: Lanin
       {/* Lane Matchups */}
       <div className="space-y-3">
         {analysis.lanes.map((lane, idx) => (
-          <LaneMatchup key={idx} lane={lane} />
+          <LaneMatchup key={idx} lane={lane} heroesData={heroesData} />
         ))}
       </div>
 
@@ -182,7 +173,7 @@ interface LaneAnalysisResult {
   direEfficiency: number;
 }
 
-function LaneMatchup({ lane }: { lane: LaneData }) {
+function LaneMatchup({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData }) {
   const { name, radiant, dire } = lane;
   const goldDiff = radiant.goldDiff - dire.goldDiff;
   
@@ -197,8 +188,8 @@ function LaneMatchup({ lane }: { lane: LaneData }) {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <img 
-              src={getHeroImg(radiant.player.hero_id)} 
-              alt={getHeroName(radiant.player.hero_id)}
+              src={getHeroImg(radiant.player.hero_id, heroesData)} 
+              alt={getHeroName(radiant.player.hero_id, heroesData)}
               className="w-8 h-8 rounded"
             />
             <div className="min-w-0">
@@ -206,7 +197,7 @@ function LaneMatchup({ lane }: { lane: LaneData }) {
                 {radiant.player.personaname || 'Unknown'}
               </div>
               <div className="text-xs text-yellow-400 truncate">
-                {getHeroName(radiant.player.hero_id)}
+                {getHeroName(radiant.player.hero_id, heroesData)}
               </div>
             </div>
           </div>
@@ -239,12 +230,12 @@ function LaneMatchup({ lane }: { lane: LaneData }) {
                 {dire.player.personaname || 'Unknown'}
               </div>
               <div className="text-xs text-yellow-400 truncate">
-                {getHeroName(dire.player.hero_id)}
+                {getHeroName(dire.player.hero_id, heroesData)}
               </div>
             </div>
             <img 
-              src={getHeroImg(dire.player.hero_id)} 
-              alt={getHeroName(dire.player.hero_id)}
+              src={getHeroImg(dire.player.hero_id, heroesData)} 
+              alt={getHeroName(dire.player.hero_id, heroesData)}
               className="w-8 h-8 rounded"
             />
           </div>
@@ -261,7 +252,7 @@ function LaneMatchup({ lane }: { lane: LaneData }) {
           <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div 
               className="h-full bg-green-500"
-              style={{ width: `${Math.min(100, (radiant.goldDiff / (radiant.goldDiff + Math.abs(dire.goldDiff)))) * 100}%` }}
+              style={{ width: `${Math.min(100, (radiant.goldDiff / (radiant.goldDiff + Math.abs(dire.goldDiff))) * 100)}%` }}
             />
           </div>
           <div className="w-12 text-red-400">
@@ -276,7 +267,7 @@ function LaneMatchup({ lane }: { lane: LaneData }) {
           <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
             <div 
               className="h-full bg-blue-500"
-              style={{ width: `${Math.min(100, (radiant.xpDiff / (radiant.xpDiff + Math.abs(dire.xpDiff)))) * 100}%` }}
+              style={{ width: `${Math.min(100, (radiant.xpDiff / (radiant.xpDiff + Math.abs(dire.xpDiff))) * 100)}%` }}
             />
           </div>
           <div className="w-12 text-red-400">

@@ -196,19 +196,8 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
     return match.dire_team?.name || match.dire_team_name || 'Dire';
   };
 
-  // Get team logo URL
-  const getTeamLogo = (match: MatchDetail | null, side: 'radiant' | 'dire'): string | null => {
-    if (!match) return null;
-    if (side === 'radiant') {
-      return match.radiant_team?.logo_url || null;
-    }
-    return match.dire_team?.logo_url || null;
-  };
-
   const radiantTeamName = getTeamName(match, 'radiant');
   const direTeamName = getTeamName(match, 'dire');
-  const radiantLogo = getTeamLogo(match, 'radiant');
-  const direLogo = getTeamLogo(match, 'dire');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -230,13 +219,8 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-800 gap-2 sm:gap-4">
               <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
-                <div className="flex items-center gap-2">
-                  {radiantLogo && (
-                    <img src={radiantLogo} alt={radiantTeamName} className="w-8 h-8 sm:w-10 sm:h-10 rounded" />
-                  )}
-                  <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} truncate max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
-                    {radiantTeamName}
-                  </div>
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} truncate max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
+                  {radiantTeamName}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <span className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
@@ -247,13 +231,8 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     {match.dire_score}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} truncate max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
-                    {direTeamName}
-                  </div>
-                  {direLogo && (
-                    <img src={direLogo} alt={direTeamName} className="w-8 h-8 sm:w-10 sm:h-10 rounded" />
-                  )}
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} truncate max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
+                  {direTeamName}
                 </div>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
@@ -326,7 +305,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
               </TabsContent>
               <TabsContent value="laning">
-                <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
+                <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
               </TabsContent>
             </Tabs>
           </>
@@ -337,9 +316,9 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 }
 
 function PlayerCard({ player, isWinner, isRadiant }: { player: Player; isWinner: boolean; isRadiant: boolean }) {
-  // Get pro player name - use player.name from API first (OpenDota pro player name), then fallback
+  // Get pro player name - prioritize player.name (English pro name), then proPlayersMap, then account_id
   const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
-  const displayName = player.name || proInfo?.name || player.personaname || (player.account_id ? `${player.account_id}` : 'Unknown');
+  const displayName = (player.name && player.name !== 'Unknown') ? player.name : (proInfo?.name || (player.account_id ? `${player.account_id}` : 'Unknown'));
   
   // Get lane name
   const laneName = getLaneName(player.lane, isRadiant);
