@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OpenDota 增量更新脚本 - 保留原数据，只添加新比赛，同时更新Logo
+ * OpenDota 增量更新脚本 - 保留原数据，只添加新比赛
  */
 
 import fs from 'fs';
@@ -51,49 +51,6 @@ async function fetchWithRetry(url, retries = 3) {
   }
 }
 
-// 获取战队 Logo URL
-let teamLogos = {};
-async function fetchTeamLogos() {
-  console.log('\n--- Fetching team logos ---');
-  try {
-    const teams = await fetchWithRetry(`${OPENDOTA_BASE_URL}/teams`);
-    for (const team of teams.slice(0, 100)) {
-      if (team.name && team.logo_url) {
-        teamLogos[team.name.toLowerCase()] = team.logo_url;
-      }
-    }
-    console.log('Fetched logos for', Object.keys(teamLogos).length, 'teams');
-  } catch (error) {
-    console.error('Error fetching team logos:', error.message);
-  }
-}
-
-function getTeamLogo(teamName) {
-  if (!teamName) return null;
-  return teamLogos[teamName.toLowerCase()] || null;
-}
-
-// 更新所有 series 的 logo
-function updateLogos() {
-  let updated = 0;
-  for (const tid of Object.keys(homeData.seriesByTournament || {})) {
-    const seriesList = homeData.seriesByTournament[tid];
-    for (const s of seriesList) {
-      // 更新 series 级别的 logo
-      if (!s.radiant_team_logo) {
-        s.radiant_team_logo = getTeamLogo(s.radiant_team_name);
-        updated++;
-      }
-      if (!s.dire_team_logo) {
-        s.dire_team_logo = getTeamLogo(s.dire_team_name);
-        updated++;
-      }
-    }
-  }
-  console.log('Updated', updated, 'team logos');
-  return updated > 0;
-}
-
 // 收集所有已有比赛ID
 const existingMatchIds = new Set();
 const allSeries = Object.values(homeData.seriesByTournament || {});
@@ -120,18 +77,19 @@ console.log('Existing matches in file:', existingMatches.length);
 const existingMatchIdSet = new Set(existingMatches.map(m => String(m.match_id)));
 
 let newMatches = [];
+let updatedMatches = 0;
 
 async function main() {
-  // 先获取战队 Logo
-  await fetchTeamLogos();
+  console.log('========================================');
+  console.log('DOTA2 Hub - OpenDota Incremental Sync');
+  console.log('Time:', new Date().toISOString());
+  console.log('========================================\n');
   
-  // 更新现有 logo
-  const hasNewLogos = updateLogos();
-  
-  console.log('\n--- Fetching proMatches ---');
+  // 获取 proMatches（所有职业比赛）
+  console.log('--- Fetching proMatches ---');
   try {
     const proMatches = await fetchWithRetry(`${OPENDOTA_BASE_URL}/proMatches`);
-    console.log('Got', proMatches.length, 'pro matches');
+    console.log(`  Got ${proMatches.length} pro matches`);
     
     for (const match of proMatches.slice(0, 200)) {
       const matchId = String(match.match_id);
@@ -148,8 +106,6 @@ async function main() {
         dire_team_id: match.dire_team_id,
         radiant_team_name: match.radiant_name,
         dire_team_name: match.dire_name,
-        radiant_team_logo: getTeamLogo(match.radiant_name),
-        dire_team_logo: getTeamLogo(match.dire_name),
         radiant_score: match.radiant_score,
         dire_score: match.dire_score,
         start_time: match.start_time,
@@ -164,12 +120,12 @@ async function main() {
       console.log(`  ✓ ${match.radiant_name} ${match.radiant_score}:${match.dire_score} ${match.dire_name}`);
     }
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('  Error:', error.message);
   }
   
-  console.log(`\nNew matches found: ${newMatches.length}`);
-  
-  let dataChanged = hasNewLogos || newMatches.length > 0;
+  console.log(`\n========================================`);
+  console.log(`New matches found: ${newMatches.length}`);
+  console.log('========================================');
   
   if (newMatches.length > 0) {
     // 合并到现有比赛列表
@@ -178,6 +134,7 @@ async function main() {
     console.log('Updated matches.json');
     
     // 更新 home.json 中的 series 数据
+    // 重新聚合新比赛的系列赛
     const tournamentInfo = {
       19269: 'dreamleague-s28',
       18988: 'dreamleague-s27', 
@@ -204,7 +161,7 @@ async function main() {
         homeData.seriesByTournament[tid] = [];
       }
       
-      // 为每场新比赛创建一个简单的系列赛条目（带 Logo）
+      // 为每场新比赛创建一个简单的系列赛条目
       for (const m of newTournamentMatches) {
         const radiantWin = m.radiant_win ? 1 : 0;
         const seriesEntry = {
@@ -212,8 +169,6 @@ async function main() {
           series_type: 'BO3',
           radiant_team_name: m.radiant_team_name,
           dire_team_name: m.dire_team_name,
-          radiant_team_logo: m.radiant_team_logo,
-          dire_team_logo: m.dire_team_logo,
           games: [{
             match_id: String(m.match_id),
             radiant_team_name: m.radiant_team_name,
@@ -236,15 +191,13 @@ async function main() {
       
       console.log(`  Added ${newTournamentMatches.length} matches to ${tid}`);
     }
-  }
-  
-  if (dataChanged) {
+    
     // 保存更新后的 home.json
     homeData.lastUpdated = new Date().toISOString();
     fs.writeFileSync(homeDataPath, JSON.stringify(homeData, null, 2));
     console.log('Updated home.json');
   } else {
-    console.log('No changes to sync');
+    console.log('No new matches to sync');
   }
   
   console.log('\nDone!');
