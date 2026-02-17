@@ -120,7 +120,7 @@ function formatDate(timestamp: number): string {
 }
 
 interface MatchDetailModalProps {
-  matchId: number | null;
+  matchId: number | string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -135,7 +135,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
       setLoading(true);
       setError(null);
       
-      fetch(`https://api.opendota.com/api/matches/${matchId}`)
+      // Convert to number in case it's a string
+      const matchIdNum = typeof matchId === 'string' ? parseInt(matchId, 10) : matchId;
+      
+      fetch(`https://api.opendota.com/api/matches/${matchIdNum}`)
         .then(res => res.json())
         .then(data => {
           if (data.error) {
