@@ -3748,12 +3748,22 @@
             "radiant_win": 0,
             "start_time": 1771354929,
             "duration": 2490
+          },
+          {
+            "match_id": "8695299239",
+            "radiant_team_name": "Execration",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 13,
+            "dire_score": 44,
+            "radiant_win": 0,
+            "start_time": 1771359185,
+            "duration": 1962
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8695029034",
@@ -4624,5 +4634,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T20:37:53.576Z"
+  "lastUpdated": "2026-02-17T21:06:38.888Z"
 }
