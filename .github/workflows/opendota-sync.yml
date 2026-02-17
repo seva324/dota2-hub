@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  pages: read
+  pages: write
   id-token: write
 
 jobs:
