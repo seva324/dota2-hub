@@ -315,7 +315,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               
               {/* AI Report Tab */}
               <TabsContent value="aireport">
-                <AIReportSection match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
+                <AIReportSection match={match} />
               </TabsContent>
             </Tabs>
           </>
