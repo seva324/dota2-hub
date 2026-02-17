@@ -3700,11 +3700,21 @@
             "radiant_win": 1,
             "start_time": 1771329299,
             "duration": 1808
+          },
+          {
+            "match_id": "8694753345",
+            "radiant_team_name": "paiN Gaming",
+            "dire_team_name": "Aurora Gaming",
+            "radiant_score": 16,
+            "dire_score": 23,
+            "radiant_win": 0,
+            "start_time": 1771333104,
+            "duration": 1911
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -3748,11 +3758,21 @@
             "radiant_win": 1,
             "start_time": 1771329615,
             "duration": 1601
+          },
+          {
+            "match_id": "8694745868",
+            "radiant_team_name": "OG",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 27,
+            "dire_score": 10,
+            "radiant_win": 1,
+            "start_time": 1771333084,
+            "duration": 1392
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -4318,5 +4338,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T13:32:11.085Z"
+  "lastUpdated": "2026-02-17T13:45:38.968Z"
 }
