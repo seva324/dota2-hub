@@ -173,68 +173,60 @@ interface LaneAnalysisResult {
 function LaneMatchup({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData }) {
   const { name, radiant, dire, advantage } = lane;
   
-  // Calculate total gold diff
   const radiantGold = radiant.reduce((sum, p) => sum + p.goldDiff, 0);
   const direGold = dire.reduce((sum, p) => sum + p.goldDiff, 0);
-  
-  // Calculate total LH/DN
   const radiantLh = radiant.reduce((sum, p) => sum + p.lh, 0);
   const radiantDn = radiant.reduce((sum, p) => sum + p.dn, 0);
   const direLh = dire.reduce((sum, p) => sum + p.lh, 0);
   const direDn = dire.reduce((sum, p) => sum + p.dn, 0);
   
-  // Get hero names for both sides
-  const radiantHeroes = radiant.map(p => getHeroName(p.player.hero_id, heroesData)).join(', ');
-  const direHeroes = dire.map(p => getHeroName(p.player.hero_id, heroesData)).join(', ');
-  
   return (
     <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700">
-      <div className="flex items-center justify-center gap-2 mb-3">
+      {/* Header with crown on left */}
+      <div className="flex items-center gap-2 mb-3">
+        {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400 flex-shrink-0" />}
+        {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400 flex-shrink-0" />}
+        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500 flex-shrink-0" />}
         <span className="text-sm font-medium text-slate-300">{name}</span>
-        {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400" />}
-        {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400" />}
-        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500" />}
       </div>
       
-      {/* Heroes Display */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex-1 flex items-center gap-2">
-          <div className="flex -space-x-2">
-            {radiant.map((p, i) => (
-              <img 
-                key={i}
-                src={getHeroImg(p.player.hero_id, heroesData)} 
-                alt={getHeroName(p.player.hero_id, heroesData)}
-                className="w-8 h-8 rounded border-2 border-slate-900"
-              />
-            ))}
+      {/* Radiant Heroes - stacked vertically */}
+      <div className="mb-2 space-y-1">
+        {radiant.map((p, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <img 
+              src={getHeroImg(p.player.hero_id, heroesData)} 
+              alt={getHeroName(p.player.hero_id, heroesData)}
+              className="w-6 h-6 rounded object-cover flex-shrink-0"
+            />
+            <span className="text-xs text-yellow-400 truncate">{getHeroName(p.player.hero_id, heroesData)}</span>
           </div>
-          <span className="text-xs text-yellow-400 truncate">{radiantHeroes}</span>
-        </div>
-        
-        <div className="text-xs text-slate-500 px-2">
-          {radiantLh}/{radiantDn} vs {direLh}/{direDn}
-        </div>
-        
-        <div className="flex-1 flex items-center justify-end gap-2">
-          <span className="text-xs text-yellow-400 truncate">{direHeroes}</span>
-          <div className="flex -space-x-2">
-            {dire.map((p, i) => (
-              <img 
-                key={i}
-                src={getHeroImg(p.player.hero_id, heroesData)} 
-                alt={getHeroName(p.player.hero_id, heroesData)}
-                className="w-8 h-8 rounded border-2 border-slate-900"
-              />
-            ))}
+        ))}
+      </div>
+      
+      {/* Stats row */}
+      <div className="text-center text-xs text-slate-500 mb-2">
+        正补/反补: {radiantLh}/{radiantDn} vs {direLh}/{direDn}
+      </div>
+      
+      {/* Dire Heroes - stacked vertically */}
+      <div className="mb-3 space-y-1">
+        {dire.map((p, i) => (
+          <div key={i} className="flex items-center justify-end gap-2">
+            <span className="text-xs text-yellow-400 truncate">{getHeroName(p.player.hero_id, heroesData)}</span>
+            <img 
+              src={getHeroImg(p.player.hero_id, heroesData)} 
+              alt={getHeroName(p.player.hero_id, heroesData)}
+              className="w-6 h-6 rounded object-cover flex-shrink-0"
+            />
           </div>
-        </div>
+        ))}
       </div>
 
       {/* Gold/XP Bars */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-14 text-green-400 text-right">
+          <div className="w-14 text-green-400 text-right flex-shrink-0">
             +{radiantGold.toLocaleString()}
           </div>
           <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -243,12 +235,12 @@ function LaneMatchup({ lane, heroesData }: { lane: LaneData; heroesData: HeroesD
               style={{ width: `${Math.min(100, (radiantGold / (radiantGold + Math.abs(direGold) + 1)) * 100)}%` }}
             />
           </div>
-          <div className="w-14 text-red-400">
+          <div className="w-14 text-red-400 flex-shrink-0">
             {direGold.toLocaleString()}
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-14 text-green-400 text-right">
+          <div className="w-14 text-green-400 text-right flex-shrink-0">
             +{(radiant.reduce((s, p) => s + p.xpDiff, 0)).toLocaleString()}
           </div>
           <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -257,7 +249,7 @@ function LaneMatchup({ lane, heroesData }: { lane: LaneData; heroesData: HeroesD
               style={{ width: `${Math.min(100, (radiant.reduce((s, p) => s + p.xpDiff, 0) / (radiant.reduce((s, p) => s + p.xpDiff, 0) + Math.abs(dire.reduce((s, p) => s + p.xpDiff, 0)) + 1)) * 100)}%` }}
             />
           </div>
-          <div className="w-14 text-red-400">
+          <div className="w-14 text-red-400 flex-shrink-0">
             {(dire.reduce((s, p) => s + p.xpDiff, 0)).toLocaleString()}
           </div>
         </div>
