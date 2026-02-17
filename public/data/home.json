@@ -3700,12 +3700,22 @@
             "radiant_win": 0,
             "start_time": 1771339891,
             "duration": 2030
+          },
+          {
+            "match_id": "8694987925",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 16,
+            "dire_score": 37,
+            "radiant_win": 0,
+            "start_time": 1771343821,
+            "duration": 2638
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8694827368",
@@ -4440,5 +4450,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T16:29:36.525Z"
+  "lastUpdated": "2026-02-17T17:03:03.473Z"
 }
