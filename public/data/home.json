@@ -50,80 +50,14 @@
   "seriesByTournament": {
     "blast-slam-vi": [
       {
-        "series_id": "opendota_8692497249",
-        "series_type": "BO3",
-        "radiant_team_name": "Team Liquid",
-        "dire_team_name": "Natus Vincere",
-        "games": [
-          {
-            "match_id": "8692497249",
-            "radiant_team_name": "Team Liquid",
-            "dire_team_name": "Natus Vincere",
-            "radiant_score": 43,
-            "dire_score": 49,
-            "radiant_win": 0,
-            "start_time": 1771174570,
-            "duration": 3808
-          }
-        ],
-        "radiant_wins": 0,
-        "dire_wins": 1,
-        "radiant_score": 0,
-        "dire_score": 1
-      },
-      {
-        "series_id": "opendota_8692691067",
-        "series_type": "BO3",
-        "radiant_team_name": "Natus Vincere",
-        "dire_team_name": "Team Liquid",
-        "games": [
-          {
-            "match_id": "8692691067",
-            "radiant_team_name": "Natus Vincere",
-            "dire_team_name": "Team Liquid",
-            "radiant_score": 17,
-            "dire_score": 42,
-            "radiant_win": 0,
-            "start_time": 1771181772,
-            "duration": 2040
-          }
-        ],
-        "radiant_wins": 0,
-        "dire_wins": 1,
-        "radiant_score": 0,
-        "dire_score": 1
-      },
-      {
-        "series_id": "opendota_8692761931",
-        "series_type": "BO3",
-        "radiant_team_name": "Team Liquid",
-        "dire_team_name": "Natus Vincere",
-        "games": [
-          {
-            "match_id": "8692761931",
-            "radiant_team_name": "Team Liquid",
-            "dire_team_name": "Natus Vincere",
-            "radiant_score": 33,
-            "dire_score": 10,
-            "radiant_win": 1,
-            "start_time": 1771185630,
-            "duration": 1947
-          }
-        ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
-        "radiant_score": 1,
-        "dire_score": 0
-      },
-      {
         "series_id": "1064947",
         "series_type": "BO5",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
         "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
-        "radiant_score": 2,
-        "dire_score": 1,
+        "radiant_score": 1,
+        "dire_score": 3,
         "games": [
           {
             "match_id": "8692381181",
@@ -154,9 +88,21 @@
             "radiant_win": false,
             "start_time": 1771181772,
             "duration": 2040
+          },
+          {
+            "match_id": "8692761931",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 33,
+            "dire_score": 10,
+            "radiant_win": 1,
+            "start_time": 1771185630,
+            "duration": 1947
           }
         ],
-        "stage": "Playoffs"
+        "stage": "Playoffs",
+        "radiant_wins": 1,
+        "dire_wins": 3
       },
       {
         "series_id": "1064645",
@@ -3738,54 +3684,10 @@
     ],
     "dreamleague-s28": [
       {
-        "series_id": "opendota_8693354840",
-        "series_type": "BO3",
-        "radiant_team_name": "paiN Gaming",
-        "dire_team_name": "PARIVISION",
-        "games": [
-          {
-            "match_id": "8693354840",
-            "radiant_team_name": "paiN Gaming",
-            "dire_team_name": "PARIVISION",
-            "radiant_score": 2,
-            "dire_score": 31,
-            "radiant_win": 0,
-            "start_time": 1771239343,
-            "duration": 1765
-          }
-        ],
-        "radiant_wins": 0,
-        "dire_wins": 1,
-        "radiant_score": 0,
-        "dire_score": 1
-      },
-      {
-        "series_id": "opendota_8693417171",
-        "series_type": "BO3",
-        "radiant_team_name": "paiN Gaming",
-        "dire_team_name": "PARIVISION",
-        "games": [
-          {
-            "match_id": "8693417171",
-            "radiant_team_name": "paiN Gaming",
-            "dire_team_name": "PARIVISION",
-            "radiant_score": 17,
-            "dire_score": 42,
-            "radiant_win": 0,
-            "start_time": 1771243783,
-            "duration": 2396
-          }
-        ],
-        "radiant_wins": 0,
-        "dire_wins": 1,
-        "radiant_score": 0,
-        "dire_score": 1
-      },
-      {
         "series_id": "opendota_8693504706",
         "series_type": "BO3",
-        "radiant_team_name": "Team Spirit",
-        "dire_team_name": "Xtreme Gaming",
+        "radiant_team_name": "Xtreme Gaming",
+        "dire_team_name": "Team Spirit",
         "games": [
           {
             "match_id": "8693504706",
@@ -3796,19 +3698,7 @@
             "radiant_win": 0,
             "start_time": 1771248544,
             "duration": 2385
-          }
-        ],
-        "radiant_wins": 0,
-        "dire_wins": 1,
-        "radiant_score": 0,
-        "dire_score": 1
-      },
-      {
-        "series_id": "opendota_8693593278",
-        "series_type": "BO3",
-        "radiant_team_name": "Xtreme Gaming",
-        "dire_team_name": "Team Spirit",
-        "games": [
+          },
           {
             "match_id": "8693593278",
             "radiant_team_name": "Xtreme Gaming",
@@ -3821,15 +3711,15 @@
           }
         ],
         "radiant_wins": 1,
-        "dire_wins": 0,
+        "dire_wins": 1,
         "radiant_score": 1,
-        "dire_score": 0
+        "dire_score": 1
       },
       {
         "series_id": "opendota_8693723587",
         "series_type": "BO3",
-        "radiant_team_name": "Aurora Gaming",
-        "dire_team_name": "BetBoom Team",
+        "radiant_team_name": "BetBoom Team",
+        "dire_team_name": "Aurora Gaming",
         "games": [
           {
             "match_id": "8693723587",
@@ -3840,19 +3730,7 @@
             "radiant_win": 1,
             "start_time": 1771259027,
             "duration": 2218
-          }
-        ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
-        "radiant_score": 1,
-        "dire_score": 0
-      },
-      {
-        "series_id": "opendota_8693833533",
-        "series_type": "BO3",
-        "radiant_team_name": "BetBoom Team",
-        "dire_team_name": "Aurora Gaming",
-        "games": [
+          },
           {
             "match_id": "8693833533",
             "radiant_team_name": "BetBoom Team",
@@ -3864,16 +3742,16 @@
             "duration": 3397
           }
         ],
-        "radiant_wins": 0,
+        "radiant_wins": 1,
         "dire_wins": 1,
-        "radiant_score": 0,
+        "radiant_score": 1,
         "dire_score": 1
       },
       {
         "series_id": "opendota_8693948351",
         "series_type": "BO3",
-        "radiant_team_name": "Tundra Esports",
-        "dire_team_name": "MOUZ",
+        "radiant_team_name": "MOUZ",
+        "dire_team_name": "Tundra Esports",
         "games": [
           {
             "match_id": "8693948351",
@@ -3884,19 +3762,7 @@
             "radiant_win": 1,
             "start_time": 1771269062,
             "duration": 1451
-          }
-        ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
-        "radiant_score": 1,
-        "dire_score": 0
-      },
-      {
-        "series_id": "opendota_8694016846",
-        "series_type": "BO3",
-        "radiant_team_name": "MOUZ",
-        "dire_team_name": "Tundra Esports",
-        "games": [
+          },
           {
             "match_id": "8694016846",
             "radiant_team_name": "MOUZ",
@@ -3908,9 +3774,9 @@
             "duration": 1940
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -4374,5 +4240,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T01:57:33.691Z"
+  "lastUpdated": "2026-02-17T02:33:26.170Z"
 }
