@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * OpenDota 增量更新脚本 - 按战队 ID 统计胜场
+ * OpenDota 增量更新脚本 - 按实际战队统计胜场（不按 radiant/dire）
  */
 
 import fs from 'fs';
@@ -53,7 +53,6 @@ const tournamentInfo = {
   19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', type: 'BO3' }
 };
 
-// 收集已有比赛 ID
 const existingMatchIds = new Set();
 const allSeries = Object.values(homeData.seriesByTournament || {});
 for (const seriesList of allSeries) {
@@ -65,7 +64,6 @@ for (const seriesList of allSeries) {
 }
 console.log('Existing matches:', existingMatchIds.size);
 
-// 战队 Logo 缓存
 const teamLogoCache = {};
 
 async function getTeamLogo(teamName) {
@@ -86,7 +84,6 @@ async function getTeamLogo(teamName) {
   return null;
 }
 
-// 收集所有战队名并获取 logo
 const allTeamNames = new Set();
 for (const seriesList of Object.values(homeData.seriesByTournament || {})) {
   for (const s of seriesList) {
@@ -100,7 +97,6 @@ function normalizeTeamName(name) {
   return name.toLowerCase().trim();
 }
 
-// 查找已存在的系列赛（忽略 Radiant/Dire 位置）
 function findExistingSeries(tid, team1Name, team2Name) {
   if (!homeData.seriesByTournament || !homeData.seriesByTournament[tid]) return null;
   
@@ -119,50 +115,45 @@ function findExistingSeries(tid, team1Name, team2Name) {
 }
 
 // ============================================
-// 核心：按战队 ID 统计胜场（不是按 radiant/dire）
+// 核心修复：按实际战队名统计胜场（不按 radiant/dire 位置）
 // ============================================
-function calculateSeriesScore(games, team1Name, team2Name) {
-  const t1 = normalizeTeamName(team1Name);
-  const t2 = normalizeTeamName(team2Name);
+function calculateSeriesScore(games, teamA_Name, teamB_Name) {
+  const tA = normalizeTeamName(teamA_Name);
+  const tB = normalizeTeamName(teamB_Name);
   
-  let team1Wins = 0;
-  let team2Wins = 0;
+  let teamA_Wins = 0;
+  let teamB_Wins = 0;
   
   for (const game of games) {
-    // game 里有 radiant_team_name 和 dire_team_name
-    // radiant_win = true → radiant 战队赢
-    // radiant_win = false → dire 战队赢
     const radiantName = normalizeTeamName(game.radiant_team_name);
     const direName = normalizeTeamName(game.dire_team_name);
     
-    if (game.radiant_win) {
-      // radiant 赢了
-      if (radiantName === t1) team1Wins++;
-      else if (radiantName === t2) team2Wins++;
-    } else {
-      // dire 赢了
-      if (direName === t1) team1Wins++;
-      else if (direName === t2) team2Wins++;
+    // radiant_win = true → radiant 战队赢
+    // radiant_win = false (0) → dire 战队赢
+    const winner = game.radiant_win ? radiantName : direName;
+    
+    if (winner === tA) {
+      teamA_Wins++;
+    } else if (winner === tB) {
+      teamB_Wins++;
     }
   }
   
-  return { team1Wins, team2Wins };
+  return { teamA_Wins, teamB_Wins };
 }
 
 async function main() {
   console.log('========================================');
-  console.log('DOTA2 Hub - OpenDota Incremental Sync (Fixed)');
+  console.log('DOTA2 Hub - OpenDota Incremental Sync v6');
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
-  // 获取所有战队 logo
   console.log('--- Fetching team logos ---');
   for (const teamName of allTeamNames) {
     await getTeamLogo(teamName);
   }
   console.log(`  Cached ${Object.keys(teamLogoCache).length} logos`);
   
-  // 为现有 series 添加 logo（如果缺失）
   for (const seriesList of Object.values(homeData.seriesByTournament || {})) {
     for (const s of seriesList) {
       if (!s.radiant_team_logo && teamLogoCache[s.radiant_team_name]) {
@@ -174,7 +165,6 @@ async function main() {
     }
   }
   
-  // 获取 proMatches
   console.log('\n--- Fetching proMatches ---');
   let newMatches = [];
   
@@ -225,13 +215,11 @@ async function main() {
     return;
   }
   
-  // 获取新战队 logo
   for (const m of newMatches) {
     await getTeamLogo(m.radiant_team_name);
     await getTeamLogo(m.dire_team_name);
   }
   
-  // 按系列赛分组
   const matchesBySeries = {};
   
   for (const m of newMatches) {
@@ -261,7 +249,6 @@ async function main() {
   
   console.log(`  Grouped into ${Object.keys(matchesBySeries).length} series`);
   
-  // 更新 home.json
   for (const [seriesKey, seriesData] of Object.entries(matchesBySeries)) {
     const tid = seriesData.tournament;
     
@@ -276,7 +263,6 @@ async function main() {
     if (existingSeries) {
       console.log(`  Merging: ${seriesData.radiant_team_name} vs ${seriesData.dire_team_name}`);
       
-      // 合并新比赛
       for (const newGame of sortedGames) {
         const gameExists = existingSeries.games.some(g => String(g.match_id) === String(newGame.match_id));
         if (!gameExists) {
@@ -284,23 +270,22 @@ async function main() {
         }
       }
       
-      // 按战队重新计算比分（不是按 radiant/dire）
-      const { team1Wins, team2Wins } = calculateSeriesScore(
+      // 按实际战队名重新计算比分
+      const { teamA_Wins, teamB_Wins } = calculateSeriesScore(
         existingSeries.games,
-        seriesData.radiant_team_name,
-        seriesData.dire_team_name
+        existingSeries.radiant_team_name,
+        existingSeries.dire_team_name
       );
       
-      existingSeries.radiant_score = team1Wins;
-      existingSeries.dire_score = team2Wins;
-      existingSeries.radiant_wins = team1Wins;
-      existingSeries.dire_wins = team2Wins;
+      existingSeries.radiant_score = teamA_Wins;
+      existingSeries.dire_score = teamB_Wins;
+      existingSeries.radiant_wins = teamA_Wins;
+      existingSeries.dire_wins = teamB_Wins;
       existingSeries.games = existingSeries.games.sort((a, b) => a.start_time - b.start_time);
       
-      console.log(`    Score: ${seriesData.radiant_team_name} ${team1Wins} - ${team2Wins} ${seriesData.dire_team_name}`);
+      console.log(`    Score: ${existingSeries.radiant_team_name} ${teamA_Wins} - ${teamB_Wins} ${existingSeries.dire_team_name}`);
     } else {
-      // 新系列赛
-      const { team1Wins, team2Wins } = calculateSeriesScore(
+      const { teamA_Wins, teamB_Wins } = calculateSeriesScore(
         sortedGames,
         seriesData.radiant_team_name,
         seriesData.dire_team_name
@@ -314,14 +299,14 @@ async function main() {
         radiant_team_logo: teamLogoCache[seriesData.radiant_team_name] || null,
         dire_team_logo: teamLogoCache[seriesData.dire_team_name] || null,
         games: sortedGames,
-        radiant_wins: team1Wins,
-        dire_wins: team2Wins,
-        radiant_score: team1Wins,
-        dire_score: team2Wins
+        radiant_wins: teamA_Wins,
+        dire_wins: teamB_Wins,
+        radiant_score: teamA_Wins,
+        dire_score: teamB_Wins
       };
       
       homeData.seriesByTournament[tid].unshift(seriesEntry);
-      console.log(`  Added: ${seriesData.radiant_team_name} ${team1Wins} - ${team2Wins} ${seriesData.dire_team_name}`);
+      console.log(`  Added: ${seriesData.radiant_team_name} ${teamA_Wins} - ${teamB_Wins} ${seriesData.dire_team_name}`);
     }
   }
   

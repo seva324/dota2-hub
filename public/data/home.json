@@ -56,8 +56,8 @@
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
         "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
-        "radiant_score": 1,
-        "dire_score": 3,
+        "radiant_score": 3,
+        "dire_score": 1,
         "games": [
           {
             "match_id": "8692381181",
@@ -101,8 +101,8 @@
           }
         ],
         "stage": "Playoffs",
-        "radiant_wins": 1,
-        "dire_wins": 3
+        "radiant_wins": 3,
+        "dire_wins": 1
       },
       {
         "series_id": "1064645",
@@ -3712,10 +3712,10 @@
             "duration": 3092
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_wins": 2,
+        "dire_wins": 0,
+        "radiant_score": 2,
+        "dire_score": 0
       },
       {
         "series_id": "opendota_8693723587",
@@ -3746,10 +3746,10 @@
             "duration": 3397
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_wins": 0,
+        "dire_wins": 2,
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8693948351",
@@ -3780,10 +3780,10 @@
             "duration": 1940
           }
         ],
-        "radiant_wins": 2,
-        "dire_wins": 0,
-        "radiant_score": 2,
-        "dire_score": 0
+        "radiant_wins": 1,
+        "dire_wins": 1,
+        "radiant_score": 1,
+        "dire_score": 1
       },
       {
         "series_id": "1065226",
@@ -4246,5 +4246,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T04:29:29.989Z"
+  "lastUpdated": "2026-02-17T04:39:30.051Z"
 }
