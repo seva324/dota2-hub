@@ -48,8 +48,20 @@ interface LaningAnalysisProps {
   heroesData: HeroesData;
 }
 
+// Chinese hero names - loaded from public data
+let heroesCnData: Record<number, string> = {};
+fetch('/dota2-hub/data/heroes_cn.json')
+  .then(res => res.json())
+  .then(data => {
+    for (const [key, value] of Object.entries(data)) {
+      heroesCnData[parseInt(key)] = (value as any).name_cn || '';
+    }
+  })
+  .catch(() => {});
+
 function getHeroName(id: number, heroesData: HeroesData): string {
-  return heroesData[id]?.name || `Hero ${id}`;
+  // Try Chinese name first, then English
+  return heroesCnData[id] || heroesData[id]?.name || `Hero ${id}`;
 }
 
 function getHeroImg(id: number, heroesData: HeroesData): string {
