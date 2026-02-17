@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Sword, Users, Target, Clock, TrendingUp } from 'lucide-react';
+import { Sword, Users, Target, Clock, TrendingUp, FileText } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { MatchGraphs } from './MatchGraphs';
 import { LaningAnalysis } from './LaningAnalysis';
+import { AIReportSection } from './AIReportSection';
 
 // Pro player mapping (loaded from data file)
 let proPlayersMap: Record<number, { name: string; team_name: string; realname: string }> = {};
@@ -249,7 +250,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
             {/* Tabs */}
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-5">
+              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-6">
                 <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">选手数据</span>
@@ -269,6 +270,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">对线</span>
+                </TabsTrigger>
+                <TabsTrigger value="aireport" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                  <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">AI战报</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -306,6 +311,11 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               </TabsContent>
               <TabsContent value="laning">
                 <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
+              </TabsContent>
+              
+              {/* AI Report Tab */}
+              <TabsContent value="aireport">
+                <AIReportSection match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
               </TabsContent>
             </Tabs>
           </>
