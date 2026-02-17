@@ -3684,6 +3684,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8694893418",
+        "series_type": "BO3",
+        "radiant_team_name": "Natus Vincere",
+        "dire_team_name": "Team Falcons",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "games": [
+          {
+            "match_id": "8694893418",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 13,
+            "dire_score": 20,
+            "radiant_win": 0,
+            "start_time": 1771339891,
+            "duration": 2030
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8694827368",
         "series_type": "BO3",
         "radiant_team_name": "Execration",
@@ -3700,11 +3724,21 @@
             "radiant_win": 1,
             "start_time": 1771336954,
             "duration": 2612
+          },
+          {
+            "match_id": "8694940772",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "Execration",
+            "radiant_score": 20,
+            "dire_score": 26,
+            "radiant_win": 0,
+            "start_time": 1771341721,
+            "duration": 2444
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -3724,11 +3758,21 @@
             "radiant_win": 0,
             "start_time": 1771337429,
             "duration": 2190
+          },
+          {
+            "match_id": "8694931163",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "Team Spirit",
+            "radiant_score": 27,
+            "dire_score": 18,
+            "radiant_win": 1,
+            "start_time": 1771341540,
+            "duration": 2094
           }
         ],
-        "radiant_wins": 0,
+        "radiant_wins": 1,
         "dire_wins": 1,
-        "radiant_score": 0,
+        "radiant_score": 1,
         "dire_score": 1
       },
       {
@@ -4396,5 +4440,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T15:28:44.537Z"
+  "lastUpdated": "2026-02-17T16:29:36.525Z"
 }
