@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { MatchGraphs } from './MatchGraphs';
+import { LaningAnalysis } from './LaningAnalysis';
 
 // Pro player mapping (loaded from data file)
 let proPlayersMap: Record<number, { name: string; team_name: string; realname: string }> = {};
@@ -264,6 +265,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">经济</span>
                 </TabsTrigger>
+                <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">对线</span>
+                </TabsTrigger>
               </TabsList>
 
               {/* Players Tab */}
@@ -297,6 +302,9 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               </TabsContent>
               <TabsContent value="economy">
                 <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
+              </TabsContent>
+              <TabsContent value="laning">
+                <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
               </TabsContent>
             </Tabs>
           </>
