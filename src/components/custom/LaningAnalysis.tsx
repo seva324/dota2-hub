@@ -82,6 +82,25 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+// Get team abbreviation
+function getTeamAbbr(name: string): string {
+  const abbrs: Record<string, string> = {
+    'Team Spirit': 'Spirit',
+    'Xtreme Gaming': 'XG',
+    'Team Liquid': 'Liquid',
+    'Evil Geniuses': 'EG',
+    'PSG.LGD': 'LGD',
+    'Team Secret': 'Secret',
+    'OG': 'OG',
+    'Nigma Galaxy': 'Nigma',
+    'Tundra Esports': 'Tundra',
+    'Gaimin Gladiators': 'GG',
+    'betera': 'Betera',
+    'Aurora': 'Aurora',
+  };
+  return abbrs[name] || name;
+}
+
 // Circular Progress Ring
 function CircularProgress({ value, size = 40, color = '#22c55e' }: { value: number; size?: number; color?: string }) {
   const radius = (size - 6) / 2;
@@ -174,18 +193,18 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
     <div className="space-y-4 font-sans">
       {/* Header */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           {/* Radiant Team */}
-          <div className="text-xl font-bold text-green-400 truncate max-w-[120px]">{radiantTeamName}</div>
+          <div className="text-xl font-bold text-green-400 break-all text-center flex-1">{getTeamAbbr(radiantTeamName)}</div>
           
           {/* Match Info */}
-          <div className="flex items-center gap-2 text-slate-400">
+          <div className="flex items-center gap-2 text-slate-400 shrink-0">
             <Clock className="w-4 h-4" />
             <span className="text-sm">{formatDuration(match.duration || 0)}</span>
           </div>
           
           {/* Dire Team */}
-          <div className="text-xl font-bold text-red-400 truncate max-w-[120px]">{direTeamName}</div>
+          <div className="text-xl font-bold text-red-400 break-all text-center flex-1">{getTeamAbbr(direTeamName)}</div>
         </div>
       </div>
 
@@ -297,34 +316,34 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
       <div className="mt-4 space-y-2">
         {/* Net Worth Bar */}
         <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
-          {/* Radiant (left) - green when winning, gray when losing */}
-          <div 
-            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : advantage === 'dire' ? 'bg-slate-600/50' : 'bg-green-500'}`}
-            style={{ width: `${goldPercent}%` }}
-          />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[10px] text-white/70 font-medium">经济</span>
           </div>
-          {/* Dire (right) - red, more vibrant when winning */}
+          {/* Left side (Radiant) - green when winning, gray when losing */}
           <div 
-            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50' : 'bg-red-500/70'}`}
+            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-slate-500/50'}`}
+            style={{ width: `${goldPercent}%` }}
+          />
+          {/* Right side (Dire) - red when winning, gray when losing */}
+          <div 
+            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50' : advantage === 'radiant' ? 'bg-slate-500/50' : 'bg-red-500/70'}`}
             style={{ width: `${100 - goldPercent}%` }}
           />
         </div>
         
         {/* Experience Bar */}
         <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
-          {/* Radiant (left) - blue when winning, gray when losing */}
-          <div 
-            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50' : advantage === 'dire' ? 'bg-slate-600/50' : 'bg-blue-500'}`}
-            style={{ width: `${xpPercent}%` }}
-          />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[10px] text-white/70 font-medium">经验</span>
           </div>
-          {/* Dire (right) - purple, more vibrant when winning */}
+          {/* Left side (Radiant) - blue when winning, gray when losing */}
           <div 
-            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-purple-500 animate-pulse shadow-lg shadow-purple-500/50' : 'bg-purple-500/70'}`}
+            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50' : 'bg-slate-500/50'}`}
+            style={{ width: `${xpPercent}%` }}
+          />
+          {/* Right side (Dire) - purple when winning, gray when losing */}
+          <div 
+            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-purple-500 animate-pulse shadow-lg shadow-purple-500/50' : advantage === 'radiant' ? 'bg-slate-500/50' : 'bg-purple-500/70'}`}
             style={{ width: `${100 - xpPercent}%` }}
           />
         </div>
