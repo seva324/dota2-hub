@@ -3700,12 +3700,22 @@
             "radiant_win": 0,
             "start_time": 1771355760,
             "duration": 1972
+          },
+          {
+            "match_id": "8695317896",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 17,
+            "dire_score": 28,
+            "radiant_win": 0,
+            "start_time": 1771359846,
+            "duration": 2648
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8695261608",
@@ -4634,5 +4644,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T21:06:38.888Z"
+  "lastUpdated": "2026-02-17T21:46:48.773Z"
 }
