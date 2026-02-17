@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, Crown } from 'lucide-react';
+import { TrendingUp, Minus, Crown } from 'lucide-react';
 
-// Types
 interface Player {
   player_slot: number;
   account_id: number;
@@ -62,30 +61,6 @@ function getValueAtMinute(arr: number[] | undefined, minute: number): number {
   if (!arr || arr.length === 0) return 0;
   const idx = Math.min(minute, arr.length - 1);
   return arr[idx] || 0;
-}
-
-function parsePlayer(player: Player): {
-  isRadiant: boolean;
-  position: number;
-  lane: number;
-  laneRole: number;
-} {
-  const isRadiant = player.player_slot < 128;
-  const position = isRadiant ? player.player_slot : player.player_slot - 128;
-  const lane = player.lane || (position === 1 ? 1 : position === 2 ? 2 : 3);
-  const laneRole = player.lane_role || (position + 1);
-  return { isRadiant, position, lane, laneRole };
-}
-
-function getLaneRoleName(role: number): string {
-  const names: Record<number, string> = {
-    1: '一号位',
-    2: '二号位',
-    3: '三号位',
-    4: '四号位',
-    5: '五号位',
-  };
-  return names[role] || `${role}号位`;
 }
 
 export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesData }: LaningAnalysisProps) {
@@ -170,9 +145,8 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
 
 interface LaneData {
   name: string;
-  roleName: string;
-  radiant: { player: Player; goldDiff: number; xpDiff: number; lh: number; dn: number };
-  dire: { player: Player; goldDiff: number; xpDiff: number; lh: number; dn: number };
+  radiant: { player: Player; goldDiff: number; xpDiff: number; lh: number; dn: number }[];
+  dire: { player: Player; goldDiff: number; xpDiff: number; lh: number; dn: number }[];
   advantage: 'radiant' | 'dire' | 'even';
 }
 
@@ -185,102 +159,94 @@ interface LaneAnalysisResult {
 }
 
 function LaneMatchup({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData }) {
-  const { name, roleName, radiant, dire, advantage } = lane;
-  const goldDiff = radiant.goldDiff - dire.goldDiff;
+  const { name, radiant, dire, advantage } = lane;
+  
+  // Calculate total gold diff
+  const radiantGold = radiant.reduce((sum, p) => sum + p.goldDiff, 0);
+  const direGold = dire.reduce((sum, p) => sum + p.goldDiff, 0);
+  
+  // Calculate total LH/DN
+  const radiantLh = radiant.reduce((sum, p) => sum + p.lh, 0);
+  const radiantDn = radiant.reduce((sum, p) => sum + p.dn, 0);
+  const direLh = dire.reduce((sum, p) => sum + p.lh, 0);
+  const direDn = dire.reduce((sum, p) => sum + p.dn, 0);
+  
+  // Get hero names for both sides
+  const radiantHeroes = radiant.map(p => getHeroName(p.player.hero_id, heroesData)).join(', ');
+  const direHeroes = dire.map(p => getHeroName(p.player.hero_id, heroesData)).join(', ');
   
   return (
     <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700">
       <div className="flex items-center justify-center gap-2 mb-3">
         <span className="text-sm font-medium text-slate-300">{name}</span>
-        <span className="text-xs text-slate-500">({roleName})</span>
         {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400" />}
         {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400" />}
         {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500" />}
       </div>
       
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <img 
-              src={getHeroImg(radiant.player.hero_id, heroesData)} 
-              alt={getHeroName(radiant.player.hero_id, heroesData)}
-              className="w-10 h-10 rounded object-cover"
-            />
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-white truncate">
-                {radiant.player.name || radiant.player.personaname || 'Unknown'}
-              </div>
-              <div className="text-xs text-yellow-400 truncate">
-                {getHeroName(radiant.player.hero_id, heroesData)}
-              </div>
-            </div>
+      {/* Heroes Display */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex-1 flex items-center gap-2">
+          <div className="flex -space-x-2">
+            {radiant.map((p, i) => (
+              <img 
+                key={i}
+                src={getHeroImg(p.player.hero_id, heroesData)} 
+                alt={getHeroName(p.player.hero_id, heroesData)}
+                className="w-8 h-8 rounded border-2 border-slate-900"
+              />
+            ))}
           </div>
+          <span className="text-xs text-yellow-400 truncate">{radiantHeroes}</span>
         </div>
-
-        <div className="flex flex-col items-center px-3">
-          <div className="flex items-center gap-1 text-sm">
-            {goldDiff > 0 ? (
-              <TrendingUp className="w-4 h-4 text-green-400" />
-            ) : goldDiff < 0 ? (
-              <TrendingDown className="w-4 h-4 text-red-400" />
-            ) : (
-              <Minus className="w-4 h-4 text-slate-400" />
-            )}
-            <span className={goldDiff > 0 ? 'text-green-400' : goldDiff < 0 ? 'text-red-400' : 'text-slate-400'}>
-              {Math.abs(goldDiff).toLocaleString()}
-            </span>
-          </div>
-          <div className="text-xs text-slate-500">
-            {radiant.lh}/{radiant.dn} vs {dire.lh}/{dire.dn}
-          </div>
+        
+        <div className="text-xs text-slate-500 px-2">
+          {radiantLh}/{radiantDn} vs {direLh}/{direDn}
         </div>
-
-        <div className="flex-1 flex justify-end">
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 text-right">
-              <div className="text-sm font-medium text-white truncate">
-                {dire.player.name || dire.player.personaname || 'Unknown'}
-              </div>
-              <div className="text-xs text-yellow-400 truncate">
-                {getHeroName(dire.player.hero_id, heroesData)}
-              </div>
-            </div>
-            <img 
-              src={getHeroImg(dire.player.hero_id, heroesData)} 
-              alt={getHeroName(dire.player.hero_id, heroesData)}
-              className="w-10 h-10 rounded object-cover"
-            />
+        
+        <div className="flex-1 flex items-center justify-end gap-2">
+          <span className="text-xs text-yellow-400 truncate">{direHeroes}</span>
+          <div className="flex -space-x-2">
+            {dire.map((p, i) => (
+              <img 
+                key={i}
+                src={getHeroImg(p.player.hero_id, heroesData)} 
+                alt={getHeroName(p.player.hero_id, heroesData)}
+                className="w-8 h-8 rounded border-2 border-slate-900"
+              />
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 space-y-1">
+      {/* Gold/XP Bars */}
+      <div className="space-y-1">
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-12 text-green-400 text-right">
-            +{radiant.goldDiff.toLocaleString()}
+          <div className="w-14 text-green-400 text-right">
+            +{radiantGold.toLocaleString()}
           </div>
-          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
             <div 
               className="h-full bg-green-500"
-              style={{ width: `${Math.min(100, (radiant.goldDiff / (radiant.goldDiff + Math.abs(dire.goldDiff) + 1)) * 100)}%` }}
+              style={{ width: `${Math.min(100, (radiantGold / (radiantGold + Math.abs(direGold) + 1)) * 100)}%` }}
             />
           </div>
-          <div className="w-12 text-red-400">
-            {dire.goldDiff.toLocaleString()}
+          <div className="w-14 text-red-400">
+            {direGold.toLocaleString()}
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-12 text-green-400 text-right">
-            +{radiant.xpDiff.toLocaleString()}
+          <div className="w-14 text-green-400 text-right">
+            +{(radiant.reduce((s, p) => s + p.xpDiff, 0)).toLocaleString()}
           </div>
-          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
             <div 
               className="h-full bg-blue-500"
-              style={{ width: `${Math.min(100, (radiant.xpDiff / (radiant.xpDiff + Math.abs(dire.xpDiff) + 1)) * 100)}%` }}
+              style={{ width: `${Math.min(100, (radiant.reduce((s, p) => s + p.xpDiff, 0) / (radiant.reduce((s, p) => s + p.xpDiff, 0) + Math.abs(dire.reduce((s, p) => s + p.xpDiff, 0)) + 1)) * 100)}%` }}
             />
           </div>
-          <div className="w-12 text-red-400">
-            {dire.xpDiff.toLocaleString()}
+          <div className="w-14 text-red-400">
+            {(dire.reduce((s, p) => s + p.xpDiff, 0)).toLocaleString()}
           </div>
         </div>
       </div>
@@ -298,12 +264,26 @@ function analyzeLanes(radiantPlayers: Player[], direPlayers: Player[]): LaneAnal
   };
 
   const minute = 10;
-  // lane: 1=天辉优势路/夜魇劣势路, 2=中路, 3=天辉劣势路/夜魇优势路
-  
-  const radiantParsed = radiantPlayers.map(p => ({ player: p, ...parsePlayer(p) }));
-  const direParsed = direPlayers.map(p => ({ player: p, ...parsePlayer(p) }));
 
-  // Match by lane: 天辉优势路(1)对夜魇劣势路(3), 天辉劣势路(3)对夜魇优势路(1), 中路对中路
+  // Group players by lane
+  const radiantByLane: Record<number, Player[]> = { 1: [], 2: [], 3: [] };
+  const direByLane: Record<number, Player[]> = { 1: [], 2: [], 3: [] };
+
+  radiantPlayers.forEach(p => {
+    const lane = p.lane || 1;
+    if (radiantByLane[lane]) radiantByLane[lane].push(p);
+  });
+
+  direPlayers.forEach(p => {
+    const lane = p.lane || 1;
+    if (direByLane[lane]) direByLane[lane].push(p);
+  });
+
+  // lane 1 = safe lane (from team's perspective)
+  // lane 2 = mid
+  // lane 3 = offlane
+  
+  // Matchup: Radiant safe vs Dire off, Radiant off vs Dire safe, Mid vs Mid
   const matchups = [
     { rLane: 1, dLane: 3, name: '优势路 vs 劣势路' },
     { rLane: 2, dLane: 2, name: '中路 vs 中路' },
@@ -311,54 +291,64 @@ function analyzeLanes(radiantPlayers: Player[], direPlayers: Player[]): LaneAnal
   ];
 
   for (const matchup of matchups) {
-    const rData = radiantParsed.find(p => p.lane === matchup.rLane);
-    const dData = direParsed.find(p => p.lane === matchup.dLane);
+    const rPlayers = radiantByLane[matchup.rLane] || [];
+    const dPlayers = direByLane[matchup.dLane] || [];
     
-    if (rData && dData) {
-      const rGold = getValueAtMinute(rData.player.gold_t, minute);
-      const dGold = getValueAtMinute(dData.player.gold_t, minute);
-      const rXp = getValueAtMinute(rData.player.xp_t, minute);
-      const dXp = getValueAtMinute(dData.player.xp_t, minute);
-      const rLh = getValueAtMinute(rData.player.lh_t, minute);
-      const dLh = getValueAtMinute(dData.player.lh_t, minute);
-      const rDn = getValueAtMinute(rData.player.dn_t, minute);
-      const dDn = getValueAtMinute(dData.player.dn_t, minute);
+    if (rPlayers.length > 0 && dPlayers.length > 0) {
+      const radiantData = rPlayers.map(p => ({
+        player: p,
+        goldDiff: getValueAtMinute(p.gold_t, minute),
+        xpDiff: getValueAtMinute(p.xp_t, minute),
+        lh: getValueAtMinute(p.lh_t, minute),
+        dn: getValueAtMinute(p.dn_t, minute),
+      }));
       
-      const advantage = rGold > dGold ? 'radiant' : dGold > rGold ? 'dire' : 'even';
-      const roleName = getLaneRoleName(rData.laneRole) + ' vs ' + getLaneRoleName(dData.laneRole);
+      const direData = dPlayers.map(p => ({
+        player: p,
+        goldDiff: getValueAtMinute(p.gold_t, minute),
+        xpDiff: getValueAtMinute(p.xp_t, minute),
+        lh: getValueAtMinute(p.lh_t, minute),
+        dn: getValueAtMinute(p.dn_t, minute),
+      }));
+      
+      const rTotalGold = radiantData.reduce((s, p) => s + p.goldDiff, 0);
+      const dTotalGold = direData.reduce((s, p) => s + p.goldDiff, 0);
       
       result.lanes.push({
         name: matchup.name,
-        roleName,
-        radiant: { player: rData.player, goldDiff: rGold, xpDiff: rXp, lh: rLh, dn: rDn },
-        dire: { player: dData.player, goldDiff: dGold, xpDiff: dXp, lh: dLh, dn: dDn },
-        advantage,
+        radiant: radiantData,
+        dire: direData,
+        advantage: rTotalGold > dTotalGold ? 'radiant' : dTotalGold > rTotalGold ? 'dire' : 'even',
       });
-    } else if (rData) {
+    } else if (rPlayers.length > 0) {
       // Solo lane
-      const rGold = getValueAtMinute(rData.player.gold_t, minute);
-      const rXp = getValueAtMinute(rData.player.xp_t, minute);
-      const rLh = getValueAtMinute(rData.player.lh_t, minute);
-      const rDn = getValueAtMinute(rData.player.dn_t, minute);
+      const radiantData = rPlayers.map(p => ({
+        player: p,
+        goldDiff: getValueAtMinute(p.gold_t, minute),
+        xpDiff: getValueAtMinute(p.xp_t, minute),
+        lh: getValueAtMinute(p.lh_t, minute),
+        dn: getValueAtMinute(p.dn_t, minute),
+      }));
       
       result.lanes.push({
         name: matchup.name,
-        roleName: getLaneRoleName(rData.laneRole),
-        radiant: { player: rData.player, goldDiff: rGold, xpDiff: rXp, lh: rLh, dn: rDn },
-        dire: { player: { personaname: 'Empty', hero_id: 0 } as Player, goldDiff: 0, xpDiff: 0, lh: 0, dn: 0 },
+        radiant: radiantData,
+        dire: [],
         advantage: 'radiant',
       });
-    } else if (dData) {
-      const dGold = getValueAtMinute(dData.player.gold_t, minute);
-      const dXp = getValueAtMinute(dData.player.xp_t, minute);
-      const dLh = getValueAtMinute(dData.player.lh_t, minute);
-      const dDn = getValueAtMinute(dData.player.dn_t, minute);
+    } else if (dPlayers.length > 0) {
+      const direData = dPlayers.map(p => ({
+        player: p,
+        goldDiff: getValueAtMinute(p.gold_t, minute),
+        xpDiff: getValueAtMinute(p.xp_t, minute),
+        lh: getValueAtMinute(p.lh_t, minute),
+        dn: getValueAtMinute(p.dn_t, minute),
+      }));
       
       result.lanes.push({
         name: matchup.name,
-        roleName: getLaneRoleName(dData.laneRole),
-        radiant: { player: { personaname: 'Empty', hero_id: 0 } as Player, goldDiff: 0, xpDiff: 0, lh: 0, dn: 0 },
-        dire: { player: dData.player, goldDiff: dGold, xpDiff: dXp, lh: dLh, dn: dDn },
+        radiant: [],
+        dire: direData,
         advantage: 'dire',
       });
     }
