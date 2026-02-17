@@ -3684,6 +3684,78 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8694620579",
+        "series_type": "BO3",
+        "radiant_team_name": "Aurora Gaming",
+        "dire_team_name": "paiN Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "games": [
+          {
+            "match_id": "8694620579",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "paiN Gaming",
+            "radiant_score": 30,
+            "dire_score": 15,
+            "radiant_win": 1,
+            "start_time": 1771329299,
+            "duration": 1808
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8694627572",
+        "series_type": "BO3",
+        "radiant_team_name": "Team Yandex",
+        "dire_team_name": "Team Liquid",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "games": [
+          {
+            "match_id": "8694627572",
+            "radiant_team_name": "Team Yandex",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 19,
+            "dire_score": 23,
+            "radiant_win": 0,
+            "start_time": 1771329302,
+            "duration": 2254
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
+        "series_id": "opendota_8694692688",
+        "series_type": "BO3",
+        "radiant_team_name": "OG",
+        "dire_team_name": "Yakult Brothers",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "games": [
+          {
+            "match_id": "8694692688",
+            "radiant_team_name": "OG",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 38,
+            "dire_score": 9,
+            "radiant_win": 1,
+            "start_time": 1771329615,
+            "duration": 1601
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8693504706",
         "series_type": "BO3",
         "radiant_team_name": "Xtreme Gaming",
@@ -4246,5 +4318,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T12:30:19.948Z"
+  "lastUpdated": "2026-02-17T13:04:22.467Z"
 }
