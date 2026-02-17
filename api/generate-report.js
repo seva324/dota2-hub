@@ -1,55 +1,23 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-interface MatchData {
-  match_id: number;
-  duration: number;
-  radiant_score: number;
-  dire_score: number;
-  radiant_win: boolean;
-  radiant_team_name: string;
-  dire_team_name: string;
-  players: Array<{
-    player_slot: number;
-    hero_id: number;
-    name?: string;
-    kills: number;
-    deaths: number;
-    assists: number;
-    gold_per_min: number;
-    xp_per_min: number;
-    last_hits: number;
-    denies: number;
-    lane: number;
-    lane_role: number;
-  }>;
-  objectives: Array<{
-    type: string;
-    time: number;
-    key?: string;
-  }>;
-  radiant_gold_adv: number[];
-}
-
-const heroNicknames: Record<number, string> = {
+const heroNicknames = {
   72: '飞机', 126: '紫猫', 123: '小鹿', 96: '人马', 106: '火猫',
   79: '毒狗', 131: '滚滚', 49: 'DK', 28: '鱼人', 51: '发条',
 };
 
-function getHeroNickname(heroId: number): string {
+function getHeroNickname(heroId) {
   return heroNicknames[heroId] || `英雄${heroId}`;
 }
 
-function formatTime(seconds: number): string {
+function formatTime(seconds) {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
+export default async function handler(request, response) {
   if (request.method !== 'POST') {
     return response.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const data: MatchData = request.body;
+    const data = request.body;
     if (!data.match_id) {
       return response.status(400).json({ error: 'Missing match_id' });
     }
@@ -79,7 +47,6 @@ ${data.players.map(p => `${getHeroNickname(p.hero_id)}: ${p.kills}/${p.deaths}/$
       return response.status(500).json({ error: 'API key not configured' });
     }
 
-    // Use Anthropic-compatible API
     const aiResponse = await fetch('https://api.minimax.io/anthropic/v1/messages', {
       method: 'POST',
       headers: {
@@ -103,7 +70,6 @@ ${data.players.map(p => `${getHeroNickname(p.hero_id)}: ${p.kills}/${p.deaths}/$
 
     const aiData = await aiResponse.json();
     
-    // Extract text from response (Anthropic format)
     let report = '';
     if (aiData.content && Array.isArray(aiData.content)) {
       for (const block of aiData.content) {
