@@ -3684,6 +3684,54 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8694827368",
+        "series_type": "BO3",
+        "radiant_team_name": "Execration",
+        "dire_team_name": "GamerLegion",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "games": [
+          {
+            "match_id": "8694827368",
+            "radiant_team_name": "Execration",
+            "dire_team_name": "GamerLegion",
+            "radiant_score": 33,
+            "dire_score": 21,
+            "radiant_win": 1,
+            "start_time": 1771336954,
+            "duration": 2612
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8694844159",
+        "series_type": "BO3",
+        "radiant_team_name": "MOUZ",
+        "dire_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "games": [
+          {
+            "match_id": "8694844159",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "Team Spirit",
+            "radiant_score": 16,
+            "dire_score": 25,
+            "radiant_win": 0,
+            "start_time": 1771337429,
+            "duration": 2190
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8694620579",
         "series_type": "BO3",
         "radiant_team_name": "Aurora Gaming",
@@ -4348,5 +4396,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T14:34:21.300Z"
+  "lastUpdated": "2026-02-17T15:28:44.537Z"
 }
