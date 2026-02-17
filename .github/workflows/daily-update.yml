@@ -4,11 +4,10 @@ on:
   schedule:
     # 每天 UTC 00:00 运行 (北京时间 08:00)
     - cron: '0 0 * * *'
-  # Disable automatic run on push - only manual trigger
-  # workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -26,19 +25,14 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '23'
-        cache: 'npm'
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
         
-    - name: Install build tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential python3
+    - name: Set npm registry
+      run: npm config set registry https://registry.npmjs.org/
         
-    - name: Clean node_modules
-      run: rm -rf node_modules package-lock.json
-      
     - name: Install dependencies
-      run: npm install
+      run: npm install better-sqlite3
       
     - name: Initialize database
       run: node scripts/init-db.js
@@ -64,6 +58,12 @@ jobs:
     - name: Export static data
       run: node scripts/export-static-data.js
       
+    - name: Sync player mappings
+      run: node scripts/sync-players.js
+      
+    - name: Fetch hero lane stats
+      run: node scripts/fetch-hero-lane-stats.js
+      
     - name: Build project
       run: npm run build
       
@@ -77,6 +77,20 @@ jobs:
       uses: actions/upload-pages-artifact@v3
       with:
         path: ./dist
+
+    - name: Commit and push data changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # Check if there are data changes
+        if git diff --quiet public/data/; then
+          echo "No data changes"
+        else
+          git add public/data/
+          git commit -m "data: Update static data $(date -u +'%Y-%m-%d')"
+          git push origin main
+        fi
 
   deploy:
     needs: build
