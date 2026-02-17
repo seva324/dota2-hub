@@ -29,11 +29,11 @@ interface Match {
 
 interface AIReportSectionProps {
   match: Match;
-  radiantTeamName: string;
-  direTeamName: string;
+
+
 }
 
-export function AIReportSection({ match, radiantTeamName, direTeamName }: AIReportSectionProps) {
+export function AIReportSection({ match }: AIReportSectionProps) {
   const [report, setReport] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
