@@ -47,7 +47,7 @@ export function AIReportSection({ match }: AIReportSectionProps) {
     setError('');
 
     try {
-      const res = await fetch('https://dota2-hub.vercel.app/api/generate-report', {
+      const res = await fetch('https://seva324s-projects-dota2-hub.vercel.app/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: match.match_id })
