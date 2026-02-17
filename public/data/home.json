@@ -3684,6 +3684,54 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8695241710",
+        "series_type": "BO3",
+        "radiant_team_name": "GamerLegion",
+        "dire_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "games": [
+          {
+            "match_id": "8695241710",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 12,
+            "dire_score": 30,
+            "radiant_win": 0,
+            "start_time": 1771355760,
+            "duration": 1972
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
+        "series_id": "opendota_8695261608",
+        "series_type": "BO3",
+        "radiant_team_name": "Xtreme Gaming",
+        "dire_team_name": "Tundra Esports",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "games": [
+          {
+            "match_id": "8695261608",
+            "radiant_team_name": "Xtreme Gaming",
+            "dire_team_name": "Tundra Esports",
+            "radiant_score": 9,
+            "dire_score": 30,
+            "radiant_win": 0,
+            "start_time": 1771357215,
+            "duration": 1965
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8695219250",
         "series_type": "BO3",
         "radiant_team_name": "Execration",
@@ -4576,5 +4624,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T19:59:28.773Z"
+  "lastUpdated": "2026-02-17T20:37:53.576Z"
 }
