@@ -79,7 +79,8 @@ ${data.players.map(p => `${getHeroNickname(p.hero_id)}: ${p.kills}/${p.deaths}/$
       return response.status(500).json({ error: 'API key not configured' });
     }
 
-    const aiResponse = await fetch('https://api.minimax.io/anthropic', {
+    // Use Anthropic-compatible API
+    const aiResponse = await fetch('https://api.minimax.io/anthropic/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,23 +88,34 @@ ${data.players.map(p => `${getHeroNickname(p.hero_id)}: ${p.kills}/${p.deaths}/$
       },
       body: JSON.stringify({
         model: 'MiniMax-M2.5',
+        max_tokens: 2000,
         messages: [
-          { role: 'system', content: '你是专业Dota2解说，用激情风格写战报' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
+          { role: 'user', content: [{ type: 'text', text: prompt }] }
+        ]
       })
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Minimax API error:', aiResponse.status, errorText);
+      console.error('API error:', aiResponse.status, errorText);
       return response.status(500).json({ error: `API error: ${aiResponse.status}`, details: errorText });
     }
 
     const aiData = await aiResponse.json();
-    const report = aiData.choices?.[0]?.message?.content || '生成失败';
+    
+    // Extract text from response (Anthropic format)
+    let report = '';
+    if (aiData.content && Array.isArray(aiData.content)) {
+      for (const block of aiData.content) {
+        if (block.type === 'text') {
+          report += block.text;
+        }
+      }
+    }
+    
+    if (!report) {
+      report = '生成失败';
+    }
 
     return response.status(200).json({ report });
 
