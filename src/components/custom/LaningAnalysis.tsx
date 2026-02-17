@@ -297,24 +297,36 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
       <div className="mt-4 space-y-2">
         {/* Net Worth Bar */}
         <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
+          {/* Radiant (left) - green when winning, gray when losing */}
           <div 
-            className={`absolute inset-y-0 left-0 bg-green-500 transition-all duration-500 ${advantage === 'radiant' ? 'animate-pulse' : ''}`}
+            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : advantage === 'dire' ? 'bg-slate-600/50' : 'bg-green-500'}`}
             style={{ width: `${goldPercent}%` }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[10px] text-white/70 font-medium">经济</span>
           </div>
+          {/* Dire (right) - red, more vibrant when winning */}
+          <div 
+            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50' : 'bg-red-500/70'}`}
+            style={{ width: `${100 - goldPercent}%` }}
+          />
         </div>
         
         {/* Experience Bar */}
         <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
+          {/* Radiant (left) - blue when winning, gray when losing */}
           <div 
-            className={`absolute inset-y-0 left-0 bg-blue-500 transition-all duration-500 ${advantage === 'radiant' ? 'animate-pulse' : ''}`}
+            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50' : advantage === 'dire' ? 'bg-slate-600/50' : 'bg-blue-500'}`}
             style={{ width: `${xpPercent}%` }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-[10px] text-white/70 font-medium">经验</span>
           </div>
+          {/* Dire (right) - purple, more vibrant when winning */}
+          <div 
+            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-purple-500 animate-pulse shadow-lg shadow-purple-500/50' : 'bg-purple-500/70'}`}
+            style={{ width: `${100 - xpPercent}%` }}
+          />
         </div>
       </div>
     </div>
