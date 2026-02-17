@@ -3688,6 +3688,8 @@
         "series_type": "BO3",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
         "games": [
           {
             "match_id": "8693504706",
@@ -3720,6 +3722,8 @@
         "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Aurora Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
         "games": [
           {
             "match_id": "8693723587",
@@ -3752,6 +3756,8 @@
         "series_type": "BO3",
         "radiant_team_name": "MOUZ",
         "dire_team_name": "Tundra Esports",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
         "games": [
           {
             "match_id": "8693948351",
@@ -4240,5 +4246,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T02:34:29.922Z"
+  "lastUpdated": "2026-02-17T02:38:14.294Z"
 }
