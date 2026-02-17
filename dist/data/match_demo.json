@@ -1,0 +1,123 @@
+{
+  "match_id": 8693504706,
+  "duration": 2385,
+  "radiant_team": "Team Spirit",
+  "dire_team": "Xtreme Gaming",
+  "winner": "Xtreme Gaming",
+  "radiant_score": 6,
+  "dire_score": 25,
+  "radiant_gold": 69023,
+  "dire_gold": 109132,
+  "players": {
+    "radiant": [
+      {
+        "name": "Yatoro",
+        "hero": "Gyrocopter",
+        "kills": 5,
+        "deaths": 4,
+        "assists": 0,
+        "net_worth": 20732,
+        "gold_per_min": 743,
+        "hero_damage": 34746
+      },
+      {
+        "name": "panto",
+        "hero": "Clockwerk",
+        "kills": 1,
+        "deaths": 7,
+        "assists": 2,
+        "net_worth": 7105,
+        "gold_per_min": 183,
+        "hero_damage": 12101
+      },
+      {
+        "name": "Mirele",
+        "hero": "Void Spirit",
+        "kills": 0,
+        "deaths": 4,
+        "assists": 4,
+        "net_worth": 17330,
+        "gold_per_min": 468,
+        "hero_damage": 14754
+      },
+      {
+        "name": "rue",
+        "hero": "Hoodwink",
+        "kills": 0,
+        "deaths": 5,
+        "assists": 4,
+        "net_worth": 9013,
+        "gold_per_min": 265,
+        "hero_damage": 14311
+      },
+      {
+        "name": "Collapse",
+        "hero": "Centaur Warrunner",
+        "kills": 0,
+        "deaths": 5,
+        "assists": 1,
+        "net_worth": 14843,
+        "gold_per_min": 452,
+        "hero_damage": 11434
+      }
+    ],
+    "dire": [
+      {
+        "name": "Ame",
+        "hero": "Dragon Knight",
+        "kills": 10,
+        "deaths": 0,
+        "assists": 4,
+        "net_worth": 30916,
+        "gold_per_min": 830,
+        "hero_damage": 24342
+      },
+      {
+        "name": "NothingToSay",
+        "hero": "Ember Spirit",
+        "kills": 7,
+        "deaths": 1,
+        "assists": 14,
+        "net_worth": 23861,
+        "gold_per_min": 627,
+        "hero_damage": 26438
+      },
+      {
+        "name": "Xxs",
+        "hero": "Slardar",
+        "kills": 5,
+        "deaths": 1,
+        "assists": 13,
+        "net_worth": 29971,
+        "gold_per_min": 638,
+        "hero_damage": 13360
+      },
+      {
+        "name": "fy",
+        "hero": "Shadow Demon",
+        "kills": 0,
+        "deaths": 1,
+        "assists": 15,
+        "net_worth": 11271,
+        "gold_per_min": 301,
+        "hero_damage": 13099
+      },
+      {
+        "name": "xNova",
+        "hero": "Ringmaster",
+        "kills": 3,
+        "deaths": 3,
+        "assists": 19,
+        "net_worth": 13113,
+        "gold_per_min": 349,
+        "hero_damage": 16876
+      }
+    ]
+  },
+  "ai_commentary": [
+    "MVP: Ame (Dragon Knight) - 30916g 无解肥Carry",
+    "经济碾压: Xtreme Gaming 领先 40109g，25:6 人头全面压制",
+    "中单对位: Ame (Dragon Knight) vs Yatoro (Gyrocopter)"
+  ],
+  "lastUpdated": "2026-02-17T06:54:57.290Z"
+}

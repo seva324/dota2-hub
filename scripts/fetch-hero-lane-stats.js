@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Hero Lane Stats 同步脚本
- * 从 OpenDota API 获取英雄对线数据
+ * Hero Data 同步脚本
+ * 生成前端所需的英雄数据格式
  */
 
 import fs from 'fs';
@@ -32,41 +32,61 @@ async function fetchWithRetry(url, retries = 3) {
           await new Promise(r => setTimeout(r, 10000));
           continue;
         }
-        if (response.status === 404) {
-          return [];
-        }
         throw new Error(`HTTP ${response.status}`);
       }
       
       return await response.json();
     } catch (error) {
-      if (i === retries - 1) return [];
-      console.log(`Retry ${i + 1}/${retries} for ${url}`);
+      if (i === retries - 1) throw error;
+      console.log(`Retry ${i + 1}/${retries}`);
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
   }
-  return [];
 }
 
-async function fetchHeroLaneStats() {
-  console.log('=== Fetching Hero Lane Stats ===');
+async function fetchHeroData() {
+  console.log('=== Fetching Hero Data ===');
   
   // 获取英雄列表
   const heroes = await fetchWithRetry(`${OPENDOTA_BASE_URL}/heroes`);
   console.log(`  Got ${heroes.length} heroes`);
   
-  // 创建英雄 ID 到信息的映射
+  // 转换为前端所需格式: Record<id, { name, img }>
+  // name: 英文名 (用于显示)
+  // img: hero_xxx 格式 (用于加载图标)
+  const heroesData = {};
+  
+  for (const hero of heroes) {
+    // 从 name 提取 img 部分: npc_dota_hero_antimage -> antimage
+    const imgName = hero.name.replace('npc_dota_hero_', '');
+    
+    heroesData[hero.id] = {
+      id: hero.id,
+      name: hero.localized_name,  // 英文名
+      img: imgName                // 用于图标
+    };
+  }
+  
+  // 保存前端格式
+  const heroesPath = path.join(publicDataDir, 'heroes.json');
+  fs.writeFileSync(heroesPath, JSON.stringify(heroesData, null, 2));
+  console.log(`  Saved ${heroes.length} heroes to heroes.json (frontend format)`);
+  
+  return heroesData;
+}
+
+async function fetchMatchups() {
+  console.log('\n=== Fetching Hero Matchups ===');
+  
+  const heroes = await fetchWithRetry(`${OPENDOTA_BASE_URL}/heroes`);
+  console.log(`  Got ${heroes.length} heroes`);
+  
   const heroMap = {};
   for (const hero of heroes) {
     heroMap[hero.id] = hero;
   }
   
-  // 保存英雄数据
-  const heroesPath = path.join(publicDataDir, 'heroes.json');
-  fs.writeFileSync(heroesPath, JSON.stringify(heroes, null, 2));
-  console.log(`  Saved ${heroes.length} heroes to heroes.json`);
-  
-  const laneStats = [];
+  const matchupsData = {};
   
   console.log('  Fetching matchups for each hero...');
   
@@ -82,83 +102,54 @@ async function fetchHeroLaneStats() {
       
       await new Promise(r => setTimeout(r, 500));
       
-      return {
-        hero_id: hero.id,
-        hero_name: hero.name,
-        localized_name: hero.localized_name,
-        matchups: matchups || []
-      };
+      // 处理 matchups 数据
+      const processedMatchups = [];
+      if (matchups && matchups.length > 0) {
+        for (const m of matchups) {
+          if (m.games_played >= 50) {
+            const opponent = heroMap[m.hero_id];
+            processedMatchups.push({
+              hero_id: m.hero_id,
+              hero_name: opponent?.localized_name || `Hero ${m.hero_id}`,
+              wins: m.wins,
+              matches: m.games_played,
+              win_rate: m.wins / m.games_played
+            });
+          }
+        }
+        // 按胜率排序
+        processedMatchups.sort((a, b) => b.win_rate - a.win_rate);
+        // 只保留前50
+        processedMatchups.splice(50);
+      }
+      
+      return { hero_id: hero.id, matchups: processedMatchups };
     });
     
     const results = await Promise.all(promises);
-    laneStats.push(...results);
+    for (const r of results) {
+      matchupsData[r.hero_id] = r.matchups;
+    }
     
     await new Promise(r => setTimeout(r, DELAY_MS));
   }
   
-  console.log(`  Fetched matchups for ${laneStats.length} heroes`);
+  console.log(`  Fetched matchups for ${heroes.length} heroes`);
   
-  // 处理和过滤数据
-  const processedData = processLaneStats(laneStats, heroMap);
-  
-  // 保存数据
-  const outputPath = path.join(publicDataDir, 'hero_lane_stats.json');
-  fs.writeFileSync(outputPath, JSON.stringify(processedData, null, 2));
-  console.log(`  Saved hero lane stats to ${outputPath}`);
-}
-
-function processLaneStats(rawData, heroMap) {
-  const result = {
-    heroes: [],
-    lastUpdated: new Date().toISOString()
-  };
-  
-  for (const hero of rawData) {
-    const heroData = {
-      id: hero.hero_id,
-      name: hero.hero_name,
-      localized_name: hero.localized_name,
-      matchups: []
-    };
-    
-    // 处理对线数据 (matchups)
-    // API 返回: hero_id, games_played, wins
-    if (hero.matchups && hero.matchups.length > 0) {
-      for (const matchup of hero.matchups) {
-        // 只保留有足够样本的数据
-        if (matchup.games_played >= 50) {
-          const opponent = heroMap[matchup.hero_id];
-          heroData.matchups.push({
-            hero_id: matchup.hero_id,
-            hero_name: opponent?.name || `hero_${matchup.hero_id}`,
-            localized_name: opponent?.localized_name || `英雄${matchup.hero_id}`,
-            wins: matchup.wins,
-            matches: matchup.games_played,
-            win_rate: matchup.wins / matchup.games_played
-          });
-        }
-      }
-      
-      // 按胜率排序
-      heroData.matchups.sort((a, b) => b.win_rate - a.win_rate);
-      
-      // 只保留前50个对线英雄
-      heroData.matchups = heroData.matchups.slice(0, 50);
-    }
-    
-    result.heroes.push(heroData);
-  }
-  
-  return result;
+  // 保存 matchups 数据
+  const matchupsPath = path.join(publicDataDir, 'hero_matchups.json');
+  fs.writeFileSync(matchupsPath, JSON.stringify(matchupsData, null, 2));
+  console.log(`  Saved to ${matchupsPath}`);
 }
 
 async function main() {
   console.log('========================================');
-  console.log('Hero Lane Stats Sync');
+  console.log('Hero Data Sync');
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
-  await fetchHeroLaneStats();
+  await fetchHeroData();
+  await fetchMatchups();
   
   console.log('\nDone!');
 }

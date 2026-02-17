@@ -33,6 +33,7 @@ interface Player {
   hero_healing: number;
   items: number[];
   neutral_item?: number;
+  lane?: number; // 1=天辉优势路/夜魇劣势路, 2=中路, 3=天辉劣势路/夜魇优势路
 }
 
 interface PicksBans {
@@ -66,6 +67,7 @@ interface MatchDetail {
 
 // Hero data - loaded from data file
 let heroesData: Record<number, { name: string; img: string }> = {};
+let heroesCnData: Record<number, { name_en: string; name_cn: string; nicknames: string[] }> = {};
 
 // Load heroes data
 fetch('/dota2-hub/data/heroes.json')
@@ -73,13 +75,37 @@ fetch('/dota2-hub/data/heroes.json')
   .then(data => { heroesData = data; })
   .catch(() => {});
 
+// Load heroes Chinese names
+fetch('/dota2-hub/data/heroes_cn.json')
+  .then(res => res.json())
+  .then(data => { 
+    // Convert string keys to numbers
+    for (const [key, value] of Object.entries(data)) {
+      heroesCnData[parseInt(key)] = value as { name_en: string; name_cn: string; nicknames: string[] };
+    }
+  })
+  .catch(() => {});
+
 function getHeroName(id: number): string {
+  // Return Chinese name if available, otherwise English name
+  const cnName = heroesCnData[id]?.name_cn;
+  if (cnName) return cnName;
   return heroesData[id]?.name || `Hero ${id}`;
 }
 
 function getHeroImg(id: number): string {
   const img = heroesData[id]?.img || `hero_${id}`;
   return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
+}
+
+// Get lane name in Chinese
+function getLaneName(lane: number | undefined, isRadiant: boolean): string {
+  if (!lane) return '';
+  // lane: 1=天辉优势路/夜魇劣势路, 2=中路, 3=天辉劣势路/夜魇优势路
+  if (lane === 1) return isRadiant ? '优势路' : '劣势路';
+  if (lane === 2) return '中路';
+  if (lane === 3) return isRadiant ? '劣势路' : '优势路';
+  return '';
 }
 
 function HeroIcon({ heroId, size = 'md' }: { heroId: number; size?: 'sm' | 'md' | 'lg' }) {
@@ -247,14 +273,14 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   <div className="space-y-2">
                     <div className="text-center font-bold text-green-400 mb-3">{radiantTeamName}</div>
                     {radiantPlayers.map((player, idx) => (
-                      <PlayerCard key={idx} player={player} isWinner={match.radiant_win} />
+                      <PlayerCard key={idx} player={player} isWinner={match.radiant_win} isRadiant={true} />
                     ))}
                   </div>
                   {/* Dire */}
                   <div className="space-y-2">
                     <div className="text-center font-bold text-red-400 mb-3">{direTeamName}</div>
                     {direPlayers.map((player, idx) => (
-                      <PlayerCard key={idx} player={player} isWinner={!match.radiant_win} />
+                      <PlayerCard key={idx} player={player} isWinner={!match.radiant_win} isRadiant={false} />
                     ))}
                   </div>
                 </div>
@@ -280,16 +306,24 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
   );
 }
 
-function PlayerCard({ player, isWinner }: { player: Player; isWinner: boolean }) {
+function PlayerCard({ player, isWinner, isRadiant }: { player: Player; isWinner: boolean; isRadiant: boolean }) {
   // Try to get pro player name
   const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
   const displayName = proInfo?.name || player.personaname || (player.account_id ? `${player.account_id}` : 'Unknown');
+  
+  // Get lane name
+  const laneName = getLaneName(player.lane, isRadiant);
 
   return (
     <div className={`p-2 sm:p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
       <div className="flex items-center justify-between mb-1 sm:mb-2">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">
           <span className="text-sm sm:text-base font-medium text-white truncate">{displayName}</span>
+          {laneName && (
+            <Badge className="text-[10px] px-1 py-0 bg-blue-600/20 text-blue-400 border border-blue-600/30">
+              {laneName}
+            </Badge>
+          )}
         </div>
         <Badge className={`flex-shrink-0 ${isWinner ? 'bg-green-600/20 text-green-400' : 'bg-slate-700 text-slate-400'} text-xs`}>
           Lv.{player.level}
