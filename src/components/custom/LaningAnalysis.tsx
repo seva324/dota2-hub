@@ -298,50 +298,69 @@ function analyzeLanes(radiantPlayers: Player[], direPlayers: Player[]): LaneAnal
   };
 
   const minute = 10;
-  const laneNames: Record<number, string> = {
-    1: '优势路',
-    2: '中路',
-    3: '劣势路',
-  };
-
+  // lane: 1=天辉优势路/夜魇劣势路, 2=中路, 3=天辉劣势路/夜魇优势路
+  
   const radiantParsed = radiantPlayers.map(p => ({ player: p, ...parsePlayer(p) }));
   const direParsed = direPlayers.map(p => ({ player: p, ...parsePlayer(p) }));
 
+  // Match by lane: 天辉优势路(1)对夜魇劣势路(3), 天辉劣势路(3)对夜魇优势路(1), 中路对中路
   const matchups = [
-    { lane: 1, name: laneNames[1] + ' (Safe)', roles: [1, 4] },
-    { lane: 2, name: laneNames[2] + ' (Mid)', roles: [2] },
-    { lane: 3, name: laneNames[3] + ' (Off)', roles: [3, 5] },
+    { rLane: 1, dLane: 3, name: '优势路 vs 劣势路' },
+    { rLane: 2, dLane: 2, name: '中路 vs 中路' },
+    { rLane: 3, dLane: 1, name: '劣势路 vs 优势路' },
   ];
 
   for (const matchup of matchups) {
-    const rPlayers = radiantParsed.filter(p => matchup.roles.includes(p.laneRole));
-    const dPlayers = direParsed.filter(p => matchup.roles.includes(p.laneRole));
+    const rData = radiantParsed.find(p => p.lane === matchup.rLane);
+    const dData = direParsed.find(p => p.lane === matchup.dLane);
     
-    for (let i = 0; i < Math.max(rPlayers.length, dPlayers.length); i++) {
-      const rData = rPlayers[i];
-      const dData = dPlayers[i];
+    if (rData && dData) {
+      const rGold = getValueAtMinute(rData.player.gold_t, minute);
+      const dGold = getValueAtMinute(dData.player.gold_t, minute);
+      const rXp = getValueAtMinute(rData.player.xp_t, minute);
+      const dXp = getValueAtMinute(dData.player.xp_t, minute);
+      const rLh = getValueAtMinute(rData.player.lh_t, minute);
+      const dLh = getValueAtMinute(dData.player.lh_t, minute);
+      const rDn = getValueAtMinute(rData.player.dn_t, minute);
+      const dDn = getValueAtMinute(dData.player.dn_t, minute);
       
-      if (rData && dData) {
-        const rGold = getValueAtMinute(rData.player.gold_t, minute);
-        const dGold = getValueAtMinute(dData.player.gold_t, minute);
-        const rXp = getValueAtMinute(rData.player.xp_t, minute);
-        const dXp = getValueAtMinute(dData.player.xp_t, minute);
-        const rLh = getValueAtMinute(rData.player.lh_t, minute);
-        const dLh = getValueAtMinute(dData.player.lh_t, minute);
-        const rDn = getValueAtMinute(rData.player.dn_t, minute);
-        const dDn = getValueAtMinute(dData.player.dn_t, minute);
-        
-        const advantage = rGold > dGold ? 'radiant' : dGold > rGold ? 'dire' : 'even';
-        const roleName = getLaneRoleName(rData.laneRole) + ' vs ' + getLaneRoleName(dData.laneRole);
-        
-        result.lanes.push({
-          name: matchup.name,
-          roleName,
-          radiant: { player: rData.player, goldDiff: rGold, xpDiff: rXp, lh: rLh, dn: rDn },
-          dire: { player: dData.player, goldDiff: dGold, xpDiff: dXp, lh: dLh, dn: dDn },
-          advantage,
-        });
-      }
+      const advantage = rGold > dGold ? 'radiant' : dGold > rGold ? 'dire' : 'even';
+      const roleName = getLaneRoleName(rData.laneRole) + ' vs ' + getLaneRoleName(dData.laneRole);
+      
+      result.lanes.push({
+        name: matchup.name,
+        roleName,
+        radiant: { player: rData.player, goldDiff: rGold, xpDiff: rXp, lh: rLh, dn: rDn },
+        dire: { player: dData.player, goldDiff: dGold, xpDiff: dXp, lh: dLh, dn: dDn },
+        advantage,
+      });
+    } else if (rData) {
+      // Solo lane
+      const rGold = getValueAtMinute(rData.player.gold_t, minute);
+      const rXp = getValueAtMinute(rData.player.xp_t, minute);
+      const rLh = getValueAtMinute(rData.player.lh_t, minute);
+      const rDn = getValueAtMinute(rData.player.dn_t, minute);
+      
+      result.lanes.push({
+        name: matchup.name,
+        roleName: getLaneRoleName(rData.laneRole),
+        radiant: { player: rData.player, goldDiff: rGold, xpDiff: rXp, lh: rLh, dn: rDn },
+        dire: { player: { personaname: 'Empty', hero_id: 0 } as Player, goldDiff: 0, xpDiff: 0, lh: 0, dn: 0 },
+        advantage: 'radiant',
+      });
+    } else if (dData) {
+      const dGold = getValueAtMinute(dData.player.gold_t, minute);
+      const dXp = getValueAtMinute(dData.player.xp_t, minute);
+      const dLh = getValueAtMinute(dData.player.lh_t, minute);
+      const dDn = getValueAtMinute(dData.player.dn_t, minute);
+      
+      result.lanes.push({
+        name: matchup.name,
+        roleName: getLaneRoleName(dData.laneRole),
+        radiant: { player: { personaname: 'Empty', hero_id: 0 } as Player, goldDiff: 0, xpDiff: 0, lh: 0, dn: 0 },
+        dire: { player: dData.player, goldDiff: dGold, xpDiff: dXp, lh: dLh, dn: dDn },
+        advantage: 'dire',
+      });
     }
   }
 
