@@ -151,9 +151,9 @@ ${laneData}
 ${objectivesData || '无'}
 
 ## 经济曲线
-- 10分钟: ${gold10 > 0 ? `+${gold10}` : gold10}
-- 20分钟: ${gold20 > 0 ? `+${gold20}` : gold20}
-- 30分钟: ${gold30 > 0 ? `+${gold30}` : gold30}
+- 10分钟: ${gold10 > 0 ? '+' + gold10 : gold10}
+- 20分钟: ${gold20 > 0 ? '+' + gold20 : gold20}
+- 30分钟: ${gold30 > 0 ? '+' + gold30 : gold30}
 
 ## 选手数据
 ${playerStats}
@@ -206,15 +206,21 @@ export default async function handler(
 
     const prompt = buildPrompt(data);
 
-    // Call AI API (Minimax or similar)
-    const aiResponse = await fetch('https://api.minimax.chat/v1/text/chatcompletion_pro', {
+    // Get API key from environment variable
+    const apiKey = process.env.MINIMAX_API_KEY;
+    if (!apiKey) {
+      return response.status(500).json({ error: 'API key not configured' });
+    }
+
+    // Call Minimax API
+    const aiResponse = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.MINIMAX_API_KEY || ''}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'abab6.5s-chat',
+        model: 'MiniMax-M2.5',
         messages: [
           {
             role: 'system',
@@ -231,6 +237,8 @@ export default async function handler(
     });
 
     if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Minimax API error:', errorText);
       throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
