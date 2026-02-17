@@ -79,15 +79,14 @@ ${data.players.map(p => `${getHeroNickname(p.hero_id)}: ${p.kills}/${p.deaths}/$
       return response.status(500).json({ error: 'API key not configured' });
     }
 
-    // Try MiniMax API with correct endpoint
-    const aiResponse = await fetch('https://api.minimax.io/v1/text/chatcompletion_v2', {
+    const aiResponse = await fetch('https://api.minimax.io/anthropic', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'M2-her',
+        model: 'MiniMax-M2.5',
         messages: [
           { role: 'system', content: '你是专业Dota2解说，用激情风格写战报' },
           { role: 'user', content: prompt }
