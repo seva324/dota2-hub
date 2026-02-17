@@ -375,10 +375,12 @@ function analyzeLanes(radiantPlayers: Player[], direPlayers: Player[]): LaneAnal
     if (direByLane[lane]) direByLane[lane].push(p);
   });
 
+  // lane: 1=上路, 2=中路, 3=下路 (地图位置)
+  // 直接按地图位置匹配：上路vs上路，中路vs中路，下路vs下路
   const matchups = [
-    { rLane: 1, dLane: 3, name: '优势路 vs 劣势路' },
-    { rLane: 2, dLane: 2, name: '中路 vs 中路' },
-    { rLane: 3, dLane: 1, name: '劣势路 vs 优势路' },
+    { rLane: 1, dLane: 1, name: '上路 (Top)' },
+    { rLane: 2, dLane: 2, name: '中路 (Mid)' },
+    { rLane: 3, dLane: 3, name: '下路 (Bot)' },
   ];
 
   for (const matchup of matchups) {
