@@ -386,7 +386,7 @@
   },
   "91730177": {
     "name": "Seleri",
-    "team_name": "Gaimin Gladiators",
+    "team_name": "MOUZ",
     "realname": ""
   },
   "92253768": {
@@ -1155,8 +1155,8 @@
     "realname": ""
   },
   "127617979": {
-    "name": "Crystallis",
-    "team_name": "Tundra Esports",
+    "name": "KITR",
+    "team_name": "MOUZ",
     "realname": ""
   },
   "127700840": {
@@ -2255,8 +2255,8 @@
     "realname": ""
   },
   "190826739": {
-    "name": "BOOM",
-    "team_name": "Team Secret",
+    "name": "Strach",
+    "team_name": "MOUZ",
     "realname": ""
   },
   "190942586": {
@@ -3670,7 +3670,7 @@
     "realname": ""
   },
   "321580662": {
-    "name": "Larl",
+    "name": "Yatoro",
     "team_name": "Team Spirit",
     "realname": ""
   },
@@ -9582,6 +9582,21 @@
   "1930115322": {
     "name": "Pink Stars",
     "team_name": null,
+    "realname": ""
+  },
+  "116585378": {
+    "name": "I SPIT ON YOUR FACE",
+    "team_name": "MOUZ",
+    "realname": ""
+  },
+  "9403474": {
+    "name": "mid two",
+    "team_name": "MOUZ",
+    "realname": ""
+  },
+  "116865891": {
+    "name": "Mirele",
+    "team_name": "Team Spirit",
     "realname": ""
   }
 }
