@@ -3734,12 +3734,22 @@
             "radiant_win": 0,
             "start_time": 1771329302,
             "duration": 2254
+          },
+          {
+            "match_id": "8694763191",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 31,
+            "dire_score": 39,
+            "radiant_win": 1,
+            "start_time": 1771333888,
+            "duration": 3333
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8694692688",
@@ -4338,5 +4348,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-17T13:59:20.725Z"
+  "lastUpdated": "2026-02-17T14:34:21.300Z"
 }
