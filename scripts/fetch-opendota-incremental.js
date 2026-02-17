@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * OpenDota 增量更新脚本 - 只获取新比赛，不重建数据库
+ * OpenDota 增量更新脚本 - 保留原数据，只添加新比赛
  */
 
-import Database from 'better-sqlite3';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,55 +13,15 @@ const __dirname = path.dirname(__filename);
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || 'ab01b0b0-c459-4524-92eb-0b6af0cdc415';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
 
-const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
+const publicDataDir = path.join(__dirname, '..', 'public', 'data');
 
-// 如果数据库不存在，初始化它
-import fs from 'fs';
-if (!fs.existsSync(dbPath)) {
-  console.log('Database not found, initializing...');
-  const initDb = (await import('./init-db.js')).default;
-  initDb();
-}
+// 读取现有的 home.json
+const homeDataPath = path.join(publicDataDir, 'home.json');
+let homeData = JSON.parse(fs.readFileSync(homeDataPath, 'utf-8'));
 
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
-
-// 确保 matches 表存在
-try {
-  db.prepare('SELECT 1 FROM matches LIMIT 1').get();
-} catch (e) {
-  console.log('Creating matches table...');
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS matches (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      match_id TEXT UNIQUE,
-      radiant_team_id TEXT,
-      dire_team_id TEXT,
-      radiant_team_name TEXT,
-      radiant_team_name_cn TEXT,
-      dire_team_name TEXT,
-      dire_team_name_cn TEXT,
-      radiant_team_logo TEXT,
-      dire_team_logo TEXT,
-      radiant_score INTEGER DEFAULT 0,
-      dire_score INTEGER DEFAULT 0,
-      radiant_game_wins INTEGER DEFAULT 0,
-      dire_game_wins INTEGER DEFAULT 0,
-      start_time INTEGER,
-      duration INTEGER DEFAULT 0,
-      series_type TEXT,
-      league_id INTEGER,
-      tournament_id TEXT,
-      tournament_name TEXT,
-      tournament_name_cn TEXT,
-      status TEXT,
-      lobby_type INTEGER,
-      game_mode INTEGER,
-      created_at INTEGER,
-      radiant_win INTEGER
-    )
-  `);
-}
+console.log('Loaded existing data:');
+console.log('  Tournaments:', homeData.tournaments?.length || 0);
+console.log('  Series:', Object.entries(homeData.seriesByTournament || {}).map(([k,v]) => `${k}: ${v.length}`).join(', '));
 
 async function fetchWithRetry(url, retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -91,128 +51,148 @@ async function fetchWithRetry(url, retries = 3) {
   }
 }
 
-function saveMatch(match) {
-  const now = Date.now() / 1000;
-  let status = 'scheduled';
-  if (match.start_time < now - 3600) {
-    status = 'finished';
-  } else if (match.start_time < now) {
-    status = 'live';
-  }
-  
-  let radiantGameWins = 0;
-  let direGameWins = 0;
-  
-  if (status === 'finished') {
-    if (match.radiant_win) {
-      radiantGameWins = 1;
-    } else {
-      direGameWins = 1;
+// 收集所有已有比赛ID
+const existingMatchIds = new Set();
+const allSeries = Object.values(homeData.seriesByTournament || {});
+for (const series of allSeries) {
+  for (const s of series) {
+    for (const game of s.games || []) {
+      existingMatchIds.add(String(game.match_id));
     }
   }
-  
-  // 检查是否已存在
-  const existing = db.prepare('SELECT radiant_score, dire_score, status FROM matches WHERE match_id = ?').get(match.match_id);
-  
-  if (existing) {
-    // 如果是 live 或 finished 状态，更新比分
-    if (status !== 'scheduled' && (existing.radiant_score !== match.radiant_score || existing.dire_score !== match.dire_score)) {
-      db.prepare(`
-        UPDATE matches SET
-          radiant_score = ?, dire_score = ?,
-          radiant_game_wins = ?, dire_game_wins = ?,
-          status = ?, radiant_win = ?
-        WHERE match_id = ?
-      `).run(
-        match.radiant_score || 0,
-        match.dire_score || 0,
-        radiantGameWins,
-        direGameWins,
-        status,
-        match.radiant_win ? 1 : 0,
-        match.match_id
-      );
-      console.log(`  🔄 ${match.radiant_name} ${match.radiant_score}:${match.dire_score} ${match.dire_name} (${status})`);
-      return 'updated';
-    }
-    return 'existing';
-  }
-  
-  // 新比赛
-  db.prepare(`
-    INSERT OR REPLACE INTO matches (
-      match_id, league_id, radiant_team_id, dire_team_id,
-      radiant_team_name, radiant_team_name_cn,
-      dire_team_name, dire_team_name_cn,
-      radiant_team_logo, dire_team_logo,
-      radiant_score, dire_score, radiant_game_wins, dire_game_wins,
-      start_time, duration, series_type, status, lobby_type,
-      radiant_win
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    match.match_id,
-    match.leagueid || null,
-    match.radiant_team_id || null,
-    match.dire_team_id || null,
-    match.radiant_name || null,
-    null,
-    match.dire_name || null,
-    null,
-    null,
-    null,
-    match.radiant_score || 0,
-    match.dire_score || 0,
-    radiantGameWins,
-    direGameWins,
-    match.start_time,
-    match.duration || 0,
-    'BO3',
-    status,
-    match.lobby_type || 0,
-    match.radiant_win ? 1 : 0
-  );
-  
-  console.log(`  ✓ ${match.radiant_name} ${match.radiant_score}:${match.dire_score} ${match.dire_name} (${status})`);
-  return 'new';
 }
+console.log('Existing matches:', existingMatchIds.size);
+
+// 读取现有比赛数据
+const matchesPath = path.join(publicDataDir, 'matches.json');
+let existingMatches = [];
+try {
+  existingMatches = JSON.parse(fs.readFileSync(matchesPath, 'utf-8'));
+} catch (e) {
+  console.log('No existing matches file');
+}
+console.log('Existing matches in file:', existingMatches.length);
+
+// 收集现有比赛的 ID
+const existingMatchIdSet = new Set(existingMatches.map(m => String(m.match_id)));
+
+let newMatches = [];
+let updatedMatches = 0;
 
 async function main() {
-  console.log('========================================');
-  console.log('DOTA2 Hub - OpenDota Incremental Sync');
-  console.log('Time:', new Date().toISOString());
-  console.log('========================================\n');
-  
-  let newCount = 0;
-  let updatedCount = 0;
-  let existingCount = 0;
-  
-  // 获取 proMatches（所有职业比赛）
-  console.log('--- Fetching proMatches ---');
+  console.log('\n--- Fetching proMatches ---');
   try {
     const proMatches = await fetchWithRetry(`${OPENDOTA_BASE_URL}/proMatches`);
-    console.log(`  Got ${proMatches.length} pro matches`);
+    console.log('Got', proMatches.length, 'pro matches');
     
     for (const match of proMatches.slice(0, 200)) {
-      const result = saveMatch(match);
-      if (result === 'new') {
-        newCount++;
-      } else if (result === 'updated') {
-        updatedCount++;
-      } else {
-        existingCount++;
+      const matchId = String(match.match_id);
+      
+      // 检查是否已存在
+      if (existingMatchIdSet.has(matchId)) {
+        continue; // 跳过已存在的比赛
       }
+      
+      // 新比赛 - 添加到列表
+      const newMatch = {
+        match_id: match.match_id,
+        radiant_team_id: match.radiant_team_id,
+        dire_team_id: match.dire_team_id,
+        radiant_team_name: match.radiant_name,
+        dire_team_name: match.dire_name,
+        radiant_score: match.radiant_score,
+        dire_score: match.dire_score,
+        start_time: match.start_time,
+        duration: match.duration,
+        league_id: match.leagueid,
+        radiant_win: match.radiant_win
+      };
+      
+      newMatches.push(newMatch);
+      existingMatchIdSet.add(matchId);
+      
+      console.log(`  ✓ ${match.radiant_name} ${match.radiant_score}:${match.dire_score} ${match.dire_name}`);
     }
   } catch (error) {
-    console.error('  Error:', error.message);
+    console.error('Error:', error.message);
   }
   
-  console.log(`\n========================================`);
-  console.log(`New matches: ${newCount}`);
-  console.log(`Updated matches: ${updatedCount}`);
-  console.log(`Existing matches: ${existingCount}`);
-  console.log('========================================');
+  console.log(`\nNew matches found: ${newMatches.length}`);
   
-  db.close();
+  if (newMatches.length > 0) {
+    // 合并到现有比赛列表
+    const allMatches = [...existingMatches, ...newMatches];
+    fs.writeFileSync(matchesPath, JSON.stringify(allMatches, null, 2));
+    console.log('Updated matches.json');
+    
+    // 更新 home.json 中的 series 数据
+    // 重新聚合新比赛的系列赛
+    const tournamentInfo = {
+      19269: 'dreamleague-s28',
+      18988: 'dreamleague-s27', 
+      19130: 'esl-challenger-china',
+      19099: 'blast-slam-vi'
+    };
+    
+    // 按 league_id 分组新比赛
+    const matchesByLeague = {};
+    for (const m of newMatches) {
+      if (m.league_id && tournamentInfo[m.league_id]) {
+        const tid = tournamentInfo[m.league_id];
+        if (!matchesByLeague[tid]) matchesByLeague[tid] = [];
+        matchesByLeague[tid].push(m);
+      }
+    }
+    
+    // 对每个赛事，添加新比赛到现有系列赛中
+    for (const [tid, newTournamentMatches] of Object.entries(matchesByLeague)) {
+      if (!homeData.seriesByTournament) {
+        homeData.seriesByTournament = {};
+      }
+      if (!homeData.seriesByTournament[tid]) {
+        homeData.seriesByTournament[tid] = [];
+      }
+      
+      // 为每场新比赛创建一个简单的系列赛条目
+      for (const m of newTournamentMatches) {
+        const radiantWin = m.radiant_win ? 1 : 0;
+        const seriesEntry = {
+          series_id: `opendota_${m.match_id}`,
+          series_type: 'BO3',
+          radiant_team_name: m.radiant_team_name,
+          dire_team_name: m.dire_team_name,
+          games: [{
+            match_id: String(m.match_id),
+            radiant_team_name: m.radiant_team_name,
+            dire_team_name: m.dire_team_name,
+            radiant_score: m.radiant_score,
+            dire_score: m.dire_score,
+            radiant_win: radiantWin,
+            start_time: m.start_time,
+            duration: m.duration
+          }],
+          radiant_wins: radiantWin,
+          dire_wins: 1 - radiantWin,
+          radiant_score: radiantWin,
+          dire_score: 1 - radiantWin
+        };
+        
+        // 添加到系列赛列表开头
+        homeData.seriesByTournament[tid].unshift(seriesEntry);
+      }
+      
+      console.log(`  Added ${newTournamentMatches.length} matches to ${tid}`);
+    }
+    
+    // 保存更新后的 home.json
+    homeData.lastUpdated = new Date().toISOString();
+    fs.writeFileSync(homeDataPath, JSON.stringify(homeData, null, 2));
+    console.log('Updated home.json');
+  } else {
+    console.log('No new matches to sync');
+  }
+  
+  console.log('\nDone!');
 }
 
 main();

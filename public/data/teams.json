@@ -5,21 +5,21 @@
     "name_cn": "XG",
     "tag": "XG",
     "logo_url": null,
-    "region": "CN",
+    "region": "China",
     "is_cn_team": 1,
-    "created_at": 1771292070,
-    "updated_at": 1771292070
+    "created_at": 1770525841,
+    "updated_at": 1770525841
   },
   {
     "id": "yakult-brother",
-    "name": "Yakult Brothers",
+    "name": "Yakult Brother",
     "name_cn": "YB",
     "tag": "YB",
     "logo_url": null,
-    "region": "CN",
+    "region": "China",
     "is_cn_team": 1,
-    "created_at": 1771292070,
-    "updated_at": 1771292070
+    "created_at": 1770525853,
+    "updated_at": 1770525853
   },
   {
     "id": "vici-gaming",
@@ -27,9 +27,9 @@
     "name_cn": "VG",
     "tag": "VG",
     "logo_url": null,
-    "region": "CN",
+    "region": "China",
     "is_cn_team": 1,
-    "created_at": 1771292070,
-    "updated_at": 1771292070
+    "created_at": 1770525863,
+    "updated_at": 1770525863
   }
 ]
