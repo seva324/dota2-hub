@@ -176,14 +176,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10">
         <div className="flex items-center justify-between">
           {/* Radiant Team */}
-          <div className="flex items-center gap-3">
-            <div className="text-2xl font-bold text-green-400">{radiantTeamName}</div>
-            <div className="flex items-center gap-2 text-xl font-bold">
-              <span className="text-green-400">{match.radiant_score || 0}</span>
-              <span className="text-slate-500">:</span>
-              <span className="text-red-400">{match.dire_score || 0}</span>
-            </div>
-          </div>
+          <div className="text-xl font-bold text-green-400 truncate max-w-[120px]">{radiantTeamName}</div>
           
           {/* Match Info */}
           <div className="flex items-center gap-2 text-slate-400">
@@ -192,14 +185,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
           </div>
           
           {/* Dire Team */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xl font-bold">
-              <span className="text-green-400">{match.dire_score || 0}</span>
-              <span className="text-slate-500">:</span>
-              <span className="text-red-400">{match.radiant_score || 0}</span>
-            </div>
-            <div className="text-2xl font-bold text-red-400">{direTeamName}</div>
-          </div>
+          <div className="text-xl font-bold text-red-400 truncate max-w-[120px]">{direTeamName}</div>
         </div>
       </div>
 
@@ -267,15 +253,15 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
 
   return (
     <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10">
-      {/* Lane Header */}
+      {/* Lane Header - crown on advantage side */}
       <div className="flex items-center justify-center gap-2 mb-4">
-        {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400 animate-pulse" />}
-        {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400 animate-pulse" />}
-        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500" />}
+        {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400 animate-pulse flex-shrink-0" />}
+        {advantage === 'dire' && <span className="w-4 flex-shrink-0" />}
+        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500 flex-shrink-0" />}
         <span className="text-sm font-medium text-slate-300">{name}</span>
-        {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400 animate-pulse" />}
-        {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400 animate-pulse" />}
-        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500" />}
+        {advantage === 'radiant' && <span className="w-4 flex-shrink-0" />}
+        {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400 animate-pulse flex-shrink-0" />}
+        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500 flex-shrink-0" />}
       </div>
 
       {/* 3-Column Grid */}
