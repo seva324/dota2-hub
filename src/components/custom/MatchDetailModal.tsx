@@ -201,7 +201,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
@@ -249,7 +249,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
             {/* Tabs */}
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-3">
+              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-5">
                 <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">选手数据</span>
