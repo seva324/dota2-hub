@@ -90,6 +90,7 @@ function getTeamAbbrev(name: string | null | undefined): string {
     'mouz': 'MOUZ',
     'paiN gaming': 'paiN',
     'passion ua': 'Passion',
+    'aurora gaming': 'Aurora',
   };
   
   return abbrevs[lower] || name;
