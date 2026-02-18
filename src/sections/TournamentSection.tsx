@@ -193,7 +193,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                             <div className="flex items-center gap-2">
                               {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                               <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">{series.series_type}</Badge>
-                              <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">{series.stage}</Badge>
+                              <Badge variant="outline" className="hidden sm:inline-block border-slate-700 text-slate-400 text-xs">{series.stage}</Badge>
                               {hasCN && <Badge className="bg-red-600/20 text-red-400 text-xs">CN</Badge>}
                             </div>
                             <div className="flex items-center gap-2 text-sm">
