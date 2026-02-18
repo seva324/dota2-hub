@@ -49,6 +49,17 @@ const teamLogoMap: Record<string, string> = {
   'team spirit': '/images/teams/spirit.png',
 };
 
+// 北京时间格式化 (UTC+8)
+function formatBeijingTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  const month = beijingTime.getMonth() + 1;
+  const day = beijingTime.getDate();
+  const hours = beijingTime.getHours().toString().padStart(2, '0');
+  const minutes = beijingTime.getMinutes().toString().padStart(2, '0');
+  return `${month}/${day} ${hours}:${minutes}`;
+}
+
 // 战队简称映射
 const teamAbbr: Record<string, string> = {
   'Xtreme Gaming': 'XG',
@@ -189,9 +200,14 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                 <Card key={match.id} className="border-slate-800 bg-slate-950/50 hover:border-blue-500/30 transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">
-                        {match.tournament_name_cn || match.tournament_name || '待定赛事'}
-                      </Badge>
+                      <div className="flex flex-col">
+                        <Badge variant="outline" className="border-slate-700 text-slate-400 text-xs">
+                          {match.tournament_name || 'TBD'}
+                        </Badge>
+                        <span className="text-xs text-amber-400 mt-1">
+                          {formatBeijingTime(match.start_time)} 北京时间
+                        </span>
+                      </div>
                       <span className="text-xs text-slate-500">{match.series_type}</span>
                     </div>
                     
