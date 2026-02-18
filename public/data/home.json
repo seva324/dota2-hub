@@ -4165,11 +4165,21 @@
             "radiant_win": 1,
             "start_time": 1771422120,
             "duration": 2440
+          },
+          {
+            "match_id": "8696122466",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 32,
+            "dire_score": 9,
+            "radiant_win": 1,
+            "start_time": 1771426380,
+            "duration": 1590
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -4223,11 +4233,21 @@
             "radiant_win": 0,
             "start_time": 1771421219,
             "duration": 2748
+          },
+          {
+            "match_id": "8696116685",
+            "radiant_team_name": "Natus Vincere",
+            "dire_team_name": "Team Spirit",
+            "radiant_score": 11,
+            "dire_score": 26,
+            "radiant_win": 0,
+            "start_time": 1771425714,
+            "duration": 1944
           }
         ],
-        "radiant_wins": 0,
+        "radiant_wins": 1,
         "dire_wins": 1,
-        "radiant_score": 0,
+        "radiant_score": 1,
         "dire_score": 1
       },
       {
@@ -5361,5 +5381,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T15:23:33.192Z"
+  "lastUpdated": "2026-02-18T16:33:14.507Z"
 }
