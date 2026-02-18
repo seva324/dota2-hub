@@ -20,16 +20,33 @@ interface Match {
 
 // 战队Logo映射 - 优先使用本地图片
 const teamLogoMap: Record<string, string> = {
+  // XG
   'xg': '/images/teams/xg.png',
-  'xg-logo': '/images/teams/xg.png',
   'xtreme gaming': '/images/teams/xg.png',
+  // YB
   'yb': '/images/teams/yb.png',
-  'yb-logo': '/images/teams/yb.png',
   'yakult brothers': '/images/teams/yb.png',
+  // VG
   'vg': '/images/teams/vg.png',
   'vici gaming': '/images/teams/vg.png',
+  // LGD
   'lgd': '/images/teams/lgd.png',
   'psg.lgd': '/images/teams/lgd.png',
+  // 其他战队
+  'aurora gaming': '/images/teams/aurora.png',
+  'natus vincere': '/images/teams/navi.png',
+  'team liquid': '/images/teams/liquid.png',
+  'team falcons': '/images/teams/falcons.png',
+  'og': '/images/teams/og.png',
+  'tundra esports': '/images/teams/tundra.png',
+  'gamerlegion': '/images/teams/gamerlegion.png',
+  'parivision': '/images/teams/parivision.png',
+  'betboom team': '/images/teams/betboom.png',
+  'pain gaming': '/images/teams/pain.png',
+  'team yandex': '/images/teams/yandex.png',
+  'execration': '/images/teams/execration.png',
+  'mouz': '/images/teams/mouz.png',
+  'team spirit': '/images/teams/spirit.png',
 };
 
 // 战队简称映射
@@ -53,17 +70,17 @@ const teamAbbr: Record<string, string> = {
   'Team Yandex': 'Yandex',
 };
 
-function getTeamLogo(teamName: string, logoUrl: string): string {
-  if (!teamName) return '';
+function getTeamLogo(teamName: string | undefined, logoUrl: string | undefined): string {
+  if (!teamName) return logoUrl || '';
   
-  // 优先使用本地Logo
+  // 优先使用本地Logo映射
   const key = teamName.toLowerCase();
   if (teamLogoMap[key]) {
     return teamLogoMap[key];
   }
   
   // 其次使用传入的URL
-  if (logoUrl) {
+  if (logoUrl && logoUrl.length > 0) {
     return logoUrl;
   }
   

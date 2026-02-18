@@ -28,6 +28,20 @@ const teamLogoMap: Record<string, string> = {
   'vici gaming': '/images/teams/vg.png',
   'lgd': '/images/teams/lgd.png',
   'psg.lgd': '/images/teams/lgd.png',
+  'aurora gaming': '/images/teams/aurora.png',
+  'natus vincere': '/images/teams/navi.png',
+  'team liquid': '/images/teams/liquid.png',
+  'team falcons': '/images/teams/falcons.png',
+  'og': '/images/teams/og.png',
+  'tundra esports': '/images/teams/tundra.png',
+  'gamerlegion': '/images/teams/gamerlegion.png',
+  'parivision': '/images/teams/parivision.png',
+  'betboom team': '/images/teams/betboom.png',
+  'pain gaming': '/images/teams/pain.png',
+  'team yandex': '/images/teams/yandex.png',
+  'execration': '/images/teams/execration.png',
+  'mouz': '/images/teams/mouz.png',
+  'team spirit': '/images/teams/spirit.png',
 };
 
 function getTeamLogo(teamName: string | undefined, logoUrl: string | undefined): string {
