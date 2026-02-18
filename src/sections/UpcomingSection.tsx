@@ -165,8 +165,8 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
               const direDisplay = isMobile ? getAbbr(match.dire_team_name || '') : (match.dire_team_name_cn || match.dire_team_name);
               
               // 获取Logo
-              const radiantLogo = getTeamLogo(match.radiant_team_name || "", match.radiant_team_logo);
-              const direLogo = getTeamLogo(match.dire_team_name || "", match.dire_team_logo);
+              const radiantLogo = getTeamLogo(match.radiant_team_name || "", match.radiant_team_logo || "");
+              const direLogo = getTeamLogo(match.dire_team_name || "", match.dire_team_logo || "");
               
               return (
                 <Card key={match.id} className="border-slate-800 bg-slate-950/50 hover:border-blue-500/30 transition-all">
