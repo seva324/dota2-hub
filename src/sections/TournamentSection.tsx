@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
+import { MapPin, Trophy, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -84,6 +84,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournaments[0] || null);
   
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
+  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
 
   const toggleSeries = (seriesId: string) => {
     const newExpanded = new Set(expandedSeries);
@@ -222,7 +223,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               {series.games.map((game, idx) => {
                                 const winnerName = game.radiant_win ? series.radiant_team_name : series.dire_team_name;
                                 return (
-                                  <div key={game.match_id} className="bg-slate-800/50 rounded p-2 text-center">
+                                  <div key={game.match_id} onClick={() => setSelectedMatchId(Number(game.match_id))} className="bg-slate-800/50 rounded p-2 text-center cursor-pointer hover:bg-slate-700">
                                     <div className="text-[10px] text-slate-500">Game {idx + 1}</div>
                                     <div className="flex items-center justify-center gap-1 mt-1">
                                       <span className={game.radiant_win ? 'text-green-400 font-bold' : 'text-slate-400'}>{game.radiant_score}</span>
@@ -248,8 +249,22 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         )}
       </div>
 
+      {/* Match Detail Modal */}
+      {selectedMatchId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedMatchId(null)}>
+          <div className="bg-slate-900 rounded-lg max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <h3 className="text-lg font-bold text-white">Match Details</h3>
+              <button onClick={() => setSelectedMatchId(null)} className="p-1 hover:bg-slate-800 rounded">
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-4 text-slate-400 text-center">
+              Match ID: {selectedMatchId}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
-
-// Simple Match Detail Modal
