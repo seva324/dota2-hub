@@ -18,6 +18,30 @@ interface Match {
   tournament_name_cn?: string;
 }
 
+// 战队Logo映射
+const teamLogoMap: Record<string, string> = {
+  'xg': '/images/xg-logo.png',
+  'xtreme gaming': '/images/xg-logo.png',
+  'yb': '/images/yb-logo.png',
+  'yakult brothers': '/images/yb-logo.png',
+  'vg': '/images/vg-logo.png',
+  'vici gaming': '/images/vg-logo.png',
+  'lgd': '/images/lgd-logo.png',
+  'psg.lgd': '/images/lgd-logo.png',
+};
+
+function getTeamLogo(teamName: string | undefined, logoUrl: string | undefined): string {
+  if (!teamName) return '';
+  const key = teamName.toLowerCase();
+  if (teamLogoMap[key]) {
+    return teamLogoMap[key];
+  }
+  if (logoUrl) {
+    return logoUrl;
+  }
+  return '';
+}
+
 function Countdown({ targetTime }: { targetTime: number }) {
   const [timeLeft, setTimeLeft] = useState('');
 
@@ -38,7 +62,7 @@ function Countdown({ targetTime }: { targetTime: number }) {
       if (days > 0) {
         setTimeLeft(`${days}天 ${hours}小时`);
       } else if (hours > 0) {
-        setTimeLeft(`${hours}小时 ${minutes}分钟`);
+        setTimeLeft(`${hours}小时${minutes}分钟`);
       } else {
         setTimeLeft(`${minutes}分钟`);
       }
@@ -60,7 +84,8 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
     }
   };
 
-  const nextMatch = upcoming[0];
+  // 显示未来4场比赛
+  const nextMatches = upcoming.filter(m => m.start_time * 1000 > Date.now()).slice(0, 4);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -155,56 +180,58 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
           ))}
         </div>
 
-        {/* Next Match Countdown */}
-        {nextMatch && nextMatch.radiant_team_name && nextMatch.dire_team_name && (
-          <div className="bg-slate-900/80 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-6 max-w-xl mx-auto border border-red-600/30 mx-2 sm:mx-0">
-            <p className="text-xs sm:text-sm text-red-400 mb-2 sm:mb-3 flex items-center justify-center gap-1 sm:gap-2">
-              <Clock className="w-3 h-4" />
-              下场比赛倒计时
+        {/* Next Matches (4场) */}
+        {nextMatches.length > 0 && (
+          <div className="space-y-3 max-w-2xl mx-auto">
+            <p className="text-xs sm:text-sm text-red-400 mb-2 flex items-center justify-center gap-2">
+              <Clock className="w-4 h-4" />
+              即将到来的比赛
             </p>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-left flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                {nextMatch.radiant_team_logo && (
-                  <img 
-                    src={nextMatch.radiant_team_logo} 
-                    alt={nextMatch.radiant_team_name}
-                    className="w-8 h-8 sm:w-12 sm:h-12 object-contain flex-shrink-0"
-                    style={{
-                      filter: nextMatch.radiant_team_name?.toLowerCase().includes('tundra') || nextMatch.radiant_team_name?.toLowerCase().includes('spirit') 
-                        ? 'invert(1) brightness(2)' : 'none'
-                    }}
-                  />
-                )}
-                <div className="min-w-0">
-                  <p className="font-bold text-white text-sm sm:text-lg truncate">{nextMatch.radiant_team_name}</p>
-                  <p className="text-xs text-slate-400 hidden sm:block">{nextMatch.radiant_team_name_cn}</p>
+            {nextMatches.map((match, idx) => {
+              const radiantLogo = getTeamLogo(match.radiant_team_name, match.radiant_team_logo);
+              const direLogo = getTeamLogo(match.dire_team_name, match.dire_team_logo);
+              
+              return (
+                <div key={match.id} className="bg-slate-900/80 backdrop-blur-md rounded-lg sm:rounded-xl p-2 sm:p-4 border border-red-600/20 mx-2 sm:mx-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {radiantLogo ? (
+                        <img 
+                          src={radiantLogo} 
+                          alt={match.radiant_team_name}
+                          className="w-6 h-6 sm:w-10 sm:h-10 object-contain flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 sm:w-10 sm:h-10 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs text-slate-400">{match.radiant_team_name_cn?.[0] || '?'}</span>
+                        </div>
+                      )}
+                      <span className="font-bold text-white text-xs sm:text-sm truncate">{match.radiant_team_name_cn || match.radiant_team_name}</span>
+                    </div>
+                    <div className="text-center px-2 flex-shrink-0">
+                      <p className="text-xs sm:text-base font-bold text-red-500">VS</p>
+                      <p className="text-[10px] sm:text-xs text-amber-400">
+                        <Countdown targetTime={match.start_time} />
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                      <span className="font-bold text-white text-xs sm:text-sm truncate">{match.dire_team_name_cn || match.dire_team_name}</span>
+                      {direLogo ? (
+                        <img 
+                          src={direLogo} 
+                          alt={match.dire_team_name}
+                          className="w-6 h-6 sm:w-10 sm:h-10 object-contain flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 sm:w-10 sm:h-10 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs text-slate-400">{match.dire_team_name_cn?.[0] || '?'}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="text-center px-2 sm:px-6 flex-shrink-0">
-                <p className="text-base sm:text-2xl font-bold text-red-500">VS</p>
-                <p className="text-xs sm:text-sm text-amber-400 font-medium mt-1">
-                  <Countdown targetTime={nextMatch.start_time} />
-                </p>
-              </div>
-              <div className="text-right flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <div className="min-w-0 text-right">
-                  <p className="font-bold text-white text-sm sm:text-lg truncate">{nextMatch.dire_team_name}</p>
-                  <p className="text-xs text-slate-400 hidden sm:block">{nextMatch.dire_team_name_cn}</p>
-                </div>
-                {nextMatch.dire_team_logo && (
-                  <img 
-                    src={nextMatch.dire_team_logo} 
-                    alt={nextMatch.dire_team_name}
-                    className="w-8 h-8 sm:w-12 sm:h-12 object-contain flex-shrink-0"
-                    style={{
-                      filter: nextMatch.dire_team_name?.toLowerCase().includes('tundra') || nextMatch.dire_team_name?.toLowerCase().includes('spirit') 
-                        ? 'invert(1) brightness(2)' : 'none'
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-            <p className="text-xs text-slate-500 mt-2 sm:mt-3 truncate px-2">{nextMatch.tournament_name_cn || nextMatch.tournament_name || '待定赛事'} · {nextMatch.series_type}</p>
+              );
+            })}
           </div>
         )}
 
