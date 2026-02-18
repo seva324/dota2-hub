@@ -787,6 +787,14 @@
       "电狗"
     ]
   },
+  "114": {
+    "name_en": "Monkey King",
+    "name_cn": "齐天大圣",
+    "nicknames": [
+      "猴子",
+      "大圣"
+    ]
+  },
   "119": {
     "name_en": "Dark Willow",
     "name_cn": "邪影芳灵",
@@ -871,7 +879,12 @@
       "奶绿"
     ]
   },
-  "139": {
+  "145": {
+    "name_en": "Kez",
+    "name_cn": "Kez",
+    "nicknames": []
+  },
+  "155": {
     "name_en": "Largo",
     "name_cn": "朗戈",
     "nicknames": [
