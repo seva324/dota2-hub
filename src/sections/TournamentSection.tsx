@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MapPin, Trophy, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { MapPin, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
+import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -249,22 +250,13 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         )}
       </div>
 
-      {/* Match Detail Modal */}
-      {selectedMatchId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedMatchId(null)}>
-          <div className="bg-slate-900 rounded-lg max-w-lg w-full" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white">Match Details</h3>
-              <button onClick={() => setSelectedMatchId(null)} className="p-1 hover:bg-slate-800 rounded">
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-            </div>
-            <div className="p-4 text-slate-400 text-center">
-              Match ID: {selectedMatchId}
-            </div>
-          </div>
-        </div>
-      )}
+      <MatchDetailModal 
+        matchId={selectedMatchId} 
+        open={selectedMatchId !== null} 
+        onOpenChange={(open) => {
+          if (!open) setSelectedMatchId(null);
+        }} 
+      />
     </section>
   );
 }
