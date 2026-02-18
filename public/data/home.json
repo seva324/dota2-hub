@@ -4149,6 +4149,54 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8696218051",
+        "series_type": "BO3",
+        "radiant_team_name": "PARIVISION",
+        "dire_team_name": "OG",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "games": [
+          {
+            "match_id": "8696218051",
+            "radiant_team_name": "PARIVISION",
+            "dire_team_name": "OG",
+            "radiant_score": 28,
+            "dire_score": 17,
+            "radiant_win": 1,
+            "start_time": 1771430635,
+            "duration": 2524
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8696228605",
+        "series_type": "BO3",
+        "radiant_team_name": "Aurora Gaming",
+        "dire_team_name": "Team Liquid",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "games": [
+          {
+            "match_id": "8696228605",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 33,
+            "dire_score": 12,
+            "radiant_win": 1,
+            "start_time": 1771430988,
+            "duration": 2146
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8696216369",
         "series_type": "BO3",
         "radiant_team_name": "paiN Gaming",
@@ -5405,5 +5453,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T17:36:46.582Z"
+  "lastUpdated": "2026-02-18T18:10:09.809Z"
 }
