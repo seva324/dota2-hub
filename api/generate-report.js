@@ -17,38 +17,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'matchId required' });
     }
 
-    const matchRes = await fetch(`https://api.opendota.com/api/matches/${matchId}`);
+    // 并行请求比赛数据和英雄中文名称
+    const [matchRes, heroesRes] = await Promise.all([
+      fetch(`https://api.opendota.com/api/matches/${matchId}`),
+      fetch('https://dota2-hub.vercel.app/data/heroes_cn.json')
+    ]);
+
     const match = await matchRes.json();
+    const heroesCnData = await heroesRes.json();
 
     if (!match.players) {
       return res.status(400).json({ error: 'Match not found' });
     }
 
-    // 英雄中文名称映射（从 heroes_cn.json）
-    const heroNames = {
-      1: "敌法师", 2: "斧王", 3: "祸乱之源", 4: "血魔", 5: "水晶室女",
-      6: "卓尔游侠", 7: "撼地者", 8: "主宰", 9: "米拉娜", 10: "变体精灵",
-      11: "影魔", 12: "幻影长矛手", 13: "帕克", 14: "帕吉", 15: "谜团",
-      16: "石鳞剑士", 17: "树精卫士", 18: "炼金术士", 19: "祈求者", 20: "远古遗迹",
-      21: "矮人直升机", 22: "暗影萨满", 23: "沙王", 24: "风暴之灵", 25: "钢背兽",
-      26: "剃刀", 27: "暗影恶魔", 28: "斯拉克", 29: "剧毒", 30: "食尸鬼",
-      31: "钢爪", 32: "干扰者", 33: "裂魂人", 34: "司夜刺客", 35: "鱼人守卫",
-      36: "暗影牧师", 37: "拉席克", 38: "补丁", 39: "先知", 40: "复仇之魂",
-      41: "编织者", 42: "矮人民兵", 43: "赏金猎人", 44: "河童", 45: "巫医",
-      46: "殁境神蚀者", 47: "暗灵", 48: "巨魔战将", 49: "龙骑士", 50: "发条技师",
-      51: "协锤石", 52: "陈", 53: "半人马战行者", 54: "谜团", 55: "嗜血狂魔",
-      56: "科勒", 57: "蝙蝠骑士", 58: "露娜", 59: "暗夜猎手", 60: "巫师",
-      61: "死灵飞龙", 62: "兽王", 63: "凤凰", 64: "卡尔", 65: "墨客",
-      66: "天光", 67: "弧光", 68: "季风", 69: "脉冲新星", 70: "米波",
-      71: "卓尔游侠", 72: "矮人直升机", 73: "祈求者", 74: "异星"
+    // 辅助函数：获取英雄中文名
+    const getHeroCnName = (heroId) => {
+      const hero = heroesCnData[heroId];
+      return hero?.name_cn || `英雄${heroId}`;
     };
 
-    // 使用 dota-ai-report.md + dota-mechanics.md + hero mapping 的 prompt
+    // 使用 dota-ai-report.md + dota-mechanics.md + heroes_cn.json 的 prompt
     const prompt = `
 # Dota 2 AI 战报生成任务
 
-## 一、英雄中文名称映射（必须使用）
-${Object.entries(heroNames).map(([id, name]) => `${id} = ${name}`).join('\n')}
+## 一、英雄中文名称映射（必须使用，来自 heroes_cn.json）
+${Object.entries(heroesCnData).slice(0, 150).map(([id, h]) => `${id} = ${h.name_cn}`).join('\n')}
 
 ## 二、基础数据映射
 
@@ -81,9 +74,9 @@ ${Object.entries(heroNames).map(([id, name]) => `${id} = ${name}`).join('\n')}
 
 ### 击杀奖励
 - First Blood：135金币
-- 连杀奖励：Spree(3)→60, Dominating(4)→100, Mega Kill(5)→150, Unstoppable(6)→210
+- 连杀奖励：Spree(3)→60, Dominating(4)→100, Mega Kill(5)→150
 
-## 三、比赛数据
+## 三、比赛数据（英雄已转换为中文名）
 ${JSON.stringify(match, null, 2).slice(0, 8000)}
 
 ## 四、战报结构
@@ -94,11 +87,11 @@ ${JSON.stringify(match, null, 2).slice(0, 8000)}
 
 ### 2. 对线篇
 - 按上路(lane=1)、中路(lane=2)、下路(lane=3)分析
-- 指出具体的压制点（如：劣势路 75% 线优反压制）
+- 指出具体的压制点
 
 ### 3. 节奏篇
 - 关键装备分析（BKB、跳刀、分身等）
-- 装备后带来的节奏变化（Powerspike）
+- 装备后带来的节奏变化
 
 ### 4. 高潮篇
 - 关键团战还原
@@ -125,7 +118,7 @@ ${JSON.stringify(match, null, 2).slice(0, 8000)}
 - ✅ "节奏发动机"
 - ✅ "提款机"
 
-请生成一份专业、富有激情的 Dota 2 战报！必须使用上述英雄中文名称！
+请生成一份专业、富有激情的 Dota 2 战报！必须使用 heroes_cn.json 中的英雄中文名称！
 `;
 
     const aiRes = await fetch('https://api.minimax.io/anthropic/v1/messages', {
