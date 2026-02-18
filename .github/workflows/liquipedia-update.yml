@@ -1,0 +1,33 @@
+name: Daily Match Update
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 8 AM UTC
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Fetch Liquipedia matches
+        run: node scripts/fetch-liquipedia.js
+        env:
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+          
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/data/home.json
+          git diff --quiet --cached || git commit -m "chore: update upcoming matches from Liquipedia"
+          git push

@@ -98,7 +98,7 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
   const now = Math.floor(Date.now() / 1000);
   const tomorrow = now + 24 * 3600;
   
-  // 未来24小时所有比赛 - 不过滤
+  // 未来24小时所有比赛
   const upcomingMatches = upcoming
     .filter(m => m.start_time >= now && m.start_time <= tomorrow)
     .sort((a, b) => a.start_time - b.start_time);
@@ -115,8 +115,8 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
           <span className="text-xs text-slate-400">({upcomingMatches.length})</span>
         </div>
 
-        {/* Compact Grid - 4 per row */}
-        <div className="grid grid-cols-4 gap-1.5">
+        {/* Compact Grid - 4 per row, teams on separate lines */}
+        <div className="grid grid-cols-4 gap-1">
           {upcomingMatches.map((match) => {
             const radiantLogo = getTeamLogo(match.radiant_team_name);
             const direLogo = getTeamLogo(match.dire_team_name);
@@ -132,34 +132,33 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                     {getTournamentShort(match.tournament_name)}
                   </div>
                   
-                  {/* Teams */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      {radiantLogo ? (
-                        <img src={radiantLogo} alt="" className="w-4 h-4 object-contain" />
-                      ) : (
-                        <div className="w-4 h-4 bg-slate-700 rounded-full" />
-                      )}
-                      <span className="text-[10px] font-medium text-white">
-                        {getAbbr(match.radiant_team_name)}
-                      </span>
-                    </div>
-                    <span className="text-[8px] text-slate-600">vs</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-medium text-white">
-                        {getAbbr(match.dire_team_name)}
-                      </span>
-                      {direLogo ? (
-                        <img src={direLogo} alt="" className="w-4 h-4 object-contain" />
-                      ) : (
-                        <div className="w-4 h-4 bg-slate-700 rounded-full" />
-                      )}
-                    </div>
+                  {/* Team 1 */}
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {radiantLogo ? (
+                      <img src={radiantLogo} alt="" className="w-4 h-4 object-contain" />
+                    ) : (
+                      <div className="w-4 h-4 bg-slate-700 rounded-full" />
+                    )}
+                    <span className="text-[10px] font-medium text-white truncate">
+                      {getAbbr(match.radiant_team_name)}
+                    </span>
+                  </div>
+                  
+                  {/* Team 2 */}
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {direLogo ? (
+                      <img src={direLogo} alt="" className="w-4 h-4 object-contain" />
+                    ) : (
+                      <div className="w-4 h-4 bg-slate-700 rounded-full" />
+                    )}
+                    <span className="text-[10px] font-medium text-white truncate">
+                      {getAbbr(match.dire_team_name)}
+                    </span>
                   </div>
                   
                   {/* Time */}
-                  <div className="text-[9px] text-amber-400 font-medium mt-0.5 text-center">
-                    {formatCSTTime(match.start_time)}
+                  <div className="text-[9px] text-amber-400 font-medium">
+                    {formatCSTTime(match.start_time)} {match.series_type}
                   </div>
                 </CardContent>
               </Card>
