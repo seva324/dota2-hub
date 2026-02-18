@@ -91,8 +91,8 @@ function getAbbr(teamName: string | null | undefined): string {
 // CST = UTC+8 直接使用 Liquipedia 时间
 function formatCSTTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
-  const hours = date.getUTCHours().toString().padStart(2, '0');
-  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
 }
 
