@@ -4149,6 +4149,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8696216369",
+        "series_type": "BO3",
+        "radiant_team_name": "paiN Gaming",
+        "dire_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "games": [
+          {
+            "match_id": "8696216369",
+            "radiant_team_name": "paiN Gaming",
+            "dire_team_name": "BetBoom Team",
+            "radiant_score": 8,
+            "dire_score": 39,
+            "radiant_win": 0,
+            "start_time": 1771430282,
+            "duration": 2053
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8696032319",
         "series_type": "BO3",
         "radiant_team_name": "MOUZ",
@@ -5381,5 +5405,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T16:48:22.982Z"
+  "lastUpdated": "2026-02-18T17:09:22.327Z"
 }
