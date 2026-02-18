@@ -4165,11 +4165,21 @@
             "radiant_win": 1,
             "start_time": 1771440475,
             "duration": 3413
+          },
+          {
+            "match_id": "8696528491",
+            "radiant_team_name": "Team Spirit",
+            "dire_team_name": "Tundra Esports",
+            "radiant_score": 12,
+            "dire_score": 29,
+            "radiant_win": 0,
+            "start_time": 1771445759,
+            "duration": 2477
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 0,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 0
       },
       {
@@ -5643,5 +5653,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T21:03:27.994Z"
+  "lastUpdated": "2026-02-18T21:42:30.112Z"
 }
