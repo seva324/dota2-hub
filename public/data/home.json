@@ -4189,6 +4189,54 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8695864051",
+        "series_type": "BO3",
+        "radiant_team_name": "PARIVISION",
+        "dire_team_name": "Team Liquid",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "games": [
+          {
+            "match_id": "8695864051",
+            "radiant_team_name": "PARIVISION",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 32,
+            "dire_score": 19,
+            "radiant_win": 1,
+            "start_time": 1771412100,
+            "duration": 2613
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8695879068",
+        "series_type": "BO3",
+        "radiant_team_name": "Aurora Gaming",
+        "dire_team_name": "Yakult Brothers",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "games": [
+          {
+            "match_id": "8695879068",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 42,
+            "dire_score": 28,
+            "radiant_win": 1,
+            "start_time": 1771412504,
+            "duration": 2835
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8695867426",
         "series_type": "BO3",
         "radiant_team_name": "BetBoom Team",
@@ -5183,5 +5231,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T11:54:56.307Z"
+  "lastUpdated": "2026-02-18T12:31:54.362Z"
 }
