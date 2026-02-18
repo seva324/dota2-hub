@@ -92,7 +92,7 @@ ${JSON.stringify(match, null, 2).slice(0, 8000)}
         'Authorization': `Bearer ${process.env.MINIMAX_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'MiniMax-M2.5',
+        model: 'MiniMax-M2.5-highspeed',
         max_tokens: 3000,
         messages: [
           { role: 'user', content: [{ type: 'text', text: prompt }] }
