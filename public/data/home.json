@@ -4149,6 +4149,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8696203572",
+        "series_type": "BO3",
+        "radiant_team_name": "Yakult Brothers",
+        "dire_team_name": "Team Yandex",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
+        "games": [
+          {
+            "match_id": "8696203572",
+            "radiant_team_name": "Yakult Brothers",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 10,
+            "dire_score": 30,
+            "radiant_win": 0,
+            "start_time": 1771430100,
+            "duration": 1884
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8696218051",
         "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
@@ -5453,5 +5477,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T20:02:32.775Z"
+  "lastUpdated": "2026-02-18T20:26:20.430Z"
 }
