@@ -17,108 +17,37 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'matchId required' });
     }
 
-    // 并行请求比赛数据和英雄中文名称
-    const [matchRes, heroesRes] = await Promise.all([
-      fetch(`https://api.opendota.com/api/matches/${matchId}`),
-      fetch('https://dota2-hub.vercel.app/data/heroes_cn.json')
-    ]);
-
+    const matchRes = await fetch(`https://api.opendota.com/api/matches/${matchId}`);
     const match = await matchRes.json();
-    const heroesCnData = await heroesRes.json();
 
     if (!match.players) {
       return res.status(400).json({ error: 'Match not found' });
     }
 
-    // 辅助函数：获取英雄中文名
-    const getHeroCnName = (heroId) => {
-      const hero = heroesCnData[heroId];
-      return hero?.name_cn || `英雄${heroId}`;
-    };
-
-    // 使用 dota-ai-report.md + dota-mechanics.md + heroes_cn.json 的 prompt
+    // 简化的 prompt，只给必要信息
     const prompt = `
-# Dota 2 AI 战报生成任务
+你是Dota2职业解说。请根据以下比赛数据写一份专业战报。
 
-## 一、英雄中文名称映射（必须使用，来自 heroes_cn.json）
-${Object.entries(heroesCnData).slice(0, 150).map(([id, h]) => `${id} = ${h.name_cn}`).join('\n')}
+英雄中文名称（必须使用）：
+1=敌法师,2=斧王,3=祸乱之源,4=血魔,5=水晶室女,6=卓尔游侠,7=撼地者,8=主宰,9=米拉娜,10=变体精灵,
+11=影魔,12=幻影长矛手,13=帕克,14=帕吉,15=谜团,16=石鳞剑士,17=树精卫士,18=炼金术士,19=祈求者,20=远古遗迹,
+21=矮人直升机,22=暗影萨满,23=沙王,24=风暴之灵,25=钢背兽,26=剃刀,27=暗影恶魔,28=斯拉克,29=剧毒,30=食尸鬼,
+31=钢爪,32=干扰者,33=裂魂人,34=司夜刺客,35=鱼人守卫,36=暗影牧师,37=拉席克,38=先知,39=复仇之魂,40=编织者,
+41=赏金猎人,42=巫医,43=殁境神蚀者,44=暗灵,45=巨魔战将,46=龙骑士,47=发条技师,48=半人马战行者,49=嗜血狂魔,50=流浪剑客,
+51=全能骑士,52=陈,53=谜团,54=山岭巨人,55=精灵守卫,56=圣堂刺客,57=熊战士,58=暗夜猎手,59=受折磨灵魂,60=死亡先知,
+61=死灵飞龙,62=兽王,63=凤凰,64=卡尔,65=墨客,66=天光,67=弧光,68=米波,69=娜迦海妖,70=干扰者,
+71=秀逗魔导士,72=工程师,73=永恒之火,74=Invoker,75=陈
 
-## 二、基础数据映射
+阵营：radiant=天辉, dire=夜魇
+分路：lane 1=上路, 2=中路, 3=下路
+lane_role：1=优势路, 2=中路, 3=劣势路
 
-### 阵营映射
-- radiant = 天辉
-- dire = 夜魇
+禁止词汇：游戏开始了、最后他们赢了、打得很激烈
 
-### 分路映射（来自 dota-mechanics.md）
-- lane 1 = 上路（地图上方）
-- lane 2 = 中路
-- lane 3 = 下路（地图下方）
-- lane_role 1 = 优势路/一号位
-- lane_role 2 = 中路/二号位
-- lane_role 3 = 劣势路/三号位
-- lane_role 4 = 四号位
-- lane_role 5 = 五号位
+比赛数据：
+${JSON.stringify(match, null, 2).slice(0, 6000)}
 
-### 关键术语（来自 dota-mechanics.md）
-- LH (Last Hit) = 正补
-- Deny = 反补
-- GPM = 每分钟金币
-- XPM = 每分钟经验
-- KDA = 击杀/死亡/助攻
-- Powerspike = 强势期
-- Timing = 关键时间点
-
-### 兵线机制
-- 每30秒生成一波兵
-- 超级兵：摧毁任意一路兵营后该路刷超级兵
-
-### 击杀奖励
-- First Blood：135金币
-- 连杀奖励：Spree(3)→60, Dominating(4)→100, Mega Kill(5)→150
-
-## 三、比赛数据（英雄已转换为中文名）
-${JSON.stringify(match, null, 2).slice(0, 8000)}
-
-## 四、战报结构
-
-### 1. 开篇
-- 总结比赛基调（翻盘局 / 碾压局 / 拉锯局 / 膀胱局）
-- 简述胜负结果
-
-### 2. 对线篇
-- 按上路(lane=1)、中路(lane=2)、下路(lane=3)分析
-- 指出具体的压制点
-
-### 3. 节奏篇
-- 关键装备分析（BKB、跳刀、分身等）
-- 装备后带来的节奏变化
-
-### 4. 高潮篇
-- 关键团战还原
-- 买活博弈
-
-### 5. 复盘
-- 获胜关键
-- 失败原因（如果中国战队输）
-- 改进建议（如果中国战队输）
-
-## 五、风格指南
-
-### 禁止词汇
-- ❌ "游戏开始了"
-- ❌ "最后他们赢了"
-- ❌ "打得很激烈"
-
-### 推荐词汇
-- ✅ "战火燃起"
-- ✅ "一波定乾坤"
-- ✅ "逆风翻盘"
-- ✅ "无解肥"
-- ✅ "接管比赛"
-- ✅ "节奏发动机"
-- ✅ "提款机"
-
-请生成一份专业、富有激情的 Dota 2 战报！必须使用 heroes_cn.json 中的英雄中文名称！
+请生成战报，包含：开篇、对线篇、节奏篇、高潮篇、复盘。使用中文英雄名！
 `;
 
     const aiRes = await fetch('https://api.minimax.io/anthropic/v1/messages', {
