@@ -195,6 +195,11 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               {hasCN && <Badge className="bg-red-600/20 text-red-400 text-xs">CN</Badge>}
                             </div>
                             <div className="flex items-center gap-2 text-sm">
+                              {series.radiant_team_logo ? (
+                                <img src={series.radiant_team_logo} alt={series.radiant_team_name} className="w-8 h-8 object-contain bg-slate-800 rounded" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                              ) : (
+                                <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-xs">{getTeamAbbrev(series.radiant_team_name).substring(0,2)}</div>
+                              )}
                               <span className={series.radiant_score > series.dire_score ? 'text-green-400 font-bold' : 'text-white'}>
                                 {getTeamAbbrev(series.radiant_team_name)}
                               </span>
@@ -202,6 +207,11 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               <span className={series.dire_score > series.radiant_score ? 'text-green-400 font-bold' : 'text-white'}>
                                 {getTeamAbbrev(series.dire_team_name)}
                               </span>
+                              {series.dire_team_logo ? (
+                                <img src={series.dire_team_logo} alt={series.dire_team_name} className="w-8 h-8 object-contain bg-slate-800 rounded" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                              ) : (
+                                <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-xs">{getTeamAbbrev(series.dire_team_name).substring(0,2)}</div>
+                              )}
                             </div>
                           </div>
                         </div>
