@@ -1,7 +1,9 @@
-import { ArrowDown, Calendar, Trophy, TrendingUp, Star } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowDown, Calendar, Trophy, TrendingUp, Star, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 
 interface Match {
   id: number;
@@ -86,13 +88,29 @@ function getAbbr(teamName: string | null | undefined): string {
   return teamAbbr[teamName] || teamName;
 }
 
-// 北京时间
-function formatBeijingTime(timestamp: number): string {
+// CST = UTC+8 直接使用 Liquipedia 时间
+function formatCSTTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
-  const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
-  const hours = beijingTime.getHours().toString().padStart(2, '0');
-  const minutes = beijingTime.getMinutes().toString().padStart(2, '0');
+  const hours = date.getUTCHours().toString().padStart(2, '0');
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+// 格式化倒计时
+function formatCountdown(targetTime: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = targetTime - now;
+  
+  if (diff <= 0) return 'Live';
+  if (diff < 60) return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) {
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    return `${h}h ${m}m`;
+  }
+  const d = Math.floor(diff / 86400);
+  return `${d}d`;
 }
 
 // 赛事分组日期
@@ -103,11 +121,13 @@ function getMatchSection(match: Match): string {
   
   const date = new Date(match.start_time * 1000);
   const month = date.toLocaleString('en-US', { month: 'short' });
-  const day = date.getDate();
+  const day = date.getUTCDate();
   return `${month} ${day}`;
 }
 
 export function HeroSection({ upcoming }: { upcoming: Match[] }) {
+  const [showCountdown, setShowCountdown] = useState(true);
+
   const scrollToTournaments = () => {
     const element = document.querySelector('#tournaments');
     if (element) {
@@ -146,7 +166,7 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-20 text-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-16 text-center">
         {/* Badges */}
         <div className="flex flex-wrap justify-center gap-2 mb-4">
           <Badge 
@@ -218,11 +238,21 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
           </div>
         </div>
 
-        {/* Upcoming Matches - Like Liquipedia style */}
+        {/* Upcoming Matches - With Toggle */}
         {nextMatches.length > 0 && (
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-2 mb-3 justify-center">
+            {/* Header with Toggle */}
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <Clock className="w-4 h-4 text-red-400" />
               <span className="text-xs text-red-400 font-medium">Upcoming Matches</span>
+              <div className="flex items-center gap-1.5 ml-2">
+                <span className="text-[10px] text-slate-500">{showCountdown ? '倒计时' : '时间'}</span>
+                <Switch 
+                  checked={showCountdown} 
+                  onCheckedChange={setShowCountdown}
+                  className="data-[state=checked]:bg-blue-600 h-4 w-7"
+                />
+              </div>
             </div>
 
             {/* Grid: 4 cards per row */}
@@ -240,40 +270,40 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                     <CardContent className="p-0">
                       {/* Date section - left side */}
                       <div className="flex">
-                        <div className="w-10 bg-slate-800/80 flex flex-col items-center justify-center py-2 border-r border-slate-700">
-                          <span className="text-[10px] text-slate-400">
+                        <div className="w-12 bg-slate-800/80 flex flex-col items-center justify-center py-2.5 border-r border-slate-700">
+                          <span className="text-[10px] text-slate-400 font-medium">
                             {getMatchSection(match)}
                           </span>
-                          <span className="text-[10px] text-amber-400 font-bold">
-                            {formatBeijingTime(match.start_time)}
+                          <span className="text-xs font-bold text-amber-400 mt-0.5">
+                            {showCountdown ? formatCountdown(match.start_time) : formatCSTTime(match.start_time)}
                           </span>
                         </div>
                         
                         {/* Teams - top and bottom rows */}
                         <div className="flex-1">
                           {/* Top row - Chinese team */}
-                          <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-800/50">
-                            <div className="flex items-center gap-1">
+                          <div className="flex items-center justify-between px-2.5 py-2 border-b border-slate-800/50">
+                            <div className="flex items-center gap-1.5">
                               {topLogo ? (
-                                <img src={topLogo} alt="" className="w-4 h-4 object-contain" />
+                                <img src={topLogo} alt="" className="w-6 h-6 object-contain" />
                               ) : (
-                                <div className="w-4 h-4 bg-slate-700 rounded-full" />
+                                <div className="w-6 h-6 bg-slate-700 rounded-full" />
                               )}
-                              <span className={`text-xs font-medium ${layout.topIsCN ? 'text-red-400' : 'text-white'}`}>
+                              <span className={`text-sm font-bold ${layout.topIsCN ? 'text-red-400' : 'text-white'}`}>
                                 {getAbbr(layout.top)}
                               </span>
                             </div>
                           </div>
                           
                           {/* Bottom row - opponent */}
-                          <div className="flex items-center justify-between px-2 py-1.5">
-                            <div className="flex items-center gap-1">
+                          <div className="flex items-center justify-between px-2.5 py-2">
+                            <div className="flex items-center gap-1.5">
                               {bottomLogo ? (
-                                <img src={bottomLogo} alt="" className="w-4 h-4 object-contain" />
+                                <img src={bottomLogo} alt="" className="w-6 h-6 object-contain" />
                               ) : (
-                                <div className="w-4 h-4 bg-slate-700 rounded-full" />
+                                <div className="w-6 h-6 bg-slate-700 rounded-full" />
                               )}
-                              <span className="text-xs text-white">
+                              <span className="text-sm font-bold text-white">
                                 {getAbbr(layout.bottom)}
                               </span>
                             </div>
