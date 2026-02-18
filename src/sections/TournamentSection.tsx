@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Calendar, MapPin, DollarSign, Target, Star, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Trophy, Calendar, MapPin, DollarSign, Target, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
