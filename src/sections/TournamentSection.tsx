@@ -196,7 +196,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               {series.radiant_team_logo ? (
-                                <img src={series.radiant_team_logo} alt={series.radiant_team_name} className="w-8 h-8 object-contain bg-slate-800 rounded" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                <img src={series.radiant_team_logo} alt={series.radiant_team_name} className="w-5 h-5 sm:w-8 sm:h-8 object-contain bg-slate-800 rounded" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                               ) : (
                                 <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-xs">{getTeamAbbrev(series.radiant_team_name).substring(0,2)}</div>
                               )}
@@ -208,7 +208,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                 {getTeamAbbrev(series.dire_team_name)}
                               </span>
                               {series.dire_team_logo ? (
-                                <img src={series.dire_team_logo} alt={series.dire_team_name} className="w-8 h-8 object-contain bg-slate-800 rounded" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                <img src={series.dire_team_logo} alt={series.dire_team_name} className="w-5 h-5 sm:w-8 sm:h-8 object-contain bg-slate-800 rounded" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                               ) : (
                                 <div className="w-8 h-8 bg-slate-700 rounded flex items-center justify-center text-xs">{getTeamAbbrev(series.dire_team_name).substring(0,2)}</div>
                               )}
