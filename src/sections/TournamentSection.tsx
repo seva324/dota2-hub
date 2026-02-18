@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Calendar, MapPin, DollarSign, Target, Star, ChevronDown, ChevronRight } from 'lucide-react';
+import { Trophy, Calendar, MapPin, DollarSign, Target, Star, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
@@ -109,6 +109,7 @@ function formatDuration(seconds: number): string {
 
 export function TournamentSection({ tournaments, seriesByTournament }: TournamentSectionProps) {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournaments[0] || null);
+  const [isTournamentCollapsed, setIsTournamentCollapsed] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
 
@@ -225,11 +226,20 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                 <Badge className={statusMap[selectedTournament.status]?.color || statusMap.upcoming.color}>
                   {statusMap[selectedTournament.status]?.label || '即将开始'}
                 </Badge>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsTournamentCollapsed(!isTournamentCollapsed);
+                  }}
+                  className="ml-auto p-1 hover:bg-slate-800 rounded"
+                >
+                  {isTournamentCollapsed ? <ChevronLeft className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                </button>
               </div>
             </CardHeader>
 
             <CardContent className="p-3 sm:p-6">
-              {currentSeries.length > 0 ? (
+              {!isTournamentCollapsed && currentSeries.length > 0 ? (
                 <div className="space-y-3">
                   {currentSeries.map((series) => {
                     const teamAIsCN = isChineseTeam(series.radiant_team_name);
@@ -383,7 +393,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                     );
                   })}
                 </div>
-              ) : (
+              ) : isTournamentCollapsed ? null : (
                 <div className="text-center py-12 text-slate-500">
                   <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>比赛数据尚未公布</p>
