@@ -45,8 +45,14 @@ function aggregateSeries(matches) {
     // 赛事key
     const tournamentKey = match.tournament_id || match.tournament_name || 'unknown';
     
-    // series_type
-    const seriesType = match.series_type || 'BO3';
+    // series_type - OpenDota: 0=BO1, 1=BO3, 2=BO5, 3=BO2
+    const seriesTypeMap = { 0: 'BO1', 1: 'BO3', 2: 'BO5', 3: 'BO2' };
+    let seriesType = match.series_type;
+    if (typeof seriesType === 'number' && seriesTypeMap[seriesType]) {
+      seriesType = seriesTypeMap[seriesType];
+    } else {
+      seriesType = seriesType || 'BO3';
+    }
     
     // 时间窗口（按天分组，24小时内）
     const dayKey = Math.floor((match.start_time || 0) / 86400);

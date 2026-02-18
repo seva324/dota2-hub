@@ -256,7 +256,9 @@ async function main() {
     if (!homeData.seriesByTournament[tid]) homeData.seriesByTournament[tid] = [];
     
     const sortedGames = seriesData.games.sort((a, b) => a.start_time - b.start_time);
-    const seriesType = sortedGames.length >= 5 ? 'BO5' : 'BO3';
+    const seriesTypeMap = { 0: 'BO1', 1: 'BO3', 2: 'BO5', 3: 'BO2' };
+    const st = sortedGames[0]?.series_type;
+    const seriesType = typeof st === 'number' ? (seriesTypeMap[st] || 'BO3') : (sortedGames.length >= 5 ? 'BO5' : sortedGames.length === 2 ? 'BO2' : 'BO3');
     
     const existingSeries = findExistingSeries(tid, seriesData.radiant_team_name, seriesData.dire_team_name);
     
