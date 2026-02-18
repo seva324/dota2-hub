@@ -187,7 +187,7 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
               <Clock className="w-4 h-4" />
               即将到来的比赛
             </p>
-            {nextMatches.map((match, idx) => {
+            {nextMatches.map((match) => {
               const radiantLogo = getTeamLogo(match.radiant_team_name, match.radiant_team_logo);
               const direLogo = getTeamLogo(match.dire_team_name, match.dire_team_logo);
               
