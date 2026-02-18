@@ -53,7 +53,7 @@ const teamAbbr: Record<string, string> = {
   'Team Yandex': 'Yandex',
 };
 
-function getTeamLogo(teamName: string | undefined, logoUrl: string): string {
+function getTeamLogo(teamName: string, logoUrl: string): string {
   if (!teamName) return '';
   
   // 优先使用本地Logo
@@ -161,8 +161,8 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
               const direIsCN = isChineseTeam(match.dire_team_name);
               
               // 移动端用缩写，PC用全名
-              const radiantDisplay = isMobile ? getAbbr(match.radiant_team_name) : (match.radiant_team_name_cn || match.radiant_team_name);
-              const direDisplay = isMobile ? getAbbr(match.dire_team_name) : (match.dire_team_name_cn || match.dire_team_name);
+              const radiantDisplay = isMobile ? getAbbr(match.radiant_team_name || '') : (match.radiant_team_name_cn || match.radiant_team_name);
+              const direDisplay = isMobile ? getAbbr(match.dire_team_name || '') : (match.dire_team_name_cn || match.dire_team_name);
               
               // 获取Logo
               const radiantLogo = getTeamLogo(match.radiant_team_name, match.radiant_team_logo);
