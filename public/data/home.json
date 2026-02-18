@@ -4149,6 +4149,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8696007524",
+        "series_type": "BO3",
+        "radiant_team_name": "Execration",
+        "dire_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "games": [
+          {
+            "match_id": "8696007524",
+            "radiant_team_name": "Execration",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 16,
+            "dire_score": 32,
+            "radiant_win": 0,
+            "start_time": 1771421221,
+            "duration": 1628
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8695945509",
         "series_type": "BO3",
         "radiant_team_name": "OG",
@@ -5245,5 +5269,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-18T13:49:03.759Z"
+  "lastUpdated": "2026-02-18T14:10:01.886Z"
 }
