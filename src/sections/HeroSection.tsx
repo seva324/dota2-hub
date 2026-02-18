@@ -1,4 +1,3 @@
-
 import { ArrowDown, Calendar, Trophy, TrendingUp, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +66,15 @@ const teamAbbr: Record<string, string> = {
   'Team Yandex': 'Yandex',
 };
 
+// 判断是否为中国战队
+const cnTeams = ['xg', 'xtreme', 'yb', 'yakult', 'tearlaments', 'vg', 'vici', 'game master', 'tidebound', 'refuser', 'thriving', 'azure'];
+
+function isChineseTeam(teamName: string | undefined): boolean {
+  if (!teamName) return false;
+  const name = teamName.toLowerCase();
+  return cnTeams.some(cn => name.includes(cn));
+}
+
 function getTeamLogo(teamName: string | undefined): string {
   if (!teamName) return '';
   const key = teamName.toLowerCase();
@@ -78,7 +86,7 @@ function getAbbr(teamName: string | null | undefined): string {
   return teamAbbr[teamName] || teamName;
 }
 
-// 北京时间格式化
+// 北京时间
 function formatBeijingTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
   const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
@@ -112,6 +120,20 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
     .filter(m => m.start_time * 1000 > Date.now())
     .sort((a, b) => a.start_time - b.start_time)
     .slice(0, 8);
+
+  // 判断哪个战队是中国战队，放在上面
+  const getMatchLayout = (match: Match) => {
+    const radiantIsCN = isChineseTeam(match.radiant_team_name);
+    const direIsCN = isChineseTeam(match.dire_team_name);
+    
+    if (radiantIsCN && !direIsCN) {
+      return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: true };
+    } else if (direIsCN && !radiantIsCN) {
+      return { top: match.dire_team_name, bottom: match.radiant_team_name, topIsCN: true };
+    } else {
+      return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: radiantIsCN };
+    }
+  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -196,7 +218,7 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
           </div>
         </div>
 
-        {/* Upcoming Matches - 4 per row, compact cards */}
+        {/* Upcoming Matches - Like Liquipedia style */}
         {nextMatches.length > 0 && (
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-2 mb-3 justify-center">
@@ -206,74 +228,57 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
             {/* Grid: 4 cards per row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {nextMatches.map((match) => {
-                const radiantLogo = getTeamLogo(match.radiant_team_name);
-                const direLogo = getTeamLogo(match.dire_team_name);
+                const layout = getMatchLayout(match);
+                const topLogo = getTeamLogo(layout.top);
+                const bottomLogo = getTeamLogo(layout.bottom);
                 
                 return (
                   <Card 
                     key={match.id} 
-                    className="bg-slate-900/90 border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                    className="bg-slate-900/90 border-slate-800 hover:border-slate-700 transition-all cursor-pointer overflow-hidden"
                   >
-                    <CardContent className="p-2">
-                      {/* Tournament */}
-                      <div className="text-[10px] text-slate-500 truncate mb-1">
-                        {match.tournament_name}
-                      </div>
-                      
-                      {/* Teams */}
-                      <div className="flex items-center justify-between">
-                        {/* Radiant */}
-                        <div className="flex items-center gap-1 flex-1 min-w-0">
-                          {radiantLogo ? (
-                            <img 
-                              src={radiantLogo} 
-                              alt={match.radiant_team_name}
-                              className="w-5 h-5 object-contain"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 bg-slate-700 rounded-full flex items-center justify-center">
-                              <span className="text-[8px] text-slate-400">
-                                {getAbbr(match.radiant_team_name).substring(0, 2)}
-                              </span>
-                            </div>
-                          )}
-                          <span className="text-xs text-white truncate">
-                            {getAbbr(match.radiant_team_name)}
+                    <CardContent className="p-0">
+                      {/* Date section - left side */}
+                      <div className="flex">
+                        <div className="w-10 bg-slate-800/80 flex flex-col items-center justify-center py-2 border-r border-slate-700">
+                          <span className="text-[10px] text-slate-400">
+                            {getMatchSection(match)}
+                          </span>
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            {formatBeijingTime(match.start_time)}
                           </span>
                         </div>
                         
-                        {/* VS */}
-                        <span className="text-[10px] text-slate-600 mx-1">vs</span>
-                        
-                        {/* Dire */}
-                        <div className="flex items-center gap-1 flex-1 min-w-0 justify-end">
-                          <span className="text-xs text-white truncate">
-                            {getAbbr(match.dire_team_name)}
-                          </span>
-                          {direLogo ? (
-                            <img 
-                              src={direLogo} 
-                              alt={match.dire_team_name}
-                              className="w-5 h-5 object-contain"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 bg-slate-700 rounded-full flex items-center justify-center">
-                              <span className="text-[8px] text-slate-400">
-                                {getAbbr(match.dire_team_name).substring(0, 2)}
+                        {/* Teams - top and bottom rows */}
+                        <div className="flex-1">
+                          {/* Top row - Chinese team */}
+                          <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-800/50">
+                            <div className="flex items-center gap-1">
+                              {topLogo ? (
+                                <img src={topLogo} alt="" className="w-4 h-4 object-contain" />
+                              ) : (
+                                <div className="w-4 h-4 bg-slate-700 rounded-full" />
+                              )}
+                              <span className={`text-xs font-medium ${layout.topIsCN ? 'text-red-400' : 'text-white'}`}>
+                                {getAbbr(layout.top)}
                               </span>
                             </div>
-                          )}
+                          </div>
+                          
+                          {/* Bottom row - opponent */}
+                          <div className="flex items-center justify-between px-2 py-1.5">
+                            <div className="flex items-center gap-1">
+                              {bottomLogo ? (
+                                <img src={bottomLogo} alt="" className="w-4 h-4 object-contain" />
+                              ) : (
+                                <div className="w-4 h-4 bg-slate-700 rounded-full" />
+                              )}
+                              <span className="text-xs text-white">
+                                {getAbbr(layout.bottom)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      
-                      {/* Time */}
-                      <div className="mt-1 pt-1 border-t border-slate-800 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500">
-                          {getMatchSection(match)}
-                        </span>
-                        <span className="text-[10px] text-amber-400">
-                          {formatBeijingTime(match.start_time)} 北京
-                        </span>
                       </div>
                     </CardContent>
                   </Card>
