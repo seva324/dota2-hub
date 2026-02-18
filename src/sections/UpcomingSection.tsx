@@ -20,16 +20,16 @@ interface Match {
 
 // 战队Logo映射 - 优先使用本地图片
 const teamLogoMap: Record<string, string> = {
-  'xg': '/images/xg-logo.png',
-  'xg-logo': '/images/xg-logo.png',
-  'xtreme gaming': '/images/xg-logo.png',
-  'yb': '/images/yb-logo.png',
-  'yb-logo': '/images/yb-logo.png',
-  'yakult brothers': '/images/yb-logo.png',
-  'vg': '/images/vg-logo.png',
-  'vici gaming': '/images/vg-logo.png',
-  'lgd': '/images/lgd-logo.png',
-  'psg.lgd': '/images/lgd-logo.png',
+  'xg': '/images/teams/xg.png',
+  'xg-logo': '/images/teams/xg.png',
+  'xtreme gaming': '/images/teams/xg.png',
+  'yb': '/images/teams/yb.png',
+  'yb-logo': '/images/teams/yb.png',
+  'yakult brothers': '/images/teams/yb.png',
+  'vg': '/images/teams/vg.png',
+  'vici gaming': '/images/teams/vg.png',
+  'lgd': '/images/teams/lgd.png',
+  'psg.lgd': '/images/teams/lgd.png',
 };
 
 // 战队简称映射
