@@ -791,7 +791,6 @@
     "name_en": "Monkey King",
     "name_cn": "齐天大圣",
     "nicknames": [
-      "猴子",
       "大圣"
     ]
   },
@@ -881,8 +880,10 @@
   },
   "145": {
     "name_en": "Kez",
-    "name_cn": "Kez",
-    "nicknames": []
+    "name_cn": "凯",
+    "nicknames": [
+      "鸟人"
+    ]
   },
   "155": {
     "name_en": "Largo",
