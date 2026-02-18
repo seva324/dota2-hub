@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { ArrowDown, Calendar, Trophy, TrendingUp, Star, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowDown, Calendar, Trophy, TrendingUp, Star, Clock, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 
 interface Match {
   id: number;
@@ -41,56 +43,85 @@ const teamLogoMap: Record<string, string> = {
   'team yandex': '/images/teams/yandex.png',
   'execration': '/images/teams/execration.png',
   'mouz': '/images/teams/mouz.png',
-  'team spirit': '/images/teams/spirit.png',
+  'team spirit': '/irit.png',
 };
 
-function getTeamLogo(teamName: string | undefined, logoUrl: string | undefined): string {
+//images/teams/sp 战队简称
+const teamAbbr: Record<string, string> = {
+  'Xtreme Gaming': 'XG',
+  'Yakult Brothers': 'YB',
+  'Team Spirit': 'Spirit',
+  'Natus Vincere': 'NAVI',
+  'Tundra Esports': 'Tundra',
+  'Team Liquid': 'Liquid',
+  'Team Falcons': 'Falcons',
+  'OG': 'OG',
+  'GamerLegion': 'GL',
+  'PARIVISION': 'PARI',
+  'BetBoom Team': 'BB',
+  'paiN Gaming': 'paiN',
+  'Aurora Gaming': 'Aurora',
+  'Execration': 'XctN',
+  'MOUZ': 'MOUZ',
+  'Vici Gaming': 'VG',
+  'PSG.LGD': 'LGD',
+  'Team Yandex': 'Yandex',
+};
+
+function getTeamLogo(teamName: string | undefined): string {
   if (!teamName) return '';
   const key = teamName.toLowerCase();
-  if (teamLogoMap[key]) {
-    return teamLogoMap[key];
-  }
-  if (logoUrl) {
-    return logoUrl;
-  }
-  return '';
+  return teamLogoMap[key] || '';
 }
 
-function Countdown({ targetTime }: { targetTime: number }) {
-  const [timeLeft, setTimeLeft] = useState('');
+function getAbbr(teamName: string | null | undefined): string {
+  if (!teamName) return '';
+  return teamAbbr[teamName] || teamName;
+}
 
-  useEffect(() => {
-    const updateCountdown = () => {
-      const now = Math.floor(Date.now() / 1000);
-      const diff = targetTime - now;
-      
-      if (diff <= 0) {
-        setTimeLeft('比赛中');
-        return;
-      }
+// 格式化倒计时
+function formatCountdown(targetTime: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = targetTime - now;
+  
+  if (diff <= 0) return 'Live';
+  if (diff < 60) return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) {
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    return `${h}h ${m}m`;
+  }
+  const d = Math.floor(diff / 86400);
+  return `${d}d`;
+}
 
-      const days = Math.floor(diff / 86400);
-      const hours = Math.floor((diff % 86400) / 3600);
-      const minutes = Math.floor((diff % 3600) / 60);
+// 北京时间
+function formatBeijingTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  const month = beijingTime.getMonth() + 1;
+  const day = beijingTime.getDate();
+  const hours = beijingTime.getHours().toString().padStart(2, '0');
+  const minutes = beijingTime.getMinutes().toString().padStart(2, '0');
+  return `${month}/${day} ${hours}:${minutes}`;
+}
 
-      if (days > 0) {
-        setTimeLeft(`${days}天 ${hours}小时`);
-      } else if (hours > 0) {
-        setTimeLeft(`${hours}小时${minutes}分钟`);
-      } else {
-        setTimeLeft(`${minutes}分钟`);
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 60000);
-    return () => clearInterval(interval);
-  }, [targetTime]);
-
-  return <span className="tabular-nums">{timeLeft}</span>;
+// 赛事分组日期
+function getMatchSection(match: Match): string {
+  const name = match.tournament_name || '';
+  const match1 = name.match(/-\s*([A-Za-z]+\s+\d+[A-Z]?)/);
+  if (match1) return match1[1];
+  
+  const date = new Date(match.start_time * 1000);
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const day = date.getDate();
+  return `${month} ${day}`;
 }
 
 export function HeroSection({ upcoming }: { upcoming: Match[] }) {
+  const [showCountdown, setShowCountdown] = useState(true);
+
   const scrollToTournaments = () => {
     const element = document.querySelector('#tournaments');
     if (element) {
@@ -98,8 +129,10 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
     }
   };
 
-  // 显示未来4场比赛
-  const nextMatches = upcoming.filter(m => m.start_time * 1000 > Date.now()).slice(0, 4);
+  const nextMatches = upcoming
+    .filter(m => m.start_time * 1000 > Date.now())
+    .sort((a, b) => a.start_time - b.start_time)
+    .slice(0, 4);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -194,58 +227,112 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
           ))}
         </div>
 
-        {/* Next Matches (4场) */}
+        {/* Upcoming Matches Cards */}
         {nextMatches.length > 0 && (
-          <div className="space-y-3 max-w-2xl mx-auto">
-            <p className="text-xs sm:text-sm text-red-400 mb-2 flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" />
-              即将到来的比赛
-            </p>
-            {nextMatches.map((match) => {
-              const radiantLogo = getTeamLogo(match.radiant_team_name, match.radiant_team_logo);
-              const direLogo = getTeamLogo(match.dire_team_name, match.dire_team_logo);
-              
-              return (
-                <div key={match.id} className="bg-slate-900/80 backdrop-blur-md rounded-lg sm:rounded-xl p-2 sm:p-4 border border-red-600/20 mx-2 sm:mx-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {radiantLogo ? (
-                        <img 
-                          src={radiantLogo} 
-                          alt={match.radiant_team_name}
-                          className="w-6 h-6 sm:w-10 sm:h-10 object-contain flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 sm:w-10 sm:h-10 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs text-slate-400">{match.radiant_team_name_cn?.[0] || '?'}</span>
+          <div className="max-w-4xl mx-auto">
+            {/* Header with Toggle */}
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-400 font-medium">Upcoming Matches</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">{showCountdown ? '倒计时' : '北京时间'}</span>
+                <Switch 
+                  checked={showCountdown} 
+                  onCheckedChange={setShowCountdown}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+              </div>
+            </div>
+
+            {/* Match Cards */}
+            <div className="space-y-2">
+              {nextMatches.map((match) => {
+                const radiantLogo = getTeamLogo(match.radiant_team_name);
+                const direLogo = getTeamLogo(match.dire_team_name);
+                
+                return (
+                  <Card 
+                    key={match.id} 
+                    className="bg-slate-900/80 border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                  >
+                    <CardContent className="p-0">
+                      <div className="flex items-center">
+                        {/* Date/Group + Countdown */}
+                        <div className="w-20 sm:w-24 p-2 sm:p-3 bg-slate-800/50 border-r border-slate-800 flex flex-col items-center justify-center">
+                          <span className="text-xs text-slate-400">
+                            {getMatchSection(match)}
+                          </span>
+                          {showCountdown ? (
+                            <span className="text-sm font-bold text-blue-400 mt-1">
+                              {formatCountdown(match.start_time)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-blue-400 mt-1">
+                              {formatBeijingTime(match.start_time)}
+                            </span>
+                          )}
                         </div>
-                      )}
-                      <span className="font-bold text-white text-xs sm:text-sm truncate">{match.radiant_team_name_cn || match.radiant_team_name}</span>
-                    </div>
-                    <div className="text-center px-2 flex-shrink-0">
-                      <p className="text-xs sm:text-base font-bold text-red-500">VS</p>
-                      <p className="text-[10px] sm:text-xs text-amber-400">
-                        <Countdown targetTime={match.start_time} />
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                      <span className="font-bold text-white text-xs sm:text-sm truncate">{match.dire_team_name_cn || match.dire_team_name}</span>
-                      {direLogo ? (
-                        <img 
-                          src={direLogo} 
-                          alt={match.dire_team_name}
-                          className="w-6 h-6 sm:w-10 sm:h-10 object-contain flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 sm:w-10 sm:h-10 bg-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs text-slate-400">{match.dire_team_name_cn?.[0] || '?'}</span>
+                        
+                        {/* Teams */}
+                        <div className="flex-1 flex items-center justify-between px-3 py-2">
+                          {/* Radiant */}
+                          <div className="flex items-center gap-2">
+                            {radiantLogo ? (
+                              <img 
+                                src={radiantLogo} 
+                                alt={match.radiant_team_name}
+                                className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-slate-700 rounded-full flex items-center justify-center">
+                                <span className="text-[10px] text-slate-400">
+                                  {getAbbr(match.radiant_team_name).substring(0, 2)}
+                                </span>
+                              </div>
+                            )}
+                            <span className="font-semibold text-white text-sm">
+                              {getAbbr(match.radiant_team_name)}
+                            </span>
+                          </div>
+                          
+                          {/* VS */}
+                          <div className="flex flex-col items-center px-2">
+                            <span className="text-[10px] text-slate-500">{match.series_type}</span>
+                          </div>
+                          
+                          {/* Dire */}
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white text-sm">
+                              {getAbbr(match.dire_team_name)}
+                            </span>
+                            {direLogo ? (
+                              <img 
+                                src={direLogo} 
+                                alt={match.dire_team_name}
+                                className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-slate-700 rounded-full flex items-center justify-center">
+                                <span className="text-[10px] text-slate-400">
+                                  {getAbbr(match.dire_team_name).substring(0, 2)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                        
+                        {/* Arrow */}
+                        <div className="p-2 sm:p-3">
+                          <ChevronRight className="w-4 h-4 text-blue-500" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
 
