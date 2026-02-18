@@ -209,32 +209,34 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         {selectedTournament && (
           <Card className="border-slate-800 bg-slate-900/50">
             <CardHeader className="border-b border-slate-800 p-3 sm:p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <div className="min-w-0">
-                  <h3 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedTournament.name_cn || selectedTournament.name}</h3>
-                  <div className="flex flex-wrap items-center gap-1 sm:gap-4 mt-1 sm:mt-2 text-xs text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {selectedTournament.location || 'TBD'}
-                    </span>
-                    <span className="hidden xs:inline">
-                      <Calendar className="w-3 h-3 inline mr-1" />
-                      {selectedTournament.start_date} ~ {selectedTournament.end_date}
-                    </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsTournamentCollapsed(!isTournamentCollapsed);
+                    }}
+                    className="p-1.5 hover:bg-slate-800 rounded flex-shrink-0"
+                  >
+                    {isTournamentCollapsed ? <ChevronRight className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                  </button>
+                  <div className="min-w-0">
+                    <h3 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedTournament.name}</h3>
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-4 mt-1 text-xs text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {selectedTournament.location || 'TBD'}
+                      </span>
+                      <span className="hidden xs:inline">
+                        <Calendar className="w-3 h-3 inline mr-1" />
+                        {selectedTournament.start_date} ~ {selectedTournament.end_date}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <Badge className={statusMap[selectedTournament.status]?.color || statusMap.upcoming.color}>
-                  {statusMap[selectedTournament.status]?.label || '即将开始'}
+                <Badge className={`${statusMap[selectedTournament.status]?.color || statusMap.upcoming.color} flex-shrink-0`}>
+                  {statusMap[selectedTournament.status]?.label || 'Upcoming'}
                 </Badge>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsTournamentCollapsed(!isTournamentCollapsed);
-                  }}
-                  className="ml-auto p-1 hover:bg-slate-800 rounded"
-                >
-                  {isTournamentCollapsed ? <ChevronLeft className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                </button>
               </div>
             </CardHeader>
 
