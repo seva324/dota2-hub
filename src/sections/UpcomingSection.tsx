@@ -172,7 +172,7 @@ export function UpcomingSection({ upcoming }: { upcoming: Match[] }) {
                 className="bg-slate-900/80 border-slate-800 overflow-hidden"
               >
                 <CardContent className="p-0">
-                  {/* Top row: Date + Tournament */}
+                  {/* Top row: Tournament */}
                   <div className="flex items-center justify-between px-3 py-2 bg-slate-800/50 border-b border-slate-800">
                     <span className="text-xs text-slate-400">{getMatchSection(match.start_time)}</span>
                     <span className="text-xs text-slate-500">{match.series_type}</span>
