@@ -174,14 +174,14 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
           
           {/* 快速统计 */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
               <Flame className="w-4 h-4 text-red-400" />
               <span className="text-sm text-slate-300">中国战队</span>
               <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
                 {cnSeriesCount}
               </span>
             </div>
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
               <Trophy className="w-4 h-4 text-amber-400" />
               <span className="text-sm text-slate-300">总场次</span>
               <span className="text-lg font-bold text-white">{currentSeries.length}</span>
@@ -202,7 +202,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                     key={tournament.id}
                     onClick={() => setSelectedTournament(tournament)}
                     className={`
-                      flex-shrink-0 relative px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300
+                      flex-shrink-0 relative px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300
                       ${isSelected 
                         ? `bg-gradient-to-r ${statusInfo.gradient} text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] border border-white/20`
                         : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-white border border-transparent hover:border-white/10'
@@ -233,7 +233,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-2xl font-bold text-white truncate">{selectedTournament.name}</h3>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white truncate">{selectedTournament.name}</h3>
                     <Badge className={statusMap[selectedTournament.status]?.color || statusMap.upcoming.color}>
                       {selectedTournament.status === 'ongoing' && (
                         <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
@@ -335,7 +335,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                   </div>
                                 )}
                                 <span className={`
-                                  text-sm font-bold transition-colors
+                                  text-xs sm:text-sm font-bold transition-colors
                                   ${series.radiant_score > series.dire_score 
                                     ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
                                     : teamAIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'
@@ -346,16 +346,16 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               </div>
 
                               {/* 比分 */}
-                              <div className="flex items-center gap-3 px-4 py-2 bg-slate-800/60 rounded-xl border border-white/10">
+                              <div className="flex items-center gap-3 px-2 sm:px-4 py-1 sm:py-2 bg-slate-800/60 rounded-xl border border-white/10">
                                 <span className={`
-                                  text-2xl font-bold
+                                  text-xl sm:text-2xl font-bold
                                   ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-slate-400'}
                                 `}>
                                   {series.radiant_score}
                                 </span>
                                 <span className="text-slate-600 text-lg">:</span>
                                 <span className={`
-                                  text-2xl font-bold
+                                  text-xl sm:text-2xl font-bold
                                   ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-slate-400'}
                                 `}>
                                   {series.dire_score}
@@ -365,7 +365,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               {/* Team B */}
                               <div className={`flex items-center gap-2 ${teamBIsCN ? 'group/team-b' : ''}`}>
                                 <span className={`
-                                  text-sm font-bold transition-colors
+                                  text-xs sm:text-sm font-bold transition-colors
                                   ${series.dire_score > series.radiant_score 
                                     ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
                                     : teamBIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'
