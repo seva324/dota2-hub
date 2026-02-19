@@ -317,72 +317,50 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               </div>
                             </div>
 
-                            {/* 对阵展示 */}
-                            <div className="flex items-center gap-3 flex-1 justify-end">
-                              {/* Team A */}
-                              <div className={`flex items-center gap-2 min-w-0 ${teamAIsCN ? 'group/team-a' : ''}`}>
+                            {/* 对阵展示 - Logo | Team A | Score | Team B | Logo */}
+                            <div className="flex items-center justify-center gap-2 sm:gap-4">
+                              {/* Team A Logo - Left */}
+                              <div className="flex-shrink-0">
                                 {series.radiant_team_logo ? (
-                                  <div className={`
-                                    w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center bg-slate-800 border
-                                    ${teamAIsCN ? 'border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-slate-700'}
-                                    group-hover/team-a:scale-110 transition-transform duration-300
-                                  `}>
-                                    <img src={series.radiant_team_logo} alt={series.radiant_team_name} className="w-8 h-8 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamAIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
+                                    <img src={series.radiant_team_logo} alt={series.radiant_team_name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   </div>
                                 ) : (
-                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
                                     {getTeamAbbrev(series.radiant_team_name).substring(0,2)}
                                   </div>
                                 )}
-                                <span className={`
-                                  text-xs sm:text-sm font-bold truncate transition-colors
-                                  ${series.radiant_score > series.dire_score 
-                                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
-                                    : teamAIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'
-                                  }
-                                `}>
-                                  {getTeamAbbrev(series.radiant_team_name)}
-                                </span>
                               </div>
 
-                              {/* 比分 */}
-                              <div className="flex items-center gap-3 px-2 sm:px-4 py-1 sm:py-2 bg-slate-800/60 rounded-xl border border-white/10">
-                                <span className={`
-                                  text-xl sm:text-2xl font-bold
-                                  ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-slate-400'}
-                                `}>
+                              {/* Team A Name */}
+                              <span className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.radiant_score > series.dire_score ? 'text-green-400' : teamAIsCN ? 'text-red-400' : 'text-white'}`}>
+                                {getTeamAbbrev(series.radiant_team_name)}
+                              </span>
+
+                              {/* Score - Center */}
+                              <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-slate-800/80 rounded-lg border border-white/10">
+                                <span className={`text-base sm:text-xl font-bold ${series.radiant_score > series.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
                                   {series.radiant_score}
                                 </span>
-                                <span className="text-slate-600 text-lg">:</span>
-                                <span className={`
-                                  text-xl sm:text-2xl font-bold
-                                  ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-slate-400'}
-                                `}>
+                                <span className="text-slate-500">:</span>
+                                <span className={`text-base sm:text-xl font-bold ${series.dire_score > series.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
                                   {series.dire_score}
                                 </span>
                               </div>
 
-                              {/* Team B */}
-                              <div className={`flex items-center gap-2 min-w-0 ${teamBIsCN ? 'group/team-b' : ''}`}>
-                                <span className={`
-                                  text-xs sm:text-sm font-bold truncate transition-colors
-                                  ${series.dire_score > series.radiant_score 
-                                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
-                                    : teamBIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'
-                                  }
-                                `}>
-                                  {getTeamAbbrev(series.dire_team_name)}
-                                </span>
+                              {/* Team B Name */}
+                              <span className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.dire_score > series.radiant_score ? 'text-green-400' : teamBIsCN ? 'text-red-400' : 'text-white'}`}>
+                                {getTeamAbbrev(series.dire_team_name)}
+                              </span>
+
+                              {/* Team B Logo - Right */}
+                              <div className="flex-shrink-0">
                                 {series.dire_team_logo ? (
-                                  <div className={`
-                                    w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center bg-slate-800 border
-                                    ${teamBIsCN ? 'border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-slate-700'}
-                                    group-hover/team-b:scale-110 transition-transform duration-300
-                                  `}>
-                                    <img src={series.dire_team_logo} alt={series.dire_team_name} className="w-8 h-8 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamBIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
+                                    <img src={series.dire_team_logo} alt={series.dire_team_name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   </div>
                                 ) : (
-                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
                                     {getTeamAbbrev(series.dire_team_name).substring(0,2)}
                                   </div>
                                 )}
