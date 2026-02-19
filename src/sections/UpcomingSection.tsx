@@ -326,7 +326,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                   }
                                 `}>
-                                  {match.radiant_team_logo ? (
+                                  {getTeamLogo(match.radiant_team_name) ? (
                                     <img src={getTeamLogo(match.radiant_team_name)} alt="" className="w-10 h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
@@ -366,7 +366,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                   }
                                 `}>
-                                  {match.dire_team_logo ? (
+                                  {getTeamLogo(match.dire_team_name) ? (
                                     <img src={getTeamLogo(match.dire_team_name)} alt="" className="w-10 h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
