@@ -222,7 +222,8 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                           <div className="px-3 pb-3 border-t border-slate-800/50">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                               {series.games.map((game, idx) => {
-                                const winnerName = game.radiant_win ? series.radiant_team_name : series.dire_team_name;
+                                // radiant_win indicates if the radiant side won, so winner is the team on that side
+    const winnerName = game.radiant_win ? game.radiant_team_name : game.dire_team_name;
                                 return (
                                   <div key={game.match_id} onClick={() => setSelectedMatchId(Number(game.match_id))} className="bg-slate-800/50 rounded p-2 text-center cursor-pointer hover:bg-slate-700">
                                     <div className="text-[10px] text-slate-500">Game {idx + 1}</div>
