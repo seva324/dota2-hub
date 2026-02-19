@@ -174,14 +174,14 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
           
           {/* 快速统计 */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 min-w-0 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
               <Flame className="w-4 h-4 text-red-400" />
               <span className="text-sm text-slate-300">中国战队</span>
               <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
                 {cnSeriesCount}
               </span>
             </div>
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 min-w-0 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
               <Trophy className="w-4 h-4 text-amber-400" />
               <span className="text-sm text-slate-300">总场次</span>
               <span className="text-lg font-bold text-white">{currentSeries.length}</span>
@@ -209,7 +209,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                       }
                     `}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium">{tournament.name}</span>
                       {tournament.status === 'ongoing' && (
                         <span className="flex h-2 w-2">
@@ -243,16 +243,16 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 min-w-0 text-slate-400">
                       <MapPin className="w-4 h-4" />
                       <span>{selectedTournament.location || 'TBD'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 min-w-0 text-slate-400">
                       <Calendar className="w-4 h-4" />
                       <span>{selectedTournament.start_date} ~ {selectedTournament.end_date}</span>
                     </div>
                     {selectedTournament.prize_pool && (
-                      <div className="flex items-center gap-2 text-amber-400">
+                      <div className="flex items-center gap-2 min-w-0 text-amber-400">
                         <Award className="w-4 h-4" />
                         <span className="font-bold">{selectedTournament.prize_pool}</span>
                       </div>
@@ -301,7 +301,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                 <ChevronRight className="w-4 h-4 text-slate-400" />
                               </div>
                               
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Badge variant="outline" className="border-slate-600 text-slate-300 text-xs font-medium px-3 py-1">
                                   {series.series_type}
                                 </Badge>
@@ -320,7 +320,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                             {/* 对阵展示 */}
                             <div className="flex items-center gap-3 flex-1 justify-end">
                               {/* Team A */}
-                              <div className={`flex items-center gap-2 ${teamAIsCN ? 'group/team-a' : ''}`}>
+                              <div className={`flex items-center gap-2 min-w-0 ${teamAIsCN ? 'group/team-a' : ''}`}>
                                 {series.radiant_team_logo ? (
                                   <div className={`
                                     w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center bg-slate-800 border
@@ -335,7 +335,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                   </div>
                                 )}
                                 <span className={`
-                                  text-xs sm:text-sm font-bold transition-colors
+                                  text-xs sm:text-sm font-bold truncate transition-colors
                                   ${series.radiant_score > series.dire_score 
                                     ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
                                     : teamAIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'
@@ -363,9 +363,9 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               </div>
 
                               {/* Team B */}
-                              <div className={`flex items-center gap-2 ${teamBIsCN ? 'group/team-b' : ''}`}>
+                              <div className={`flex items-center gap-2 min-w-0 ${teamBIsCN ? 'group/team-b' : ''}`}>
                                 <span className={`
-                                  text-xs sm:text-sm font-bold transition-colors
+                                  text-xs sm:text-sm font-bold truncate transition-colors
                                   ${series.dire_score > series.radiant_score 
                                     ? 'text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400' 
                                     : teamBIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'
