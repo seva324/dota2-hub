@@ -20,6 +20,38 @@ interface Match {
   tournament_name_cn?: string;
 }
 
+// 战队Logo映射
+const teamLogoMap: Record<string, string> = {
+  'xg': '/dota2-hub/images/teams/xg.png',
+  'xtreme gaming': '/dota2-hub/images/teams/xg.png',
+  'yb': '/dota2-hub/images/teams/yb.png',
+  'yakult brothers': '/dota2-hub/images/teams/yb.png',
+  'vg': '/dota2-hub/images/teams/vg.png',
+  'vici gaming': '/dota2-hub/images/teams/vg.png',
+  'lgd': '/dota2-hub/images/teams/lgd.png',
+  'psg.lgd': '/dota2-hub/images/teams/lgd.png',
+  'aurora gaming': '/dota2-hub/images/teams/aurora.png',
+  'natus vincere': '/dota2-hub/images/teams/navi.png',
+  'team liquid': '/dota2-hub/images/teams/liquid.png',
+  'team falcons': '/dota2-hub/images/teams/falcons.png',
+  'og': '/dota2-hub/images/teams/og.png',
+  'tundra esports': '/dota2-hub/images/teams/tundra.png',
+  'gamerlegion': '/dota2-hub/images/teams/gamerlegion.png',
+  'parivision': '/dota2-hub/images/teams/parivision.png',
+  'betboom team': '/dota2-hub/images/teams/betboom.png',
+  'pain gaming': '/dota2-hub/images/teams/pain.png',
+  'team yandex': '/dota2-hub/images/teams/yandex.png',
+  'execration': '/dota2-hub/images/teams/execration.png',
+  'mouz': '/dota2-hub/images/teams/mouz.png',
+  'team spirit': '/dota2-hub/images/teams/spirit.png',
+};
+
+function getTeamLogo(teamName: string | undefined): string {
+  if (!teamName) return '';
+  const key = teamName.toLowerCase();
+  return teamLogoMap[key] || '';
+}
+
 const cnTeams = ['xg', 'xtreme', 'yb', 'yakult', 'tearlaments', 'vg', 'vici', 'game master', 'tidebound', 'refuser', 'thriving', 'azure'];
 
 const teamAbbr: Record<string, string> = {
@@ -175,7 +207,8 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                       {/* Teams */}
                       <div className="px-3 py-2">
                         <div className={`flex items-center gap-2 py-1.5 border-b border-white/5 ${layout.topIsCN ? 'text-red-400' : ''}`}>
-                          <Flame className={`w-3 h-3 ${layout.topIsCN ? 'text-red-400' : 'text-slate-600'}`} />
+                          {getTeamLogo(layout.top) ? <img src={getTeamLogo(layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+                          
                           <span className="text-sm font-bold">{getAbbr(layout.top)}</span>
                         </div>
                         <div className="flex items-center gap-2 py-1.5">
