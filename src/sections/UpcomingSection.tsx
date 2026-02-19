@@ -200,7 +200,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
             <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
               <Calendar className="w-4 h-4 text-blue-400" />
               <span className="text-sm text-slate-300">本周场次</span>
-              <span className="text-lg font-bold text-white">{filteredMatches.length}</span>
+              <span className="text-sm sm:text-base font-bold text-white">{filteredMatches.length}</span>
             </div>
 
             {/* 筛选按钮 */}
@@ -329,7 +329,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                   {match.radiant_team_logo ? (
                                     <img src={getTeamLogo(match.radiant_team_name)} alt="" className="w-10 h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
-                                    <span className="text-lg font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
+                                    <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -337,7 +337,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                     {getAbbr(match.radiant_team_name)}
                                   </div>
                                   {match.radiant_team_name_cn && (
-                                    <div className="text-xs text-slate-500 truncate">{match.radiant_team_name_cn}</div>
+                                    <div className="text-xs text-slate-500 truncate hidden sm:block">{match.radiant_team_name_cn}</div>
                                   )}
                                 </div>
                               </div>
@@ -356,7 +356,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                     {getAbbr(match.dire_team_name)}
                                   </div>
                                   {match.dire_team_name_cn && (
-                                    <div className="text-xs text-slate-500 truncate">{match.dire_team_name_cn}</div>
+                                    <div className="text-xs text-slate-500 truncate hidden sm:block">{match.dire_team_name_cn}</div>
                                   )}
                                 </div>
                                 <div className={`
@@ -369,7 +369,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                   {match.dire_team_logo ? (
                                     <img src={getTeamLogo(match.dire_team_name)} alt="" className="w-10 h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
-                                    <span className="text-lg font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
+                                    <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
                                   )}
                                 </div>
                               </div>
