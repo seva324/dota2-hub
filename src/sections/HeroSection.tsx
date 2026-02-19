@@ -212,6 +212,7 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                           <span className="text-sm font-bold">{getAbbr(layout.top)}</span>
                         </div>
                         <div className="flex items-center gap-2 py-1.5">
+                          {getTeamLogo(layout.bottom) ? <img src={getTeamLogo(layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
                           <span className="text-sm font-bold text-white">{getAbbr(layout.bottom)}</span>
                         </div>
                       </div>
