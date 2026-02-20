@@ -4149,6 +4149,78 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8698367627",
+        "series_type": "BO3",
+        "radiant_team_name": "PARIVISION",
+        "dire_team_name": "Yakult Brothers",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
+        "games": [
+          {
+            "match_id": "8698367627",
+            "radiant_team_name": "PARIVISION",
+            "dire_team_name": "Yakult Brothers",
+            "radiant_score": 38,
+            "dire_score": 14,
+            "radiant_win": 1,
+            "start_time": 1771584900,
+            "duration": 1663
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8698371110",
+        "series_type": "BO3",
+        "radiant_team_name": "paiN Gaming",
+        "dire_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "games": [
+          {
+            "match_id": "8698371110",
+            "radiant_team_name": "paiN Gaming",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 21,
+            "dire_score": 45,
+            "radiant_win": 0,
+            "start_time": 1771584939,
+            "duration": 1999
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
+        "series_id": "opendota_8698371604",
+        "series_type": "BO3",
+        "radiant_team_name": "Aurora Gaming",
+        "dire_team_name": "Team Yandex",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
+        "games": [
+          {
+            "match_id": "8698371604",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "Team Yandex",
+            "radiant_score": 34,
+            "dire_score": 16,
+            "radiant_win": 1,
+            "start_time": 1771585098,
+            "duration": 1836
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8697256357",
         "series_type": "BO2",
         "radiant_team_name": "Execration",
@@ -6197,5 +6269,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-20T11:05:56.272Z"
+  "lastUpdated": "2026-02-20T11:46:16.502Z"
 }
