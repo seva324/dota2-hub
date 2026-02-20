@@ -4,3 +4,8 @@ dist/
 *.log
 data/players.db
 memory/
+bin/
+data/
+*.db
+dist/docs/
+*.exe
