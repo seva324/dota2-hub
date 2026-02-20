@@ -4149,6 +4149,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8698367105",
+        "series_type": "BO3",
+        "radiant_team_name": "OG",
+        "dire_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "games": [
+          {
+            "match_id": "8698367105",
+            "radiant_team_name": "OG",
+            "dire_team_name": "BetBoom Team",
+            "radiant_score": 25,
+            "dire_score": 12,
+            "radiant_win": 1,
+            "start_time": 1771584898,
+            "duration": 2187
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8698367627",
         "series_type": "BO3",
         "radiant_team_name": "PARIVISION",
@@ -6269,5 +6293,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-20T11:46:16.502Z"
+  "lastUpdated": "2026-02-20T12:26:16.473Z"
 }
