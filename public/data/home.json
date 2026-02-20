@@ -4149,6 +4149,54 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8698519769",
+        "series_type": "BO3",
+        "radiant_team_name": "Execration",
+        "dire_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "games": [
+          {
+            "match_id": "8698519769",
+            "radiant_team_name": "Execration",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 15,
+            "dire_score": 35,
+            "radiant_win": 0,
+            "start_time": 1771593900,
+            "duration": 2575
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
+        "series_id": "opendota_8698542436",
+        "series_type": "BO3",
+        "radiant_team_name": "GamerLegion",
+        "dire_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "games": [
+          {
+            "match_id": "8698542436",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "Team Spirit",
+            "radiant_score": 26,
+            "dire_score": 2,
+            "radiant_win": 1,
+            "start_time": 1771593960,
+            "duration": 1629
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8698367105",
         "series_type": "BO3",
         "radiant_team_name": "OG",
@@ -6333,5 +6381,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-20T13:42:05.429Z"
+  "lastUpdated": "2026-02-20T14:29:15.391Z"
 }
