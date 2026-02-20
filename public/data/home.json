@@ -4189,11 +4189,21 @@
             "radiant_win": 0,
             "start_time": 1771595222,
             "duration": 2527
+          },
+          {
+            "match_id": "8698660679",
+            "radiant_team_name": "Xtreme Gaming",
+            "dire_team_name": "MOUZ",
+            "radiant_score": 27,
+            "dire_score": 28,
+            "radiant_win": 0,
+            "start_time": 1771599477,
+            "duration": 2326
           }
         ],
-        "radiant_wins": 0,
+        "radiant_wins": 1,
         "dire_wins": 1,
-        "radiant_score": 0,
+        "radiant_score": 1,
         "dire_score": 1
       },
       {
@@ -4213,12 +4223,22 @@
             "radiant_win": 0,
             "start_time": 1771593900,
             "duration": 2575
+          },
+          {
+            "match_id": "8698630441",
+            "radiant_team_name": "Execration",
+            "dire_team_name": "Natus Vincere",
+            "radiant_score": 18,
+            "dire_score": 28,
+            "radiant_win": 0,
+            "start_time": 1771598101,
+            "duration": 2180
           }
         ],
         "radiant_wins": 0,
-        "dire_wins": 1,
+        "dire_wins": 2,
         "radiant_score": 0,
-        "dire_score": 1
+        "dire_score": 2
       },
       {
         "series_id": "opendota_8698542436",
@@ -4237,12 +4257,22 @@
             "radiant_win": 1,
             "start_time": 1771593960,
             "duration": 1629
+          },
+          {
+            "match_id": "8698613744",
+            "radiant_team_name": "GamerLegion",
+            "dire_team_name": "Team Spirit",
+            "radiant_score": 16,
+            "dire_score": 40,
+            "radiant_win": 0,
+            "start_time": 1771597560,
+            "duration": 2151
           }
         ],
         "radiant_wins": 1,
-        "dire_wins": 0,
+        "dire_wins": 1,
         "radiant_score": 1,
-        "dire_score": 0
+        "dire_score": 1
       },
       {
         "series_id": "opendota_8698367105",
@@ -6429,5 +6459,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-20T15:11:28.379Z"
+  "lastUpdated": "2026-02-20T15:55:50.142Z"
 }
