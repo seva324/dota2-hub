@@ -32,7 +32,7 @@ jobs:
       run: npm config set registry https://registry.npmjs.org/
         
     - name: Install dependencies
-      run: npm install better-sqlite3
+      run: npm install
       
     - name: Initialize database
       run: node scripts/init-db.js
