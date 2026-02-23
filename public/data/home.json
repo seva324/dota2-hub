@@ -3706,11 +3706,21 @@
             "radiant_win": 1,
             "start_time": 1771867320,
             "duration": 2061
+          },
+          {
+            "match_id": "8703682176",
+            "radiant_team_name": "Tundra Esports",
+            "dire_team_name": "Aurora Gaming",
+            "radiant_score": 31,
+            "dire_score": 30,
+            "radiant_win": 0,
+            "start_time": 1771871340,
+            "duration": 4150
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 2,
         "dire_wins": 1,
-        "radiant_score": 1,
+        "radiant_score": 2,
         "dire_score": 1
       },
       {
@@ -6180,5 +6190,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-23T19:35:44.839Z"
+  "lastUpdated": "2026-02-23T20:24:18.499Z"
 }
