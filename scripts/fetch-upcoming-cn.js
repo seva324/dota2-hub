@@ -3,7 +3,8 @@
  * 获取未来10天XG/YB比赛预告
  */
 
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
@@ -13,8 +14,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+const SQL = await initSqlJs();
+let db;
+try {
+  if (fs.existsSync(dbPath)) {
+    const fileBuffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(fileBuffer);
+  } else {
+    db = new SQL.Database();
+  }
+} catch (e) {
+  db = new SQL.Database();
+}
 
 function identifyTeam(name) {
   if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
@@ -183,14 +194,7 @@ async function main() {
     
     // Save to matches table
     let savedCount = 0;
-    const insertMatch = db.prepare(`
-      INSERT OR REPLACE INTO matches 
-      (match_id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name,
-       start_time, series_type, status, radiant_score, dire_score, radiant_game_wins, dire_game_wins,
-       tournament_name, tournament_name_cn)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?)
-    `);
-    
+
     // 赛事名称映射（英文名 -> 中文名）
     const tournamentNames = {
       'DreamLeague': '梦幻联赛',
@@ -202,7 +206,7 @@ async function main() {
       'CCT': 'CCT',
       'Fissure': 'Fissure',
     };
-    
+
     function getTournamentCN(name) {
       if (!name) return null;
       for (const [en, cn] of Object.entries(tournamentNames)) {
@@ -212,13 +216,19 @@ async function main() {
       }
       return name;
     }
-    
+
     for (const m of matches) {
       const id = `upcoming_${m.matchTime}_${m.team1Info.id}_${m.team2Info.id}`;
       const tournamentCN = getTournamentCN(m.tournament);
-      
+
       try {
-        insertMatch.run(
+        db.run(`
+          INSERT OR REPLACE INTO matches
+          (match_id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name,
+           start_time, series_type, status, radiant_score, dire_score, radiant_game_wins, dire_game_wins,
+           tournament_name, tournament_name_cn)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?)
+        `, [
           id,
           m.team1Info.id,
           m.team2Info.id,
@@ -229,21 +239,27 @@ async function main() {
           'scheduled',
           m.tournament || null,
           tournamentCN
-        );
+        ]);
         savedCount++;
       } catch (error) {
         console.error(`Error saving:`, error.message);
       }
     }
-    
+
     console.log('========================================');
     console.log(`已保存 ${savedCount} 场比赛到数据库`);
     console.log('========================================');
-    
+
   } catch (error) {
     console.error('Error:', error.message);
   }
-  
+
+  // Save database to file
+  const data = db.export();
+  const buffer = Buffer.from(data);
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  fs.writeFileSync(dbPath, buffer);
+
   db.close();
 }
 

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -18,7 +18,39 @@ if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
-const db = new Database(dbPath);
+const SQL = await initSqlJs();
+let db;
+try {
+  if (fs.existsSync(dbPath)) {
+    const fileBuffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(fileBuffer);
+  } else {
+    console.log('Database not found, creating new one');
+    db = new SQL.Database();
+  }
+} catch (e) {
+  console.log('Error loading database, creating new one:', e.message);
+  db = new SQL.Database();
+}
+
+// Helper function to run queries and get results
+function runQuery(sql, params = []) {
+  try {
+    const stmt = db.prepare(sql);
+    if (params.length > 0) {
+      stmt.bind(params);
+    }
+    const results = [];
+    while (stmt.step()) {
+      results.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return results;
+  } catch (e) {
+    console.log('Query error:', e.message);
+    return [];
+  }
+}
 
 // 系列赛类型映射
 const SERIES_TYPE_MAP = {
@@ -112,20 +144,20 @@ function aggregateSeries(matches) {
 }
 
 // 导出比赛数据
-const matches = db.prepare(`
-  SELECT m.*, 
-         COALESCE(m.tournament_name, t.name) as tournament_name, 
-         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+const matches = runQuery(`
+  SELECT m.*,
+         COALESCE(m.tournament_name, t.name) as tournament_name,
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn,
          t.tier as tournament_tier,
-         CASE 
-           WHEN m.radiant_score > m.dire_score THEN 1 
-           ELSE 0 
+         CASE
+           WHEN m.radiant_score > m.dire_score THEN 1
+           ELSE 0
          END as radiant_win
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   ORDER BY m.start_time DESC
   LIMIT 200
-`).all();
+`);
 
 // 去重 matches
 const matchesDeduped = [];
@@ -143,31 +175,31 @@ console.log(`Exported ${matchesDeduped.length} matches (${matchesDeduped.length}
 
 // 导出即将开始的比赛（带倒计时）- 只包含 XG/YB/VG
 const now = Math.floor(Date.now() / 1000);
-const upcomingMatches = db.prepare(`
-  SELECT m.*, 
-         COALESCE(m.tournament_name, t.name) as tournament_name, 
-         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+const upcomingMatches = runQuery(`
+  SELECT m.*,
+         COALESCE(m.tournament_name, t.name) as tournament_name,
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn,
          t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
-  WHERE m.start_time > ? 
+  WHERE m.start_time > ?
     AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
   ORDER BY m.start_time ASC
   LIMIT 10
-`).all([now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
+`, [now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
 
 // 获取所有未来比赛（不限战队）用于去重
-const allUpcomingMatches = db.prepare(`
-  SELECT m.*, 
-         COALESCE(m.tournament_name, t.name) as tournament_name, 
-         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+const allUpcomingMatches = runQuery(`
+  SELECT m.*,
+         COALESCE(m.tournament_name, t.name) as tournament_name,
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn,
          t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   WHERE m.start_time > ?
   ORDER BY m.start_time ASC
   LIMIT 20
-`).all(now);
+`, [now]);
 
 // 去重函数 - 优先保留有 tournament 信息的
 function dedupMatches(matches) {
@@ -191,10 +223,10 @@ fs.writeFileSync(path.join(outputDir, 'upcoming.json'), JSON.stringify(dedupedUp
 console.log(`Exported ${dedupedUpcoming.length} upcoming matches (deduped)`);
 
 // 导出中国战队近期比赛
-const cnMatches = db.prepare(`
-  SELECT m.*, 
-         COALESCE(m.tournament_name, t.name) as tournament_name, 
-         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn, 
+const cnMatches = runQuery(`
+  SELECT m.*,
+         COALESCE(m.tournament_name, t.name) as tournament_name,
+         COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn,
          t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
@@ -202,13 +234,13 @@ const cnMatches = db.prepare(`
     AND (m.radiant_team_id IN (${placeholders}) OR m.dire_team_id IN (${placeholders}))
   ORDER BY m.start_time DESC
   LIMIT 20
-`).all([now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
+`, [now, ...TARGET_TEAM_IDS, ...TARGET_TEAM_IDS]);
 
 fs.writeFileSync(path.join(outputDir, 'cn-matches.json'), JSON.stringify(cnMatches, null, 2));
 console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
 // 导出赛事数据 - 从 league_id 构建
-const leagueIds = db.prepare('SELECT DISTINCT league_id FROM matches WHERE league_id IS NOT NULL').all();
+const leagueIds = runQuery('SELECT DISTINCT league_id FROM matches WHERE league_id IS NOT NULL');
 
 const tournamentInfo = {
   19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S', location: '线上', prize: '$1,000,000', status: 'completed', start_date: '2026-02-03', end_date: '2026-03-02' },
@@ -241,17 +273,17 @@ for (const t of tournaments) {
   const leagueId = leagueIdMap[t.id];
   if (!leagueId) continue;
   
-  const tournamentMatches = db.prepare(`
-    SELECT m.*, 
-           CASE 
-             WHEN m.radiant_score > m.dire_score THEN 1 
-             ELSE 0 
+  const tournamentMatches = runQuery(`
+    SELECT m.*,
+           CASE
+             WHEN m.radiant_score > m.dire_score THEN 1
+             ELSE 0
            END as radiant_win
     FROM matches m
     WHERE m.league_id = ?
     ORDER BY m.start_time DESC
     LIMIT 100
-  `).all(leagueId);
+  `, [leagueId]);
   
   seriesByTournament[t.id] = aggregateSeries(tournamentMatches);
 }
@@ -263,12 +295,12 @@ fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify({
 console.log(`Exported series data for ${Object.keys(seriesByTournament).length} tournaments`);
 
 // 导出战队数据
-const teams = db.prepare('SELECT * FROM teams').all();
+const teams = runQuery('SELECT * FROM teams');
 fs.writeFileSync(path.join(outputDir, 'teams.json'), JSON.stringify(teams, null, 2));
 console.log(`Exported ${teams.length} teams`);
 
 // 导出新闻数据
-const news = db.prepare('SELECT * FROM news ORDER BY published_at DESC').all();
+const news = runQuery('SELECT * FROM news ORDER BY published_at DESC');
 fs.writeFileSync(path.join(outputDir, 'news.json'), JSON.stringify(news, null, 2));
 console.log(`Exported ${news.length} news items`);
 
@@ -287,7 +319,7 @@ console.log('Exported home page data');
 
 // 导出 BP 数据（带 match_id 的比赛）
 try {
-  const bpData = db.prepare(`
+  const bpData = runQuery(`
     SELECT bp.match_id, bp.picks_bans, bp.radiant_win,
            m.radiant_team_id, m.dire_team_id,
            m.radiant_team_name, m.radiant_team_name_cn,
@@ -295,7 +327,7 @@ try {
     FROM bp_data bp
     JOIN matches m ON bp.match_id = m.match_id
     ORDER BY bp.updated_at DESC
-  `).all();
+  `);
 
   fs.writeFileSync(path.join(outputDir, 'bp-data.json'), JSON.stringify(bpData, null, 2));
   console.log(`Exported ${bpData.length} BP data items`);

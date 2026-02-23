@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -13,10 +13,15 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.join(dataDir, 'dota2.db');
-const db = new Database(dbPath);
+const SQL = await initSqlJs();
 
-// 启用 WAL 模式以提高性能
-db.pragma('journal_mode = WAL');
+let db;
+if (fs.existsSync(dbPath)) {
+  const fileBuffer = fs.readFileSync(dbPath);
+  db = new SQL.Database(fileBuffer);
+} else {
+  db = new SQL.Database();
+}
 
 // 创建战队表
 db.exec(`
@@ -124,14 +129,17 @@ const targetTeams = [
   { id: 'vici-gaming', name: 'Vici Gaming', name_cn: 'VG', tag: 'VG', is_cn_team: 1, region: 'CN' }
 ];
 
-const insertTeam = db.prepare(`
-  INSERT OR REPLACE INTO teams (id, name, name_cn, tag, is_cn_team, region, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, unixepoch())
-`);
-
 for (const team of targetTeams) {
-  insertTeam.run(team.id, team.name, team.name_cn, team.tag, team.is_cn_team, team.region);
+  db.run(`
+    INSERT OR REPLACE INTO teams (id, name, name_cn, tag, is_cn_team, region, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, unixepoch())
+  `, [team.id, team.name, team.name_cn, team.tag, team.is_cn_team, team.region]);
 }
+
+// Save database to file
+const data = db.export();
+const buffer = Buffer.from(data);
+fs.writeFileSync(dbPath, buffer);
 
 console.log('Database initialized successfully!');
 console.log(`Database path: ${dbPath}`);
