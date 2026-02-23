@@ -3,7 +3,14 @@
  * 从 OpenDota API 拉取比赛数据并存入 Vercel KV
  */
 
-import { kv } from '@vercel/kv';
+// 尝试导入 KV，如果失败则使用模拟
+let kv;
+try {
+  const kvModule = await import('@vercel/kv');
+  kv = kvModule.kv;
+} catch (e) {
+  console.error('KV import failed:', e.message);
+}
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY;
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
@@ -198,6 +205,11 @@ export default async function handler(req, res) {
     console.log('DOTA2 Hub - OpenDota Sync to Vercel KV');
     console.log('Time:', new Date().toISOString());
     console.log('========================================\n');
+
+    // 检查 KV 是否可用
+    if (!kv) {
+      return res.status(500).json({ error: 'KV not available - please check KV database connection' });
+    }
 
     let savedCount = 0;
     let allMatches = [];
