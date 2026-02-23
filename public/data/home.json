@@ -3680,6 +3680,132 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8701817219",
+        "series_type": "BO3",
+        "radiant_team_name": "Tundra Esports",
+        "dire_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "games": [
+          {
+            "match_id": "8701817219",
+            "radiant_team_name": "Tundra Esports",
+            "dire_team_name": "PARIVISION",
+            "radiant_score": 42,
+            "dire_score": 20,
+            "radiant_win": 1,
+            "start_time": 1771771916,
+            "duration": 2822
+          }
+        ],
+        "radiant_wins": 1,
+        "dire_wins": 0,
+        "radiant_score": 1,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8702232936",
+        "series_type": "BO2",
+        "radiant_team_name": "Aurora Gaming",
+        "dire_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "games": [
+          {
+            "match_id": "8702232936",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 45,
+            "dire_score": 20,
+            "radiant_win": 1,
+            "start_time": 1771788304,
+            "duration": 2582
+          },
+          {
+            "match_id": "8702331491",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "Team Falcons",
+            "radiant_score": 41,
+            "dire_score": 7,
+            "radiant_win": 1,
+            "start_time": 1771792920,
+            "duration": 2491
+          }
+        ],
+        "radiant_wins": 2,
+        "dire_wins": 0,
+        "radiant_score": 2,
+        "dire_score": 0
+      },
+      {
+        "series_id": "opendota_8702997623",
+        "series_type": "BO2",
+        "radiant_team_name": "MOUZ",
+        "dire_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "games": [
+          {
+            "match_id": "8702997623",
+            "radiant_team_name": "BetBoom Team",
+            "dire_team_name": "MOUZ",
+            "radiant_score": 28,
+            "dire_score": 30,
+            "radiant_win": 1,
+            "start_time": 1771842851,
+            "duration": 2823
+          },
+          {
+            "match_id": "8703101544",
+            "radiant_team_name": "MOUZ",
+            "dire_team_name": "BetBoom Team",
+            "radiant_score": 18,
+            "dire_score": 33,
+            "radiant_win": 0,
+            "start_time": 1771847457,
+            "duration": 2256
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 2,
+        "radiant_score": 0,
+        "dire_score": 2
+      },
+      {
+        "series_id": "opendota_8703243107",
+        "series_type": "BO2",
+        "radiant_team_name": "Xtreme Gaming",
+        "dire_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "games": [
+          {
+            "match_id": "8703243107",
+            "radiant_team_name": "PARIVISION",
+            "dire_team_name": "Xtreme Gaming",
+            "radiant_score": 10,
+            "dire_score": 31,
+            "radiant_win": 0,
+            "start_time": 1771853095,
+            "duration": 2246
+          },
+          {
+            "match_id": "8703354577",
+            "radiant_team_name": "Xtreme Gaming",
+            "dire_team_name": "PARIVISION",
+            "radiant_score": 30,
+            "dire_score": 14,
+            "radiant_win": 1,
+            "start_time": 1771857238,
+            "duration": 2018
+          }
+        ],
+        "radiant_wins": 2,
+        "dire_wins": 0,
+        "radiant_score": 2,
+        "dire_score": 0
+      },
+      {
         "series_id": "opendota_8698519674",
         "series_type": "BO3",
         "radiant_team_name": "Tundra Esports",
@@ -4420,11 +4546,31 @@
             "radiant_win": 1,
             "start_time": 1771504080,
             "duration": 1947
+          },
+          {
+            "match_id": "8701978003",
+            "radiant_team_name": "BetBoom Team",
+            "dire_team_name": "Team Liquid",
+            "radiant_score": 12,
+            "dire_score": 17,
+            "radiant_win": 0,
+            "start_time": 1771777800,
+            "duration": 2213
+          },
+          {
+            "match_id": "8702081221",
+            "radiant_team_name": "Team Liquid",
+            "dire_team_name": "BetBoom Team",
+            "radiant_score": 39,
+            "dire_score": 8,
+            "radiant_win": 1,
+            "start_time": 1771781880,
+            "duration": 1791
           }
         ],
-        "radiant_wins": 1,
+        "radiant_wins": 3,
         "dire_wins": 1,
-        "radiant_score": 1,
+        "radiant_score": 3,
         "dire_score": 1
       },
       {
@@ -6000,5 +6146,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-20T16:13:45.609Z"
+  "lastUpdated": "2026-02-23T15:37:16.144Z"
 }
