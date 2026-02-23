@@ -3680,6 +3680,30 @@
     ],
     "dreamleague-s28": [
       {
+        "series_id": "opendota_8703518862",
+        "series_type": "BO3",
+        "radiant_team_name": "Aurora Gaming",
+        "dire_team_name": "Tundra Esports",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "games": [
+          {
+            "match_id": "8703518862",
+            "radiant_team_name": "Aurora Gaming",
+            "dire_team_name": "Tundra Esports",
+            "radiant_score": 3,
+            "dire_score": 28,
+            "radiant_win": 0,
+            "start_time": 1771863986,
+            "duration": 1489
+          }
+        ],
+        "radiant_wins": 0,
+        "dire_wins": 1,
+        "radiant_score": 0,
+        "dire_score": 1
+      },
+      {
         "series_id": "opendota_8701817219",
         "series_type": "BO3",
         "radiant_team_name": "Tundra Esports",
@@ -6146,5 +6170,5 @@
     ]
   },
   "news": [],
-  "lastUpdated": "2026-02-23T16:05:46.049Z"
+  "lastUpdated": "2026-02-23T17:16:52.281Z"
 }
