@@ -9,3 +9,4 @@ data/
 *.db
 dist/docs/
 *.exe
+!public/data/
