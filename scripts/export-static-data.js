@@ -137,8 +137,9 @@ function aggregateSeries(matches) {
     dire_score: series.dire_wins,
     games: series.games.sort((a, b) => a.start_time - b.start_time)
   })).sort((a, b) => {
-    const timeA = a.games[0]?.start_time || 0;
-    const timeB = b.games[0]?.start_time || 0;
+    // 按最后一场比赛的时间倒序排列（最新完成的比赛显示在上面）
+    const timeA = a.games[a.games.length - 1]?.start_time || 0;
+    const timeB = b.games[b.games.length - 1]?.start_time || 0;
     return timeB - timeA;
   });
 }
