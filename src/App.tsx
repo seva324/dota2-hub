@@ -74,10 +74,6 @@ function App() {
           }
         ];
 
-        // 获取赛事数据 (使用硬编码数据)
-        const tournamentsRes = await fetch(`${apiBase}/api/tournaments`);
-        const tournamentsData = tournamentsRes.ok ? await tournamentsRes.json() : [];
-        
         console.log('Tournaments loaded:', hardcodedTournaments.length);
 
         // 转换数据格式以匹配前端期望
