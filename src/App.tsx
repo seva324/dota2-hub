@@ -19,12 +19,18 @@ function App() {
         const apiBase = window.location.origin;
         console.log('API Base:', apiBase);
         
-        // 从 API 获取比赛数据
+        // 获取比赛数据
         const matchesRes = await fetch(`${apiBase}/api/matches`);
         if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
         const matches = await matchesRes.json();
 
         console.log('Matches loaded:', matches.length);
+
+        // 获取赛事数据
+        const tournamentsRes = await fetch(`${apiBase}/api/tournaments`);
+        const tournamentsData = tournamentsRes.ok ? await tournamentsRes.json() : [];
+        
+        console.log('Tournaments loaded:', tournamentsData.length);
 
         // 转换数据格式以匹配前端期望
         const cnMatches = matches
@@ -44,6 +50,53 @@ function App() {
             tournament_name_cn: ''
           }));
 
+        // 将比赛数据按赛事分组
+        const seriesMap: Record<string, any[]> = {};
+        
+        // 根据 leagueid 或其他方式分组 (这里简化处理)
+        // 实际应该根据 tournament id 来分组
+        cnMatches.forEach((m: any) => {
+          const leagueKey = m.leagueid || 'other';
+          if (!seriesMap[leagueKey]) {
+            seriesMap[leagueKey] = [];
+          }
+          // 将比赛转换为 series 格式
+          seriesMap[leagueKey].push({
+            series_id: `series-${m.match_id}`,
+            series_type: m.series_type || 'BO3',
+            radiant_team_name: m.radiant_team_name,
+            dire_team_name: m.dire_team_name,
+            radiant_team_logo: null,
+            dire_team_logo: null,
+            radiant_score: m.radiant_score || m.radiant_game_wins,
+            dire_score: m.dire_score || m.dire_game_wins,
+            games: [{
+              match_id: String(m.match_id),
+              radiant_team_name: m.radiant_team_name,
+              dire_team_name: m.dire_team_name,
+              radiant_score: m.radiant_score || 0,
+              dire_score: m.dire_score || 0,
+              radiant_win: m.radiant_win,
+              start_time: m.start_time,
+              duration: m.duration || 0
+            }],
+            stage: 'Recent Matches'
+          });
+        });
+
+        // 转换 tournaments 数据格式
+        const formattedTournaments = tournamentsData.map((t: any) => ({
+          id: t.id,
+          name: t.name || t.name_cn || 'Unknown Tournament',
+          name_cn: t.name_cn,
+          prize_pool: t.prize_pool || t.prizePool,
+          location: t.location,
+          start_date: t.start_date || t.startDate,
+          end_date: t.end_date || t.endDate,
+          status: t.status || 'upcoming',
+          image: t.image
+        }));
+
         // 获取即将开始的比赛
         const now = Date.now() / 1000;
         const upcoming = cnMatches
@@ -56,8 +109,8 @@ function App() {
         const homeData = {
           upcoming,
           cnMatches: cnMatches.slice(0, 50),
-          tournaments: [],
-          seriesByTournament: {},
+          tournaments: formattedTournaments,
+          seriesByTournament: seriesMap,
           news: [],
           community: [],
           lastUpdated: new Date().toISOString()
@@ -65,7 +118,8 @@ function App() {
 
         console.log('Data loaded:', {
           matches: cnMatches.length,
-          upcoming: upcoming.length
+          upcoming: upcoming.length,
+          tournaments: formattedTournaments.length
         });
         
         setData(homeData);
