@@ -135,10 +135,7 @@ export default async function handler(req, res) {
     const list = Object.values(existing).sort((a,b) => b.start_time - a.start_time).slice(0, 500);
     await r.set('matches:list', JSON.stringify(list));
 
-    // Debug info
-    const leagueMatchCount = LEAGUE_IDS.length;
-    
-    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length, debug: { leagueMatchCount, newMatchesFetched: cn.length } });
+    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
