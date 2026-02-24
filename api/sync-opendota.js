@@ -110,6 +110,7 @@ export default async function handler(req, res) {
     }
 
     // Fetch ALL historical matches from specified leagues (complete history, not filtered)
+    // DEBUG: v2 - force redeploy
     for (const leagueId of LEAGUE_IDS) {
       try {
         console.log(`Fetching all matches for league ${leagueId}...`);
