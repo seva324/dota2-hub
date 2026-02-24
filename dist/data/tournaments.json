@@ -2,6 +2,7 @@
   "tournaments": [
     {
       "id": "dreamleague-s28",
+      "league_id": 19269,
       "name": "DreamLeague Season 28",
       "name_cn": "梦联赛 S28",
       "tier": "S",
@@ -14,6 +15,7 @@
     },
     {
       "id": "blast-slam-vi",
+      "league_id": 19099,
       "name": "BLAST Slam VI",
       "name_cn": "BLAST 锦标赛 VI",
       "tier": "S",
@@ -23,6 +25,32 @@
       "start_date": "2026-02-03",
       "end_date": "2026-02-16",
       "prize_pool": "$1,000,000"
+    },
+    {
+      "id": "dreamleague-s27",
+      "league_id": 18988,
+      "name": "DreamLeague Season 27",
+      "name_cn": "梦联赛 S27",
+      "tier": "S",
+      "location": "线上",
+      "prize": "$1,000,000",
+      "status": "completed",
+      "start_date": "2025-12-09",
+      "end_date": "2026-01-12",
+      "prize_pool": "$1,000,000"
+    },
+    {
+      "id": "esl-challenger-china",
+      "league_id": 19130,
+      "name": "ESL Challenger China",
+      "name_cn": "ESL 挑战者杯 中国",
+      "tier": "A",
+      "location": "线上",
+      "prize": "$100,000",
+      "status": "completed",
+      "start_date": "2026-01-20",
+      "end_date": "2026-02-02",
+      "prize_pool": "$100,000"
     }
   ],
   "seriesByTournament": {

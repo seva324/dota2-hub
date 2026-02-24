@@ -41,23 +41,18 @@ export default async function handler(req, res) {
       const tournaments = await kv.get('tournaments');
       
       if (tournaments) {
-        const list = Object.values(tournaments)
-          .sort((a, b) => new Date(b.start_date || 0) - new Date(a.start_date || 0));
-        return res.status(200).json(list);
+        // Return full object with tournaments and seriesByTournament
+        return res.status(200).json(tournaments);
       }
     }
     
-    // Fallback to local JSON file
+    // Fallback to local JSON file - return full object
     const localData = getLocalTournaments();
-    const list = (localData.tournaments || [])
-      .sort((a, b) => new Date(b.start_date || 0) - new Date(a.start_date || 0));
-    return res.status(200).json(list);
+    return res.status(200).json(localData);
   } catch (error) {
     console.error('Error:', error);
     // Fallback to local JSON on error
     const localData = getLocalTournaments();
-    const list = (localData.tournaments || [])
-      .sort((a, b) => new Date(b.start_date || 0) - new Date(a.start_date || 0));
-    return res.status(200).json(list);
+    return res.status(200).json(localData);
   }
 }
