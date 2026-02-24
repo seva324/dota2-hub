@@ -23,6 +23,9 @@ const TEAMS = {
   'vici-gaming': { name: 'Vici Gaming', name_cn: 'VG', id: 7391077 },
 };
 
+// League IDs to fetch complete historical matches from
+const LEAGUE_IDS = [19269, 18988, 19099, 19130];
+
 async function fetchJSON(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -104,6 +107,21 @@ export default async function handler(req, res) {
     for (const [, td] of Object.entries(TEAMS)) {
       const tm = await fetchJSON(`${OPENDOTA}/teams/${td.id}/matches`);
       for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
+    }
+
+    // Fetch ALL historical matches from specified leagues (complete history, not filtered)
+    for (const leagueId of LEAGUE_IDS) {
+      try {
+        console.log(`Fetching all matches for league ${leagueId}...`);
+        const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${leagueId}/matches`);
+        console.log(`League ${leagueId}: found ${leagueMatches.length} matches`);
+        for (const m of leagueMatches) { 
+          const c = convert(m); 
+          if (c) cn.push(c); 
+        }
+      } catch (e) {
+        console.error(`Failed to fetch league ${leagueId}:`, e.message);
+      }
     }
 
     // 保存
