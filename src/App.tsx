@@ -15,116 +15,55 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 获取 API 地址
         const apiBase = window.location.origin;
         console.log('API Base:', apiBase);
         
-        // 获取比赛数据
-        const matchesRes = await fetch(`${apiBase}/api/matches`);
-        if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
-        const matches = await matchesRes.json();
-
-        console.log('Matches loaded:', matches.length);
-
-        // 硬编码赛事数据 - 使用实际的 league_id
-        const hardcodedTournaments = [
-          {
-            id: 19269,
-            name: 'DreamLeague Season 28',
-            name_cn: '梦幻联赛第28赛季',
-            prize_pool: '$1,000,000',
-            location: '线上',
-            start_date: '2026-01-19',
-            end_date: '2026-02-08',
-            status: 'completed',
-            image: 'https://liquipedia.net/commons/images/thumb/4/49/DreamLeague_Season_28.png/600px-DreamLeague_Season_28.png'
-          },
-          {
-            id: 19099,
-            name: 'BLAST Slam VI',
-            name_cn: 'BLAST Slam第六赛季',
-            prize_pool: '$1,000,000',
-            location: '线上',
-            start_date: '2026-01-12',
-            end_date: '2026-01-26',
-            status: 'completed',
-            image: 'https://liquipedia.net/commons/images/thumb/9/9d/BLAST_Slam_VI.png/600px-BLAST_Slam_VI.png'
-          }
-        ];
-
-        console.log('Tournaments loaded:', hardcodedTournaments.length);
+        const isLocalDev = apiBase.includes('localhost');
         
-        // Debug: 打印所有比赛的实际 leagueid
-        const uniqueLeagueIds = [...new Set(matches.map((m: any) => m.league_id).filter(Boolean))];
-        console.log('Unique league IDs in matches:', uniqueLeagueIds.slice(0, 20));
+        // 加载 tournaments.json 数据
+        let tournamentsData;
+        if (isLocalDev) {
+          const tournamentsRes = await fetch('/data/tournaments.json');
+          tournamentsData = await tournamentsRes.json();
+          console.log('Local tournaments loaded:', tournamentsData.tournaments?.length || 0);
+        } else {
+          // 生产环境：从 API 获取
+          const tournamentsRes = await fetch(`${apiBase}/api/tournaments`);
+          if (!tournamentsRes.ok) throw new Error(`HTTP ${tournamentsRes.status}`);
+          tournamentsData = await tournamentsRes.json();
+        }
 
-        // 硬编码赛事 ID 列表 (使用实际的 league_id)
-        const tournamentLeagueIds = ['19269', '19099'];
-        
-        // 将比赛数据按赛事分组 - 首先按 league_id 筛选出属于这些赛事的比赛
-        const tournamentMatches = matches
-          .filter((m: any): boolean => {
-            const leagueId = String(m.league_id || '');
-            return tournamentLeagueIds.includes(leagueId);
-          })
-          .map((m: any) => ({
-            id: parseInt(m.match_id),
-            match_id: parseInt(m.match_id),
-            radiant_team_name: m.radiant_team_name || m.radiant_team_name_cn || 'Unknown',
-            radiant_team_name_cn: m.radiant_team_name_cn,
-            dire_team_name: m.dire_team_name || m.dire_team_name_cn || 'Unknown',
-            dire_team_name_cn: m.dire_team_name_cn,
-            radiant_game_wins: m.radiant_game_wins || 0,
-            dire_game_wins: m.dire_game_wins || 0,
-            start_time: m.start_time,
-            series_type: m.series_type || 'BO3',
-            tournament_name: '',
-            tournament_name_cn: '',
-            leagueid: m.league_id || null
-          }));
+        // 加载 matches.json 数据
+        let matches;
+        if (isLocalDev) {
+          const matchesRes = await fetch('/data/matches.json');
+          matches = await matchesRes.json();
+          console.log('Local matches loaded:', matches.length);
+        } else {
+          const matchesRes = await fetch(`${apiBase}/api/matches`);
+          if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
+          matches = await matchesRes.json();
+        }
 
-        console.log('Matches for tournaments:', tournamentMatches.length, 'by league_id:', 
-          tournamentLeagueIds.map((id: string) => `${id}: ${tournamentMatches.filter((m: any) => String(m.league_id) === id).length}`));
+        // 使用 tournaments.json 中已有的 tournaments 和 seriesByTournament
+        const formattedTournaments = (tournamentsData.tournaments || []).map((t: any) => ({
+          id: t.id,
+          name: t.name || t.name_cn || 'Unknown Tournament',
+          name_cn: t.name_cn,
+          prize_pool: t.prize_pool || t.prize,
+          location: t.location,
+          start_date: t.start_date,
+          end_date: t.end_date,
+          status: t.status,
+          image: t.image || '/images/tournament-default.jpg'
+        }));
 
-        // 将比赛数据按赛事分组
-        const seriesMap: Record<string, any[]> = {};
-        
-        // 初始化每个赛事的数组
-        tournamentLeagueIds.forEach((id: string) => {
-          seriesMap[id] = [];
-        });
-        
-        // 根据 league_id 分组到对应的赛事
-        tournamentMatches.forEach((m: any) => {
-          const leagueId = String(m.league_id);
-          
-          // 如果比赛的 league_id 匹配硬编码的赛事 ID，则添加到对应赛事
-          if (leagueId && tournamentLeagueIds.includes(leagueId)) {
-            seriesMap[leagueId].push({
-              series_id: `series-${m.match_id}`,
-              series_type: m.series_type || 'BO3',
-              radiant_team_name: m.radiant_team_name,
-              dire_team_name: m.dire_team_name,
-              radiant_team_logo: null,
-              dire_team_logo: null,
-              radiant_score: m.radiant_score || m.radiant_game_wins,
-              dire_score: m.dire_score || m.dire_game_wins,
-              games: [{
-                match_id: String(m.match_id),
-                radiant_team_name: m.radiant_team_name,
-                dire_team_name: m.dire_team_name,
-                radiant_score: m.radiant_score || 0,
-                dire_score: m.dire_score || 0,
-                radiant_win: m.radiant_win,
-                start_time: m.start_time,
-                duration: m.duration || 0
-              }],
-              stage: 'Recent Matches'
-            });
-          }
-        });
-        
-        // 转换数据格式以匹配前端期望 (用于 upcoming 和 cnMatches)
+        // 使用 tournaments.json 中已有的 seriesByTournament
+        const seriesByTournament = tournamentsData.seriesByTournament || {};
+
+        console.log('Series by tournament:', Object.keys(seriesByTournament).map(k => `${k}: ${seriesByTournament[k]?.length || 0} series`));
+
+        // 过滤出有中国队伍参与的比赛
         const cnMatches = matches
           .filter((m: any) => m.radiant_team_name_cn || m.dire_team_name_cn)
           .map((m: any) => ({
@@ -143,30 +82,6 @@ function App() {
             leagueid: m.league_id || null
           }));
         
-        // 按开始时间排序每个赛事的比赛
-        Object.keys(seriesMap).forEach(key => {
-          seriesMap[key].sort((a, b) => {
-            const aTime = a.games[0]?.start_time || 0;
-            const bTime = b.games[0]?.start_time || 0;
-            return bTime - aTime; // 最新的在前
-          });
-        });
-        
-        console.log('Series by tournament:', Object.keys(seriesMap).map(k => `${k}: ${seriesMap[k].length} matches`));
-
-        // 使用硬编码的 tournaments 数据 - 将 ID 转为字符串以匹配 seriesByTournament 的键
-        const formattedTournaments = hardcodedTournaments.map((t: any) => ({
-          id: String(t.id),
-          name: t.name || t.name_cn || 'Unknown Tournament',
-          name_cn: t.name_cn,
-          prize_pool: t.prize_pool,
-          location: t.location,
-          start_date: t.start_date,
-          end_date: t.end_date,
-          status: t.status,
-          image: t.image
-        }));
-
         // 获取即将开始的比赛
         const now = Date.now() / 1000;
         const upcoming = cnMatches
@@ -180,7 +95,7 @@ function App() {
           upcoming,
           cnMatches: cnMatches.slice(0, 50),
           tournaments: formattedTournaments,
-          seriesByTournament: seriesMap,
+          seriesByTournament,
           news: [],
           community: [],
           lastUpdated: new Date().toISOString()
@@ -189,7 +104,8 @@ function App() {
         console.log('Data loaded:', {
           matches: cnMatches.length,
           upcoming: upcoming.length,
-          tournaments: formattedTournaments.length
+          tournaments: formattedTournaments.length,
+          seriesByTournament: Object.keys(seriesByTournament).length
         });
         
         setData(homeData);

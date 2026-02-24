@@ -3,6 +3,8 @@
  */
 
 import { createClient } from 'redis';
+import fs from 'fs';
+import path from 'path';
 
 const REDIS_URL = process.env.REDIS_URL;
 
@@ -13,6 +15,18 @@ async function getRedis() {
     await redis.connect();
   }
   return redis;
+}
+
+// Fallback to local JSON file
+function getLocalMatches() {
+  try {
+    const localPath = path.join(process.cwd(), 'public', 'data', 'matches.json');
+    const data = fs.readFileSync(localPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading local matches:', error);
+    return [];
+  }
 }
 
 export default async function handler(req, res) {
@@ -43,9 +57,19 @@ export default async function handler(req, res) {
       return res.status(200).json(list);
     }
     
-    return res.status(200).json([]);
+    // Fallback to local JSON file
+    const localMatches = getLocalMatches();
+    const sortedMatches = localMatches
+      .sort((a, b) => b.start_time - a.start_time)
+      .slice(0, 500);
+    return res.status(200).json(sortedMatches);
   } catch (error) {
     console.error('Error:', error);
-    return res.status(500).json({ error: error.message });
+    // Fallback to local JSON on error
+    const localMatches = getLocalMatches();
+    const sortedMatches = localMatches
+      .sort((a, b) => b.start_time - a.start_time)
+      .slice(0, 500);
+    return res.status(200).json(sortedMatches);
   }
 }
