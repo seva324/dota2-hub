@@ -38,10 +38,6 @@ async function loadHeroesData() {
 }
 
 // Create hero lookup functions
-function getHeroById(id: number): HeroData | undefined {
-  return heroesData[id];
-}
-
 function getHeroNameCn(id: number): string {
   const hero = heroesData[id];
   return hero?.name_cn || hero?.name || `英雄 ${id}`;
