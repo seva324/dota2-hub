@@ -80,9 +80,15 @@ function App() {
         const uniqueLeagueIds = [...new Set(matches.map((m: any) => m.leagueid).filter(Boolean))];
         console.log('Unique league IDs in matches:', uniqueLeagueIds.slice(0, 20));
 
-        // 转换数据格式以匹配前端期望
-        const cnMatches = matches
-          .filter((m: any) => m.radiant_team_name_cn || m.dire_team_name_cn)
+        // 硬编码赛事 ID 列表 (字符串形式)
+        const tournamentLeagueIds = ['16430', '16418', '16445', '16318'];
+        
+        // 将比赛数据按赛事分组 - 首先按 leagueid 筛选出属于这些赛事的比赛
+        const tournamentMatches = matches
+          .filter((m: any): boolean => {
+            const leagueId = String(m.leagueid || '');
+            return tournamentLeagueIds.includes(leagueId);
+          })
           .map((m: any) => ({
             id: parseInt(m.match_id),
             match_id: parseInt(m.match_id),
@@ -99,9 +105,9 @@ function App() {
             leagueid: m.leagueid || null
           }));
 
-        // 硬编码赛事 ID 列表 (字符串形式)
-        const tournamentLeagueIds = ['16430', '16418', '16445', '16318'];
-        
+        console.log('Matches for tournaments:', tournamentMatches.length, 'by leagueid:', 
+          tournamentLeagueIds.map((id: string) => `${id}: ${tournamentMatches.filter((m: any) => String(m.leagueid) === id).length}`));
+
         // 将比赛数据按赛事分组
         const seriesMap: Record<string, any[]> = {};
         
@@ -111,7 +117,7 @@ function App() {
         });
         
         // 根据 leagueid 分组到对应的赛事
-        cnMatches.forEach((m: any) => {
+        tournamentMatches.forEach((m: any) => {
           const leagueId = String(m.leagueid);
           
           // 如果比赛的 leagueid 匹配硬编码的赛事 ID，则添加到对应赛事
@@ -139,6 +145,25 @@ function App() {
             });
           }
         });
+        
+        // 转换数据格式以匹配前端期望 (用于 upcoming 和 cnMatches)
+        const cnMatches = matches
+          .filter((m: any) => m.radiant_team_name_cn || m.dire_team_name_cn)
+          .map((m: any) => ({
+            id: parseInt(m.match_id),
+            match_id: parseInt(m.match_id),
+            radiant_team_name: m.radiant_team_name || m.radiant_team_name_cn || 'Unknown',
+            radiant_team_name_cn: m.radiant_team_name_cn,
+            dire_team_name: m.dire_team_name || m.dire_team_name_cn || 'Unknown',
+            dire_team_name_cn: m.dire_team_name_cn,
+            radiant_game_wins: m.radiant_game_wins || 0,
+            dire_game_wins: m.dire_game_wins || 0,
+            start_time: m.start_time,
+            series_type: m.series_type || 'BO3',
+            tournament_name: '',
+            tournament_name_cn: '',
+            leagueid: m.leagueid || null
+          }));
         
         // 按开始时间排序每个赛事的比赛
         Object.keys(seriesMap).forEach(key => {
