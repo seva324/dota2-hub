@@ -120,12 +120,12 @@ async function loadTeamsData() {
 function getTeamAbbrev(teamName: string): string {
   const abbr: Record<string, string> = {
     'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
-    'Team Spirit': 'Spirit', 'Natus Vincere': 'NAVI',
+    'Team Spirit': 'Spirit', 'Natus Vincere': "Na'Vi",
     'Tundra Esports': 'Tundra', 'Team Liquid': 'Liquid',
     'Team Falcons': 'Falcons', 'OG': 'OG',
     'GamerLegion': 'GL', 'PARIVISION': 'PARI',
     'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
-    'Aurora Gaming': 'Aurora', 'Execration': 'XctN',
+    'Aurora Gaming': 'AG', 'Execration': 'XctN',
     'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
     'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
     'Team Nemesis': 'Nemesis', '1w Team': '1w',
