@@ -817,16 +817,16 @@
   },
   "123": {
     "name_en": "Hoodwink",
-    "name_cn": "森海飞霞",
+    "name_cn": "黄鸟",
     "nicknames": [
-      "松鼠"
+      "黄鸟"
     ]
   },
   "126": {
     "name_en": "Void Spirit",
-    "name_cn": "虚无之灵",
+    "name_cn": "墨客",
     "nicknames": [
-      "紫猫"
+      "墨客"
     ]
   },
   "128": {
@@ -845,9 +845,9 @@
   },
   "131": {
     "name_en": "Ringmaster",
-    "name_cn": "马戏团长",
+    "name_cn": "碎石者",
     "nicknames": [
-      "马戏团长"
+      "碎石者"
     ]
   },
   "135": {
@@ -889,7 +889,7 @@
     "name_en": "Largo",
     "name_cn": "朗戈",
     "nicknames": [
-      "朗戈"
+      "青蛙"
     ]
   }
 }
