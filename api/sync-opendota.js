@@ -6,7 +6,6 @@ const REDIS_URL = process.env.REDIS_URL;
 
 function getRedis() {
   if (!REDIS_URL) return null;
-  // 使用原生 fetch 调用 Upstash Redis REST API
   const match = REDIS_URL.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
   if (!match) return null;
   const token = match[1], host = match[2];
@@ -18,10 +17,7 @@ function getRedis() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(['GET', key])
       });
-      const text = await res.text();
-      if (text === '') return null;
-      // 返回 JSON 格式的结果
-      try { return JSON.parse(text); } catch { return text; }
+      return res.text();
     },
     async set(key, value) {
       const res = await fetch(`https://${host}`, {
@@ -107,43 +103,51 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  try {
-    console.log('=== Sync Start ===');
-    
-    if (!redis) throw new Error('REDIS_URL not set');
-    
-    const ping = await redis.ping();
-    console.log('Redis:', ping);
+  // 快速检查 Redis
+  if (!redis) {
+    return res.status(500).json({ error: 'REDIS_URL not configured' });
+  }
 
+  try {
+    // 测试 Redis
+    let ping;
+    try {
+      ping = await redis.ping();
+    } catch (e) {
+      return res.status(500).json({ error: 'Redis connection failed: ' + e.message });
+    }
+
+    // 获取现有数据
     let existing = {};
     try {
       const data = await redis.get('matches');
-      if (data && typeof data === 'object') existing = data;
+      if (data && data !== 'null' && data !== '') {
+        try { existing = JSON.parse(data); } catch { existing = {}; }
+      }
     } catch (e) { console.log('No existing'); }
-    console.log('Existing:', Object.keys(existing).length);
 
+    // 获取新数据
     let cn = [];
-    const pro = await fetchJSON(`${OPENDOTA}/proMatches?limit=30`);
-    for (const m of pro) { const c = convert(m); if (c) cn.push(c); }
-
-    for (const [, td] of Object.entries(TEAMS)) {
-      const tm = await fetchJSON(`${OPENDOTA}/teams/${td.id}/matches`);
-      for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
+    try {
+      const pro = await fetchJSON(`${OPENDOTA}/proMatches?limit=30`);
+      for (const m of pro) { const c = convert(m); if (c) cn.push(c); }
+    } catch (e) {
+      return res.status(500).json({ error: 'OpenDota fetch failed: ' + e.message });
     }
 
+    // 保存
     let saved = 0;
     for (const m of cn) {
       if (!existing[m.match_id]) { existing[m.match_id] = m; saved++; }
     }
+    
     await redis.set('matches', JSON.stringify(existing));
     
     const list = Object.values(existing).sort((a,b) => b.start_time - a.start_time).slice(0, 500);
     await redis.set('matches:list', JSON.stringify(list));
 
-    console.log(`Saved: ${saved}, Total: ${Object.keys(existing).length}`);
-    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length });
+    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length, redis: ping });
   } catch (e) {
-    console.error('Error:', e.message);
     return res.status(500).json({ error: e.message });
   }
 }
