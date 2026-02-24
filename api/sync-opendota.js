@@ -1,32 +1,39 @@
 /**
  * OpenDota 数据同步 API
- * 从 OpenDota API 拉取比赛数据并存入 Redis
+ * 从 OpenDota API 拉取比赛数据并存入 Redis (Upstash)
  */
+
+import { Redis } from '@upstash/redis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://default:CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A@redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com:19738';
 
-// 简单的 Redis 客户端 - 使用原生 fetch (Redis REST API)
-const REDIS_HOST = 'redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com';
-const REDIS_PORT = '19738';
-const REDIS_PASSWORD = 'CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A';
+// 解析 REDIS_URL 来获取 token 和 url
+// 格式: redis://default:TOKEN@host:port
+const parseRedisUrl = (url) => {
+  try {
+    const match = url.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
+    if (match) {
+      return {
+        token: match[1],
+        host: match[2],
+        port: match[3]
+      };
+    }
+  } catch (e) {}
+  return null;
+};
 
-async function redisCmd(cmd, ...args) {
-  const response = await fetch(`https://${REDIS_HOST}:${REDIS_PORT}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${REDIS_PASSWORD}`
-    },
-    body: JSON.stringify([cmd, ...args])
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Redis error: ${response.status}`);
-  }
-  
-  const text = await response.text();
-  return text;
-}
+const parsed = parseRedisUrl(REDIS_URL);
+
+// 创建 Upstash Redis 客户端
+const redis = parsed 
+  ? new Redis({
+      url: `https://${parsed.host}`,
+      token: parsed.token
+    })
+  : new Redis({
+      url: REDIS_URL
+    });
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
@@ -222,8 +229,8 @@ export default async function handler(req, res) {
 
     // 测试 Redis 连接
     try {
-      await redisCmd('PING');
-      console.log('Redis connected!');
+      const ping = await redis.ping();
+      console.log('Redis connected!:', ping);
     } catch (e) {
       console.error('Redis connection error:', e.message);
       return res.status(500).json({ error: 'Redis connection failed: ' + e.message });
@@ -232,9 +239,9 @@ export default async function handler(req, res) {
     // 获取现有数据
     let existingMatches = {};
     try {
-      const matchesJson = await redisCmd('GET', 'matches');
-      if (matchesJson && matchesJson !== '') {
-        existingMatches = JSON.parse(matchesJson);
+      const matchesJson = await redis.get('matches');
+      if (matchesJson) {
+        existingMatches = typeof matchesJson === 'string' ? JSON.parse(matchesJson) : matchesJson;
       }
     } catch (e) {
       console.log('No existing matches, starting fresh');
@@ -288,7 +295,7 @@ export default async function handler(req, res) {
       }
     }
 
-    await redisCmd('SET', 'matches', JSON.stringify(existingMatches));
+    await redis.set('matches', JSON.stringify(existingMatches));
     console.log(`Saved ${savedCount} new matches to Redis`);
     console.log(`Total matches in Redis: ${Object.keys(existingMatches).length}`);
 
@@ -296,7 +303,7 @@ export default async function handler(req, res) {
     const matchesList = Object.values(existingMatches)
       .sort((a, b) => b.start_time - a.start_time)
       .slice(0, 500);
-    await redisCmd('SET', 'matches:list', JSON.stringify(matchesList));
+    await redis.set('matches:list', JSON.stringify(matchesList));
 
     console.log(`\n========================================`);
     console.log(`Sync completed! Saved: ${savedCount} new matches`);
