@@ -7,108 +7,61 @@ import { NewsSection } from '@/sections/NewsSection';
 import { CommunitySection } from '@/sections/CommunitySection';
 import { Footer } from '@/sections/Footer';
 
-interface HomeData {
-  upcoming: Array<{
-    id: number;
-    match_id: number;
-    radiant_team_name: string;
-    radiant_team_name_cn?: string;
-    radiant_team_logo?: string;
-    dire_team_name: string;
-    dire_team_name_cn?: string;
-    dire_team_logo?: string;
-    start_time: number;
-    series_type: string;
-    tournament_name: string;
-    tournament_name_cn?: string;
-  }>;
-  cnMatches: Array<{
-    id: number;
-    match_id: number;
-    radiant_team_name: string;
-    radiant_team_name_cn?: string;
-    radiant_team_logo?: string;
-    dire_team_name: string;
-    dire_team_name_cn?: string;
-    dire_team_logo?: string;
-    radiant_game_wins: number;
-    dire_game_wins: number;
-    start_time: number;
-    series_type: string;
-    tournament_name: string;
-    tournament_name_cn?: string;
-  }>;
-  tournaments: Array<{
-    id: string;
-    name: string;
-    name_cn?: string;
-    tier: string;
-    start_date: string;
-    end_date: string;
-    status: string;
-    prize_pool?: string;
-    location?: string;
-    format?: string;
-  }>;
-  seriesByTournament?: Record<string, Array<{
-    series_id: string;
-    series_type: string;
-    radiant_team_name: string;
-    dire_team_name: string;
-    radiant_team_logo?: string;
-    dire_team_logo?: string;
-    radiant_score: number;
-    dire_score: number;
-    games: Array<{
-      match_id: string;
-      radiant_team_name: string;
-      dire_team_name: string;
-      radiant_score: number;
-      dire_score: number;
-      radiant_win: boolean;
-      start_time: number;
-      duration: number;
-    }>;
-    stage: string;
-  }>>;
-  news: Array<{
-    id: string;
-    title: string;
-    summary?: string;
-    source: string;
-    url: string;
-    published_at: number;
-    category: string;
-  }>;
-  community?: Array<{
-    id: string;
-    title: string;
-    author: string;
-    source: string;
-    upvotes: number;
-    comments: number;
-    url: string;
-    publishedAt: string;
-  }>;
-  lastUpdated: string;
-}
-
 function App() {
-  const [data, setData] = useState<HomeData | null>(null);
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/dota2-hub/data/home.json');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const homeData = await response.json();
+        // 从 API 获取比赛数据
+        const matchesRes = await fetch('/api/matches');
+        if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
+        const matches = await matchesRes.json();
+
+        // 转换数据格式以匹配前端期望
+        const cnMatches = matches
+          .filter((m: any) => m.radiant_team_name_cn || m.dire_team_name_cn)
+          .map((m: any) => ({
+            id: parseInt(m.match_id),
+            match_id: parseInt(m.match_id),
+            radiant_team_name: m.radiant_team_name || m.radiant_team_name_cn || 'Unknown',
+            radiant_team_name_cn: m.radiant_team_name_cn,
+            dire_team_name: m.dire_team_name || m.dire_team_name_cn || 'Unknown',
+            dire_team_name_cn: m.dire_team_name_cn,
+            radiant_game_wins: m.radiant_game_wins || 0,
+            dire_game_wins: m.dire_game_wins || 0,
+            start_time: m.start_time,
+            series_type: m.series_type || 'BO3',
+            tournament_name: '',
+            tournament_name_cn: ''
+          }));
+
+        // 获取即将开始的比赛
+        const now = Date.now() / 1000;
+        const upcoming = cnMatches
+          .filter((m: any) => m.start_time > now)
+          .sort((a: any, b: any) => a.start_time - b.start_time)
+          .slice(0, 10)
+          .map((m: any) => ({ ...m, tournament_name: 'Dota 2 Pro League' }));
+
+        // 格式化数据
+        const homeData = {
+          upcoming,
+          cnMatches: cnMatches.slice(0, 50),
+          tournaments: [],
+          seriesByTournament: {},
+          news: [],
+          community: [],
+          lastUpdated: new Date().toISOString()
+        };
+
         console.log('Data loaded:', {
-          tournaments: homeData.tournaments?.length,
-          matchesByTournament: Object.keys(homeData.matchesByTournament || {}).length,
-          upcoming: homeData.upcoming?.length
+          matches: cnMatches.length,
+          upcoming: upcoming.length
         });
+        
         setData(homeData);
       } catch (err) {
         console.error('Fetch error:', err);
