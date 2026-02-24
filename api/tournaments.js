@@ -5,6 +5,48 @@
 import fs from 'fs';
 import path from 'path';
 
+// Load teams data for logo matching
+function getTeams() {
+  try {
+    const localPath = path.join(process.cwd(), 'public', 'data', 'teams.json');
+    const data = fs.readFileSync(localPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading local teams:', error);
+    return [];
+  }
+}
+
+// Create a map of team names to logo URLs
+function createTeamLogoMap(teams) {
+  const logoMap = new Map();
+  teams.forEach(team => {
+    logoMap.set(team.name.toLowerCase(), team.logo_url);
+    if (team.name_cn) {
+      logoMap.set(team.name_cn.toLowerCase(), team.logo_url);
+    }
+    if (team.tag) {
+      logoMap.set(team.tag.toLowerCase(), team.logo_url);
+    }
+  });
+  return logoMap;
+}
+
+// Find logo URL for a team name
+function findTeamLogo(logoMap, teamName) {
+  if (!teamName) return null;
+  return logoMap.get(teamName.toLowerCase()) || null;
+}
+
+// Add logos to series data
+function addLogosToSeries(series, logoMap) {
+  return series.map(s => ({
+    ...s,
+    radiant_team_logo: findTeamLogo(logoMap, s.radiant_team_name),
+    dire_team_logo: findTeamLogo(logoMap, s.dire_team_name)
+  }));
+}
+
 // Fallback to local JSON file
 function getLocalTournaments() {
   try {
@@ -41,18 +83,54 @@ export default async function handler(req, res) {
       const tournaments = await kv.get('tournaments');
       
       if (tournaments) {
-        // Return full object with tournaments and seriesByTournament
-        return res.status(200).json(tournaments);
+        // Load teams for logo matching
+        const teams = getTeams();
+        const logoMap = createTeamLogoMap(teams);
+        
+        // Add logos to series data
+        const seriesByTournament = {};
+        for (const [tournamentId, series] of Object.entries(tournaments.seriesByTournament || {})) {
+          seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
+        }
+        
+        // Return full object with tournaments and seriesByTournament with logos
+        return res.status(200).json({
+          ...tournaments,
+          seriesByTournament
+        });
       }
     }
     
-    // Fallback to local JSON file - return full object
+    // Fallback to local JSON file - return full object with logos
+    const teams = getTeams();
+    const logoMap = createTeamLogoMap(teams);
     const localData = getLocalTournaments();
-    return res.status(200).json(localData);
+    
+    // Add logos to series data
+    const seriesByTournament = {};
+    for (const [tournamentId, series] of Object.entries(localData.seriesByTournament || {})) {
+      seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
+    }
+    
+    return res.status(200).json({
+      ...localData,
+      seriesByTournament
+    });
   } catch (error) {
     console.error('Error:', error);
-    // Fallback to local JSON on error
+    // Fallback to local JSON on error with logos
+    const teams = getTeams();
+    const logoMap = createTeamLogoMap(teams);
     const localData = getLocalTournaments();
-    return res.status(200).json(localData);
+    
+    const seriesByTournament = {};
+    for (const [tournamentId, series] of Object.entries(localData.seriesByTournament || {})) {
+      seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
+    }
+    
+    return res.status(200).json({
+      ...localData,
+      seriesByTournament
+    });
   }
 }
