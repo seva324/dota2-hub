@@ -75,6 +75,10 @@ function App() {
         ];
 
         console.log('Tournaments loaded:', hardcodedTournaments.length);
+        
+        // Debug: 打印所有比赛的实际 leagueid
+        const uniqueLeagueIds = [...new Set(matches.map((m: any) => m.leagueid).filter(Boolean))];
+        console.log('Unique league IDs in matches:', uniqueLeagueIds.slice(0, 20));
 
         // 转换数据格式以匹配前端期望
         const cnMatches = matches
@@ -91,46 +95,65 @@ function App() {
             start_time: m.start_time,
             series_type: m.series_type || 'BO3',
             tournament_name: '',
-            tournament_name_cn: ''
+            tournament_name_cn: '',
+            leagueid: m.leagueid || null
           }));
 
+        // 硬编码赛事 ID 列表 (字符串形式)
+        const tournamentLeagueIds = ['16430', '16418', '16445', '16318'];
+        
         // 将比赛数据按赛事分组
         const seriesMap: Record<string, any[]> = {};
         
-        // 根据 leagueid 或其他方式分组 (这里简化处理)
-        // 实际应该根据 tournament id 来分组
+        // 初始化每个赛事的数组
+        tournamentLeagueIds.forEach((id: string) => {
+          seriesMap[id] = [];
+        });
+        
+        // 根据 leagueid 分组到对应的赛事
         cnMatches.forEach((m: any) => {
-          const leagueKey = m.leagueid || 'other';
-          if (!seriesMap[leagueKey]) {
-            seriesMap[leagueKey] = [];
-          }
-          // 将比赛转换为 series 格式
-          seriesMap[leagueKey].push({
-            series_id: `series-${m.match_id}`,
-            series_type: m.series_type || 'BO3',
-            radiant_team_name: m.radiant_team_name,
-            dire_team_name: m.dire_team_name,
-            radiant_team_logo: null,
-            dire_team_logo: null,
-            radiant_score: m.radiant_score || m.radiant_game_wins,
-            dire_score: m.dire_score || m.dire_game_wins,
-            games: [{
-              match_id: String(m.match_id),
+          const leagueId = String(m.leagueid);
+          
+          // 如果比赛的 leagueid 匹配硬编码的赛事 ID，则添加到对应赛事
+          if (leagueId && tournamentLeagueIds.includes(leagueId)) {
+            seriesMap[leagueId].push({
+              series_id: `series-${m.match_id}`,
+              series_type: m.series_type || 'BO3',
               radiant_team_name: m.radiant_team_name,
               dire_team_name: m.dire_team_name,
-              radiant_score: m.radiant_score || 0,
-              dire_score: m.dire_score || 0,
-              radiant_win: m.radiant_win,
-              start_time: m.start_time,
-              duration: m.duration || 0
-            }],
-            stage: 'Recent Matches'
+              radiant_team_logo: null,
+              dire_team_logo: null,
+              radiant_score: m.radiant_score || m.radiant_game_wins,
+              dire_score: m.dire_score || m.dire_game_wins,
+              games: [{
+                match_id: String(m.match_id),
+                radiant_team_name: m.radiant_team_name,
+                dire_team_name: m.dire_team_name,
+                radiant_score: m.radiant_score || 0,
+                dire_score: m.dire_score || 0,
+                radiant_win: m.radiant_win,
+                start_time: m.start_time,
+                duration: m.duration || 0
+              }],
+              stage: 'Recent Matches'
+            });
+          }
+        });
+        
+        // 按开始时间排序每个赛事的比赛
+        Object.keys(seriesMap).forEach(key => {
+          seriesMap[key].sort((a, b) => {
+            const aTime = a.games[0]?.start_time || 0;
+            const bTime = b.games[0]?.start_time || 0;
+            return bTime - aTime; // 最新的在前
           });
         });
+        
+        console.log('Series by tournament:', Object.keys(seriesMap).map(k => `${k}: ${seriesMap[k].length} matches`));
 
-        // 使用硬编码的 tournaments 数据
+        // 使用硬编码的 tournaments 数据 - 将 ID 转为字符串以匹配 seriesByTournament 的键
         const formattedTournaments = hardcodedTournaments.map((t: any) => ({
-          id: t.id,
+          id: String(t.id),
           name: t.name || t.name_cn || 'Unknown Tournament',
           name_cn: t.name_cn,
           prize_pool: t.prize_pool,
