@@ -1,16 +1,16 @@
 /**
  * 获取比赛数据 API
- * 从 Redis 获取比赛列表
  */
 
-import Redis from 'ioredis';
+import { createClient } from 'redis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://default:CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A@redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com:19738';
+const REDIS_URL = process.env.REDIS_URL;
 
 let redis;
-function getRedis() {
-  if (!redis) {
-    redis = new Redis(REDIS_URL);
+async function getRedis() {
+  if (!redis && REDIS_URL) {
+    redis = createClient({ url: REDIS_URL });
+    await redis.connect();
   }
   return redis;
 }
@@ -25,9 +25,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const r = getRedis();
+    const r = await getRedis();
     
-    // 尝试从 Redis 获取
     const matchesListJson = await r.get('matches:list');
     
     if (matchesListJson) {
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
       return res.status(200).json(matchesList);
     }
     
-    // 如果没有缓存，尝试从 matches 获取
     const matchesJson = await r.get('matches');
     if (matchesJson) {
       const matches = JSON.parse(matchesJson);
