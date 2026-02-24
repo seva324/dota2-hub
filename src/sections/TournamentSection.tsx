@@ -1,8 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'lucide-react';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+// Hero data type
+interface HeroData {
+  id: number;
+  name: string;
+  name_cn: string;
+  img: string;
+  img_url: string;
+}
+
+// Hero picks for a game
+interface HeroPick {
+  hero_id: number;
+  team: 'radiant' | 'dire';
+  is_pick: boolean;
+  order: number;
+}
+
+// Load heroes data
+let heroesData: Record<number, HeroData> = {};
+
+async function loadHeroesData() {
+  try {
+    const res = await fetch('/data/heroes.json');
+    const heroesJson = await res.json();
+    Object.entries(heroesJson).forEach(([key, value]) => {
+      heroesData[parseInt(key)] = value as HeroData;
+    });
+    console.log('Heroes loaded in TournamentSection:', Object.keys(heroesData).length);
+  } catch (err) {
+    console.error('Error loading heroes:', err);
+  }
+}
+
+// Create hero lookup functions
+function getHeroById(id: number): HeroData | undefined {
+  return heroesData[id];
+}
+
+function getHeroNameCn(id: number): string {
+  const hero = heroesData[id];
+  return hero?.name_cn || hero?.name || `英雄 ${id}`;
+}
+
+function getHeroImgUrl(id: number): string {
+  const hero = heroesData[id];
+  return hero?.img_url || '';
+}
 
 interface Tournament {
   id: string;
@@ -38,6 +86,7 @@ interface Game {
   radiant_win: boolean | number;
   start_time: number;
   duration: number;
+  picks_bans?: HeroPick[];
 }
 
 interface TournamentSectionProps {
@@ -105,9 +154,14 @@ function formatDuration(seconds: number): string {
 
 export function TournamentSection({ tournaments, seriesByTournament }: TournamentSectionProps) {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournaments[0] || null);
-  
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+  const [heroesLoaded, setHeroesLoaded] = useState(false);
+
+  // Load heroes data on mount
+  useEffect(() => {
+    loadHeroesData().then(() => setHeroesLoaded(true));
+  }, []);
 
   const toggleSeries = (seriesId: string) => {
     const newExpanded = new Set(expandedSeries);
@@ -378,6 +432,11 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                   const winnerName = game.radiant_win ? game.radiant_team_name : game.dire_team_name;
                                   const winnerIsCN = isChineseTeam(winnerName);
                                   
+                                  // Get hero picks for this game
+                                  const picks = game.picks_bans || [];
+                                  const radiantPicks = picks.filter(p => p.team === 'radiant' && p.is_pick).sort((a, b) => a.order - b.order);
+                                  const direPicks = picks.filter(p => p.team === 'dire' && p.is_pick).sort((a, b) => a.order - b.order);
+                                  
                                   return (
                                     <div 
                                       key={game.match_id} 
@@ -411,9 +470,49 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                         {getTeamAbbrev(winnerName)}
                                       </div>
                                       
+                                      {/* Hero Picks Display */}
+                                      {heroesLoaded && picks.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-white/10">
+                                          {/* Radiant Heroes */}
+                                          <div className="flex flex-wrap justify-center gap-0.5 mb-1">
+                                            {radiantPicks.slice(0, 5).map((pick, i) => {
+                                              const heroImg = getHeroImgUrl(pick.hero_id);
+                                              return heroImg ? (
+                                                <img 
+                                                  key={`r-${i}`}
+                                                  src={heroImg} 
+                                                  alt={getHeroNameCn(pick.hero_id)}
+                                                  className="w-5 h-3 object-contain"
+                                                  title={getHeroNameCn(pick.hero_id)}
+                                                />
+                                              ) : null;
+                                            })}
+                                          </div>
+                                          {/* Dire Heroes */}
+                                          <div className="flex flex-wrap justify-center gap-0.5">
+                                            {direPicks.slice(0, 5).map((pick, i) => {
+                                              const heroImg = getHeroImgUrl(pick.hero_id);
+                                              return heroImg ? (
+                                                <img 
+                                                  key={`d-${i}`}
+                                                  src={heroImg} 
+                                                  alt={getHeroNameCn(pick.hero_id)}
+                                                  className="w-5 h-3 object-contain"
+                                                  title={getHeroNameCn(pick.hero_id)}
+                                                />
+                                              ) : null;
+                                            })}
+                                          </div>
+                                          {/* Hero Names */}
+                                          <div className="mt-1 text-[8px] text-slate-500 truncate px-1">
+                                            {radiantPicks.slice(0, 3).map(p => getHeroNameCn(p.hero_id)).join(' · ')}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
                                       {/* 游戏时长 */}
                                       {game.duration > 0 && (
-                                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500">
+                                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 mt-1">
                                           <Clock className="w-3 h-3" />
                                           <span>{formatDuration(game.duration)}</span>
                                         </div>
