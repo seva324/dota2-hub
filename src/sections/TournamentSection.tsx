@@ -85,6 +85,49 @@ interface Game {
   picks_bans?: HeroPick[];
 }
 
+// Team data type for team abbreviations
+interface TeamData {
+  id: string;
+  name: string;
+  name_cn: string;
+  tag: string;
+  logo_url: string;
+}
+
+// Load teams data for team abbreviations
+let teamsData: Record<string, TeamData> = {};
+
+async function loadTeamsData() {
+  try {
+    const res = await fetch('/data/teams.json');
+    const teamsJson = await res.json();
+    // Create lookup by name (case insensitive)
+    teamsJson.forEach((team: TeamData) => {
+      teamsData[team.name.toLowerCase()] = team;
+      if (team.name_cn) {
+        teamsData[team.name_cn.toLowerCase()] = team;
+      }
+      if (team.tag) {
+        teamsData[team.tag.toLowerCase()] = team;
+      }
+    });
+    console.log('Teams loaded in TournamentSection:', Object.keys(teamsData).length);
+  } catch (err) {
+    console.error('Error loading teams:', err);
+  }
+}
+
+function getTeamAbbrev(teamName: string): string {
+  if (!teamName) return '';
+  
+  // First try to find in teams.json by name (case insensitive)
+  const team = teamsData[teamName.toLowerCase()];
+  if (team?.name_cn) {
+    return team.name_cn;
+  }
+  
+  // Fallback to hardcoded abbreviations for teams not in teams.json
+
 interface TournamentSectionProps {
   tournaments: Tournament[];
   seriesByTournament?: Record<string, Series[]>;
@@ -153,10 +196,17 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
+  const [teamsLoaded, setTeamsLoaded] = useState(false);
 
-  // Load heroes data on mount
+  // Load heroes and teams data on mount
   useEffect(() => {
-    loadHeroesData().then(() => setHeroesLoaded(true));
+    Promise.all([
+      loadHeroesData(),
+      loadTeamsData()
+    ]).then(() => {
+      setHeroesLoaded(true);
+      setTeamsLoaded(true);
+    });
   }, []);
 
   const toggleSeries = (seriesId: string) => {

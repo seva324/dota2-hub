@@ -136,6 +136,7 @@ async function main() {
       start_time: match.start_time,
       duration: match.duration,
       leagueid: match.leagueid,
+      series_id: match.series_id, // Store series_id from OpenDota
       series_type: match.series_type === 1 ? 'BO3' : match.series_type === 2 ? 'BO5' : 'BO1',
       status: 'finished',
       lobby_type: match.lobby_type,
@@ -146,6 +147,7 @@ async function main() {
   console.log(`\nProcessed ${processedMatches.length} matches`);
 
   // Step 4: Create series by grouping matches
+  // Fix: Properly group by series_id - normalize team pair regardless of radiant/dire
   const seriesByTournament = {};
 
   for (const leagueId of TARGET_LEAGUE_IDS) {
@@ -154,10 +156,24 @@ async function main() {
 
     if (leagueMatches.length === 0) continue;
 
-    // Group by team pair + series_id
+    // Group by series_id if available, otherwise normalize team pair + day
     const seriesMap = {};
     leagueMatches.forEach(m => {
-      const seriesKey = m.series_id || `${m.radiant_team_name}_vs_${m.dire_team_name}_${Math.floor(m.start_time / 86400)}`;
+      let seriesKey;
+      
+      if (m.series_id) {
+        // Use OpenDota's series_id directly
+        seriesKey = `series_${m.series_id}`;
+      } else {
+        // Normalize team pair regardless of radiant/dire (sort team names alphabetically)
+        const teamPair = [m.radiant_team_name, m.dire_team_name]
+          .filter(Boolean)
+          .sort()
+          .join('_vs_');
+        const dayKey = Math.floor(m.start_time / 86400);
+        seriesKey = `normalized_${teamPair}_${dayKey}`;
+      }
+      
       if (!seriesMap[seriesKey]) {
         seriesMap[seriesKey] = [];
       }

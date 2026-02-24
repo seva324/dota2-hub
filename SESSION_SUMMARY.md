@@ -1,54 +1,66 @@
-# Session Summary - Real Data Fix
+# Session Summary - Series Aggregation & Team Logos Fix
 
 **Date:** 2026-02-24
 
 ## Task
-Fix Dota2 Hub with REAL data from OpenDota API - NO MOCK DATA!
+Fix series aggregation, team abbreviation, and fetch team logos from OpenDota API.
 
 ## What Was Done
 
-### 1. Analyzed Data Structure
-- Examined tournaments.json format with tournaments array and seriesByTournament object
-- Found that matches.json had team names as `null` - data wasn't properly resolved
+### 1. Fixed Series Aggregation (Step 1)
+**Problem:** Series were incorrectly grouped by radiant vs dire team pairing, causing games where a team was radiant in game 1 and dire in game 2 to be split into different series.
 
-### 2. Created Real Data Fetcher
-Created `scripts/fetch-real-data.js` that:
-- Fetches matches from OpenDota API for target league IDs: 19269, 18988, 19099, 19130
-- Resolves team IDs to names by fetching team info from OpenDota API
-- Groups matches into series by team pairings
-- Adds team logos from Steam CDN
+**Solution:** Updated `scripts/fetch-real-data.js` to:
+- Use `series_id` from OpenDota API when available
+- Normalize team pairs alphabetically when series_id is not available
+- This ensures games from the same series are grouped together regardless of which side (radiant/dire) each team was on
 
-### 3. Results
+**Result:**
+- Before: 371 series (incorrectly split)
+- After: 269 series (properly grouped)
+- Verified: 67 series in dreamleague-s28 now have multiple games correctly grouped
 
-**Real Data Fetched:**
-| League ID | Tournament | Matches | Series |
-|-----------|------------|---------|--------|
-| 19269 | DreamLeague S28 | 143 | 112 |
-| 18988 | DreamLeague S27 | 206 | 137 |
-| 19099 | BLAST Slam VI | 100 | 84 |
-| 19130 | ESL Challenger China | 48 | 38 |
-| **Total** | | **497** | **371** |
+### 2. Fixed Team Abbreviation (Step 2)
+**Problem:** Team abbreviations were hardcoded in `getTeamAbbrev()` function in TournamentSection.tsx
 
-**Unique Teams:** 47 teams identified from the matches
+**Solution:** Updated `src/sections/TournamentSection.tsx` to:
+- Add `TeamData` interface and `teamsData` lookup
+- Load teams.json data on component mount
+- Use `name_cn` field from teams.json for team abbreviations
+- Fallback to hardcoded abbreviations only for teams not in teams.json
 
-### 4. Team Logos
-- Team logos sourced from OpenDota API team data
-- Steam CDN URLs for major teams (Team Liquid, Team Spirit, Tundra, Xtreme Gaming, etc.)
-- ~55% of series have both team logos available
+### 3. Fetched All Team Logos from OpenDota API (Step 3)
+**Problem:** teams.json only had 12 teams with logos
+
+**Solution:** Created `scripts/fetch-all-team-logos.js` that:
+- Fetches all teams from OpenDota API (`https://api.opendota.com/api/teams`)
+- Updates teams.json with 921 teams (was 12)
+- All teams now have logo URLs from Steam CDN
+
+**Result:**
+- Before: 12 teams, ~55% with logos
+- After: 921 teams, 100% with logos
 
 ## Files Changed
-- `public/data/tournaments.json` - Updated with real series data
-- `public/data/matches.json` - Updated with 497 real matches
-- `scripts/fetch-real-data.js` - New script for fetching real data
+
+### Modified Files:
+- `public/data/matches.json` - Regenerated with proper team data
+- `public/data/teams.json` - Updated with 921 teams with logos (was 12)
+- `public/data/tournaments.json` - Updated with 269 series (was 371 incorrectly grouped)
+- `scripts/fetch-real-data.js` - Fixed series aggregation logic
+- `src/sections/TournamentSection.tsx` - Added teams.json loading for abbreviations
+
+### New Files:
+- `scripts/fetch-all-team-logos.js` - Script to fetch all team logos from OpenDota API
+- `scripts/check-series.js` - Verification script for series aggregation
 
 ## Verification
-- ✅ Data is REAL from OpenDota API (not mock)
-- ✅ Team names properly resolved from API
-- ✅ Match IDs and scores are real
-- ✅ Team logos mapped from teams.json and OpenDota API
-- ✅ Data structure matches what TournamentSection expects
+- ✅ Series with multiple games are now properly grouped
+- ✅ Team abbreviations now use name_cn from teams.json
+- ✅ 921 teams with logos fetched from OpenDota API
+- ✅ Data is from real OpenDota API (not mock)
 
 ## Notes
-- OpenDota API's `/proMatches` endpoint returns team IDs but not names - resolved via `/teams/{id}` endpoint
-- Some older/smaller teams don't have Steam CDN logos - logos will fallback to team initials
-- Data can be refreshed by running: `node scripts/fetch-real-data.js`
+- OpenDota API `/teams` endpoint returns 1000 teams
+- Teams.json now contains all professional Dota 2 teams with their logos
+- The series aggregation fix ensures that a team playing as radiant in game 1 and dire in game 2 will still be grouped in the same series
