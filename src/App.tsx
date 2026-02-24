@@ -18,6 +18,74 @@ const LEAGUE_TO_TOURNAMENT: Record<number, string> = {
   19130: 'esl-challenger-china'
 };
 
+// Team data type
+interface TeamData {
+  id: string;
+  name: string;
+  name_cn: string;
+  tag: string;
+  logo_url: string;
+}
+
+// Hero data type
+interface HeroData {
+  id: number;
+  name: string;
+  name_cn: string;
+  img: string;
+}
+
+// Load teams data
+let teamsData: TeamData[] = [];
+let heroesData: Record<number, HeroData> = {};
+
+// Fetch teams and heroes data
+async function loadStaticData() {
+  try {
+    // Load teams
+    const teamsRes = await fetch('/data/teams.json');
+    teamsData = await teamsRes.json();
+    console.log('Teams loaded:', teamsData.length);
+
+    // Load heroes
+    const heroesRes = await fetch('/data/heroes.json');
+    const heroesJson = await heroesRes.json();
+    // Convert string keys to numbers
+    Object.entries(heroesJson).forEach(([key, value]) => {
+      heroesData[parseInt(key)] = value as HeroData;
+    });
+    console.log('Heroes loaded:', Object.keys(heroesData).length);
+  } catch (err) {
+    console.error('Error loading static data:', err);
+  }
+}
+
+// Find team logo by team name
+function findTeamLogo(teamName: string): string | undefined {
+  if (!teamName || !teamsData.length) return undefined;
+  
+  const normalizedName = teamName.toLowerCase().trim();
+  
+  // Try exact match first
+  let team = teamsData.find(t => 
+    t.name.toLowerCase() === normalizedName || 
+    t.name_cn.toLowerCase() === normalizedName ||
+    t.tag.toLowerCase() === normalizedName
+  );
+  
+  // Try partial match
+  if (!team) {
+    team = teamsData.find(t => 
+      t.name.toLowerCase().includes(normalizedName) ||
+      normalizedName.includes(t.name.toLowerCase()) ||
+      t.name_cn.includes(teamName) ||
+      teamName.includes(t.name_cn)
+    );
+  }
+  
+  return team?.logo_url;
+}
+
 // Helper function to group matches into series by team pairing
 function groupMatchesIntoSeries(matches: any[]): Record<string, any[]> {
   const seriesByKey: Record<string, any[]> = {};
@@ -64,6 +132,8 @@ function groupMatchesIntoSeries(matches: any[]): Record<string, any[]> {
       series_type: seriesType,
       radiant_team_name: seriesMatches[0].radiant_team_name,
       dire_team_name: seriesMatches[0].dire_team_name,
+      radiant_team_logo: findTeamLogo(seriesMatches[0].radiant_team_name),
+      dire_team_logo: findTeamLogo(seriesMatches[0].dire_team_name),
       games: seriesMatches.map(m => ({
         match_id: m.match_id,
         radiant_team_name: m.radiant_team_name,
@@ -104,6 +174,9 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Load static data first (teams, heroes)
+        await loadStaticData();
+        
         const apiBase = window.location.origin;
         console.log('API Base:', apiBase);
         
