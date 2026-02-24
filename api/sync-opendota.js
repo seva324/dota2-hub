@@ -1,48 +1,63 @@
 /**
  * OpenDota 数据同步 API
- * 从 OpenDota API 拉取比赛数据并存入 Redis
  */
-
-import { Redis } from '@upstash/redis';
 
 const REDIS_URL = process.env.REDIS_URL;
 
-// 解析 Redis URL
-function parseRedisUrl(url) {
-  if (!url) return null;
-  const match = url.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
+function getRedis() {
+  if (!REDIS_URL) return null;
+  // 使用原生 fetch 调用 Upstash Redis REST API
+  const match = REDIS_URL.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
   if (!match) return null;
-  return { token: match[1], host: match[2] };
+  const token = match[1], host = match[2];
+  
+  return {
+    async get(key) {
+      const res = await fetch(`https://${host}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(['GET', key])
+      });
+      const text = await res.text();
+      if (text === '') return null;
+      // 返回 JSON 格式的结果
+      try { return JSON.parse(text); } catch { return text; }
+    },
+    async set(key, value) {
+      const res = await fetch(`https://${host}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(['SET', key, value])
+      });
+      return res.text();
+    },
+    async ping() {
+      const res = await fetch(`https://${host}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(['PING'])
+      });
+      return res.text();
+    }
+  };
 }
 
-const cfg = parseRedisUrl(REDIS_URL);
-const redis = cfg ? new Redis({ url: `https://${cfg.host}`, token: cfg.token }) : null;
+const redis = getRedis();
+const OPENDOTA = 'https://api.opendota.com/api';
 
-const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
-const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
-
-const TARGET_TEAMS = {
+const TEAMS = {
   'xtreme-gaming': { name: 'Xtreme Gaming', name_cn: 'XG', id: 8261502 },
   'yakult-brothers': { name: 'Yakult Brothers', name_cn: 'YB', id: 8255888 },
   'vici-gaming': { name: 'Vici Gaming', name_cn: 'VG', id: 7391077 },
 };
 
-async function fetchWithRetry(url, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const headers = {};
-      if (OPENDOTA_API_KEY) headers['Authorization'] = `Bearer ${OPENDOTA_API_KEY}`;
-      const res = await fetch(url, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      if (i === retries - 1) throw e;
-      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-    }
-  }
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
-function identifyTeam(name) {
+function identify(name) {
   if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
   const u = name.toUpperCase(), l = name.toLowerCase();
   if (u === 'XG' || l.includes('xtreme')) return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
@@ -52,29 +67,28 @@ function identifyTeam(name) {
   return { id: 'unknown', name_cn: name, is_cn: false };
 }
 
-function convertMatch(m, teamData = null) {
-  const rt = identifyTeam(m.radiant_name), dt = identifyTeam(m.dire_name);
-  if (!rt.is_cn && !dt.is_cn && !teamData) return null;
-  
+function convert(m, td = null) {
+  const rt = identify(m.radiant_name), dt = identify(m.dire_name);
+  if (!rt.is_cn && !dt.is_cn && !td) return null;
   const now = Date.now() / 1000;
-  let status = m.start_time < now - 3600 ? 'finished' : m.start_time < now ? 'live' : 'scheduled';
+  const status = m.start_time < now - 3600 ? 'finished' : m.start_time < now ? 'live' : 'scheduled';
   const rw = m.radiant_win;
   
-  if (teamData) {
+  if (td) {
     const isR = m.radiant;
     return {
-      match_id: String(m.match_id), radiant_team_id: isR ? teamData.id : 'unknown',
-      dire_team_id: isR ? 'unknown' : teamData.id, radiant_team_name: isR ? teamData.name : m.opposing_team_name,
-      radiant_team_name_cn: isR ? teamData.name_cn : identifyTeam(m.opposing_team_name).name_cn,
-      dire_team_name: isR ? m.opposing_team_name : teamData.name,
-      dire_team_name_cn: isR ? identifyTeam(m.opposing_team_name).name_cn : teamData.name_cn,
+      match_id: String(m.match_id), radiant_team_id: isR ? td.id : 'unknown',
+      dire_team_id: isR ? 'unknown' : td.id,
+      radiant_team_name: isR ? td.name : m.opposing_team_name,
+      radiant_team_name_cn: isR ? td.name_cn : identify(m.opposing_team_name).name_cn,
+      dire_team_name: isR ? m.opposing_team_name : td.name,
+      dire_team_name_cn: isR ? identify(m.opposing_team_name).name_cn : td.name_cn,
       radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
       radiant_game_wins: rw ? 1 : 0, dire_game_wins: rw ? 0 : 1,
       start_time: m.start_time, duration: m.duration || 0, leagueid: m.leagueid,
       series_type: 'BO3', status, lobby_type: 7, radiant_win: rw ? 1 : 0,
     };
   }
-  
   return {
     match_id: String(m.match_id), radiant_team_id: rt.id, dire_team_id: dt.id,
     radiant_team_name: m.radiant_name || null, radiant_team_name_cn: rt.name_cn,
@@ -91,44 +105,34 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    console.log('=== DOTA2 Hub Sync ===');
+    console.log('=== Sync Start ===');
     
-    if (!redis) throw new Error('Redis not configured - REDIS_URL missing');
-    if (!cfg) throw new Error('Invalid REDIS_URL format');
+    if (!redis) throw new Error('REDIS_URL not set');
     
-    // Test Redis
-    await redis.ping();
-    console.log('Redis connected!');
+    const ping = await redis.ping();
+    console.log('Redis:', ping);
 
-    // Get existing
     let existing = {};
     try {
       const data = await redis.get('matches');
-      if (data) existing = typeof data === 'string' ? JSON.parse(data) : data;
-    } catch (e) { console.log('No existing matches'); }
-    console.log(`Existing: ${Object.keys(existing).length}`);
+      if (data && typeof data === 'object') existing = data;
+    } catch (e) { console.log('No existing'); }
+    console.log('Existing:', Object.keys(existing).length);
 
-    let cnMatches = [];
+    let cn = [];
+    const pro = await fetchJSON(`${OPENDOTA}/proMatches?limit=30`);
+    for (const m of pro) { const c = convert(m); if (c) cn.push(c); }
 
-    // Pro Matches
-    console.log('Fetching pro matches...');
-    const pro = await fetchWithRetry(`${OPENDOTA_BASE_URL}/proMatches?limit=50`);
-    for (const m of pro) { const c = convertMatch(m); if (c) cnMatches.push(c); }
-
-    // Team Matches
-    for (const [, td] of Object.entries(TARGET_TEAMS)) {
-      const tm = await fetchWithRetry(`${OPENDOTA_BASE_URL}/teams/${td.id}/matches`);
-      for (const m of tm) { const c = convertMatch(m, td); if (c) cnMatches.push(c); }
-      await new Promise(r => setTimeout(r, 500));
+    for (const [, td] of Object.entries(TEAMS)) {
+      const tm = await fetchJSON(`${OPENDOTA}/teams/${td.id}/matches`);
+      for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
     }
 
-    // Save
     let saved = 0;
-    for (const m of cnMatches) {
+    for (const m of cn) {
       if (!existing[m.match_id]) { existing[m.match_id] = m; saved++; }
     }
     await redis.set('matches', JSON.stringify(existing));
@@ -138,8 +142,8 @@ export default async function handler(req, res) {
 
     console.log(`Saved: ${saved}, Total: ${Object.keys(existing).length}`);
     return res.status(200).json({ success: true, saved, total: Object.keys(existing).length });
-  } catch (error) {
-    console.error('Error:', error.message);
-    return res.status(500).json({ error: error.message });
+  } catch (e) {
+    console.error('Error:', e.message);
+    return res.status(500).json({ error: e.message });
   }
 }
