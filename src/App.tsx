@@ -119,11 +119,11 @@ function App() {
           // 生产环境：从 API 获取
           const tournamentsRes = await fetch(`${apiBase}/api/tournaments`);
           if (!tournamentsRes.ok) throw new Error(`HTTP ${tournamentsRes.status}`);
-          const tournamentsList = await tournamentsRes.json();
-          // API 返回数组格式，转换为对象格式
+          const response = await tournamentsRes.json();
+          // API 返回完整对象格式，包含 tournaments 和 seriesByTournament
           tournamentsData = {
-            tournaments: Array.isArray(tournamentsList) ? tournamentsList : [],
-            seriesByTournament: {}
+            tournaments: response.tournaments || response || [],
+            seriesByTournament: response.seriesByTournament || {}
           };
         }
 
