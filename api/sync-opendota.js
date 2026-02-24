@@ -2,43 +2,19 @@
  * OpenDota 数据同步 API
  */
 
+import { createClient } from 'redis';
+
 const REDIS_URL = process.env.REDIS_URL;
 
-function getRedis() {
-  if (!REDIS_URL) return null;
-  const match = REDIS_URL.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
-  if (!match) return null;
-  const token = match[1], host = match[2];
-  
-  return {
-    async get(key) {
-      const res = await fetch(`https://${host}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(['GET', key])
-      });
-      return res.text();
-    },
-    async set(key, value) {
-      const res = await fetch(`https://${host}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(['SET', key, value])
-      });
-      return res.text();
-    },
-    async ping() {
-      const res = await fetch(`https://${host}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(['PING'])
-      });
-      return res.text();
-    }
-  };
+let redis;
+async function getRedis() {
+  if (!redis && REDIS_URL) {
+    redis = createClient({ url: REDIS_URL });
+    await redis.connect();
+  }
+  return redis;
 }
 
-const redis = getRedis();
 const OPENDOTA = 'https://api.opendota.com/api';
 
 const TEAMS = {
@@ -103,36 +79,30 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // 快速检查 Redis
-  if (!redis) {
-    return res.status(500).json({ error: 'REDIS_URL not configured' });
-  }
-
   try {
-    // 测试 Redis
-    let ping;
-    try {
-      ping = await redis.ping();
-    } catch (e) {
-      return res.status(500).json({ error: 'Redis connection failed: ' + e.message });
+    if (!REDIS_URL) {
+      return res.status(500).json({ error: 'REDIS_URL not configured' });
     }
+
+    const r = await getRedis();
+    await r.ping();
+    console.log('Redis connected!');
 
     // 获取现有数据
     let existing = {};
     try {
-      const data = await redis.get('matches');
-      if (data && data !== 'null' && data !== '') {
-        try { existing = JSON.parse(data); } catch { existing = {}; }
-      }
+      const data = await r.get('matches');
+      if (data) existing = JSON.parse(data);
     } catch (e) { console.log('No existing'); }
 
     // 获取新数据
     let cn = [];
-    try {
-      const pro = await fetchJSON(`${OPENDOTA}/proMatches?limit=30`);
-      for (const m of pro) { const c = convert(m); if (c) cn.push(c); }
-    } catch (e) {
-      return res.status(500).json({ error: 'OpenDota fetch failed: ' + e.message });
+    const pro = await fetchJSON(`${OPENDOTA}/proMatches?limit=30`);
+    for (const m of pro) { const c = convert(m); if (c) cn.push(c); }
+
+    for (const [, td] of Object.entries(TEAMS)) {
+      const tm = await fetchJSON(`${OPENDOTA}/teams/${td.id}/matches`);
+      for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
     }
 
     // 保存
@@ -140,13 +110,12 @@ export default async function handler(req, res) {
     for (const m of cn) {
       if (!existing[m.match_id]) { existing[m.match_id] = m; saved++; }
     }
-    
-    await redis.set('matches', JSON.stringify(existing));
+    await r.set('matches', JSON.stringify(existing));
     
     const list = Object.values(existing).sort((a,b) => b.start_time - a.start_time).slice(0, 500);
-    await redis.set('matches:list', JSON.stringify(list));
+    await r.set('matches:list', JSON.stringify(list));
 
-    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length, redis: ping });
+    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
