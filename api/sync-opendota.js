@@ -1,13 +1,33 @@
 /**
- * OpenDota 数据同步 API - 测试版
- * 从 OpenDota API 拉取比赛数据
- * 注意：这个版本不存储数据，仅测试 API 调用
+ * OpenDota 数据同步 API
+ * 从 OpenDota API 拉取比赛数据并存入 Redis
  */
+
+import { Redis } from '@upstash/redis';
+
+const REDIS_URL = process.env.REDIS_URL;
+
+// 解析 REDIS_URL
+const parseRedisUrl = (url) => {
+  if (!url) return null;
+  try {
+    const match = url.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
+    if (match) {
+      return { token: match[1], host: match[2], port: match[3] };
+    }
+  } catch (e) {}
+  return null;
+};
+
+const parsed = parseRedisUrl(REDIS_URL);
+
+const redis = parsed 
+  ? new Redis({ url: `https://${parsed.host}`, token: parsed.token })
+  : null;
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
 
-// 目标战队
 const TARGET_TEAM_IDS = {
   'xtreme-gaming': { name: 'Xtreme Gaming', name_cn: 'XG', team_id: 8261502 },
   'yakult-brothers': { name: 'Yakult Brothers', name_cn: 'YB', team_id: 8255888 },
@@ -18,25 +38,18 @@ async function fetchWithRetry(url, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
       const headers = {};
-      if (OPENDOTA_API_KEY) {
-        headers['Authorization'] = `Bearer ${OPENDOTA_API_KEY}`;
-      }
-      
+      if (OPENDOTA_API_KEY) headers['Authorization'] = `Bearer ${OPENDOTA_API_KEY}`;
       const response = await fetch(url, { headers });
-      
       if (!response.ok) {
         if (response.status === 429) {
-          console.log('Rate limited, waiting 10s...');
           await new Promise(r => setTimeout(r, 10000));
           continue;
         }
         throw new Error(`HTTP ${response.status}`);
       }
-      
       return await response.json();
     } catch (error) {
       if (i === retries - 1) throw error;
-      console.log(`Retry ${i + 1}/${retries} for ${url}`);
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
   }
@@ -44,138 +57,69 @@ async function fetchWithRetry(url, retries = 3) {
 
 function identifyTeam(name) {
   if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
-  
-  const upperName = name.toUpperCase();
-  const lowerName = name.toLowerCase();
-  
-  if (upperName === 'XG' || lowerName.includes('xtreme')) {
-    return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
-  }
-  
-  if (upperName === 'YB' || lowerName.includes('yakult') || 
-      upperName === 'AR' || lowerName.includes('azure') || lowerName.includes('ray')) {
+  const upper = name.toUpperCase(), lower = name.toLowerCase();
+  if (upper === 'XG' || lower.includes('xtreme')) return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
+  if (upper === 'YB' || lower.includes('yakult') || upper === 'AR' || lower.includes('azure') || lower.includes('ray')) 
     return { id: 'yakult-brothers', name_cn: 'YB', is_cn: true };
-  }
-  
-  if (upperName === 'VG' || lowerName.includes('vici')) {
-    return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
-  }
-  
+  if (upper === 'VG' || lower.includes('vici')) return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
   return { id: 'unknown', name_cn: name, is_cn: false };
 }
 
 async function fetchProMatches() {
-  console.log('Fetching pro matches from OpenDota...');
-  let allMatches = [];
-  
+  let all = [];
   for (let page = 0; page < 2; page++) {
-    try {
-      const url = page === 0 
-        ? `${OPENDOTA_BASE_URL}/proMatches`
-        : `${OPENDOTA_BASE_URL}/proMatches?less_than_match_id=${allMatches[allMatches.length - 1]?.match_id || 0}`;
-      
-      const data = await fetchWithRetry(url);
-      if (!data || data.length === 0) break;
-      
-      allMatches = allMatches.concat(data);
-      console.log(`  Page ${page + 1}: ${data.length} matches (total: ${allMatches.length})`);
-      
-      const oldestMatch = data[data.length - 1];
-      const daysAgo = (Date.now() / 1000 - oldestMatch.start_time) / 86400;
-      if (daysAgo > 7) break;
-      
-      await new Promise(r => setTimeout(r, 1000));
-    } catch (error) {
-      console.error(`  Error fetching page ${page + 1}:`, error.message);
-      break;
-    }
+    const url = page === 0 ? `${OPENDOTA_BASE_URL}/proMatches` 
+      : `${OPENDOTA_BASE_URL}/proMatches?less_than_match_id=${all[all.length-1]?.match_id || 0}`;
+    const data = await fetchWithRetry(url);
+    if (!data?.length) break;
+    all = all.concat(data);
+    const daysAgo = (Date.now()/1000 - data[data.length-1].start_time) / 86400;
+    if (daysAgo > 7) break;
+    await new Promise(r => setTimeout(r, 1000));
   }
-  
-  return allMatches;
+  return all;
 }
 
 async function fetchTeamMatches(teamId, teamName) {
-  console.log(`Fetching matches for ${teamName} (team_id: ${teamId})...`);
-  try {
-    const data = await fetchWithRetry(`${OPENDOTA_BASE_URL}/teams/${teamId}/matches`);
-    return data || [];
-  } catch (error) {
-    console.error(`  Error fetching ${teamName}:`, error.message);
-    return [];
-  }
+  return await fetchWithRetry(`${OPENDOTA_BASE_URL}/teams/${teamId}/matches`) || [];
 }
 
 function convertMatch(match, teamData = null) {
-  const radiantTeam = identifyTeam(match.radiant_name);
-  const direTeam = identifyTeam(match.dire_name);
-  
-  if (!radiantTeam.is_cn && !direTeam.is_cn && !teamData) {
-    return null;
-  }
+  const rt = identifyTeam(match.radiant_name), dt = identifyTeam(match.dire_name);
+  if (!rt.is_cn && !dt.is_cn && !teamData) return null;
   
   const now = Date.now() / 1000;
   let status = 'scheduled';
-  if (match.start_time < now - 3600) {
-    status = 'finished';
-  } else if (match.start_time < now) {
-    status = 'live';
-  }
+  if (match.start_time < now - 3600) status = 'finished';
+  else if (match.start_time < now) status = 'live';
   
-  let radiantWin = match.radiant_win;
-  let radiantGameWins = 0;
-  let direGameWins = 0;
-  
-  if (status === 'finished') {
-    if (radiantWin) {
-      radiantGameWins = 1;
-    } else {
-      direGameWins = 1;
-    }
-  }
+  const rw = match.radiant_win;
+  const rgw = status === 'finished' ? (rw ? 1 : 0) : 0;
+  const dgw = status === 'finished' ? (rw ? 0 : 1) : 0;
   
   if (teamData) {
-    const isRadiant = match.radiant;
+    const isR = match.radiant;
     return {
-      match_id: String(match.match_id),
-      radiant_team_id: isRadiant ? teamData.id : 'unknown',
-      dire_team_id: isRadiant ? 'unknown' : teamData.id,
-      radiant_team_name: isRadiant ? teamData.name : match.opposing_team_name,
-      radiant_team_name_cn: isRadiant ? teamData.name_cn : identifyTeam(match.opposing_team_name).name_cn,
-      dire_team_name: isRadiant ? match.opposing_team_name : teamData.name,
-      dire_team_name_cn: isRadiant ? identifyTeam(match.opposing_team_name).name_cn : teamData.name_cn,
-      radiant_score: match.radiant_score || 0,
-      dire_score: match.dire_score || 0,
-      radiant_game_wins: radiantWin ? 1 : 0,
-      dire_game_wins: radiantWin ? 0 : 1,
-      start_time: match.start_time,
-      duration: match.duration || 0,
-      leagueid: match.leagueid,
-      series_type: 'BO3',
-      status,
-      lobby_type: 7,
-      radiant_win: radiantWin ? 1 : 0,
+      match_id: String(match.match_id), radiant_team_id: isR ? teamData.id : 'unknown',
+      dire_team_id: isR ? 'unknown' : teamData.id, radiant_team_name: isR ? teamData.name : match.opposing_team_name,
+      radiant_team_name_cn: isR ? teamData.name_cn : identifyTeam(match.opposing_team_name).name_cn,
+      dire_team_name: isR ? match.opposing_team_name : teamData.name,
+      dire_team_name_cn: isR ? identifyTeam(match.opposing_team_name).name_cn : teamData.name_cn,
+      radiant_score: match.radiant_score || 0, dire_score: match.dire_score || 0,
+      radiant_game_wins: rw ? 1 : 0, dire_game_wins: rw ? 0 : 1,
+      start_time: match.start_time, duration: match.duration || 0, leagueid: match.leagueid,
+      series_type: 'BO3', status, lobby_type: 7, radiant_win: rw ? 1 : 0,
     };
   }
   
   return {
-    match_id: String(match.match_id),
-    radiant_team_id: radiantTeam.id,
-    dire_team_id: direTeam.id,
-    radiant_team_name: match.radiant_name || null,
-    radiant_team_name_cn: radiantTeam.name_cn,
-    dire_team_name: match.dire_name || null,
-    dire_team_name_cn: direTeam.name_cn,
-    radiant_score: match.radiant_score || 0,
-    dire_score: match.dire_score || 0,
-    radiant_game_wins: radiantGameWins,
-    dire_game_wins: direGameWins,
-    start_time: match.start_time,
-    duration: match.duration || 0,
-    leagueid: match.leagueid || null,
-    series_type: 'BO3',
-    status,
-    lobby_type: match.lobby_type || 0,
-    radiant_win: radiantWin ? 1 : 0,
+    match_id: String(match.match_id), radiant_team_id: rt.id, dire_team_id: dt.id,
+    radiant_team_name: match.radiant_name || null, radiant_team_name_cn: rt.name_cn,
+    dire_team_name: match.dire_name || null, dire_team_name_cn: dt.name_cn,
+    radiant_score: match.radiant_score || 0, dire_score: match.dire_score || 0,
+    radiant_game_wins: rgw, dire_game_wins: dgw,
+    start_time: match.start_time, duration: match.duration || 0, leagueid: match.leagueid || null,
+    series_type: 'BO3', status, lobby_type: match.lobby_type || 0, radiant_win: rw ? 1 : 0,
   };
 }
 
@@ -184,69 +128,50 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    console.log('========================================');
-    console.log('DOTA2 Hub - OpenDota Sync (Test)');
-    console.log('Time:', new Date().toISOString());
-    console.log('========================================\n');
+    console.log('=== DOTA2 Hub Sync ===');
+    
+    if (!redis) return res.status(500).json({ error: 'Redis not configured' });
+    
+    // 测试 Redis
+    await redis.ping();
+    console.log('Redis connected!');
 
-    let allMatches = [];
-    const cnMatches = [];
-
-    // Method 1: Pro Matches
-    console.log('--- Method 1: Pro Matches ---');
+    let existing = {};
     try {
-      const proMatches = await fetchProMatches();
-      console.log(`Total pro matches fetched: ${proMatches.length}`);
-      
-      for (const match of proMatches) {
-        const converted = convertMatch(match);
-        if (converted) {
-          allMatches.push(converted);
-          cnMatches.push(converted);
-        }
-      }
-      console.log(`CN matches found: ${cnMatches.length}\n`);
-    } catch (error) {
-      console.error('Error in pro matches:', error.message);
+      const data = await redis.get('matches');
+      if (data) existing = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (e) { console.log('No existing matches'); }
+    console.log(`Existing: ${Object.keys(existing).length}`);
+
+    let cnMatches = [];
+
+    // Pro Matches
+    console.log('Fetching pro matches...');
+    const pro = await fetchProMatches();
+    for (const m of pro) { const c = convertMatch(m); if (c) cnMatches.push(c); }
+
+    // Team Matches
+    for (const [, td] of Object.entries(TARGET_TEAM_IDS)) {
+      const tm = await fetchTeamMatches(td.team_id, td.name_cn);
+      for (const m of tm) { const c = convertMatch(m, td); if (c) cnMatches.push(c); }
+      await new Promise(r => setTimeout(r, 1000));
     }
 
-    // Method 2: Team-specific Matches
-    console.log('\n--- Method 2: Team-specific Matches ---');
-    for (const [teamKey, teamData] of Object.entries(TARGET_TEAM_IDS)) {
-      try {
-        const teamMatches = await fetchTeamMatches(teamData.team_id, teamData.name_cn);
-        console.log(`Fetched ${teamMatches.length} matches for ${teamData.name_cn}`);
-        
-        for (const match of teamMatches) {
-          const converted = convertMatch(match, teamData);
-          if (converted) {
-            allMatches.push(converted);
-            cnMatches.push(converted);
-          }
-        }
-        await new Promise(r => setTimeout(r, 1000));
-      } catch (error) {
-        console.error(`Error fetching ${teamData.name_cn}:`, error.message);
-      }
+    // 保存
+    let saved = 0;
+    for (const m of cnMatches) {
+      if (!existing[m.match_id]) { existing[m.match_id] = m; saved++; }
     }
+    await redis.set('matches', JSON.stringify(existing));
+    
+    const list = Object.values(existing).sort((a,b) => b.start_time - a.start_time).slice(0, 500);
+    await redis.set('matches:list', JSON.stringify(list));
 
-    console.log(`\n========================================`);
-    console.log(`Total CN matches: ${cnMatches.length}`);
-    console.log('========================================`);
-
-    // 返回数据而不是存储
-    return res.status(200).json({ 
-      success: true, 
-      totalFetched: allMatches.length,
-      cnMatches: cnMatches.length,
-      matches: cnMatches.slice(0, 20), // 只返回前20条
-      message: `Fetched ${cnMatches.length} CN matches`
-    });
+    console.log(`Saved: ${saved}, Total: ${Object.keys(existing).length}`);
+    return res.status(200).json({ success: true, saved, total: Object.keys(existing).length });
   } catch (error) {
     console.error('Error:', error);
     return res.status(500).json({ error: error.message });
