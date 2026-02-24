@@ -1,29 +1,39 @@
 /**
- * OpenDota 数据同步 API
- * 从 OpenDota API 拉取比赛数据并存入 Redis
+ * OpenDota 数据同步 API - 使用 Redis REST API
  */
-
-import { Redis } from '@upstash/redis';
 
 const REDIS_URL = process.env.REDIS_URL;
 
-// 解析 REDIS_URL
-const parseRedisUrl = (url) => {
+function getRedisConfig(url) {
   if (!url) return null;
-  try {
-    const match = url.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
-    if (match) {
-      return { token: match[1], host: match[2], port: match[3] };
-    }
-  } catch (e) {}
-  return null;
-};
+  // redis://default:TOKEN@host:port
+  const match = url.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
+  if (!match) return null;
+  return {
+    token: match[1],
+    host: match[2],
+    port: match[3]
+  };
+}
 
-const parsed = parseRedisUrl(REDIS_URL);
+const redisCfg = getRedisConfig(REDIS_URL);
 
-const redis = parsed 
-  ? new Redis({ url: `https://${parsed.host}`, token: parsed.token })
-  : null;
+async function redisCmd(cmd, ...args) {
+  if (!redisCfg) throw new Error('Redis not configured');
+  
+  const response = await fetch(`https://${redisCfg.host}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${redisCfg.token}`
+    },
+    body: JSON.stringify([cmd, ...args])
+  });
+  
+  const text = await response.text();
+  if (!response.ok) throw new Error(`Redis error: ${response.status} - ${text}`);
+  return text;
+}
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
@@ -41,10 +51,7 @@ async function fetchWithRetry(url, retries = 3) {
       if (OPENDOTA_API_KEY) headers['Authorization'] = `Bearer ${OPENDOTA_API_KEY}`;
       const response = await fetch(url, { headers });
       if (!response.ok) {
-        if (response.status === 429) {
-          await new Promise(r => setTimeout(r, 10000));
-          continue;
-        }
+        if (response.status === 429) { await new Promise(r => setTimeout(r, 10000)); continue; }
         throw new Error(`HTTP ${response.status}`);
       }
       return await response.json();
@@ -80,7 +87,7 @@ async function fetchProMatches() {
   return all;
 }
 
-async function fetchTeamMatches(teamId, teamName) {
+async function fetchTeamMatches(teamId) {
   return await fetchWithRetry(`${OPENDOTA_BASE_URL}/teams/${teamId}/matches`) || [];
 }
 
@@ -133,16 +140,15 @@ export default async function handler(req, res) {
   try {
     console.log('=== DOTA2 Hub Sync ===');
     
-    if (!redis) return res.status(500).json({ error: 'Redis not configured' });
-    
-    // 测试 Redis
-    await redis.ping();
-    console.log('Redis connected!');
+    // 测试 Redis 连接
+    const ping = await redisCmd('PING');
+    console.log('Redis:', ping);
 
+    // 获取现有数据
     let existing = {};
     try {
-      const data = await redis.get('matches');
-      if (data) existing = typeof data === 'string' ? JSON.parse(data) : data;
+      const data = await redisCmd('GET', 'matches');
+      if (data && data !== '') existing = JSON.parse(data);
     } catch (e) { console.log('No existing matches'); }
     console.log(`Existing: ${Object.keys(existing).length}`);
 
@@ -155,7 +161,7 @@ export default async function handler(req, res) {
 
     // Team Matches
     for (const [, td] of Object.entries(TARGET_TEAM_IDS)) {
-      const tm = await fetchTeamMatches(td.team_id, td.name_cn);
+      const tm = await fetchTeamMatches(td.team_id);
       for (const m of tm) { const c = convertMatch(m, td); if (c) cnMatches.push(c); }
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -165,10 +171,10 @@ export default async function handler(req, res) {
     for (const m of cnMatches) {
       if (!existing[m.match_id]) { existing[m.match_id] = m; saved++; }
     }
-    await redis.set('matches', JSON.stringify(existing));
+    await redisCmd('SET', 'matches', JSON.stringify(existing));
     
     const list = Object.values(existing).sort((a,b) => b.start_time - a.start_time).slice(0, 500);
-    await redis.set('matches:list', JSON.stringify(list));
+    await redisCmd('SET', 'matches:list', JSON.stringify(list));
 
     console.log(`Saved: ${saved}, Total: ${Object.keys(existing).length}`);
     return res.status(200).json({ success: true, saved, total: Object.keys(existing).length });
