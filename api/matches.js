@@ -1,13 +1,23 @@
 /**
  * 获取比赛数据 API
- * 从 Vercel KV 获取比赛列表
+ * 从 Redis 获取比赛列表
  */
 
-import { kv } from '@vercel/kv';
+import Redis from 'ioredis';
+
+const REDIS_URL = process.env.REDIS_URL || 'redis://default:CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A@redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com:19738';
+
+let redis;
+function getRedis() {
+  if (!redis) {
+    redis = new Redis(REDIS_URL);
+  }
+  return redis;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-('Access-Control-Allow  res.setHeader-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -15,16 +25,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 尝试从 KV 获取
-    const matchesList = await kv.get('matches:list');
+    const r = getRedis();
     
-    if (matchesList && matchesList.length > 0) {
+    // 尝试从 Redis 获取
+    const matchesListJson = await r.get('matches:list');
+    
+    if (matchesListJson) {
+      const matchesList = JSON.parse(matchesListJson);
       return res.status(200).json(matchesList);
     }
     
-    // 如果 KV 没有数据，返回空数组或可以从 backup 获取
-    const matches = await kv.get('matches');
-    if (matches) {
+    // 如果没有缓存，尝试从 matches 获取
+    const matchesJson = await r.get('matches');
+    if (matchesJson) {
+      const matches = JSON.parse(matchesJson);
       const list = Object.values(matches)
         .sort((a, b) => b.start_time - a.start_time)
         .slice(0, 500);

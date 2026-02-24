@@ -1,9 +1,19 @@
 /**
  * OpenDota 数据同步 API
- * 从 OpenDota API 拉取比赛数据并存入 Vercel KV
+ * 从 OpenDota API 拉取比赛数据并存入 Redis
  */
 
-import { kv } from '@vercel/kv';
+import Redis from 'ioredis';
+
+const REDIS_URL = process.env.REDIS_URL || 'redis://default:CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A@redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com:19738';
+
+let redis;
+function getRedis() {
+  if (!redis) {
+    redis = new Redis(REDIS_URL);
+  }
+  return redis;
+}
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
@@ -136,7 +146,6 @@ function convertMatch(match, teamData = null) {
     }
   }
   
-  // 如果是战队特定的比赛
   if (teamData) {
     const isRadiant = match.radiant;
     return {
@@ -184,7 +193,6 @@ function convertMatch(match, teamData = null) {
 }
 
 export default async function handler(req, res) {
-  // 允许 CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -193,21 +201,22 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  let r;
   try {
+    r = getRedis();
+    
     console.log('========================================');
-    console.log('DOTA2 Hub - OpenDota Sync to Vercel KV');
+    console.log('DOTA2 Hub - OpenDota Sync to Redis');
     console.log('Time:', new Date().toISOString());
     console.log('========================================\n');
 
-    // 检查 KV 是否可用
-    if (!kv) {
-      return res.status(500).json({ error: 'KV not available - please check KV database connection' });
-    }
+    // 获取现有数据
+    const existingMatchesJson = await r.get('matches');
+    const existingMatches = existingMatchesJson ? JSON.parse(existingMatchesJson) : {};
+    console.log(`Existing matches: ${Object.keys(existingMatches).length}`);
 
     let savedCount = 0;
     let allMatches = [];
-    const existingMatches = await kv.get('matches') || {};
-    const existingMatchIds = new Set(Object.keys(existingMatches));
 
     // Method 1: Pro Matches
     console.log('--- Method 1: Pro Matches ---');
@@ -244,28 +253,28 @@ export default async function handler(req, res) {
       }
     }
 
-    // 保存到 KV
-    console.log('\n--- Saving to Vercel KV ---');
+    // 保存到 Redis
+    console.log('\n--- Saving to Redis ---');
     for (const match of allMatches) {
-      if (!existingMatchIds.has(match.match_id)) {
+      if (!existingMatches[match.match_id]) {
         existingMatches[match.match_id] = match;
         savedCount++;
       }
     }
 
-    await kv.set('matches', existingMatches);
-    console.log(`Saved ${savedCount} new matches to KV`);
-    console.log(`Total matches in KV: ${Object.keys(existingMatches).length}`);
+    await r.set('matches', JSON.stringify(existingMatches));
+    console.log(`Saved ${savedCount} new matches to Redis`);
+    console.log(`Total matches in Redis: ${Object.keys(existingMatches).length}`);
 
-    // 同时更新 matches.json 供前端使用
+    // 同时更新 matches:list 供前端使用
     const matchesList = Object.values(existingMatches)
       .sort((a, b) => b.start_time - a.start_time)
       .slice(0, 500);
-    await kv.set('matches:list', matchesList);
+    await r.set('matches:list', JSON.stringify(matchesList));
 
     console.log(`\n========================================`);
     console.log(`Sync completed! Saved: ${savedCount} new matches`);
-    console.log('========================================`);
+    console.log('========================================');
 
     return res.status(200).json({ 
       success: true, 
