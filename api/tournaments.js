@@ -32,10 +32,28 @@ function createTeamLogoMap(teams) {
   return logoMap;
 }
 
-// Find logo URL for a team name
+// Find logo URL for a team name with fuzzy matching
 function findTeamLogo(logoMap, teamName) {
   if (!teamName) return null;
-  return logoMap.get(teamName.toLowerCase()) || null;
+  
+  const normalizedName = teamName.toLowerCase().trim();
+  
+  // Exact match first
+  if (logoMap.has(normalizedName)) {
+    return logoMap.get(normalizedName);
+  }
+  
+  // Fuzzy match: check if any key is contained in the team name or vice versa
+  for (const [key, logoUrl] of logoMap.entries()) {
+    // Skip short tags that cause false matches
+    if (key.length <= 2) continue;
+    
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return logoUrl;
+    }
+  }
+  
+  return null;
 }
 
 // Add logos to series data
