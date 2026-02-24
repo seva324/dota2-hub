@@ -118,15 +118,21 @@ async function loadTeamsData() {
 }
 
 function getTeamAbbrev(teamName: string): string {
-  if (!teamName) return '';
-  
-  // First try to find in teams.json by name (case insensitive)
-  const team = teamsData[teamName.toLowerCase()];
-  if (team?.name_cn) {
-    return team.name_cn;
-  }
-  
-  // Fallback to hardcoded abbreviations for teams not in teams.json
+  const abbr: Record<string, string> = {
+    'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
+    'Team Spirit': 'Spirit', 'Natus Vincere': 'NAVI',
+    'Tundra Esports': 'Tundra', 'Team Liquid': 'Liquid',
+    'Team Falcons': 'Falcons', 'OG': 'OG',
+    'GamerLegion': 'GL', 'PARIVISION': 'PARI',
+    'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
+    'Aurora Gaming': 'Aurora', 'Execration': 'XctN',
+    'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
+    'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
+    'Team Nemesis': 'Nemesis', '1w Team': '1w',
+    'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
+  };
+  return abbr[teamName] || teamName.substring(0, 3).toUpperCase();
+}
 
 interface TournamentSectionProps {
   tournaments: Tournament[];
@@ -164,23 +170,6 @@ function isChineseTeam(teamName: string | undefined): boolean {
   return chineseTeamNames.some(cn => name.includes(cn));
 }
 
-function getTeamAbbrev(teamName: string): string {
-  const abbr: Record<string, string> = {
-    'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
-    'Team Spirit': 'Spirit', 'Natus Vincere': 'NAVI',
-    'Tundra Esports': 'Tundra', 'Team Liquid': 'Liquid',
-    'Team Falcons': 'Falcons', 'OG': 'OG',
-    'GamerLegion': 'GL', 'PARIVISION': 'PARI',
-    'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
-    'Aurora Gaming': 'Aurora', 'Execration': 'XctN',
-    'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
-    'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
-    'Team Nemesis': 'Nemesis', '1w Team': '1w',
-    'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
-  };
-  return abbr[teamName] || teamName.substring(0, 3).toUpperCase();
-}
-
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const hours = Math.floor(mins / 60);
@@ -196,16 +185,14 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
-  const [teamsLoaded, setTeamsLoaded] = useState(false);
 
-  // Load heroes and teams data on mount
+  // Load heroes data on mount
   useEffect(() => {
     Promise.all([
       loadHeroesData(),
       loadTeamsData()
     ]).then(() => {
       setHeroesLoaded(true);
-      setTeamsLoaded(true);
     });
   }, []);
 
@@ -599,5 +586,4 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
       />
     </section>
   );
-}
 }
