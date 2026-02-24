@@ -62,28 +62,56 @@ async function loadStaticData() {
 
 // Find team logo by team name
 function findTeamLogo(teamName: string): string | undefined {
-  if (!teamName || !teamsData.length) return undefined;
+  if (!teamName || !teamsData.length) {
+    console.log('findTeamLogo: no teamName or teamsData', { teamName, teamsDataLength: teamsData.length });
+    return undefined;
+  }
   
   const normalizedName = teamName.toLowerCase().trim();
+  console.log('findTeamLogo searching for:', teamName, '-> normalized:', normalizedName);
   
-  // Try exact match first
+  // Try exact match first (check tag first as it's most common in match data)
   let team = teamsData.find(t => 
+    t.tag.toLowerCase() === normalizedName || 
     t.name.toLowerCase() === normalizedName || 
-    t.name_cn.toLowerCase() === normalizedName ||
-    t.tag.toLowerCase() === normalizedName
+    t.name_cn.toLowerCase() === normalizedName
   );
   
-  // Try partial match
+  // Try partial match - check if team name contains the search term or vice versa
   if (!team) {
     team = teamsData.find(t => 
       t.name.toLowerCase().includes(normalizedName) ||
       normalizedName.includes(t.name.toLowerCase()) ||
-      t.name_cn.includes(teamName) ||
-      teamName.includes(t.name_cn)
+      t.tag.toLowerCase().includes(normalizedName) ||
+      normalizedName.includes(t.tag.toLowerCase()) ||
+      t.name_cn.toLowerCase().includes(normalizedName) ||
+      normalizedName.includes(t.name_cn.toLowerCase())
     );
   }
   
+  console.log('findTeamLogo result:', team?.name, team?.logo_url);
   return team?.logo_url;
+}
+
+// Helper function to add team logos to all series
+function addTeamLogosToSeries(seriesByTournament: Record<string, any[]>): Record<string, any[]> {
+  const result: Record<string, any[]> = {};
+  
+  Object.entries(seriesByTournament).forEach(([tournamentId, seriesList]) => {
+    result[tournamentId] = seriesList.map(series => {
+      // Debug log
+      console.log(`Finding logo for team: "${series.radiant_team_name}" -> `, findTeamLogo(series.radiant_team_name));
+      console.log(`Finding logo for team: "${series.dire_team_name}" -> `, findTeamLogo(series.dire_team_name));
+      
+      return {
+        ...series,
+        radiant_team_logo: series.radiant_team_logo || findTeamLogo(series.radiant_team_name),
+        dire_team_logo: series.dire_team_logo || findTeamLogo(series.dire_team_name)
+      };
+    });
+  });
+  
+  return result;
 }
 
 // Helper function to group matches into series by team pairing
@@ -242,7 +270,9 @@ function App() {
         const staticSeriesByTournament = tournamentsData.seriesByTournament || {};
         const seriesByTournament = { ...staticSeriesByTournament, ...dynamicSeriesByTournament };
 
-        console.log('Series by tournament:', Object.keys(seriesByTournament).map(k => `${k}: ${seriesByTournament[k]?.length || 0} series`));
+        // Add team logos to all series
+        const seriesWithLogos = addTeamLogosToSeries(seriesByTournament);
+        console.log('Series by tournament:', Object.keys(seriesWithLogos).map(k => `${k}: ${seriesWithLogos[k]?.length || 0} series`));
 
         // 过滤出有中国队伍参与的比赛
         const cnMatches = matches
@@ -276,7 +306,7 @@ function App() {
           upcoming,
           cnMatches: cnMatches.slice(0, 50),
           tournaments: formattedTournaments,
-          seriesByTournament,
+          seriesByTournament: seriesWithLogos,
           news: [],
           community: [],
           lastUpdated: new Date().toISOString()
