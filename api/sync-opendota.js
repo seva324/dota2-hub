@@ -41,7 +41,8 @@ function identify(name) {
 
 function convert(m, td = null) {
   const rt = identify(m.radiant_name), dt = identify(m.dire_name);
-  if (!rt.is_cn && !dt.is_cn && !td) return null;
+  // Remove Chinese team filter - get ALL matches from tournaments
+  // if (!rt.is_cn && !dt.is_cn && !td) return null;
   const now = Date.now() / 1000;
   const status = m.start_time < now - 3600 ? 'finished' : m.start_time < now ? 'live' : 'scheduled';
   const rw = m.radiant_win;

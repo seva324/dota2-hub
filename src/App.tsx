@@ -35,7 +35,7 @@ function App() {
             prize_pool: '$1,000,000',
             location: '线上',
             start_date: '2026-01-19',
-            end_date: '2026-02-09',
+            end_date: '2026-02-08',
             status: 'completed',
             image: 'https://liquipedia.net/commons/images/thumb/4/49/DreamLeague_Season_28.png/600px-DreamLeague_Season_28.png'
           },
@@ -56,7 +56,7 @@ function App() {
             name_cn: 'ESL挑战者杯中国站2026',
             prize_pool: '$100,000',
             location: '中国',
-            start_date: '2026-02-15',
+            start_date: '2026-02-14',
             end_date: '2026-02-23',
             status: 'completed',
             image: 'https://liquipedia.net/commons/images/thumb/5/5c/ESL_Challenger_China_2026.png/600px-ESL_Challenger_China_2026.png'
