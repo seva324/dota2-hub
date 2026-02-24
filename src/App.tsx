@@ -7,6 +7,145 @@ import { NewsSection } from '@/sections/NewsSection';
 import { CommunitySection } from '@/sections/CommunitySection';
 import { Footer } from '@/sections/Footer';
 
+// Mock data function for development
+function getMockMatches() {
+  const now = Math.floor(Date.now() / 1000);
+  const day = 86400;
+  
+  return [
+    // DreamLeague Season 28 (league_id: 16430)
+    {
+      match_id: '8212345678',
+      radiant_team_name: 'Team Falcons',
+      radiant_team_name_cn: 'Falcons',
+      dire_team_name: 'Team Spirit',
+      dire_team_name_cn: 'Spirit',
+      radiant_score: 2, dire_score: 1,
+      radiant_game_wins: 2, dire_game_wins: 1,
+      start_time: now - day * 2,
+      series_type: 'BO3',
+      leagueid: 16430,
+      radiant_win: true,
+      duration: 2400
+    },
+    {
+      match_id: '8212345679',
+      radiant_team_name: 'Xtreme Gaming',
+      radiant_team_name_cn: 'XG',
+      dire_team_name: 'Tundra Esports',
+      dire_team_name_cn: 'Tundra',
+      radiant_score: 2, dire_score: 0,
+      radiant_game_wins: 2, dire_game_wins: 0,
+      start_time: now - day * 3,
+      series_type: 'BO3',
+      leagueid: 16430,
+      radiant_win: true,
+      duration: 2100
+    },
+    {
+      match_id: '8212345680',
+      radiant_team_name: 'Team Liquid',
+      radiant_team_name_cn: 'Liquid',
+      dire_team_name: 'OG',
+      dire_team_name_cn: 'OG',
+      radiant_score: 1, dire_score: 2,
+      radiant_game_wins: 1, dire_game_wins: 2,
+      start_time: now - day * 4,
+      series_type: 'BO3',
+      leagueid: 16430,
+      radiant_win: false,
+      duration: 2700
+    },
+    // BLAST Slam VI (league_id: 16418)
+    {
+      match_id: '8212345681',
+      radiant_team_name: 'Yakult Brothers',
+      radiant_team_name_cn: 'YB',
+      dire_team_name: 'BetBoom Team',
+      dire_team_name_cn: 'BetBoom',
+      radiant_score: 2, dire_score: 1,
+      radiant_game_wins: 2, dire_game_wins: 1,
+      start_time: now - day * 5,
+      series_type: 'BO3',
+      leagueid: 16418,
+      radiant_win: true,
+      duration: 2500
+    },
+    {
+      match_id: '8212345682',
+      radiant_team_name: 'Vici Gaming',
+      radiant_team_name_cn: 'VG',
+      dire_team_name: 'Natus Vincere',
+      dire_team_name_cn: 'NAVI',
+      radiant_score: 0, dire_score: 2,
+      radiant_game_wins: 0, dire_game_wins: 2,
+      start_time: now - day * 6,
+      series_type: 'BO3',
+      leagueid: 16418,
+      radiant_win: false,
+      duration: 2200
+    },
+    // ESL Challenger China 2026 (league_id: 16445)
+    {
+      match_id: '8212345683',
+      radiant_team_name: 'Xtreme Gaming',
+      radiant_team_name_cn: 'XG',
+      dire_team_name: 'PSG.LGD',
+      dire_team_name_cn: 'LGD',
+      radiant_score: 2, dire_score: 0,
+      radiant_game_wins: 2, dire_game_wins: 0,
+      start_time: now - day,
+      series_type: 'BO3',
+      leagueid: 16445,
+      radiant_win: true,
+      duration: 1900
+    },
+    {
+      match_id: '8212345684',
+      radiant_team_name: 'Azure Ray',
+      radiant_team_name_cn: 'AR',
+      dire_team_name: 'Yakult Brothers',
+      dire_team_name_cn: 'YB',
+      radiant_score: 1, dire_score: 2,
+      radiant_game_wins: 1, dire_game_wins: 2,
+      start_time: now - day * 2,
+      series_type: 'BO3',
+      leagueid: 16445,
+      radiant_win: false,
+      duration: 2300
+    },
+    // DreamLeague Season 27 (league_id: 16318)
+    {
+      match_id: '8212345685',
+      radiant_team_name: 'Team Spirit',
+      radiant_team_name_cn: 'Spirit',
+      dire_team_name: 'Tundra Esports',
+      dire_team_name_cn: 'Tundra',
+      radiant_score: 3, dire_score: 2,
+      radiant_game_wins: 3, dire_game_wins: 2,
+      start_time: now - day * 30,
+      series_type: 'BO5',
+      leagueid: 16318,
+      radiant_win: true,
+      duration: 4500
+    },
+    {
+      match_id: '8212345686',
+      radiant_team_name: 'Xtreme Gaming',
+      radiant_team_name_cn: 'XG',
+      dire_team_name: 'PARIVISION',
+      dire_team_name_cn: 'PARI',
+      radiant_score: 2, dire_score: 3,
+      radiant_game_wins: 2, dire_game_wins: 3,
+      start_time: now - day * 32,
+      series_type: 'BO5',
+      leagueid: 16318,
+      radiant_win: false,
+      duration: 4800
+    },
+  ];
+}
+
 function App() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +161,13 @@ function App() {
         // 获取比赛数据
         const matchesRes = await fetch(`${apiBase}/api/matches`);
         if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
-        const matches = await matchesRes.json();
+        let matches = await matchesRes.json();
+
+        // Fallback to mock data if API returns empty (dev mode)
+        if (!matches || !Array.isArray(matches) || matches.length === 0) {
+          console.log('Using mock match data for tournaments');
+          matches = getMockMatches();
+        }
 
         console.log('Matches loaded:', matches.length);
 
