@@ -7,145 +7,6 @@ import { NewsSection } from '@/sections/NewsSection';
 import { CommunitySection } from '@/sections/CommunitySection';
 import { Footer } from '@/sections/Footer';
 
-// Mock data function for development
-function getMockMatches() {
-  const now = Math.floor(Date.now() / 1000);
-  const day = 86400;
-  
-  return [
-    // DreamLeague Season 28 (league_id: 16430)
-    {
-      match_id: '8212345678',
-      radiant_team_name: 'Team Falcons',
-      radiant_team_name_cn: 'Falcons',
-      dire_team_name: 'Team Spirit',
-      dire_team_name_cn: 'Spirit',
-      radiant_score: 2, dire_score: 1,
-      radiant_game_wins: 2, dire_game_wins: 1,
-      start_time: now - day * 2,
-      series_type: 'BO3',
-      leagueid: 16430,
-      radiant_win: true,
-      duration: 2400
-    },
-    {
-      match_id: '8212345679',
-      radiant_team_name: 'Xtreme Gaming',
-      radiant_team_name_cn: 'XG',
-      dire_team_name: 'Tundra Esports',
-      dire_team_name_cn: 'Tundra',
-      radiant_score: 2, dire_score: 0,
-      radiant_game_wins: 2, dire_game_wins: 0,
-      start_time: now - day * 3,
-      series_type: 'BO3',
-      leagueid: 16430,
-      radiant_win: true,
-      duration: 2100
-    },
-    {
-      match_id: '8212345680',
-      radiant_team_name: 'Team Liquid',
-      radiant_team_name_cn: 'Liquid',
-      dire_team_name: 'OG',
-      dire_team_name_cn: 'OG',
-      radiant_score: 1, dire_score: 2,
-      radiant_game_wins: 1, dire_game_wins: 2,
-      start_time: now - day * 4,
-      series_type: 'BO3',
-      leagueid: 16430,
-      radiant_win: false,
-      duration: 2700
-    },
-    // BLAST Slam VI (league_id: 16418)
-    {
-      match_id: '8212345681',
-      radiant_team_name: 'Yakult Brothers',
-      radiant_team_name_cn: 'YB',
-      dire_team_name: 'BetBoom Team',
-      dire_team_name_cn: 'BetBoom',
-      radiant_score: 2, dire_score: 1,
-      radiant_game_wins: 2, dire_game_wins: 1,
-      start_time: now - day * 5,
-      series_type: 'BO3',
-      leagueid: 16418,
-      radiant_win: true,
-      duration: 2500
-    },
-    {
-      match_id: '8212345682',
-      radiant_team_name: 'Vici Gaming',
-      radiant_team_name_cn: 'VG',
-      dire_team_name: 'Natus Vincere',
-      dire_team_name_cn: 'NAVI',
-      radiant_score: 0, dire_score: 2,
-      radiant_game_wins: 0, dire_game_wins: 2,
-      start_time: now - day * 6,
-      series_type: 'BO3',
-      leagueid: 16418,
-      radiant_win: false,
-      duration: 2200
-    },
-    // ESL Challenger China 2026 (league_id: 16445)
-    {
-      match_id: '8212345683',
-      radiant_team_name: 'Xtreme Gaming',
-      radiant_team_name_cn: 'XG',
-      dire_team_name: 'PSG.LGD',
-      dire_team_name_cn: 'LGD',
-      radiant_score: 2, dire_score: 0,
-      radiant_game_wins: 2, dire_game_wins: 0,
-      start_time: now - day,
-      series_type: 'BO3',
-      leagueid: 16445,
-      radiant_win: true,
-      duration: 1900
-    },
-    {
-      match_id: '8212345684',
-      radiant_team_name: 'Azure Ray',
-      radiant_team_name_cn: 'AR',
-      dire_team_name: 'Yakult Brothers',
-      dire_team_name_cn: 'YB',
-      radiant_score: 1, dire_score: 2,
-      radiant_game_wins: 1, dire_game_wins: 2,
-      start_time: now - day * 2,
-      series_type: 'BO3',
-      leagueid: 16445,
-      radiant_win: false,
-      duration: 2300
-    },
-    // DreamLeague Season 27 (league_id: 16318)
-    {
-      match_id: '8212345685',
-      radiant_team_name: 'Team Spirit',
-      radiant_team_name_cn: 'Spirit',
-      dire_team_name: 'Tundra Esports',
-      dire_team_name_cn: 'Tundra',
-      radiant_score: 3, dire_score: 2,
-      radiant_game_wins: 3, dire_game_wins: 2,
-      start_time: now - day * 30,
-      series_type: 'BO5',
-      leagueid: 16318,
-      radiant_win: true,
-      duration: 4500
-    },
-    {
-      match_id: '8212345686',
-      radiant_team_name: 'Xtreme Gaming',
-      radiant_team_name_cn: 'XG',
-      dire_team_name: 'PARIVISION',
-      dire_team_name_cn: 'PARI',
-      radiant_score: 2, dire_score: 3,
-      radiant_game_wins: 2, dire_game_wins: 3,
-      start_time: now - day * 32,
-      series_type: 'BO5',
-      leagueid: 16318,
-      radiant_win: false,
-      duration: 4800
-    },
-  ];
-}
-
 function App() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -161,20 +22,14 @@ function App() {
         // 获取比赛数据
         const matchesRes = await fetch(`${apiBase}/api/matches`);
         if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
-        let matches = await matchesRes.json();
-
-        // Fallback to mock data if API returns empty (dev mode)
-        if (!matches || !Array.isArray(matches) || matches.length === 0) {
-          console.log('Using mock match data for tournaments');
-          matches = getMockMatches();
-        }
+        const matches = await matchesRes.json();
 
         console.log('Matches loaded:', matches.length);
 
-        // 硬编码赛事数据
+        // 硬编码赛事数据 - 使用实际的 league_id
         const hardcodedTournaments = [
           {
-            id: 16430,
+            id: 19269,
             name: 'DreamLeague Season 28',
             name_cn: '梦幻联赛第28赛季',
             prize_pool: '$1,000,000',
@@ -185,7 +40,7 @@ function App() {
             image: 'https://liquipedia.net/commons/images/thumb/4/49/DreamLeague_Season_28.png/600px-DreamLeague_Season_28.png'
           },
           {
-            id: 16418,
+            id: 19099,
             name: 'BLAST Slam VI',
             name_cn: 'BLAST Slam第六赛季',
             prize_pool: '$1,000,000',
@@ -194,44 +49,22 @@ function App() {
             end_date: '2026-01-26',
             status: 'completed',
             image: 'https://liquipedia.net/commons/images/thumb/9/9d/BLAST_Slam_VI.png/600px-BLAST_Slam_VI.png'
-          },
-          {
-            id: 16445,
-            name: 'ESL Challenger China 2026',
-            name_cn: 'ESL挑战者杯中国站2026',
-            prize_pool: '$100,000',
-            location: '中国',
-            start_date: '2026-02-14',
-            end_date: '2026-02-23',
-            status: 'completed',
-            image: 'https://liquipedia.net/commons/images/thumb/5/5c/ESL_Challenger_China_2026.png/600px-ESL_Challenger_China_2026.png'
-          },
-          {
-            id: 16318,
-            name: 'DreamLeague Season 27',
-            name_cn: '梦幻联赛第27赛季',
-            prize_pool: '$1,000,000',
-            location: '线上',
-            start_date: '2025-11-17',
-            end_date: '2025-12-08',
-            status: 'completed',
-            image: 'https://liquipedia.net/commons/images/thumb/3/33/DreamLeague_Season_27.png/600px-DreamLeague_Season_27.png'
           }
         ];
 
         console.log('Tournaments loaded:', hardcodedTournaments.length);
         
         // Debug: 打印所有比赛的实际 leagueid
-        const uniqueLeagueIds = [...new Set(matches.map((m: any) => m.leagueid).filter(Boolean))];
+        const uniqueLeagueIds = [...new Set(matches.map((m: any) => m.league_id).filter(Boolean))];
         console.log('Unique league IDs in matches:', uniqueLeagueIds.slice(0, 20));
 
-        // 硬编码赛事 ID 列表 (字符串形式)
-        const tournamentLeagueIds = ['16430', '16418', '16445', '16318'];
+        // 硬编码赛事 ID 列表 (使用实际的 league_id)
+        const tournamentLeagueIds = ['19269', '19099'];
         
-        // 将比赛数据按赛事分组 - 首先按 leagueid 筛选出属于这些赛事的比赛
+        // 将比赛数据按赛事分组 - 首先按 league_id 筛选出属于这些赛事的比赛
         const tournamentMatches = matches
           .filter((m: any): boolean => {
-            const leagueId = String(m.leagueid || '');
+            const leagueId = String(m.league_id || '');
             return tournamentLeagueIds.includes(leagueId);
           })
           .map((m: any) => ({
@@ -247,11 +80,11 @@ function App() {
             series_type: m.series_type || 'BO3',
             tournament_name: '',
             tournament_name_cn: '',
-            leagueid: m.leagueid || null
+            leagueid: m.league_id || null
           }));
 
-        console.log('Matches for tournaments:', tournamentMatches.length, 'by leagueid:', 
-          tournamentLeagueIds.map((id: string) => `${id}: ${tournamentMatches.filter((m: any) => String(m.leagueid) === id).length}`));
+        console.log('Matches for tournaments:', tournamentMatches.length, 'by league_id:', 
+          tournamentLeagueIds.map((id: string) => `${id}: ${tournamentMatches.filter((m: any) => String(m.league_id) === id).length}`));
 
         // 将比赛数据按赛事分组
         const seriesMap: Record<string, any[]> = {};
@@ -261,11 +94,11 @@ function App() {
           seriesMap[id] = [];
         });
         
-        // 根据 leagueid 分组到对应的赛事
+        // 根据 league_id 分组到对应的赛事
         tournamentMatches.forEach((m: any) => {
-          const leagueId = String(m.leagueid);
+          const leagueId = String(m.league_id);
           
-          // 如果比赛的 leagueid 匹配硬编码的赛事 ID，则添加到对应赛事
+          // 如果比赛的 league_id 匹配硬编码的赛事 ID，则添加到对应赛事
           if (leagueId && tournamentLeagueIds.includes(leagueId)) {
             seriesMap[leagueId].push({
               series_id: `series-${m.match_id}`,
@@ -307,7 +140,7 @@ function App() {
             series_type: m.series_type || 'BO3',
             tournament_name: '',
             tournament_name_cn: '',
-            leagueid: m.leagueid || null
+            leagueid: m.league_id || null
           }));
         
         // 按开始时间排序每个赛事的比赛
