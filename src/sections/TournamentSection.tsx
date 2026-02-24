@@ -600,3 +600,4 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
     </section>
   );
 }
+}
