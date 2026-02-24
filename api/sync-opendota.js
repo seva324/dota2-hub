@@ -1,39 +1,8 @@
 /**
- * OpenDota 数据同步 API
- * 从 OpenDota API 拉取比赛数据并存入 Redis (Upstash)
+ * OpenDota 数据同步 API - 测试版
+ * 从 OpenDota API 拉取比赛数据
+ * 注意：这个版本不存储数据，仅测试 API 调用
  */
-
-import { Redis } from '@upstash/redis';
-
-const REDIS_URL = process.env.REDIS_URL || 'redis://default:CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A@redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com:19738';
-
-// 解析 REDIS_URL 来获取 token 和 url
-// 格式: redis://default:TOKEN@host:port
-const parseRedisUrl = (url) => {
-  try {
-    const match = url.match(/redis:\/\/default:([^@]+)@(.+):(\d+)/);
-    if (match) {
-      return {
-        token: match[1],
-        host: match[2],
-        port: match[3]
-      };
-    }
-  } catch (e) {}
-  return null;
-};
-
-const parsed = parseRedisUrl(REDIS_URL);
-
-// 创建 Upstash Redis 客户端
-const redis = parsed 
-  ? new Redis({
-      url: `https://${parsed.host}`,
-      token: parsed.token
-    })
-  : new Redis({
-      url: REDIS_URL
-    });
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
@@ -99,7 +68,7 @@ async function fetchProMatches() {
   console.log('Fetching pro matches from OpenDota...');
   let allMatches = [];
   
-  for (let page = 0; page < 3; page++) {
+  for (let page = 0; page < 2; page++) {
     try {
       const url = page === 0 
         ? `${OPENDOTA_BASE_URL}/proMatches`
@@ -113,7 +82,7 @@ async function fetchProMatches() {
       
       const oldestMatch = data[data.length - 1];
       const daysAgo = (Date.now() / 1000 - oldestMatch.start_time) / 86400;
-      if (daysAgo > 30) break;
+      if (daysAgo > 7) break;
       
       await new Promise(r => setTimeout(r, 1000));
     } catch (error) {
@@ -152,16 +121,14 @@ function convertMatch(match, teamData = null) {
     status = 'live';
   }
   
+  let radiantWin = match.radiant_win;
   let radiantGameWins = 0;
   let direGameWins = 0;
-  let radiantWin = match.radiant_win;
   
   if (status === 'finished') {
     if (radiantWin) {
       radiantGameWins = 1;
-      direGameWins = 0;
     } else {
-      radiantGameWins = 0;
       direGameWins = 1;
     }
   }
@@ -223,46 +190,27 @@ export default async function handler(req, res) {
 
   try {
     console.log('========================================');
-    console.log('DOTA2 Hub - OpenDota Sync to Redis');
+    console.log('DOTA2 Hub - OpenDota Sync (Test)');
     console.log('Time:', new Date().toISOString());
     console.log('========================================\n');
 
-    // 测试 Redis 连接
-    try {
-      const ping = await redis.ping();
-      console.log('Redis connected!:', ping);
-    } catch (e) {
-      console.error('Redis connection error:', e.message);
-      return res.status(500).json({ error: 'Redis connection failed: ' + e.message });
-    }
-
-    // 获取现有数据
-    let existingMatches = {};
-    try {
-      const matchesJson = await redis.get('matches');
-      if (matchesJson) {
-        existingMatches = typeof matchesJson === 'string' ? JSON.parse(matchesJson) : matchesJson;
-      }
-    } catch (e) {
-      console.log('No existing matches, starting fresh');
-    }
-    console.log(`Existing matches: ${Object.keys(existingMatches).length}`);
-
-    let savedCount = 0;
     let allMatches = [];
+    const cnMatches = [];
 
     // Method 1: Pro Matches
     console.log('--- Method 1: Pro Matches ---');
     try {
       const proMatches = await fetchProMatches();
-      console.log(`Total pro matches fetched: ${proMatches.length}\n`);
+      console.log(`Total pro matches fetched: ${proMatches.length}`);
       
       for (const match of proMatches) {
         const converted = convertMatch(match);
         if (converted) {
           allMatches.push(converted);
+          cnMatches.push(converted);
         }
       }
+      console.log(`CN matches found: ${cnMatches.length}\n`);
     } catch (error) {
       console.error('Error in pro matches:', error.message);
     }
@@ -278,6 +226,7 @@ export default async function handler(req, res) {
           const converted = convertMatch(match, teamData);
           if (converted) {
             allMatches.push(converted);
+            cnMatches.push(converted);
           }
         }
         await new Promise(r => setTimeout(r, 1000));
@@ -286,34 +235,17 @@ export default async function handler(req, res) {
       }
     }
 
-    // 保存到 Redis
-    console.log('\n--- Saving to Redis ---');
-    for (const match of allMatches) {
-      if (!existingMatches[match.match_id]) {
-        existingMatches[match.match_id] = match;
-        savedCount++;
-      }
-    }
-
-    await redis.set('matches', JSON.stringify(existingMatches));
-    console.log(`Saved ${savedCount} new matches to Redis`);
-    console.log(`Total matches in Redis: ${Object.keys(existingMatches).length}`);
-
-    // 同时更新 matches:list 供前端使用
-    const matchesList = Object.values(existingMatches)
-      .sort((a, b) => b.start_time - a.start_time)
-      .slice(0, 500);
-    await redis.set('matches:list', JSON.stringify(matchesList));
-
     console.log(`\n========================================`);
-    console.log(`Sync completed! Saved: ${savedCount} new matches`);
-    console.log('========================================');
+    console.log(`Total CN matches: ${cnMatches.length}`);
+    console.log('========================================`);
 
+    // 返回数据而不是存储
     return res.status(200).json({ 
       success: true, 
-      saved: savedCount,
-      total: Object.keys(existingMatches).length,
-      message: `Synced ${savedCount} new matches`
+      totalFetched: allMatches.length,
+      cnMatches: cnMatches.length,
+      matches: cnMatches.slice(0, 20), // 只返回前20条
+      message: `Fetched ${cnMatches.length} CN matches`
     });
   } catch (error) {
     console.error('Error:', error);
