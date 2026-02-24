@@ -26,11 +26,59 @@ function App() {
 
         console.log('Matches loaded:', matches.length);
 
-        // 获取赛事数据
+        // 硬编码赛事数据
+        const hardcodedTournaments = [
+          {
+            id: 16430,
+            name: 'DreamLeague Season 28',
+            name_cn: '梦幻联赛第28赛季',
+            prize_pool: '$1,000,000',
+            location: '线上',
+            start_date: '2026-01-19',
+            end_date: '2026-02-09',
+            status: 'completed',
+            image: 'https://liquipedia.net/commons/images/thumb/4/49/DreamLeague_Season_28.png/600px-DreamLeague_Season_28.png'
+          },
+          {
+            id: 16418,
+            name: 'BLAST Slam VI',
+            name_cn: 'BLAST Slam第六赛季',
+            prize_pool: '$1,000,000',
+            location: '线上',
+            start_date: '2026-01-12',
+            end_date: '2026-01-26',
+            status: 'completed',
+            image: 'https://liquipedia.net/commons/images/thumb/9/9d/BLAST_Slam_VI.png/600px-BLAST_Slam_VI.png'
+          },
+          {
+            id: 16445,
+            name: 'ESL Challenger China 2026',
+            name_cn: 'ESL挑战者杯中国站2026',
+            prize_pool: '$100,000',
+            location: '中国',
+            start_date: '2026-02-15',
+            end_date: '2026-02-23',
+            status: 'completed',
+            image: 'https://liquipedia.net/commons/images/thumb/5/5c/ESL_Challenger_China_2026.png/600px-ESL_Challenger_China_2026.png'
+          },
+          {
+            id: 16318,
+            name: 'DreamLeague Season 27',
+            name_cn: '梦幻联赛第27赛季',
+            prize_pool: '$1,000,000',
+            location: '线上',
+            start_date: '2025-11-17',
+            end_date: '2025-12-08',
+            status: 'completed',
+            image: 'https://liquipedia.net/commons/images/thumb/3/33/DreamLeague_Season_27.png/600px-DreamLeague_Season_27.png'
+          }
+        ];
+
+        // 获取赛事数据 (使用硬编码数据)
         const tournamentsRes = await fetch(`${apiBase}/api/tournaments`);
         const tournamentsData = tournamentsRes.ok ? await tournamentsRes.json() : [];
         
-        console.log('Tournaments loaded:', tournamentsData.length);
+        console.log('Tournaments loaded:', hardcodedTournaments.length);
 
         // 转换数据格式以匹配前端期望
         const cnMatches = matches
@@ -84,16 +132,16 @@ function App() {
           });
         });
 
-        // 转换 tournaments 数据格式
-        const formattedTournaments = tournamentsData.map((t: any) => ({
+        // 使用硬编码的 tournaments 数据
+        const formattedTournaments = hardcodedTournaments.map((t: any) => ({
           id: t.id,
           name: t.name || t.name_cn || 'Unknown Tournament',
           name_cn: t.name_cn,
-          prize_pool: t.prize_pool || t.prizePool,
+          prize_pool: t.prize_pool,
           location: t.location,
-          start_date: t.start_date || t.startDate,
-          end_date: t.end_date || t.endDate,
-          status: t.status || 'upcoming',
+          start_date: t.start_date,
+          end_date: t.end_date,
+          status: t.status,
           image: t.image
         }));
 
