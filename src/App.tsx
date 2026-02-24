@@ -15,10 +15,16 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // 获取 API 地址
+        const apiBase = window.location.origin;
+        console.log('API Base:', apiBase);
+        
         // 从 API 获取比赛数据
-        const matchesRes = await fetch('/api/matches');
+        const matchesRes = await fetch(`${apiBase}/api/matches`);
         if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
         const matches = await matchesRes.json();
+
+        console.log('Matches loaded:', matches.length);
 
         // 转换数据格式以匹配前端期望
         const cnMatches = matches
