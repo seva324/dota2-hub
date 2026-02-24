@@ -3,16 +3,29 @@
  * 从 OpenDota API 拉取比赛数据并存入 Redis
  */
 
-import Redis from 'ioredis';
-
 const REDIS_URL = process.env.REDIS_URL || 'redis://default:CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A@redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com:19738';
 
-let redis;
-function getRedis() {
-  if (!redis) {
-    redis = new Redis(REDIS_URL);
+// 简单的 Redis 客户端 - 使用原生 fetch (Redis REST API)
+const REDIS_HOST = 'redis-19738.crce185.ap-seast-1-1.ec2.cloud.redislabs.com';
+const REDIS_PORT = '19738';
+const REDIS_PASSWORD = 'CTq7DQ5ptIyjBe7ntGJtcdDJl1dr4l4A';
+
+async function redisCmd(cmd, ...args) {
+  const response = await fetch(`https://${REDIS_HOST}:${REDIS_PORT}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${REDIS_PASSWORD}`
+    },
+    body: JSON.stringify([cmd, ...args])
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Redis error: ${response.status}`);
   }
-  return redis;
+  
+  const text = await response.text();
+  return text;
 }
 
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || '';
@@ -201,18 +214,31 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  let r;
   try {
-    r = getRedis();
-    
     console.log('========================================');
     console.log('DOTA2 Hub - OpenDota Sync to Redis');
     console.log('Time:', new Date().toISOString());
     console.log('========================================\n');
 
+    // 测试 Redis 连接
+    try {
+      await redisCmd('PING');
+      console.log('Redis connected!');
+    } catch (e) {
+      console.error('Redis connection error:', e.message);
+      return res.status(500).json({ error: 'Redis connection failed: ' + e.message });
+    }
+
     // 获取现有数据
-    const existingMatchesJson = await r.get('matches');
-    const existingMatches = existingMatchesJson ? JSON.parse(existingMatchesJson) : {};
+    let existingMatches = {};
+    try {
+      const matchesJson = await redisCmd('GET', 'matches');
+      if (matchesJson && matchesJson !== '') {
+        existingMatches = JSON.parse(matchesJson);
+      }
+    } catch (e) {
+      console.log('No existing matches, starting fresh');
+    }
     console.log(`Existing matches: ${Object.keys(existingMatches).length}`);
 
     let savedCount = 0;
@@ -262,7 +288,7 @@ export default async function handler(req, res) {
       }
     }
 
-    await r.set('matches', JSON.stringify(existingMatches));
+    await redisCmd('SET', 'matches', JSON.stringify(existingMatches));
     console.log(`Saved ${savedCount} new matches to Redis`);
     console.log(`Total matches in Redis: ${Object.keys(existingMatches).length}`);
 
@@ -270,7 +296,7 @@ export default async function handler(req, res) {
     const matchesList = Object.values(existingMatches)
       .sort((a, b) => b.start_time - a.start_time)
       .slice(0, 500);
-    await r.set('matches:list', JSON.stringify(matchesList));
+    await redisCmd('SET', 'matches:list', JSON.stringify(matchesList));
 
     console.log(`\n========================================`);
     console.log(`Sync completed! Saved: ${savedCount} new matches`);
