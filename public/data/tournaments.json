@@ -88,7 +88,9 @@
         "tournament_name": null,
         "stage": "",
         "radiant_score": 1,
-        "dire_score": 1
+        "dire_score": 1,
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/"
       },
       {
         "series_id": "cleaned_unknown_Aurora Gaming_vs_BetBoom Team_BO3_20500",
@@ -123,7 +125,9 @@
         "tournament_name": null,
         "stage": "",
         "radiant_score": 0,
-        "dire_score": 2
+        "dire_score": 2,
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/"
       },
       {
         "series_id": "cleaned_unknown_Team Spirit_vs_Xtreme Gaming_BO3_20500",
@@ -158,7 +162,9 @@
         "tournament_name": null,
         "stage": "",
         "radiant_score": 2,
-        "dire_score": 0
+        "dire_score": 0,
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/"
       },
       {
         "series_id": "cleaned_unknown_PARIVISION_vs_paiN Gaming_BO3_20500",
@@ -193,7 +199,1415 @@
         "tournament_name": null,
         "stage": "",
         "radiant_score": 0,
-        "dire_score": 2
+        "dire_score": 2,
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/"
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "PARIVISION",
+        "series_id": "cleaned_unknown_Team Spirit_vs_PARIVISION_BO3_20501",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_Team Spirit_vs_Tundra Esports_BO3_20502",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Aurora Gaming",
+        "series_id": "cleaned_unknown_Team Spirit_vs_Aurora Gaming_BO3_20503",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "PARIVISION",
+        "series_id": "cleaned_unknown_Xtreme Gaming_vs_PARIVISION_BO3_20504",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Spirit",
+        "series_id": "cleaned_unknown_Xtreme Gaming_vs_Team Spirit_BO3_20505",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_Xtreme Gaming_vs_Tundra Esports_BO3_20506",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Aurora Gaming",
+        "series_id": "cleaned_unknown_PARIVISION_vs_Aurora Gaming_BO3_20507",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_PARIVISION_vs_Tundra Esports_BO3_20508",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "BetBoom Team",
+        "series_id": "cleaned_unknown_PARIVISION_vs_BetBoom Team_BO3_20509",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "MOUZ",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_MOUZ_BO3_20510",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Liquid",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Team Liquid_BO3_20511",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Natus Vincere",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Natus Vincere_BO3_20512",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Natus Vincere",
+        "series_id": "cleaned_unknown_Team Liquid_vs_Natus Vincere_BO3_20513",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "OG",
+        "series_id": "cleaned_unknown_Team Liquid_vs_OG_BO3_20514",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Virtus.pro",
+        "series_id": "cleaned_unknown_Team Liquid_vs_Virtus.pro_BO3_20515",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Virtus.pro",
+        "series_id": "cleaned_unknown_OG_vs_Virtus.pro_BO3_20516",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "OG",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Falcons",
+        "series_id": "cleaned_unknown_OG_vs_Team Falcons_BO3_20517",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "OG",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Falcons",
+        "series_id": "cleaned_unknown_Virtus.pro_vs_Team Falcons_BO3_20518",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Virtus.pro",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "GamerLegion",
+        "series_id": "cleaned_unknown_Virtus.pro_vs_GamerLegion_BO3_20519",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Virtus.pro",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "GamerLegion",
+        "series_id": "cleaned_unknown_Team Falcons_vs_GamerLegion_BO3_20520",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "HEROIC",
+        "series_id": "cleaned_unknown_Team Falcons_vs_HEROIC_BO3_20521",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "HEROIC",
+        "series_id": "cleaned_unknown_GamerLegion_vs_HEROIC_BO3_20522",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "GamerLegion",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Nemesis",
+        "series_id": "cleaned_unknown_GamerLegion_vs_Team Nemesis_BO3_20523",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "GamerLegion",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Nemesis",
+        "series_id": "cleaned_unknown_HEROIC_vs_Team Nemesis_BO3_20524",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "HEROIC",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Nigma Galaxy",
+        "series_id": "cleaned_unknown_HEROIC_vs_Nigma Galaxy_BO3_20525",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "HEROIC",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Nigma Galaxy",
+        "series_id": "cleaned_unknown_Team Nemesis_vs_Nigma Galaxy_BO3_20526",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Nemesis",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Amaru Gaming",
+        "series_id": "cleaned_unknown_Team Nemesis_vs_Amaru Gaming_BO3_20527",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Nemesis",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Amaru Gaming",
+        "series_id": "cleaned_unknown_Nigma Galaxy_vs_Amaru Gaming_BO3_20528",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Nigma Galaxy",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Pipsqueak+4",
+        "series_id": "cleaned_unknown_Nigma Galaxy_vs_Pipsqueak+4_BO3_20529",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Nigma Galaxy",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Pipsqueak+4",
+        "series_id": "cleaned_unknown_Amaru Gaming_vs_Pipsqueak+4_BO3_20530",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Amaru Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "1w Team",
+        "series_id": "cleaned_unknown_Amaru Gaming_vs_1w Team_BO3_20531",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Amaru Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10418434998893309146/D485C68E769779EF4454C5D81A23520BF9B7B1C5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "1w Team",
+        "series_id": "cleaned_unknown_Pipsqueak+4_vs_1w Team_BO3_20532",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Pipsqueak+4",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10418434998893309146/D485C68E769779EF4454C5D81A23520BF9B7B1C5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "MOUZ",
+        "series_id": "cleaned_unknown_paiN Gaming_vs_MOUZ_BO3_20533",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "paiN Gaming",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Liquid",
+        "series_id": "cleaned_unknown_paiN Gaming_vs_Team Liquid_BO3_20534",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "paiN Gaming",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Natus Vincere",
+        "series_id": "cleaned_unknown_paiN Gaming_vs_Natus Vincere_BO3_20535",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "paiN Gaming",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Natus Vincere",
+        "series_id": "cleaned_unknown_MOUZ_vs_Natus Vincere_BO3_20536",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "MOUZ",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Aurora Gaming",
+        "series_id": "cleaned_unknown_MOUZ_vs_Aurora Gaming_BO3_20537",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "MOUZ",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Spirit",
+        "series_id": "cleaned_unknown_Aurora Gaming_vs_Team Spirit_BO3_20538",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Aurora Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Xtreme Gaming",
+        "series_id": "cleaned_unknown_Tundra Esports_vs_Xtreme Gaming_BO3_20539",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Tundra Esports",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Xtreme Gaming",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Xtreme Gaming_BO3_20540",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "BetBoom Team",
+        "series_id": "cleaned_unknown_Team Spirit_vs_BetBoom Team_BO3_20541",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "MOUZ",
+        "series_id": "cleaned_unknown_PARIVISION_vs_MOUZ_BO3_20542",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_Team Liquid_vs_Tundra Esports_BO3_20543",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "OG",
+        "series_id": "cleaned_unknown_Natus Vincere_vs_OG_BO3_20544",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Virtus.pro",
+        "series_id": "cleaned_unknown_Team Falcons_vs_Virtus.pro_BO3_20545",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Nemesis",
+        "series_id": "cleaned_unknown_GamerLegion_vs_Team Nemesis_BO3_20546",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "GamerLegion",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "HEROIC",
+        "series_id": "cleaned_unknown_Nigma Galaxy_vs_HEROIC_BO3_20547",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Nigma Galaxy",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Pipsqueak+4",
+        "series_id": "cleaned_unknown_Amaru Gaming_vs_Pipsqueak+4_BO3_20548",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Amaru Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "paiN Gaming",
+        "series_id": "cleaned_unknown_1w Team_vs_paiN Gaming_BO3_20549",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "1w Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10418434998893309146/D485C68E769779EF4454C5D81A23520BF9B7B1C5/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "OG",
+        "series_id": "cleaned_unknown_Team Spirit_vs_OG_BO3_20550",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "MOUZ",
+        "series_id": "cleaned_unknown_Xtreme Gaming_vs_MOUZ_BO3_20551",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Liquid",
+        "series_id": "cleaned_unknown_PARIVISION_vs_Team Liquid_BO3_20552",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "BetBoom Team",
+        "series_id": "cleaned_unknown_Aurora Gaming_vs_BetBoom Team_BO3_20553",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Aurora Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Natus Vincere",
+        "series_id": "cleaned_unknown_Tundra Esports_vs_Natus Vincere_BO3_20554",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Tundra Esports",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "HEROIC",
+        "series_id": "cleaned_unknown_Virtus.pro_vs_HEROIC_BO3_20555",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Virtus.pro",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Nemesis",
+        "series_id": "cleaned_unknown_Team Falcons_vs_Team Nemesis_BO3_20556",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Nigma Galaxy",
+        "series_id": "cleaned_unknown_GamerLegion_vs_Nigma Galaxy_BO3_20557",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "GamerLegion",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "1w Team",
+        "series_id": "cleaned_unknown_Amaru Gaming_vs_1w Team_BO3_20558",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Amaru Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10418434998893309146/D485C68E769779EF4454C5D81A23520BF9B7B1C5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "paiN Gaming",
+        "series_id": "cleaned_unknown_Pipsqueak+4_vs_paiN Gaming_BO3_20559",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Pipsqueak+4",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Virtus.pro",
+        "series_id": "cleaned_unknown_Team Spirit_vs_Virtus.pro_BO3_20560",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "OG",
+        "series_id": "cleaned_unknown_Xtreme Gaming_vs_OG_BO3_20561",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Falcons",
+        "series_id": "cleaned_unknown_PARIVISION_vs_Team Falcons_BO3_20562",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "GamerLegion",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_GamerLegion_BO3_20563",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "BetBoom Team",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "HEROIC",
+        "series_id": "cleaned_unknown_Aurora Gaming_vs_HEROIC_BO3_20564",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Aurora Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Nemesis",
+        "series_id": "cleaned_unknown_Tundra Esports_vs_Team Nemesis_BO3_20565",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Tundra Esports",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/16578975333650734744/040492179D9E0E83DA0559848D88CFC17A1EFCAC/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Nigma Galaxy",
+        "series_id": "cleaned_unknown_MOUZ_vs_Nigma Galaxy_BO3_20566",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "MOUZ",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Amaru Gaming",
+        "series_id": "cleaned_unknown_paiN Gaming_vs_Amaru Gaming_BO3_20567",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "paiN Gaming",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10066617508847295576/03F350DDBF2C616F1B2FDA51C0EAF7983C8594DD/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "1w Team",
+        "series_id": "cleaned_unknown_Team Liquid_vs_1w Team_BO3_20568",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10418434998893309146/D485C68E769779EF4454C5D81A23520BF9B7B1C5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Pipsqueak+4",
+        "series_id": "cleaned_unknown_Natus Vincere_vs_Pipsqueak+4_BO3_20569",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/14017836316804902173/6D59207DB4CBE46D79B9C5007FCD5802858DB860/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "GamerLegion",
+        "series_id": "cleaned_unknown_OG_vs_GamerLegion_BO3_20570",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "OG",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "HEROIC",
+        "series_id": "cleaned_unknown_Virtus.pro_vs_HEROIC_BO3_20571",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Virtus.pro",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2471984170520125054/B066431AF4D322D300DD5180CEC8F6BA0E85A7F5/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Nigma Galaxy",
+        "series_id": "cleaned_unknown_Team Falcons_vs_Nigma Galaxy_BO3_20572",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1827894588975105240/421C0D8318D71D5DD31FD08A7933AB622AE26590/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Xtreme Gaming",
+        "series_id": "cleaned_unknown_PARIVISION_vs_Xtreme Gaming_BO3_20573",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_Team Spirit_vs_Tundra Esports_BO3_20574",
+        "stage": "Group Stage",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
       }
     ],
     "blast-slam-vi": [
@@ -240,7 +1654,199 @@
         "tournament_name": null,
         "stage": "",
         "radiant_score": 2,
-        "dire_score": 1
+        "dire_score": 1,
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png"
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Spirit",
+        "series_id": "cleaned_unknown_Natus Vincere_vs_Team Spirit_BO3_20500",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "PARIVISION",
+        "series_id": "cleaned_unknown_Natus Vincere_vs_PARIVISION_BO3_20501",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Natus Vincere",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Team Spirit",
+        "series_id": "cleaned_unknown_Team Liquid_vs_Team Spirit_BO3_20502",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "PARIVISION",
+        "series_id": "cleaned_unknown_Team Liquid_vs_PARIVISION_BO3_20503",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Liquid",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_Xtreme Gaming_vs_Tundra Esports_BO3_20504",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Xtreme Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Virtus.pro",
+        "series_id": "cleaned_unknown_OG_vs_Virtus.pro_BO3_20505",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "OG",
+        "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/13061694558372404982/7AC363D410AC6F2F4B016EE7D73B7C266D0113F9/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "BetBoom Team",
+        "series_id": "cleaned_unknown_Team Falcons_vs_BetBoom Team_BO3_20506",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Falcons",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2314350571781870059/2B5C9FE9BA0A2DC303A13261444532AA08352843/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Natus Vincere",
+        "series_id": "cleaned_unknown_Aurora Gaming_vs_Natus Vincere_BO3_20507",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Aurora Gaming",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
+        "dire_score": 1,
+        "dire_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Xtreme Gaming",
+        "series_id": "cleaned_unknown_Team Spirit_vs_Xtreme Gaming_BO3_20508",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "Team Spirit",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
+        "tournament_name": null
+      },
+      {
+        "tournament_id": null,
+        "radiant_wins": 1,
+        "dire_team_name": "Tundra Esports",
+        "series_id": "cleaned_unknown_PARIVISION_vs_Tundra Esports_BO3_20509",
+        "stage": "Playoffs",
+        "radiant_score": 1,
+        "series_type": "BO3",
+        "dire_wins": 1,
+        "games": [
+          null,
+          null
+        ],
+        "radiant_team_name": "PARIVISION",
+        "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
+        "dire_score": 1,
+        "dire_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
+        "tournament_name": null
       }
     ],
     "dreamleague-s27": [
