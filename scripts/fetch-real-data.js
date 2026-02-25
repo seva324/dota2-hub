@@ -49,7 +49,7 @@ async function fetchLeagueMatches(leagueId) {
 // Known team IDs from the data we observed
 const KNOWN_TEAMS = {
   9572001: { name: 'PARIVISION', tag: 'PARI', logo: 'https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/' },
-  8255888: { name: 'Yakult Brothers', tag: 'YB', logo: 'https://cdn.cloudflare.com/apps/dota2/images/team_logos/8255888.png' },
+  8255888: { name: 'BetBoom Team', tag: 'BB', logo: 'https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/' },
   8261500: { name: 'Xtreme Gaming', tag: 'XG', logo: 'https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/' },
   8291895: { name: 'Tundra Esports', tag: 'Tundra', logo: 'https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/' },
   2163: { name: 'Team Liquid', tag: 'Liquid', logo: 'https://cdn.steamcdn.com/apps/dota2/images/team_logos/2163.png' },
