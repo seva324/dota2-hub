@@ -298,13 +298,19 @@ export default async function handler(req, res) {
     // 保存到 Redis
     try {
       await redisClient.set('upcoming', JSON.stringify(upcomingMatches));
-      console.log(`[Liquipedia Sync] Saved ${upcomingMatches.length} upcoming matches`);
+      console.log(`[Liquipedia Sync] Saved ${upcomingMatches.length} upcoming matches to Redis`);
     } catch (kvError) {
       console.error('[Liquipedia Sync] Redis set failed:', kvError.message);
-      return res.status(500).json({
-        error: 'Failed to save data',
-        message: 'Could not save to Redis: ' + kvError.message
-      });
+    }
+
+    // 同时保存到 Vercel KV (用于 upcoming API)
+    try {
+      const kvModule = await import('@vercel/kv');
+      const kv = kvModule.kv;
+      await kv.set('upcoming', upcomingMatches);
+      console.log(`[Liquipedia Sync] Saved ${upcomingMatches.length} upcoming matches to KV`);
+    } catch (kvError) {
+      console.log('[Liquipedia Sync] KV not available:', kvError.message);
     }
 
     // 打印 XG 比赛
