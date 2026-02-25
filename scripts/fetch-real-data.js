@@ -93,6 +93,7 @@ const KNOWN_TEAMS = {
   9640842: { name: 'Team Tidebound', tag: 'Tide', logo: null },
   9247798: { name: 'Passion UA', tag: 'Passion', logo: null },
   9758040: { name: 'Runa Team', tag: 'Runa', logo: null },
+  8943835: { name: 'Aurora Gaming', tag: 'Aurora', logo: null },
 };
 
 async function main() {

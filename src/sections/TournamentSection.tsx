@@ -125,11 +125,12 @@ function getTeamAbbrev(teamName: string): string {
     'Team Falcons': 'Falcons', 'OG': 'OG',
     'GamerLegion': 'GL', 'PARIVISION': 'PARI',
     'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
-    'Aurora Gaming': 'AG', 'Execration': 'XctN',
+    'Aurora Gaming': 'Aurora', 'Execration': 'XctN',
     'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
     'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
     'Team Nemesis': 'Nemesis', '1w Team': '1w',
     'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
+    'Gaimin Gladiators': 'GG',
   };
   return abbr[teamName] || teamName.substring(0, 3).toUpperCase();
 }
@@ -425,7 +426,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
-                                    {getTeamAbbrev(series.radiant_team_name).substring(0,2)}
+                                    {getTeamAbbrev(series.radiant_team_name)}
                                   </div>
                                 )}
                               </div>
@@ -459,7 +460,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
-                                    {getTeamAbbrev(series.dire_team_name).substring(0,2)}
+                                    {getTeamAbbrev(series.dire_team_name)}
                                   </div>
                                 )}
                               </div>
