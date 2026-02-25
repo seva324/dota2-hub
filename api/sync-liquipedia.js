@@ -102,16 +102,18 @@ function parseScheduleSection(section, year, month, day, dayType) {
     const team1Raw = teamMatch[1].trim();
     const team2Raw = teamMatch[2].trim();
 
-    // 清理队伍名称，移除赛事名称残留
-    const team1 = team1Raw.replace(/[\d:].*$/, '').trim();
-    const team2 = team2Raw.split(/\s+/)[0].trim(); // 取第一个词作为队名
+    // 清理队伍名称 - 移除数字、冒号等，保留队名
+    const team1 = team1Raw.replace(/^[\d:\s]+/, '').replace(/[\d:\s]+$/, '').trim();
+    const team2 = team2Raw.replace(/^[\d:\s]+/, '').replace(/[\d:\s]+$/, '').trim();
 
     // 跳过无效队伍名
     if (team1.length < 2 || team2.length < 2) continue;
+    // 跳过包含 vs 的残留
+    if (team1.toLowerCase().includes('vs') || team2.toLowerCase().includes('vs')) continue;
 
-    // 查找这个对阵附近的时间
+    // 查找这个对阵附近的时间 - 扩大搜索范围到100字符
     const teamPos = teamMatch.index;
-    const contextBefore = section.substring(Math.max(0, teamPos - 30), teamPos);
+    const contextBefore = section.substring(Math.max(0, teamPos - 100), teamPos);
     const timeMatch = contextBefore.match(/(\d{1,2}:\d{2})/);
 
     if (timeMatch) {
@@ -123,8 +125,9 @@ function parseScheduleSection(section, year, month, day, dayType) {
 
       console.log(`[DLTV Sync] Match: ${team1} vs ${team2}, time: ${timeMatch[1]}, matchDate: ${matchDate.getTime()}, now: ${now.getTime()}`);
 
-      // 只保留未来的比赛（允许15分钟误差）
-      if (matchDate.getTime() > now.getTime() - 15 * 60 * 1000) {
+      // 保留过去24小时到未来24小时的所有比赛
+      const timeDiff = matchDate.getTime() - now.getTime();
+      if (timeDiff > -24 * 60 * 60 * 1000 && timeDiff < 24 * 60 * 60 * 1000) {
         // 尝试从上下文中提取赛事名称
         const tournamentMatch = contextBefore.match(/([A-Za-z][A-Za-z0-9\s\.&\-']+?)(?:\s+[A-Z][a-z]+)?\s+\d{1,2}:\d{2}/i);
         const tournament = tournamentMatch ? tournamentMatch[1].trim() : 'Dota 2';
