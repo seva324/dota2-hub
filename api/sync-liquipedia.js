@@ -1,23 +1,24 @@
 /**
  * Dota2 比赛同步 API
- * 数据源: https://dltv.org/matches
+ * 数据源: https://dltv.org/api/v1/events (新API)
  * 只保留更新 upcoming 比赛功能
  */
 
-const DLTV_URL = 'https://dltv.org/matches';
+const DLTV_API_URL = 'https://dltv.org/api/v1/events';
 
 // 中国战队关键词
 const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
 
 /**
- * 从 dltv.org 获取比赛数据
+ * 从 dltv.org API 获取比赛数据
  */
 async function fetchDLTVMatches() {
   try {
-    const response = await fetch(DLTV_URL, {
+    const response = await fetch(DLTV_API_URL, {
       signal: AbortSignal.timeout(15000), // 15秒超时
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
       },
     });
 
@@ -25,127 +26,86 @@ async function fetchDLTVMatches() {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const html = await response.text();
-    return { html, success: true };
+    const data = await response.json();
+    console.log('[DLTV Sync] API response received, type:', typeof data);
+    console.log('[DLTV Sync] API response keys:', data && typeof data === 'object' ? Object.keys(data) : 'not an object');
+
+    return { data, success: true };
   } catch (error) {
     console.error(`[DLTV Sync] Fetch error:`, error.message);
-    return { html: '', success: false, error: error.message };
+    return { data: null, success: false, error: error.message };
   }
 }
 
 /**
- * 解析 dltv.org HTML 页面
- * 提取今日和明日赛程
+ * 解析 dltv.org API 响应
+ * 返回格式: [{ events: [...], ... }]
  */
-function parseDLTVMatches(html) {
+function parseDLTVMatches(apiData) {
   const matches = [];
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  const currentDay = now.getDate();
 
-  // Debug: 检查 HTML 结构
-  console.log(`[DLTV Sync] HTML length: ${html.length}`);
-  console.log(`[DLTV Sync] Has 今日赛程: ${html.includes('今日赛程')}`);
-  console.log(`[DLTV Sync] Has 明日赛程: ${html.includes('明日赛程')}`);
-
-  // 解析今日赛程 - 尝试多种匹配模式
-  let todaySection = html.match(/今日赛程[\s\S]*?(?=明日赛程|$)/i);
-  if (!todaySection) {
-    todaySection = html.match(/今日[\s\S]*?(?=明日|$)/i);
+  if (!apiData) {
+    console.log('[DLTV Sync] No API data to parse');
+    return matches;
   }
-  if (todaySection) {
-    console.log(`[DLTV Sync] Today section length: ${todaySection[0].length}`);
-    const todayMatches = parseScheduleSection(todaySection[0], currentYear, currentMonth, currentDay, 'today');
-    matches.push(...todayMatches);
+
+  // API 可能返回多种格式，尝试找到 events 数组
+  let events = [];
+
+  if (Array.isArray(apiData)) {
+    events = apiData;
+  } else if (apiData.events && Array.isArray(apiData.events)) {
+    events = apiData.events;
+  } else if (apiData.data && Array.isArray(apiData.data)) {
+    events = apiData.data;
   } else {
-    console.log(`[DLTV Sync] No today section found, trying full page`);
-    // 尝试从整个页面解析
-    const fullMatches = parseScheduleSection(html, currentYear, currentMonth, currentDay, 'full');
-    matches.push(...fullMatches);
+    // 尝试在对象中找到数组
+    for (const key of Object.keys(apiData)) {
+      if (Array.isArray(apiData[key])) {
+        console.log(`[DLTV Sync] Found array in key: ${key}`);
+        events = apiData[key];
+        break;
+      }
+    }
   }
 
-  // 解析明日赛程
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  let tomorrowSection = html.match(/明日赛程[\s\S]*?$/i);
-  if (!tomorrowSection) {
-    tomorrowSection = html.match(/明日[\s\S]*?$/i);
-  }
-  if (tomorrowSection) {
-    console.log(`[DLTV Sync] Tomorrow section length: ${tomorrowSection[0].length}`);
-    const tomorrowMatches = parseScheduleSection(tomorrowSection[0], tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate(), 'tomorrow');
-    matches.push(...tomorrowMatches);
-  } else {
-    console.log(`[DLTV Sync] No tomorrow section found`);
-  }
+  console.log(`[DLTV Sync] Processing ${events.length} events`);
 
-  return matches;
-}
+  const now = Date.now() / 1000;
 
-/**
- * 解析赛程 section
- */
-function parseScheduleSection(section, year, month, day, dayType) {
-  const matches = [];
-  let matchId = 1;
+  for (const event of events) {
+    try {
+      // 解析比赛数据 - 尝试多种字段名
+      const team1 = event.team1?.name || event.home_team?.name || event.radiant?.name || event.left_team?.name || '';
+      const team2 = event.team2?.name || event.away_team?.name || event.dire?.name || event.right_team?.name || '';
 
-  console.log(`[DLTV Sync] Parsing ${dayType} section, length: ${section.length}`);
+      // 解析开始时间 - 尝试多种字段名
+      let startTime = event.start_time || event.startTime || event.begin_at || event.start_at || event.timestamp || 0;
+      if (typeof startTime === 'string') {
+        startTime = Math.floor(new Date(startTime).getTime() / 1000);
+      }
 
-  // 提取所有比赛对阵 - 更宽松的匹配（支持中英文队名）
-  const teamMatches = [...section.matchAll(/([\u4e00-\u9fa5a-zA-Z0-9][\u4e00-\u9fa5a-zA-Z0-9\s]*?)\s+vs\.?\s+([\u4e00-\u9fa5a-zA-Z0-9][\u4e00-\u9fa5a-zA-Z0-9\s]*)/g)];
+      // 赛事名称
+      const tournament = event.tournament?.name || event.event?.name || event.league?.name || event.tournament_name || 'Dota 2';
 
-  console.log(`[DLTV Sync] Found ${teamMatches.length} team match patterns`);
-
-  for (const teamMatch of teamMatches) {
-    const fullMatch = teamMatch[0];
-    const team1Raw = teamMatch[1].trim();
-    const team2Raw = teamMatch[2].trim();
-
-    // 清理队伍名称 - 移除数字、冒号等，保留队名
-    const team1 = team1Raw.replace(/^[\d:\s]+/, '').replace(/[\d:\s]+$/, '').trim();
-    const team2 = team2Raw.replace(/^[\d:\s]+/, '').replace(/[\d:\s]+$/, '').trim();
-
-    // 跳过无效队伍名
-    if (team1.length < 2 || team2.length < 2) continue;
-    // 跳过包含 vs 的残留
-    if (team1.toLowerCase().includes('vs') || team2.toLowerCase().includes('vs')) continue;
-
-    // 查找这个对阵附近的时间 - 扩大搜索范围到100字符
-    const teamPos = teamMatch.index;
-    const contextBefore = section.substring(Math.max(0, teamPos - 100), teamPos);
-    const timeMatch = contextBefore.match(/(\d{1,2}:\d{2})/);
-
-    if (timeMatch) {
-      const [hours, minutes] = timeMatch[1].split(':').map(Number);
-
-      // 使用中国时区 (UTC+8)
-      const matchDate = new Date(year, month - 1, day, hours, minutes);
-      const now = new Date();
-
-      console.log(`[DLTV Sync] Match: ${team1} vs ${team2}, time: ${timeMatch[1]}, matchDate: ${matchDate.getTime()}, now: ${now.getTime()}`);
-
-      // 保留过去24小时到未来24小时的所有比赛
-      const timeDiff = matchDate.getTime() - now.getTime();
-      if (timeDiff > -24 * 60 * 60 * 1000 && timeDiff < 24 * 60 * 60 * 1000) {
-        // 尝试从上下文中提取赛事名称
-        const tournamentMatch = contextBefore.match(/([A-Za-z][A-Za-z0-9\s\.&\-']+?)(?:\s+[A-Z][a-z]+)?\s+\d{1,2}:\d{2}/i);
-        const tournament = tournamentMatch ? tournamentMatch[1].trim() : 'Dota 2';
-
+      // 只保留未来的比赛
+      if (startTime > now && team1 && team2) {
         matches.push({
-          id: `dltv_${year}${month}${day}_${matchId++}`,
-          team1: team1,
-          team2: team2,
-          start_time: Math.floor(matchDate.getTime() / 1000),
+          id: event.id?.toString() || `dltv_${startTime}_${Math.random().toString(36).substr(2, 9)}`,
+          team1,
+          team2,
+          start_time: startTime,
           tournament_name: tournament,
           status: 'upcoming',
           source: 'dltv.org',
         });
       }
+    } catch (e) {
+      console.log('[DLTV Sync] Error parsing event:', e.message);
     }
   }
 
-  console.log(`[DLTV Sync] Parsed ${matches.length} matches from ${dayType}`);
+  console.log(`[DLTV Sync] Parsed ${matches.length} upcoming matches`);
 
   return matches;
 }
@@ -234,17 +194,17 @@ export default async function handler(req, res) {
       existingUpcoming = [];
     }
 
-    // 从 dltv.org 获取数据
-    console.log('[DLTV Sync] Fetching from dltv.org...');
+    // 从 dltv.org API 获取数据
+    console.log('[DLTV Sync] Fetching from dltv.org API...');
     const result = await fetchDLTVMatches();
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch from dltv.org');
+      throw new Error(result.error || 'Failed to fetch from dltv.org API');
     }
 
     // 解析比赛数据
     console.log('[DLTV Sync] Parsing matches...');
-    const parsedMatches = parseDLTVMatches(result.html);
+    const parsedMatches = parseDLTVMatches(result.data);
     console.log(`[DLTV Sync] Parsed ${parsedMatches.length} matches`);
 
     // 转换为应用格式
