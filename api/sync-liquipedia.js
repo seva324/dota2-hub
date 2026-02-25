@@ -317,5 +317,14 @@ export default async function handler(req, res) {
       error: 'Sync failed',
       message: error.message
     });
+  } finally {
+    // 确保 Redis 连接关闭
+    if (redisClient) {
+      try {
+        await redisClient.disconnect();
+      } catch (disconnectError) {
+        console.error('[DLTV Sync] Redis disconnect error:', disconnectError.message);
+      }
+    }
   }
 }
