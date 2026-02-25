@@ -8,12 +8,6 @@
  */
 
 import { createClient } from 'redis';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const REDIS_URL = process.env.REDIS_URL;
 
@@ -236,92 +230,6 @@ function convert(m, td = null) {
   };
 }
 
-/**
- * 从 Redis 中的比赛数据更新 teams.json
- */
-async function updateTeamsJson(r) {
-  console.log('=== Updating Teams JSON ===');
-
-  const teamsJsonPath = path.join(__dirname, '..', 'public', 'data', 'teams.json');
-
-  // 加载现有 teams.json
-  let existingTeams = [];
-  try {
-    const data = fs.readFileSync(teamsJsonPath, 'utf-8');
-    existingTeams = JSON.parse(data);
-  } catch (e) {
-    console.log('No existing teams.json, starting fresh');
-  }
-
-  // 从 Redis 获取 matches
-  let matchesData = {};
-  try {
-    const data = await r.get('matches');
-    if (data) matchesData = JSON.parse(data);
-  } catch (e) {
-    console.log('No matches data');
-    return;
-  }
-
-  // 提取唯一战队
-  const teamMap = new Map();
-  for (const [, m] of Object.entries(matchesData)) {
-    // radiant team
-    if (m.radiant_team_name && m.radiant_team_name !== 'unknown') {
-      const key = m.radiant_team_name.toLowerCase();
-      if (!teamMap.has(key)) {
-        teamMap.set(key, {
-          name: m.radiant_team_name,
-          name_cn: m.radiant_team_name_cn || m.radiant_team_name.substring(0, 3).toUpperCase(),
-          logo_url: m.radiant_team_logo || null
-        });
-      }
-    }
-    // dire team
-    if (m.dire_team_name && m.dire_team_name !== 'unknown') {
-      const key = m.dire_team_name.toLowerCase();
-      if (!teamMap.has(key)) {
-        teamMap.set(key, {
-          name: m.dire_team_name,
-          name_cn: m.dire_team_name_cn || m.dire_team_name.substring(0, 3).toUpperCase(),
-          logo_url: m.dire_team_logo || null
-        });
-      }
-    }
-  }
-
-  // 合并到现有 teams
-  let added = 0, updated = 0;
-  for (const [key, team] of teamMap) {
-    const existing = existingTeams.find(t => t.name?.toLowerCase() === key);
-    if (existing) {
-      // 更新现有战队
-      if (!existing.logo_url && team.logo_url) {
-        existing.logo_url = team.logo_url;
-        updated++;
-      }
-    } else {
-      // 添加新战队
-      existingTeams.push({
-        id: key,
-        name: team.name,
-        name_cn: team.name_cn,
-        tag: team.name_cn,
-        logo_url: team.logo_url,
-        region: 'Unknown',
-        is_cn_team: 0,
-        created_at: Math.floor(Date.now() / 1000),
-        updated_at: Math.floor(Date.now() / 1000)
-      });
-      added++;
-    }
-  }
-
-  // 保存
-  fs.writeFileSync(teamsJsonPath, JSON.stringify(existingTeams, null, 2));
-  console.log(`Updated teams.json: ${added} added, ${updated} updated, total ${existingTeams.length}`);
-}
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -382,9 +290,6 @@ export default async function handler(req, res) {
 
     // 同步 tournaments 数据
     const tournamentsResult = await syncTournaments(r, existing);
-
-    // 更新 teams.json
-    await updateTeamsJson(r);
 
     return res.status(200).json({
       success: true,
