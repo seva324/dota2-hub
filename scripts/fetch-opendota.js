@@ -8,6 +8,7 @@ import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getTournamentIdByLeagueId } from './league-mapping.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,16 +127,16 @@ function updateTeam(teamInfo) {
 async function saveMatch(match, saveAllForTargetLeagues = false) {
   const radiantTeam = identifyTeam(match.radiant_name);
   const direTeam = identifyTeam(match.dire_name);
-  
+
   // Check if this match is from a target league
   const leagueId = match.leagueid;
   const isTargetLeague = leagueId && TARGET_LEAGUE_IDS.includes(parseInt(leagueId));
-  
+
   // For target leagues, save ALL matches; for other leagues, only save if has Chinese team
   if (!isTargetLeague && !radiantTeam.is_cn && !direTeam.is_cn) {
     return null;
   }
-  
+
   // Update team in database
   if (radiantTeam.id !== 'unknown') {
     const stmt = db.prepare(`
@@ -144,7 +145,7 @@ async function saveMatch(match, saveAllForTargetLeagues = false) {
     `);
     stmt.run(radiantTeam.id, radiantTeam.name || radiantTeam.name_cn, radiantTeam.name_cn, radiantTeam.name_cn, radiantTeam.is_cn ? 'China' : 'International', radiantTeam.is_cn ? 1 : 0);
   }
-  
+
   if (direTeam.id !== 'unknown') {
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO teams (id, name, name_cn, tag, region, is_cn_team, updated_at)
@@ -152,7 +153,18 @@ async function saveMatch(match, saveAllForTargetLeagues = false) {
     `);
     stmt.run(direTeam.id, direTeam.name || direTeam.name_cn, direTeam.name_cn, direTeam.name_cn, direTeam.is_cn ? 'China' : 'International', direTeam.is_cn ? 1 : 0);
   }
-  
+
+  // 根据 league_id 查找 tournament
+  const tournamentId = getTournamentIdByLeagueId(leagueId);
+
+  // 如果找到 tournament_id，查询 tournament 名称
+  let tournamentName = null;
+  if (tournamentId) {
+    const tournament = db.prepare('SELECT name, name_cn FROM tournaments WHERE id = ?').get(tournamentId);
+    if (tournament) {
+      tournamentName = tournament.name_cn || tournament.name;
+    }
+  }
   const now = Date.now() / 1000;
   let status = 'scheduled';
   if (match.start_time < now - 3600) {
@@ -160,10 +172,10 @@ async function saveMatch(match, saveAllForTargetLeagues = false) {
   } else if (match.start_time < now) {
     status = 'live';
   }
-  
+
   let radiantGameWins = 0;
   let direGameWins = 0;
-  
+
   if (status === 'finished') {
     if (match.radiant_win) {
       radiantGameWins = 1;
@@ -173,17 +185,31 @@ async function saveMatch(match, saveAllForTargetLeagues = false) {
       direGameWins = 1;
     }
   }
-  
+
+  // 根据 league_id 查找 tournament
+  const leagueId = match.leagueid || null;
+  const tournamentId = getTournamentIdByLeagueId(leagueId);
+
+  // 如果找到 tournament_id，查询 tournament 名称
+  let tournamentName = null;
+  if (tournamentId) {
+    const tournament = db.prepare('SELECT name, name_cn FROM tournaments WHERE id = ?').get(tournamentId);
+    if (tournament) {
+      tournamentName = tournament.name_cn || tournament.name;
+    }
+  }
+
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO matches (
       match_id, league_id, radiant_team_id, dire_team_id,
       radiant_team_name, radiant_team_name_cn,
       dire_team_name, dire_team_name_cn,
       radiant_score, dire_score, radiant_game_wins, dire_game_wins,
-      start_time, duration, series_type, status, lobby_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      start_time, duration, series_type, status, lobby_type,
+      tournament_id, tournament_name
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  
+
   stmt.run(
     match.match_id,
     match.leagueid || null,
@@ -201,13 +227,16 @@ async function saveMatch(match, saveAllForTargetLeagues = false) {
     match.duration || 0,
     'BO3',
     status,
-    match.lobby_type || 0
+    match.lobby_type || 0,
+    tournamentId,
+    tournamentName
   );
-  
+
   // Only log Chinese team matches to reduce noise
   if (radiantTeam.is_cn || direTeam.is_cn) {
     const cnTeam = radiantTeam.is_cn ? radiantTeam : direTeam;
-    console.log(`  ✓ ${cnTeam.name_cn}: ${radiantTeam.name_cn || match.radiant_name} ${radiantGameWins}:${direGameWins} ${direTeam.name_cn || match.dire_name} (${status})`);
+    const tInfo = tournamentId ? ` [${tournamentId}]` : '';
+    console.log(`  ✓ ${cnTeam.name_cn}: ${radiantTeam.name_cn || match.radiant_name} ${radiantGameWins}:${direGameWins} ${direTeam.name_cn || match.dire_name} (${status})${tInfo}`);
   }
   return match;
 }

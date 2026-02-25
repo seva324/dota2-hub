@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { LEAGUE_TO_TOURNAMENT_MAP } from './league-mapping.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -291,19 +292,49 @@ console.log(`Exported ${tournaments.length} tournaments`);
 
 // 按赛事分组并聚合系列赛
 const seriesByTournament = {};
+
+// 构建 league_id 到 tournament_id 的反向映射
+const leagueIdToTournamentId = {};
+for (const [leagueId, tournamentId] of Object.entries(LEAGUE_TO_TOURNAMENT_MAP)) {
+  if (!leagueIdToTournamentId[tournamentId]) {
+    leagueIdToTournamentId[tournamentId] = [];
+  }
+  leagueIdToTournamentId[tournamentId].push(leagueId);
+}
+
 for (const t of tournaments) {
-  const tournamentId = t.id;  // This is the tournament_id string like "dreamleague-s28"
-  // Map back to numeric tournament_id used in database
-  const dbTournamentId = Object.entries(leagueIdMap).find(([k]) => k === t.id)?.[1] || t.id;
-  
-  const tournamentMatches = runQuery(`
-    SELECT m.*
-    FROM matches m
-    WHERE m.tournament_id = ?
-    ORDER BY m.start_time DESC
-    LIMIT 100
-  `, [String(dbTournamentId)]);
-  
+  const tournamentId = t.id;
+  // Map back to numeric league_id used in database
+  const dbLeagueId = leagueIdMap[t.id] || null;
+
+  // 查询比赛：优先通过 tournament_id 匹配，其次通过 league_id 匹配
+  let tournamentMatches;
+  if (dbLeagueId) {
+    tournamentMatches = runQuery(`
+      SELECT m.*
+      FROM matches m
+      WHERE m.tournament_id = ?
+         OR (m.league_id = ? AND (m.tournament_id IS NULL OR m.tournament_id = ''))
+      ORDER BY m.start_time DESC
+      LIMIT 100
+    `, [String(tournamentId), dbLeagueId]);
+  } else {
+    tournamentMatches = runQuery(`
+      SELECT m.*
+      FROM matches m
+      WHERE m.tournament_id = ?
+      ORDER BY m.start_time DESC
+      LIMIT 100
+    `, [String(tournamentId)]);
+  }
+
+  // 添加 radiant_win 字段用于聚合
+  tournamentMatches = tournamentMatches.map(m => ({
+    ...m,
+    radiant_win: m.radiant_score > m.dire_score ? 1 : 0
+  }));
+
+  // 聚合为系列赛
   seriesByTournament[t.id] = aggregateSeries(tournamentMatches);
 }
 

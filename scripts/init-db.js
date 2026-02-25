@@ -52,6 +52,7 @@ db.exec(`
     location TEXT,
     format TEXT,
     logo_url TEXT,
+    league_id INTEGER,
     created_at INTEGER DEFAULT (unixepoch())
   );
 `);
