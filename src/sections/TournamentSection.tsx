@@ -422,7 +422,22 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               <div className="flex-shrink-0">
                                 {series.radiant_team_logo ? (
                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamAIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
-                                    <img src={series.radiant_team_logo} alt={series.radiant_team_name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    <img 
+                                      src={series.radiant_team_logo} 
+                                      alt={series.radiant_team_name} 
+                                      className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          const fallback = document.createElement('span');
+                                          fallback.className = 'text-xs sm:text-sm font-bold text-slate-400';
+                                          fallback.textContent = getTeamAbbrev(series.radiant_team_name);
+                                          parent.appendChild(fallback);
+                                        }
+                                      }} 
+                                    />
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
@@ -456,7 +471,22 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               <div className="flex-shrink-0">
                                 {series.dire_team_logo ? (
                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamBIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
-                                    <img src={series.dire_team_logo} alt={series.dire_team_name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    <img 
+                                      src={series.dire_team_logo} 
+                                      alt={series.dire_team_name} 
+                                      className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          const fallback = document.createElement('span');
+                                          fallback.className = 'text-xs sm:text-sm font-bold text-slate-400';
+                                          fallback.textContent = getTeamAbbrev(series.dire_team_name);
+                                          parent.appendChild(fallback);
+                                        }
+                                      }} 
+                                    />
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">

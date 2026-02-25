@@ -155,6 +155,8 @@ async function main() {
       radiant_team_name_cn: radiantTeam?.tag || null,
       dire_team_name: direTeam?.name || null,
       dire_team_name_cn: direTeam?.tag || null,
+      radiant_team_logo: radiantTeam?.logo || null,
+      dire_team_logo: direTeam?.logo || null,
       radiant_score: match.radiant_score,
       dire_score: match.dire_score,
       radiant_game_wins: match.radiant_win ? 1 : 0,
