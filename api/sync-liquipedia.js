@@ -10,12 +10,11 @@ const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
 const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
 
 /**
- * 从 Liquipedia API 获取比赛数据 (使用 gzip)
+ * 从 Liquipedia API 获取比赛数据
+ * 使用 fetch API with compression support
  */
 async function fetchLiquipediaMatches() {
-  const zlib = await import('zlib');
-
-  return new Promise((resolve) => {
+  try {
     const params = new URLSearchParams({
       action: 'parse',
       page: 'Liquipedia:Matches',
@@ -26,80 +25,38 @@ async function fetchLiquipediaMatches() {
     const url = `${LIQUIPEDIA_API}?${params}`;
     console.log('[Liquipedia Sync] Fetching from:', url);
 
-    // Use global https module
-    const https = await import('https');
-    const urlObj = new URL(url);
-    const options = {
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept-Encoding': 'gzip',
-        'Accept': 'application/json'
       },
-      method: 'GET'
-    };
-
-    const req = https.request(options, (res) => {
-      const chunks = [];
-
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        console.log('[Liquipedia Sync] Response status:', res.statusCode);
-        console.log('[Liquipedia Sync] Content-Encoding:', res.headers['content-encoding']);
-
-        try {
-          if (res.headers['content-encoding'] === 'gzip') {
-            zlib.gunzip(buffer, (err, decompressed) => {
-              if (err) {
-                resolve({ html: '', success: false, error: err.message });
-              } else {
-                const text = decompressed.toString('utf-8');
-                console.log('[Liquipedia Sync] Response length:', text.length);
-                const data = JSON.parse(text);
-                console.log('[Liquipedia Sync] API response received');
-
-                if (!data.parse || !data.parse.text) {
-                  resolve({ html: '', success: false, error: 'Invalid API response' });
-                  return;
-                }
-
-                resolve({ html: data.parse.text['*'], success: true });
-              }
-            });
-          } else {
-            const text = buffer.toString('utf-8');
-            console.log('[Liquipedia Sync] Response length:', text.length);
-            const data = JSON.parse(text);
-            console.log('[Liquipedia Sync] API response received');
-
-            if (!data.parse || !data.parse.text) {
-              resolve({ html: '', success: false, error: 'Invalid API response' });
-              return;
-            }
-
-            resolve({ html: data.parse.text['*'], success: true });
-          }
-        } catch (e) {
-          console.error('[Liquipedia Sync] Parse error:', e.message);
-          resolve({ html: '', success: false, error: e.message });
-        }
-      });
+      // Use automatic decompression
+      compress: true
     });
 
-    req.on('error', (e) => {
-      console.error('[Liquipedia Sync] Request error:', e.message);
-      resolve({ html: '', success: false, error: e.message });
-    });
+    console.log('[Liquipedia Sync] Response status:', response.status);
 
-    req.setTimeout(15000, () => {
-      req.destroy();
-      resolve({ html: '', success: false, error: 'Request timeout' });
-    });
+    if (!response.ok) {
+      const text = await response.text();
+      console.log('[Liquipedia Sync] Error response:', text.substring(0, 200));
+      throw new Error(`HTTP ${response.status}`);
+    }
 
-    req.end();
-  });
+    const text = await response.text();
+    console.log('[Liquipedia Sync] Response length:', text.length);
+
+    const data = JSON.parse(text);
+    console.log('[Liquipedia Sync] API response received');
+
+    if (!data.parse || !data.parse.text) {
+      throw new Error('Invalid API response');
+    }
+
+    return { html: data.parse.text['*'], success: true };
+  } catch (error) {
+    console.error('[Liquipedia Sync] Fetch error:', error.message);
+    return { html: '', success: false, error: error.message };
+  }
 }
 
 /**
