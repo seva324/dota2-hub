@@ -69,36 +69,38 @@ interface MatchDetail {
 }
 
 // Hero data - loaded from data file
-let heroesData: Record<number, { name: string; img: string }> = {};
-let heroesCnData: Record<number, { name_en: string; name_cn: string; nicknames: string[] }> = {};
+interface HeroInfo {
+  id: number;
+  name: string;
+  img: string;
+  name_cn: string;
+  nicknames?: string[];
+}
+let heroesData: Record<number, HeroInfo> = {};
 
-// Load heroes data
-fetch('/dota2-hub/data/heroes.json')
-  .then(res => res.json())
-  .then(data => { heroesData = data; })
-  .catch(() => {});
-
-// Load heroes Chinese names
-fetch('/dota2-hub/data/heroes_cn.json')
+// Load heroes data from heroes.json (contains both English and Chinese names)
+fetch('/data/heroes.json')
   .then(res => res.json())
   .then(data => { 
-    // Convert string keys to numbers
-    for (const [key, value] of Object.entries(data)) {
-      heroesCnData[parseInt(key)] = value as { name_en: string; name_cn: string; nicknames: string[] };
-    }
+    heroesData = data;
+    console.log('Heroes loaded in MatchDetailModal:', Object.keys(heroesData).length);
   })
-  .catch(() => {});
+  .catch(err => console.error('Error loading heroes:', err));
 
 function getHeroName(id: number): string {
   // Return Chinese name if available, otherwise English name
-  const cnName = heroesCnData[id]?.name_cn;
-  if (cnName) return cnName;
-  return heroesData[id]?.name || `Hero ${id}`;
+  const hero = heroesData[id];
+  if (!hero) return `Hero ${id}`;
+  return hero.name_cn || hero.name || `Hero ${id}`;
 }
 
 function getHeroImg(id: number): string {
-  const img = heroesData[id]?.img || `hero_${id}`;
-  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
+  const hero = heroesData[id];
+  if (!hero?.img) {
+    // Fallback to CDN
+    return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/hero_${id}_lg.png`;
+  }
+  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
 }
 
 // Get lane name in Chinese
