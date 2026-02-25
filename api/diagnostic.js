@@ -42,16 +42,36 @@ export default async function handler(req, res) {
     const matchPattern = html.match(/(\d{1,2}:\d{2})[^<>]*?vs[^<>]*/gi);
     const matches = matchPattern ? matchPattern.slice(0, 10) : [];
 
-    // 查找JSON数据
-    const jsonMatches = html.match(/window\.matches\s*=\s*(\[[\s\S]*?\]);/);
-    const jsonData = jsonMatches ? jsonMatches[1].substring(0, 5000) : null;
+    // 查找JSON数据 - 尝试多种模式
+    let jsonData = null;
+    const jsonPatterns = [
+      /window\.matches\s*=\s*(\[[\s\S]*?\]);/,
+      /window\.data\s*=\s*(\{[\s\S]*?\});/,
+      /matches\s*:\s*(\[[\s\S]*?\]\s*,)/,
+      /"matches"\s*:\s*(\[[\s\S]*?\])/,
+    ];
+    for (const pattern of jsonPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        jsonData = match[1].substring(0, 5000);
+        break;
+      }
+    }
 
-    // 查找HTML中的比赛元素
-    const matchElements = html.match(/<div[^>]*class="[^"]*match[^"]*"[^>]*>[\s\S]*?<\/div>/gi);
+    // 查找HTML中的比赛元素 - 更宽松的匹配
+    const matchElements = html.match(/class="[^"]*match[^"]*"/gi);
     const elementCount = matchElements ? matchElements.length : 0;
 
+    // 查找表格行
+    const tableRows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi);
+    const rowCount = tableRows ? tableRows.length : 0;
+
+    // 查找包含vs的表格单元格
+    const vsCells = html.match(/<td[^>]*>[^<>]*vs[^<>]*<\/td>/gi);
+    const vsCount = vsCells ? vsCells.length : 0;
+
     // 查找带有时间的元素
-    const timeElements = html.match(/<span[^>]*>(\d{1,2}:\d{2})<\/span>/gi);
+    const timeElements = html.match(/(\d{1,2}:\d{2})/gi);
 
     return res.status(200).json({
       htmlLength: html.length,
@@ -61,7 +81,9 @@ export default async function handler(req, res) {
       sampleMatches: matches,
       jsonData,
       elementCount,
-      timeElements: timeElements ? timeElements.slice(0, 10) : [],
+      rowCount,
+      vsCount: vsCells ? vsCells.slice(0, 5) : [],
+      timeElements: timeElements ? timeElements.slice(0, 20) : [],
       htmlSample: sample
     });
 
