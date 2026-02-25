@@ -200,16 +200,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Try to import @vercel/kv dynamically to avoid build errors
-  let kv;
+  // Initialize Redis client
+  let redisClient;
   try {
-    const kvModule = await import('@vercel/kv');
-    kv = kvModule.kv;
-  } catch (importError) {
-    console.error('[DLTV Sync] KV import failed:', importError.message);
+    const redis = await import('redis');
+    redisClient = redis.createClient();
+    await redisClient.connect();
+    console.log('[DLTV Sync] Redis connected');
+  } catch (redisError) {
+    console.error('[DLTV Sync] Redis connection failed:', redisError.message);
     return res.status(503).json({
       error: 'Storage service unavailable',
-      message: 'KV storage is not available. Please configure @vercel/kv to use this sync API.'
+      message: 'Redis is not available. Please configure KV_URL environment variable.'
     });
   }
 
@@ -219,10 +221,11 @@ export default async function handler(req, res) {
     // 获取现有 upcoming 数据
     let existingUpcoming = [];
     try {
-      existingUpcoming = await kv.get('upcoming') || [];
+      const data = await redisClient.get('upcoming');
+      existingUpcoming = data ? JSON.parse(data) : [];
       console.log(`[DLTV Sync] Existing matches: ${existingUpcoming.length}`);
     } catch (kvError) {
-      console.error('[DLTV Sync] KV get failed:', kvError.message);
+      console.error('[DLTV Sync] Redis get failed:', kvError.message);
       existingUpcoming = [];
     }
 
@@ -264,15 +267,15 @@ export default async function handler(req, res) {
       .sort((a, b) => a.start_time - b.start_time)
       .slice(0, 50);
 
-    // 保存到 KV
+    // 保存到 Redis
     try {
-      await kv.set('upcoming', upcomingMatches);
+      await redisClient.set('upcoming', JSON.stringify(upcomingMatches));
       console.log(`[DLTV Sync] Saved ${upcomingMatches.length} upcoming matches`);
     } catch (kvError) {
-      console.error('[DLTV Sync] KV set failed:', kvError.message);
+      console.error('[DLTV Sync] Redis set failed:', kvError.message);
       return res.status(500).json({
         error: 'Failed to save data',
-        message: 'Could not save to KV storage: ' + kvError.message
+        message: 'Could not save to Redis: ' + kvError.message
       });
     }
 
