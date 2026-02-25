@@ -1,24 +1,33 @@
 /**
  * Dota2 比赛同步 API
- * 数据源: https://dltv.org/api/v1/events (新API)
- * 只保留更新 upcoming 比赛功能
+ * 数据源: Liquipedia API (https://liquipedia.net/dota2/api.php)
+ * 功能: 同步即将开始的比赛信息
  */
 
-const DLTV_API_URL = 'https://dltv.org/api/v1/events';
+const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
 
 // 中国战队关键词
 const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
 
 /**
- * 从 dltv.org API 获取比赛数据
+ * 从 Liquipedia API 获取比赛数据
  */
-async function fetchDLTVMatches() {
+async function fetchLiquipediaMatches() {
   try {
-    const response = await fetch(DLTV_API_URL, {
-      signal: AbortSignal.timeout(15000), // 15秒超时
+    const params = new URLSearchParams({
+      action: 'parse',
+      page: 'Liquipedia:Matches',
+      format: 'json',
+      prop: 'text'
+    });
+
+    const url = `${LIQUIPEDIA_API}?${params}`;
+    console.log('[Liquipedia Sync] Fetching from:', url);
+
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json',
       },
     });
 
@@ -27,85 +36,128 @@ async function fetchDLTVMatches() {
     }
 
     const data = await response.json();
-    console.log('[DLTV Sync] API response received, type:', typeof data);
-    console.log('[DLTV Sync] API response keys:', data && typeof data === 'object' ? Object.keys(data) : 'not an object');
+    console.log('[Liquipedia Sync] API response received');
 
-    return { data, success: true };
+    if (!data.parse || !data.parse.text) {
+      throw new Error('Invalid API response');
+    }
+
+    return { html: data.parse.text['*'], success: true };
   } catch (error) {
-    console.error(`[DLTV Sync] Fetch error:`, error.message);
-    return { data: null, success: false, error: error.message };
+    console.error('[Liquipedia Sync] Fetch error:', error.message);
+    return { html: '', success: false, error: error.message };
   }
 }
 
 /**
- * 解析 dltv.org API 响应
- * 返回格式: [{ events: [...], ... }]
+ * 识别战队信息
  */
-function parseDLTVMatches(apiData) {
-  const matches = [];
+function identifyTeam(name) {
+  if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
 
-  if (!apiData) {
-    console.log('[DLTV Sync] No API data to parse');
+  const upperName = name.toUpperCase().trim();
+  const lowerName = name.toLowerCase();
+
+  if (upperName === 'XG' || lowerName.includes('xtreme')) {
+    return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
+  }
+
+  if (upperName === 'YB' || lowerName.includes('yakult') ||
+      upperName === 'AR' || lowerName.includes('azure')) {
+    return { id: 'yakult-brother', name_cn: 'YB', is_cn: true };
+  }
+
+  if (upperName === 'VG' || lowerName.includes('vici')) {
+    return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
+  }
+
+  return { id: 'unknown', name_cn: name, is_cn: false };
+}
+
+/**
+ * 解析 Liquipedia HTML 获取比赛数据
+ */
+function parseLiquipediaMatches(html) {
+  const matches = [];
+  const now = Math.floor(Date.now() / 1000);
+  const thirtyDaysLater = now + (30 * 24 * 60 * 60);
+
+  if (!html) {
+    console.log('[Liquipedia Sync] No HTML to parse');
     return matches;
   }
 
-  // API 可能返回多种格式，尝试找到 events 数组
-  let events = [];
+  console.log('[Liquipedia Sync] HTML length:', html.length);
 
-  if (Array.isArray(apiData)) {
-    events = apiData;
-  } else if (apiData.events && Array.isArray(apiData.events)) {
-    events = apiData.events;
-  } else if (apiData.data && Array.isArray(apiData.data)) {
-    events = apiData.data;
-  } else {
-    // 尝试在对象中找到数组
-    for (const key of Object.keys(apiData)) {
-      if (Array.isArray(apiData[key])) {
-        console.log(`[DLTV Sync] Found array in key: ${key}`);
-        events = apiData[key];
-        break;
-      }
-    }
-  }
+  // Split by match-info div (Liquipedia uses this class)
+  const parts = html.split('<div class="match-info">');
 
-  console.log(`[DLTV Sync] Processing ${events.length} events`);
+  console.log('[Liquipedia Sync] Found', parts.length - 1, 'potential match sections');
 
-  const now = Date.now() / 1000;
-
-  for (const event of events) {
+  for (let i = 1; i < parts.length; i++) {
     try {
-      // 解析比赛数据 - 尝试多种字段名
-      const team1 = event.team1?.name || event.home_team?.name || event.radiant?.name || event.left_team?.name || '';
-      const team2 = event.team2?.name || event.away_team?.name || event.dire?.name || event.right_team?.name || '';
+      const part = parts[i];
 
-      // 解析开始时间 - 尝试多种字段名
-      let startTime = event.start_time || event.startTime || event.begin_at || event.start_at || event.timestamp || 0;
-      if (typeof startTime === 'string') {
-        startTime = Math.floor(new Date(startTime).getTime() / 1000);
+      const endIdx = part.indexOf('<div class="match-info-tournament">');
+      if (endIdx === -1) continue;
+
+      const matchHtml = part.substring(0, endIdx);
+
+      // Extract timestamp
+      const tsMatch = matchHtml.match(/data-timestamp="(\d+)"/);
+      if (!tsMatch) continue;
+      const matchTime = parseInt(tsMatch[1]);
+
+      // Only future matches within 30 days
+      if (matchTime < now || matchTime > thirtyDaysLater) continue;
+
+      // Extract teams
+      const opponentRegex = /<div class="match-info-header-opponent[^"]*">/g;
+      const opponentDivs = matchHtml.split(opponentRegex);
+
+      let team1 = 'TBD';
+      let team2 = 'TBD';
+
+      if (opponentDivs.length >= 2) {
+        const t1Match = opponentDivs[1].match(/title="([^"]+)"/);
+        if (t1Match) team1 = t1Match[1].trim();
       }
 
-      // 赛事名称
-      const tournament = event.tournament?.name || event.event?.name || event.league?.name || event.tournament_name || 'Dota 2';
-
-      // 只保留未来的比赛
-      if (startTime > now && team1 && team2) {
-        matches.push({
-          id: event.id?.toString() || `dltv_${startTime}_${Math.random().toString(36).substr(2, 9)}`,
-          team1,
-          team2,
-          start_time: startTime,
-          tournament_name: tournament,
-          status: 'upcoming',
-          source: 'dltv.org',
-        });
+      if (opponentDivs.length >= 3) {
+        const t2Match = opponentDivs[2].match(/title="([^"]+)"/);
+        if (t2Match) team2 = t2Match[2].trim();
       }
+
+      // Skip if teams are TBD
+      if (team1 === 'TBD' || team2 === 'TBD') continue;
+
+      // Get team info
+      const team1Info = identifyTeam(team1);
+      const team2Info = identifyTeam(team2);
+
+      // Extract tournament
+      let tournament = '';
+      const tourneyMatch = part.substring(endIdx).match(/<div class="match-info-tournament"[^>]*>[^<]*<a[^>]*>([^<]+)/);
+      if (tourneyMatch) tournament = tourneyMatch[1].trim();
+
+      matches.push({
+        id: `liquipedia_${matchTime}_${team1Info.id}_${team2Info.id}`,
+        team1,
+        team2,
+        start_time: matchTime,
+        tournament_name: tournament || 'Dota 2',
+        team1Info,
+        team2Info,
+        status: 'upcoming',
+        source: 'liquipedia.net',
+      });
+
     } catch (e) {
-      console.log('[DLTV Sync] Error parsing event:', e.message);
+      // Skip individual parse errors
     }
   }
 
-  console.log(`[DLTV Sync] Parsed ${matches.length} upcoming matches`);
+  console.log('[Liquipedia Sync] Parsed', matches.length, 'upcoming matches');
 
   return matches;
 }
@@ -124,16 +176,17 @@ function isChineseTeam(teamName) {
  */
 function convertToAppFormat(matches) {
   return matches.map(m => {
-    const radiantIsCN = isChineseTeam(m.team1);
-    const direIsCN = isChineseTeam(m.team2);
+    // Use team info from Liquipedia if available, otherwise detect
+    const radiantInfo = m.team1Info || { name_cn: isChineseTeam(m.team1) ? m.team1 : undefined, is_cn: isChineseTeam(m.team1) };
+    const direInfo = m.team2Info || { name_cn: isChineseTeam(m.team2) ? m.team2 : undefined, is_cn: isChineseTeam(m.team2) };
 
     return {
       id: m.id,
       match_id: parseInt(m.id.replace(/\D/g, '')) || Math.floor(Math.random() * 1000000),
       radiant_team_name: m.team1,
-      radiant_team_name_cn: radiantIsCN ? m.team1 : undefined,
+      radiant_team_name_cn: radiantInfo.is_cn ? (radiantInfo.name_cn || m.team1) : undefined,
       dire_team_name: m.team2,
-      dire_team_name_cn: direIsCN ? m.team2 : undefined,
+      dire_team_name_cn: direInfo.is_cn ? (direInfo.name_cn || m.team2) : undefined,
       start_time: m.start_time,
       series_type: 'BO3',
       tournament_name: m.tournament_name || 'Dota 2 Pro League',
@@ -171,9 +224,9 @@ export default async function handler(req, res) {
     const redis = await import('redis');
     redisClient = redis.createClient({ url: REDIS_URL });
     await redisClient.connect();
-    console.log('[DLTV Sync] Redis connected');
+    console.log('[Liquipedia Sync] Redis connected');
   } catch (redisError) {
-    console.error('[DLTV Sync] Redis connection failed:', redisError.message);
+    console.error('[Liquipedia Sync] Redis connection failed:', redisError.message);
     return res.status(503).json({
       error: 'Storage service unavailable',
       message: 'Failed to connect to Redis: ' + redisError.message
@@ -181,31 +234,31 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('[DLTV Sync] Starting...');
+    console.log('[Liquipedia Sync] Starting...');
 
     // 获取现有 upcoming 数据
     let existingUpcoming = [];
     try {
       const data = await redisClient.get('upcoming');
       existingUpcoming = data ? JSON.parse(data) : [];
-      console.log(`[DLTV Sync] Existing matches: ${existingUpcoming.length}`);
+      console.log(`[Liquipedia Sync] Existing matches: ${existingUpcoming.length}`);
     } catch (kvError) {
-      console.error('[DLTV Sync] Redis get failed:', kvError.message);
+      console.error('[Liquipedia Sync] Redis get failed:', kvError.message);
       existingUpcoming = [];
     }
 
-    // 从 dltv.org API 获取数据
-    console.log('[DLTV Sync] Fetching from dltv.org API...');
-    const result = await fetchDLTVMatches();
+    // 从 Liquipedia API 获取数据
+    console.log('[Liquipedia Sync] Fetching from Liquipedia API...');
+    const result = await fetchLiquipediaMatches();
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch from dltv.org API');
+      throw new Error(result.error || 'Failed to fetch from Liquipedia API');
     }
 
     // 解析比赛数据
-    console.log('[DLTV Sync] Parsing matches...');
-    const parsedMatches = parseDLTVMatches(result.data);
-    console.log(`[DLTV Sync] Parsed ${parsedMatches.length} matches`);
+    console.log('[Liquipedia Sync] Parsing matches...');
+    const parsedMatches = parseLiquipediaMatches(result.html);
+    console.log(`[Liquipedia Sync] Parsed ${parsedMatches.length} matches`);
 
     // 转换为应用格式
     const appMatches = convertToAppFormat(parsedMatches);
@@ -235,9 +288,9 @@ export default async function handler(req, res) {
     // 保存到 Redis
     try {
       await redisClient.set('upcoming', JSON.stringify(upcomingMatches));
-      console.log(`[DLTV Sync] Saved ${upcomingMatches.length} upcoming matches`);
+      console.log(`[Liquipedia Sync] Saved ${upcomingMatches.length} upcoming matches`);
     } catch (kvError) {
-      console.error('[DLTV Sync] Redis set failed:', kvError.message);
+      console.error('[Liquipedia Sync] Redis set failed:', kvError.message);
       return res.status(500).json({
         error: 'Failed to save data',
         message: 'Could not save to Redis: ' + kvError.message
@@ -253,7 +306,7 @@ export default async function handler(req, res) {
     );
 
     if (xgMatches.length > 0) {
-      console.log('[DLTV Sync] XG matches found:');
+      console.log('[Liquipedia Sync] XG matches found:');
       xgMatches.forEach(m => {
         const time = new Date(m.start_time * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
         console.log(`  - ${m.radiant_team_name} vs ${m.dire_team_name} @ ${time}`);
@@ -268,7 +321,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('[DLTV Sync] Error:', error);
+    console.error('[Liquipedia Sync] Error:', error);
     return res.status(500).json({
       error: 'Sync failed',
       message: error.message
@@ -279,7 +332,7 @@ export default async function handler(req, res) {
       try {
         await redisClient.disconnect();
       } catch (disconnectError) {
-        console.error('[DLTV Sync] Redis disconnect error:', disconnectError.message);
+        console.error('[Liquipedia Sync] Redis disconnect error:', disconnectError.message);
       }
     }
   }
