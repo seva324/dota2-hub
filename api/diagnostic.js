@@ -42,12 +42,26 @@ export default async function handler(req, res) {
     const matchPattern = html.match(/(\d{1,2}:\d{2})[^<>]*?vs[^<>]*/gi);
     const matches = matchPattern ? matchPattern.slice(0, 10) : [];
 
+    // 查找JSON数据
+    const jsonMatches = html.match(/window\.matches\s*=\s*(\[[\s\S]*?\]);/);
+    const jsonData = jsonMatches ? jsonMatches[1].substring(0, 5000) : null;
+
+    // 查找HTML中的比赛元素
+    const matchElements = html.match(/<div[^>]*class="[^"]*match[^"]*"[^>]*>[\s\S]*?<\/div>/gi);
+    const elementCount = matchElements ? matchElements.length : 0;
+
+    // 查找带有时间的元素
+    const timeElements = html.match(/<span[^>]*>(\d{1,2}:\d{2})<\/span>/gi);
+
     return res.status(200).json({
       htmlLength: html.length,
       hasToday,
       hasTomorrow,
       hasMatch,
       sampleMatches: matches,
+      jsonData,
+      elementCount,
+      timeElements: timeElements ? timeElements.slice(0, 10) : [],
       htmlSample: sample
     });
 
