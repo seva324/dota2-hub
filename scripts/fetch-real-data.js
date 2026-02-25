@@ -48,6 +48,7 @@ async function fetchLeagueMatches(leagueId) {
 
 // Known team IDs from the data we observed
 const KNOWN_TEAMS = {
+  // Correct mappings from OpenDota API
   9572001: { name: 'PARIVISION', tag: 'PARI', logo: 'https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/' },
   8255888: { name: 'BetBoom Team', tag: 'BB', logo: 'https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/' },
   8261500: { name: 'Xtreme Gaming', tag: 'XG', logo: 'https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/' },
@@ -58,17 +59,40 @@ const KNOWN_TEAMS = {
   9338413: { name: 'MOUZ', tag: 'MOUZ', logo: 'https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/' },
   2586976: { name: 'OG', tag: 'OG', logo: null },
   7119388: { name: 'Team Spirit', tag: 'Spirit', logo: 'https://cdn.steamcdn.com/apps/dota2/images/team_logos/7119388.png' },
-  8254145: { name: '9 Pandas', tag: '9p', logo: null },
-  9964962: { name: 'BetBoom Team', tag: 'BB', logo: null },
-  9351740: { name: 'GamerLegion', tag: 'GL', logo: null },
-  9823272: { name: 'Heroic', tag: 'Heroic', logo: null },
-  67: { name: 'Natus Vincere', tag: 'NAVI', logo: 'https://cdn.steamcdn.com/apps/dota2/images/team_logos/460.png' },
-  36: { name: 'Evil Geniuses', tag: 'EG', logo: null },
-  7391077: { name: 'Vici Gaming', tag: 'VG', logo: 'https://cdn.steamcdn.com/apps/dota2/images/team_logos/726228.png' },
-  8521839: { name: 'paiN Gaming', tag: 'paiN', logo: null },
-  8943835: { name: 'Aurora Gaming', tag: 'Aurora', logo: null },
-  8597616: { name: 'BetBoom Team', tag: 'BB', logo: null },
-  8249895: { name: 'Azure Ray', tag: 'AR', logo: null },
+  
+  // Fixed mappings - corrections
+  8254145: { name: 'Execration', tag: 'Exec', logo: null },  // was 9 Pandas
+  36: { name: 'Natus Vincere', tag: 'NAVI', logo: 'https://cdn.steamcdn.com/apps/dota2/images/team_logos/460.png' },  // was Evil Geniuses
+  9964962: { name: 'GamerLegion', tag: 'GL', logo: null },  // was BetBoom Team
+  9351740: { name: 'Yakult Brothers', tag: 'YB', logo: null },  // was GamerLegion
+  9823272: { name: 'Team Yandex', tag: 'Yandex', logo: null },  // was Heroic
+  67: { name: 'paiN Gaming', tag: 'paiN', logo: null },  // was Natus Vincere
+  
+  // Additional teams from API
+  9303484: { name: 'HEROIC', tag: 'HEROIC', logo: null },
+  9885310: { name: 'Roar', tag: 'Roar', logo: null },
+  9579337: { name: 'YB.Tearlaments', tag: 'YB', logo: null },
+  10007878: { name: 'Team Refuser', tag: 'Refuser', logo: null },
+  10008067: { name: 'Game Master', tag: 'GM', logo: null },
+  9885928: { name: 'Thriving', tag: 'Thrive', logo: null },
+  9885315: { name: 'Surge Gaming', tag: 'Surge', logo: null },
+  9886289: { name: 'Cloud Rising', tag: 'Cloud', logo: null },
+  9444076: { name: 'NGNB', tag: 'NGNB', logo: null },
+  9894442: { name: 'Cloud Dawning', tag: 'Dawn', logo: null },
+  10014579: { name: 'American Boy', tag: 'AmBoy', logo: null },
+  9895695: { name: 'ToLight', tag: 'TL', logo: null },
+  10014586: { name: 'NaiLong', tag: 'NL', logo: null },
+  10014526: { name: 'RNG反诈先锋', tag: 'RNG', logo: null },
+  10008012: { name: 'Jitsu', tag: 'Jitsu', logo: null },
+  9895392: { name: 'Virtus.pro', tag: 'VP', logo: null },
+  9255039: { name: '1w Team', tag: '1w', logo: null },
+  7554697: { name: 'Nigma Galaxy', tag: 'Nigma', logo: null },
+  9691969: { name: 'Team Nemesis', tag: 'Neme', logo: null },
+  9872667: { name: 'Pipsqueak+4', tag: 'Pips', logo: null },
+  9989179: { name: 'Amaru Gaming', tag: 'Amaru', logo: null },
+  9640842: { name: 'Team Tidebound', tag: 'Tide', logo: null },
+  9247798: { name: 'Passion UA', tag: 'Passion', logo: null },
+  9758040: { name: 'Runa Team', tag: 'Runa', logo: null },
 };
 
 async function main() {
