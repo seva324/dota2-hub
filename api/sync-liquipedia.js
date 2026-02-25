@@ -14,6 +14,7 @@ const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'az
  */
 async function fetchLiquipediaMatches() {
   const https = await import('https');
+  const zlib = await import('zlib');
 
   return new Promise((resolve) => {
     const params = new URLSearchParams({
@@ -26,36 +27,50 @@ async function fetchLiquipediaMatches() {
     const url = `${LIQUIPEDIA_API}?${params}`;
     console.log('[Liquipedia Sync] Fetching from:', url);
 
-    const req = https.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept-Encoding': 'gzip'
-      }
-    }, (res) => {
+    const options = new URL(url);
+    options.headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept-Encoding': 'gzip',
+      'Accept': 'application/json'
+    };
+
+    const req = https.get(options, (res) => {
       const chunks = [];
 
       res.on('data', (chunk) => chunks.push(chunk));
       res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+
         try {
-          const buffer = Buffer.concat(chunks);
-          let text;
-
           if (res.headers['content-encoding'] === 'gzip') {
-            const zlib = require('zlib');
-            text = zlib.gunzipSync(buffer).toString('utf-8');
+            zlib.gunzip(buffer, (err, decompressed) => {
+              if (err) {
+                resolve({ html: '', success: false, error: err.message });
+              } else {
+                const text = decompressed.toString('utf-8');
+                const data = JSON.parse(text);
+                console.log('[Liquipedia Sync] API response received');
+
+                if (!data.parse || !data.parse.text) {
+                  resolve({ html: '', success: false, error: 'Invalid API response' });
+                  return;
+                }
+
+                resolve({ html: data.parse.text['*'], success: true });
+              }
+            });
           } else {
-            text = buffer.toString('utf-8');
+            const text = buffer.toString('utf-8');
+            const data = JSON.parse(text);
+            console.log('[Liquipedia Sync] API response received');
+
+            if (!data.parse || !data.parse.text) {
+              resolve({ html: '', success: false, error: 'Invalid API response' });
+              return;
+            }
+
+            resolve({ html: data.parse.text['*'], success: true });
           }
-
-          const data = JSON.parse(text);
-          console.log('[Liquipedia Sync] API response received');
-
-          if (!data.parse || !data.parse.text) {
-            resolve({ html: '', success: false, error: 'Invalid API response' });
-            return;
-          }
-
-          resolve({ html: data.parse.text['*'], success: true });
         } catch (e) {
           resolve({ html: '', success: false, error: e.message });
         }
