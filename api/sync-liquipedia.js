@@ -202,16 +202,25 @@ export default async function handler(req, res) {
 
   // Initialize Redis client
   let redisClient;
+  const REDIS_URL = process.env.REDIS_URL;
+
+  if (!REDIS_URL) {
+    return res.status(503).json({
+      error: 'Storage service unavailable',
+      message: 'REDIS_URL environment variable is not configured.'
+    });
+  }
+
   try {
     const redis = await import('redis');
-    redisClient = redis.createClient();
+    redisClient = redis.createClient({ url: REDIS_URL });
     await redisClient.connect();
     console.log('[DLTV Sync] Redis connected');
   } catch (redisError) {
     console.error('[DLTV Sync] Redis connection failed:', redisError.message);
     return res.status(503).json({
       error: 'Storage service unavailable',
-      message: 'Redis is not available. Please configure KV_URL environment variable.'
+      message: 'Failed to connect to Redis: ' + redisError.message
     });
   }
 
