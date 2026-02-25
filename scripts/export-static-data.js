@@ -107,18 +107,28 @@ function aggregateSeries(matches) {
       };
     }
     
-    // 记录这场谁赢了 - check which team was on radiant side for this specific game
+    // 记录这场谁赢了 - 根据 radiant_win 判断，然后确定哪支战队获胜
     const matchRadiantTeam = match.radiant_team_name || '';
     const matchDireTeam = match.dire_team_name || '';
     const radiantWin = match.radiant_win !== undefined ? match.radiant_win : (match.radiant_score > match.dire_score);
-
-    // Determine winner based on which team was actually on radiant side for this match
+    
+    // 如果 radiant 赢了，radiant 队的战队获胜；否则 dire 队的战队获胜
     const winner = radiantWin ? matchRadiantTeam : matchDireTeam;
 
-    if (winner === groups[groupKey].radiant_team_name) {
+    // 系列赛中我们用 seriesTeamA 和 seriesTeamB 来标识两支战队（第一场的队伍）
+    const seriesTeamA = groups[groupKey].radiant_team_name;
+    const seriesTeamB = groups[groupKey].dire_team_name;
+    
+    // 判断获胜队伍是 seriesTeamA 还是 seriesTeamB
+    // 注意：这里的 seriesTeamA/seriesTeamB 是第一场比赛时的队伍顺序，可能与后续比赛的 radiant/dire 不同
+    // 所以我们需要直接比较获胜队伍的名字
+    if (winner === seriesTeamA) {
       groups[groupKey].radiant_wins++;
-    } else {
+    } else if (winner === seriesTeamB) {
       groups[groupKey].dire_wins++;
+    } else {
+      // 兜底逻辑：如果 winner 与 seriesTeamA/seriesTeamB 都不匹配，可能数据有问题，跳过
+      console.warn(`Warning: winner "${winner}" doesn't match seriesTeamA "${seriesTeamA}" or seriesTeamB "${seriesTeamB}"`);
     }
 
     // Store the Chinese team names for the series
