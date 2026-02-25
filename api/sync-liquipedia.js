@@ -4,8 +4,6 @@
  * 只保留更新 upcoming 比赛功能
  */
 
-import { kv } from '@vercel/kv';
-
 const DLTV_URL = 'https://dltv.org/matches';
 
 // 中国战队关键词
@@ -202,12 +200,31 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Try to import @vercel/kv dynamically to avoid build errors
+  let kv;
+  try {
+    const kvModule = await import('@vercel/kv');
+    kv = kvModule.kv;
+  } catch (importError) {
+    console.error('[DLTV Sync] KV import failed:', importError.message);
+    return res.status(503).json({
+      error: 'Storage service unavailable',
+      message: 'KV storage is not available. Please configure @vercel/kv to use this sync API.'
+    });
+  }
+
   try {
     console.log('[DLTV Sync] Starting...');
 
     // 获取现有 upcoming 数据
-    const existingUpcoming = await kv.get('upcoming') || [];
-    console.log(`[DLTV Sync] Existing matches: ${existingUpcoming.length}`);
+    let existingUpcoming = [];
+    try {
+      existingUpcoming = await kv.get('upcoming') || [];
+      console.log(`[DLTV Sync] Existing matches: ${existingUpcoming.length}`);
+    } catch (kvError) {
+      console.error('[DLTV Sync] KV get failed:', kvError.message);
+      existingUpcoming = [];
+    }
 
     // 从 dltv.org 获取数据
     console.log('[DLTV Sync] Fetching from dltv.org...');
@@ -248,9 +265,16 @@ export default async function handler(req, res) {
       .slice(0, 50);
 
     // 保存到 KV
-    await kv.set('upcoming', upcomingMatches);
-
-    console.log(`[DLTV Sync] Saved ${upcomingMatches.length} upcoming matches`);
+    try {
+      await kv.set('upcoming', upcomingMatches);
+      console.log(`[DLTV Sync] Saved ${upcomingMatches.length} upcoming matches`);
+    } catch (kvError) {
+      console.error('[DLTV Sync] KV set failed:', kvError.message);
+      return res.status(500).json({
+        error: 'Failed to save data',
+        message: 'Could not save to KV storage: ' + kvError.message
+      });
+    }
 
     // 打印 XG 比赛
     const xgMatches = upcomingMatches.filter(m =>
