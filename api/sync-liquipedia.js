@@ -10,10 +10,12 @@ const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
 const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
 
 /**
- * 从 Liquipedia API 获取比赛数据 (需要 gzip)
+ * 从 Liquipedia API 获取比赛数据 (使用 gzip)
  */
 async function fetchLiquipediaMatches() {
-  try {
+  const https = await import('https');
+
+  return new Promise((resolve) => {
     const params = new URLSearchParams({
       action: 'parse',
       page: 'Liquipedia:Matches',
@@ -24,44 +26,51 @@ async function fetchLiquipediaMatches() {
     const url = `${LIQUIPEDIA_API}?${params}`;
     console.log('[Liquipedia Sync] Fetching from:', url);
 
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(15000),
+    const req = https.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept-Encoding': 'gzip',
-      },
+        'Accept-Encoding': 'gzip'
+      }
+    }, (res) => {
+      const chunks = [];
+
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        try {
+          const buffer = Buffer.concat(chunks);
+          let text;
+
+          if (res.headers['content-encoding'] === 'gzip') {
+            const zlib = require('zlib');
+            text = zlib.gunzipSync(buffer).toString('utf-8');
+          } else {
+            text = buffer.toString('utf-8');
+          }
+
+          const data = JSON.parse(text);
+          console.log('[Liquipedia Sync] API response received');
+
+          if (!data.parse || !data.parse.text) {
+            resolve({ html: '', success: false, error: 'Invalid API response' });
+            return;
+          }
+
+          resolve({ html: data.parse.text['*'], success: true });
+        } catch (e) {
+          resolve({ html: '', success: false, error: e.message });
+        }
+      });
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    req.on('error', (e) => {
+      resolve({ html: '', success: false, error: e.message });
+    });
 
-    // 处理 gzip 响应
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // 检查是否需要解压
-    const contentEncoding = response.headers.get('content-encoding');
-    let text;
-    if (contentEncoding === 'gzip') {
-      const zlib = await import('zlib');
-      text = zlib.gunzipSync(buffer).toString('utf-8');
-    } else {
-      text = buffer.toString('utf-8');
-    }
-
-    const data = JSON.parse(text);
-    console.log('[Liquipedia Sync] API response received');
-
-    if (!data.parse || !data.parse.text) {
-      throw new Error('Invalid API response');
-    }
-
-    return { html: data.parse.text['*'], success: true };
-  } catch (error) {
-    console.error('[Liquipedia Sync] Fetch error:', error.message);
-    return { html: '', success: false, error: error.message };
-  }
+    req.setTimeout(15000, () => {
+      req.destroy();
+      resolve({ html: '', success: false, error: 'Request timeout' });
+    });
+  });
 }
 
 /**
@@ -140,7 +149,7 @@ function parseLiquipediaMatches(html) {
 
       if (opponentDivs.length >= 3) {
         const t2Match = opponentDivs[2].match(/title="([^"]+)"/);
-        if (t2Match) team2 = t2Match[2].trim();
+        if (t2Match) team2 = t2Match[1].trim();
       }
 
       // Skip if teams are TBD
