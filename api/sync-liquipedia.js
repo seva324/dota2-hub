@@ -44,35 +44,40 @@ function parseDLTVMatches(html) {
   const currentMonth = now.getMonth() + 1;
   const currentDay = now.getDate();
 
-  // 匹配赛程表格中的比赛
-  // 格式: 时间 赛事 对阵
-  // 例如: "10:00 EPL Championship 2 NAVI Junior vs DOGSENT"
+  // Debug: 检查 HTML 结构
+  console.log(`[DLTV Sync] HTML length: ${html.length}`);
+  console.log(`[DLTV Sync] Has 今日赛程: ${html.includes('今日赛程')}`);
+  console.log(`[DLTV Sync] Has 明日赛程: ${html.includes('明日赛程')}`);
 
-  // 匹配时间 HH:MM 格式
-  const timePattern = /(\d{1,2}:\d{2})/g;
-
-  // 匹配队伍 vs 队伍
-  const matchPattern = /([A-Za-z0-9]+(?:\s*[A-Za-z0-9\.\-']+)*)\s+(?:vs\.?)\s+([A-Za-z0-9]+(?:\s*[A-Za-z0-9\.\-']+)*)/gi;
-
-  // 匹配赛事名称 (在时间和对阵之间)
-  const tournamentPattern = /(\d{1,2}:\d{2})\s*([A-Za-z0-9][A-Za-z0-9\s\.&\-']*?)\s+([A-Z][a-zA-Z0-9]+(?:\s*[A-Za-z0-9]+)*)\s+vs\.?\s+([A-Z][a-zA-Z0-9]+(?:\s*[A-Za-z0-9]+)*)/gi;
-
-  let matchId = 1;
-
-  // 解析今日赛程
-  const todaySection = html.match(/今日赛程[\s\S]*?(?=明日赛程|$)/i);
+  // 解析今日赛程 - 尝试多种匹配模式
+  let todaySection = html.match(/今日赛程[\s\S]*?(?=明日赛程|$)/i);
+  if (!todaySection) {
+    todaySection = html.match(/今日[\s\S]*?(?=明日|$)/i);
+  }
   if (todaySection) {
+    console.log(`[DLTV Sync] Today section length: ${todaySection[0].length}`);
     const todayMatches = parseScheduleSection(todaySection[0], currentYear, currentMonth, currentDay, 'today');
     matches.push(...todayMatches);
+  } else {
+    console.log(`[DLTV Sync] No today section found, trying full page`);
+    // 尝试从整个页面解析
+    const fullMatches = parseScheduleSection(html, currentYear, currentMonth, currentDay, 'full');
+    matches.push(...fullMatches);
   }
 
   // 解析明日赛程
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowSection = html.match(/明日赛程[\s\S]*?$/i);
+  let tomorrowSection = html.match(/明日赛程[\s\S]*?$/i);
+  if (!tomorrowSection) {
+    tomorrowSection = html.match(/明日[\s\S]*?$/i);
+  }
   if (tomorrowSection) {
+    console.log(`[DLTV Sync] Tomorrow section length: ${tomorrowSection[0].length}`);
     const tomorrowMatches = parseScheduleSection(tomorrowSection[0], tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate(), 'tomorrow');
     matches.push(...tomorrowMatches);
+  } else {
+    console.log(`[DLTV Sync] No tomorrow section found`);
   }
 
   return matches;
@@ -85,71 +90,59 @@ function parseScheduleSection(section, year, month, day, dayType) {
   const matches = [];
   let matchId = 1;
 
-  // 匹配 "时间 赛事 队伍 vs 队伍" 格式
-  // 例如: "10:30 DreamLeague Season 28 BetBoom Team vs Xtreme Gaming"
+  console.log(`[DLTV Sync] Parsing ${dayType} section, length: ${section.length}`);
 
-  // 先提取所有时间
-  const timeMatches = [...section.matchAll(/(\d{1,2}:\d{2})/g)];
+  // 提取所有比赛对阵 - 更宽松的匹配（支持中英文队名）
+  const teamMatches = [...section.matchAll(/([\u4e00-\u9fa5a-zA-Z0-9][\u4e00-\u9fa5a-zA-Z0-9\s]*?)\s+vs\.?\s+([\u4e00-\u9fa5a-zA-Z0-9][\u4e00-\u9fa5a-zA-Z0-9\s]*)/g)];
 
-  // 提取所有比赛对阵
-  const teamMatches = [...section.matchAll(/([A-Za-z][a-zA-Z0-9]*(?:\s+[A-Za-z0-9]+)*)\s+vs\.?\s+([A-Za-z][a-zA-Z0-9]*(?:\s+[A-Za-z0-9]+)*)/g)];
+  console.log(`[DLTV Sync] Found ${teamMatches.length} team match patterns`);
 
-  // 尝试匹配完整格式: 时间 + 赛事 + 对阵
-  const fullPattern = /(\d{1,2}:\d{2})\s+([A-Za-z][A-Za-z0-9\s\.&\-']*(?:Season|Trophy|League|Championship|Major|Minor)[\s&A-Za-z0-9\-']*)\s+([A-Za-z][a-zA-Z0-9]*(?:\s+[A-Za-z0-9]+)*)\s+vs\.?\s+([A-Za-z][a-zA-Z0-9]*(?:\s+[A-Za-z0-9]+)*)/gi;
+  for (const teamMatch of teamMatches) {
+    const fullMatch = teamMatch[0];
+    const team1Raw = teamMatch[1].trim();
+    const team2Raw = teamMatch[2].trim();
 
-  let fullMatch;
-  while ((fullMatch = fullPattern.exec(section)) !== null) {
-    const time = fullMatch[1];
-    const tournament = fullMatch[2].trim();
-    const team1 = fullMatch[3].trim();
-    const team2 = fullMatch[4].trim();
+    // 清理队伍名称，移除赛事名称残留
+    const team1 = team1Raw.replace(/[\d:].*$/, '').trim();
+    const team2 = team2Raw.split(/\s+/)[0].trim(); // 取第一个词作为队名
 
-    // 转换为时间戳 (GMT时区)
-    const [hours, minutes] = time.split(':').map(Number);
-    const matchDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+    // 跳过无效队伍名
+    if (team1.length < 2 || team2.length < 2) continue;
 
-    // 只保留未来的比赛
-    if (matchDate.getTime() > Date.now()) {
-      matches.push({
-        id: `dltv_${year}${month}${day}_${matchId++}`,
-        team1: team1,
-        team2: team2,
-        start_time: Math.floor(matchDate.getTime() / 1000),
-        tournament_name: tournament,
-        status: 'upcoming',
-        source: 'dltv.org',
-      });
-    }
-  }
+    // 查找这个对阵附近的时间
+    const teamPos = teamMatch.index;
+    const contextBefore = section.substring(Math.max(0, teamPos - 30), teamPos);
+    const timeMatch = contextBefore.match(/(\d{1,2}:\d{2})/);
 
-  // 如果完整匹配失败，尝试简单匹配
-  if (matches.length === 0) {
-    for (const teamMatch of teamMatches) {
-      const team1 = teamMatch[1].trim();
-      const team2 = teamMatch[2].trim();
+    if (timeMatch) {
+      const [hours, minutes] = timeMatch[1].split(':').map(Number);
 
-      // 查找这个对阵附近的时间
-      const teamPos = teamMatch.index;
-      const timeBefore = section.substring(Math.max(0, teamPos - 20), teamPos).match(/(\d{1,2}:\d{2})/);
+      // 使用中国时区 (UTC+8)
+      const matchDate = new Date(year, month - 1, day, hours, minutes);
+      const now = new Date();
 
-      if (timeBefore) {
-        const [hours, minutes] = timeBefore[1].split(':').map(Number);
-        const matchDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+      console.log(`[DLTV Sync] Match: ${team1} vs ${team2}, time: ${timeMatch[1]}, matchDate: ${matchDate.getTime()}, now: ${now.getTime()}`);
 
-        if (matchDate.getTime() > Date.now()) {
-          matches.push({
-            id: `dltv_${year}${month}${day}_${matchId++}`,
-            team1: team1,
-            team2: team2,
-            start_time: Math.floor(matchDate.getTime() / 1000),
-            tournament_name: 'Dota 2',
-            status: 'upcoming',
-            source: 'dltv.org',
-          });
-        }
+      // 只保留未来的比赛（允许15分钟误差）
+      if (matchDate.getTime() > now.getTime() - 15 * 60 * 1000) {
+        // 尝试从上下文中提取赛事名称
+        const tournamentMatch = contextBefore.match(/([A-Za-z][A-Za-z0-9\s\.&\-']+?)(?:\s+[A-Z][a-z]+)?\s+\d{1,2}:\d{2}/i);
+        const tournament = tournamentMatch ? tournamentMatch[1].trim() : 'Dota 2';
+
+        matches.push({
+          id: `dltv_${year}${month}${day}_${matchId++}`,
+          team1: team1,
+          team2: team2,
+          start_time: Math.floor(matchDate.getTime() / 1000),
+          tournament_name: tournament,
+          status: 'upcoming',
+          source: 'dltv.org',
+        });
       }
     }
   }
+
+  console.log(`[DLTV Sync] Parsed ${matches.length} matches from ${dayType}`);
 
   return matches;
 }
