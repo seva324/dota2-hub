@@ -795,7 +795,7 @@
     "duration": 2824,
     "leagueid": 19269,
     "series_id": 1066533,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -815,7 +815,7 @@
     "duration": 2326,
     "leagueid": 19269,
     "series_id": 1066549,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -835,7 +835,7 @@
     "duration": 2180,
     "leagueid": 19269,
     "series_id": 1066534,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -855,7 +855,7 @@
     "duration": 2151,
     "leagueid": 19269,
     "series_id": 1066537,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -875,7 +875,7 @@
     "duration": 2527,
     "leagueid": 19269,
     "series_id": 1066549,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -895,7 +895,7 @@
     "duration": 1629,
     "leagueid": 19269,
     "series_id": 1066537,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -915,7 +915,7 @@
     "duration": 2575,
     "leagueid": 19269,
     "series_id": 1066534,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -935,7 +935,7 @@
     "duration": 3755,
     "leagueid": 19269,
     "series_id": 1066533,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -955,7 +955,7 @@
     "duration": 2662,
     "leagueid": 19269,
     "series_id": 1066507,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -975,7 +975,7 @@
     "duration": 1941,
     "leagueid": 19269,
     "series_id": 1066508,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -995,7 +995,7 @@
     "duration": 3835,
     "leagueid": 19269,
     "series_id": 1066504,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1015,7 +1015,7 @@
     "duration": 1794,
     "leagueid": 19269,
     "series_id": 1066505,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1035,7 +1035,7 @@
     "duration": 1836,
     "leagueid": 19269,
     "series_id": 1066508,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1055,7 +1055,7 @@
     "duration": 1999,
     "leagueid": 19269,
     "series_id": 1066507,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1075,7 +1075,7 @@
     "duration": 1663,
     "leagueid": 19269,
     "series_id": 1066505,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1095,7 +1095,7 @@
     "duration": 2187,
     "leagueid": 19269,
     "series_id": 1066504,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1115,7 +1115,7 @@
     "duration": 1951,
     "leagueid": 19269,
     "series_id": 1066280,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1135,7 +1135,7 @@
     "duration": 3909,
     "leagueid": 19269,
     "series_id": 1066269,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1155,7 +1155,7 @@
     "duration": 1877,
     "leagueid": 19269,
     "series_id": 1066267,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1175,7 +1175,7 @@
     "duration": 1608,
     "leagueid": 19269,
     "series_id": 1066273,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1195,7 +1195,7 @@
     "duration": 2730,
     "leagueid": 19269,
     "series_id": 1066280,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1215,7 +1215,7 @@
     "duration": 1816,
     "leagueid": 19269,
     "series_id": 1066273,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1235,7 +1235,7 @@
     "duration": 2094,
     "leagueid": 19269,
     "series_id": 1066267,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1255,7 +1255,7 @@
     "duration": 2806,
     "leagueid": 19269,
     "series_id": 1066269,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1275,7 +1275,7 @@
     "duration": 2802,
     "leagueid": 19269,
     "series_id": 1066214,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1295,7 +1295,7 @@
     "duration": 2133,
     "leagueid": 19269,
     "series_id": 1066213,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1315,7 +1315,7 @@
     "duration": 2275,
     "leagueid": 19269,
     "series_id": 1066207,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1335,7 +1335,7 @@
     "duration": 2548,
     "leagueid": 19269,
     "series_id": 1066205,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1355,7 +1355,7 @@
     "duration": 2709,
     "leagueid": 19269,
     "series_id": 1066214,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1375,7 +1375,7 @@
     "duration": 1872,
     "leagueid": 19269,
     "series_id": 1066213,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1395,7 +1395,7 @@
     "duration": 2191,
     "leagueid": 19269,
     "series_id": 1066207,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1415,7 +1415,7 @@
     "duration": 2151,
     "leagueid": 19269,
     "series_id": 1066205,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1435,7 +1435,7 @@
     "duration": 2659,
     "leagueid": 19269,
     "series_id": 1066168,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1455,7 +1455,7 @@
     "duration": 2983,
     "leagueid": 19269,
     "series_id": 1066171,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1475,7 +1475,7 @@
     "duration": 2644,
     "leagueid": 19269,
     "series_id": 1066167,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1495,7 +1495,7 @@
     "duration": 2554,
     "leagueid": 19269,
     "series_id": 1066169,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1515,7 +1515,7 @@
     "duration": 1629,
     "leagueid": 19269,
     "series_id": 1066171,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1535,7 +1535,7 @@
     "duration": 1719,
     "leagueid": 19269,
     "series_id": 1066169,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1555,7 +1555,7 @@
     "duration": 3147,
     "leagueid": 19269,
     "series_id": 1066168,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1575,7 +1575,7 @@
     "duration": 2474,
     "leagueid": 19269,
     "series_id": 1066167,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1595,7 +1595,7 @@
     "duration": 1947,
     "leagueid": 19269,
     "series_id": 1066161,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1615,7 +1615,7 @@
     "duration": 2035,
     "leagueid": 19269,
     "series_id": 1066153,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1635,7 +1635,7 @@
     "duration": 2359,
     "leagueid": 19269,
     "series_id": 1066151,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1655,7 +1655,7 @@
     "duration": 3487,
     "leagueid": 19269,
     "series_id": 1066149,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1675,7 +1675,7 @@
     "duration": 2360,
     "leagueid": 19269,
     "series_id": 1066153,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1695,7 +1695,7 @@
     "duration": 1926,
     "leagueid": 19269,
     "series_id": 1066151,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1715,7 +1715,7 @@
     "duration": 3629,
     "leagueid": 19269,
     "series_id": 1066150,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1735,7 +1735,7 @@
     "duration": 1898,
     "leagueid": 19269,
     "series_id": 1066149,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1755,7 +1755,7 @@
     "duration": 2477,
     "leagueid": 19269,
     "series_id": 1065970,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1775,7 +1775,7 @@
     "duration": 2201,
     "leagueid": 19269,
     "series_id": 1065960,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1795,7 +1795,7 @@
     "duration": 2516,
     "leagueid": 19269,
     "series_id": 1065958,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1815,7 +1815,7 @@
     "duration": 2450,
     "leagueid": 19269,
     "series_id": 1065959,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1835,7 +1835,7 @@
     "duration": 3413,
     "leagueid": 19269,
     "series_id": 1065970,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1855,7 +1855,7 @@
     "duration": 2112,
     "leagueid": 19269,
     "series_id": 1065960,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1875,7 +1875,7 @@
     "duration": 1497,
     "leagueid": 19269,
     "series_id": 1065959,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1895,7 +1895,7 @@
     "duration": 1813,
     "leagueid": 19269,
     "series_id": 1065958,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1915,7 +1915,7 @@
     "duration": 1854,
     "leagueid": 19269,
     "series_id": 1065906,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1935,7 +1935,7 @@
     "duration": 3015,
     "leagueid": 19269,
     "series_id": 1065903,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1955,7 +1955,7 @@
     "duration": 2571,
     "leagueid": 19269,
     "series_id": 1065902,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -1975,7 +1975,7 @@
     "duration": 2591,
     "leagueid": 19269,
     "series_id": 1065897,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -1995,7 +1995,7 @@
     "duration": 2146,
     "leagueid": 19269,
     "series_id": 1065906,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2015,7 +2015,7 @@
     "duration": 2524,
     "leagueid": 19269,
     "series_id": 1065903,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2035,7 +2035,7 @@
     "duration": 2053,
     "leagueid": 19269,
     "series_id": 1065902,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2055,7 +2055,7 @@
     "duration": 1884,
     "leagueid": 19269,
     "series_id": null,
-    "series_type": "BO1",
+    "series_type": "BO3",
     "status": "finished",
     "radiant_win": false
   },
@@ -2075,7 +2075,7 @@
     "duration": 1590,
     "leagueid": 19269,
     "series_id": 1065858,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2095,7 +2095,7 @@
     "duration": 1944,
     "leagueid": 19269,
     "series_id": 1065857,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2115,7 +2115,7 @@
     "duration": 1835,
     "leagueid": 19269,
     "series_id": 1065855,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2135,7 +2135,7 @@
     "duration": 1670,
     "leagueid": 19269,
     "series_id": 1065852,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2155,7 +2155,7 @@
     "duration": 2440,
     "leagueid": 19269,
     "series_id": 1065858,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2175,7 +2175,7 @@
     "duration": 2748,
     "leagueid": 19269,
     "series_id": 1065857,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2195,7 +2195,7 @@
     "duration": 2119,
     "leagueid": 19269,
     "series_id": 1065855,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2215,7 +2215,7 @@
     "duration": 1628,
     "leagueid": 19269,
     "series_id": 1065852,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2235,7 +2235,7 @@
     "duration": 2124,
     "leagueid": 19269,
     "series_id": 1065842,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2255,7 +2255,7 @@
     "duration": 1549,
     "leagueid": 19269,
     "series_id": 1065835,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2275,7 +2275,7 @@
     "duration": 2482,
     "leagueid": 19269,
     "series_id": 1065832,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2295,7 +2295,7 @@
     "duration": 2958,
     "leagueid": 19269,
     "series_id": 1065831,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2315,7 +2315,7 @@
     "duration": 2835,
     "leagueid": 19269,
     "series_id": 1065835,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2335,7 +2335,7 @@
     "duration": 2292,
     "leagueid": 19269,
     "series_id": 1065832,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2355,7 +2355,7 @@
     "duration": 2613,
     "leagueid": 19269,
     "series_id": 1065831,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2375,7 +2375,7 @@
     "duration": 4796,
     "leagueid": 19269,
     "series_id": 1065668,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2395,7 +2395,7 @@
     "duration": 2648,
     "leagueid": 19269,
     "series_id": 1065653,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2415,7 +2415,7 @@
     "duration": 1962,
     "leagueid": 19269,
     "series_id": 1065638,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2435,7 +2435,7 @@
     "duration": 1965,
     "leagueid": 19269,
     "series_id": 1065668,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2455,7 +2455,7 @@
     "duration": 1972,
     "leagueid": 19269,
     "series_id": 1065653,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2475,7 +2475,7 @@
     "duration": 2490,
     "leagueid": 19269,
     "series_id": 1065638,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2495,7 +2495,7 @@
     "duration": 1923,
     "leagueid": 19269,
     "series_id": 1065602,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2515,7 +2515,7 @@
     "duration": 2348,
     "leagueid": 19269,
     "series_id": 1065583,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2535,7 +2535,7 @@
     "duration": 2045,
     "leagueid": 19269,
     "series_id": 1065588,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2555,7 +2555,7 @@
     "duration": 1712,
     "leagueid": 19269,
     "series_id": 1065602,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2575,7 +2575,7 @@
     "duration": 1619,
     "leagueid": 19269,
     "series_id": 1065588,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2595,7 +2595,7 @@
     "duration": 3131,
     "leagueid": 19269,
     "series_id": 1065583,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2615,7 +2615,7 @@
     "duration": 2638,
     "leagueid": 19269,
     "series_id": 1065561,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2635,7 +2635,7 @@
     "duration": 2444,
     "leagueid": 19269,
     "series_id": 1065552,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2655,7 +2655,7 @@
     "duration": 2094,
     "leagueid": 19269,
     "series_id": 1065556,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2675,7 +2675,7 @@
     "duration": 2030,
     "leagueid": 19269,
     "series_id": 1065561,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2695,7 +2695,7 @@
     "duration": 2190,
     "leagueid": 19269,
     "series_id": 1065556,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2715,7 +2715,7 @@
     "duration": 2612,
     "leagueid": 19269,
     "series_id": 1065552,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2735,7 +2735,7 @@
     "duration": 3333,
     "leagueid": 19269,
     "series_id": 1065531,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2755,7 +2755,7 @@
     "duration": 1911,
     "leagueid": 19269,
     "series_id": 1065529,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2775,7 +2775,7 @@
     "duration": 1392,
     "leagueid": 19269,
     "series_id": 1065530,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2795,7 +2795,7 @@
     "duration": 1601,
     "leagueid": 19269,
     "series_id": 1065530,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2815,7 +2815,7 @@
     "duration": 2254,
     "leagueid": 19269,
     "series_id": 1065531,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2835,7 +2835,7 @@
     "duration": 1808,
     "leagueid": 19269,
     "series_id": 1065529,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2855,7 +2855,7 @@
     "duration": 1940,
     "leagueid": 19269,
     "series_id": 1065356,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2875,7 +2875,7 @@
     "duration": 1451,
     "leagueid": 19269,
     "series_id": 1065356,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2895,7 +2895,7 @@
     "duration": 3397,
     "leagueid": 19269,
     "series_id": 1065279,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2915,7 +2915,7 @@
     "duration": 2218,
     "leagueid": 19269,
     "series_id": 1065279,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2935,7 +2935,7 @@
     "duration": 3092,
     "leagueid": 19269,
     "series_id": 1065245,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": true
   },
@@ -2955,7 +2955,7 @@
     "duration": 2385,
     "leagueid": 19269,
     "series_id": 1065245,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2975,7 +2975,7 @@
     "duration": 2396,
     "leagueid": 19269,
     "series_id": 1065226,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },
@@ -2995,7 +2995,7 @@
     "duration": 1765,
     "leagueid": 19269,
     "series_id": 1065226,
-    "series_type": "BO1",
+    "series_type": "BO2",
     "status": "finished",
     "radiant_win": false
   },

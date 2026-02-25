@@ -163,7 +163,10 @@ async function main() {
       duration: match.duration,
       leagueid: match.leagueid,
       series_id: match.series_id, // Store series_id from OpenDota
-      series_type: match.series_type === 1 ? 'BO3' : match.series_type === 2 ? 'BO5' : 'BO1',
+      series_type: (() => {
+        const map = { 0: 'BO1', 1: 'BO3', 2: 'BO5', 3: 'BO2' };
+        return map[match.series_type] || 'BO3';
+      })(),
       status: 'finished',
       lobby_type: match.lobby_type,
       radiant_win: match.radiant_win

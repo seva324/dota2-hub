@@ -732,7 +732,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066533",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Tundra Esports",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
@@ -769,7 +769,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066549",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "MOUZ",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
@@ -806,7 +806,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066534",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Execration",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
@@ -843,7 +843,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066537",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -880,7 +880,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066507",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "paiN Gaming",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
@@ -917,7 +917,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066508",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -954,7 +954,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066504",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "OG",
         "dire_team_name": "BetBoom Team",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -991,7 +991,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066505",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -1028,7 +1028,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066280",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -1065,7 +1065,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066269",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
@@ -1102,7 +1102,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066267",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Tundra Esports",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
@@ -1139,7 +1139,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066273",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Execration",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
@@ -1176,7 +1176,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066214",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "paiN Gaming",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
@@ -1213,7 +1213,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066213",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "PARIVISION",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -1250,7 +1250,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066207",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "OG",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
@@ -1287,7 +1287,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066205",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -1324,7 +1324,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066168",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "GamerLegion",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
@@ -1361,7 +1361,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066171",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "MOUZ",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
@@ -1398,7 +1398,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066167",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Spirit",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
@@ -1435,7 +1435,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066169",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Tundra Esports",
         "dire_team_name": "Execration",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
@@ -1472,7 +1472,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066161",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "BetBoom Team",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
@@ -1499,7 +1499,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066153",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "OG",
         "dire_team_name": "Aurora Gaming",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -1536,7 +1536,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066151",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -1573,7 +1573,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066149",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Yakult Brothers",
         "dire_team_name": "paiN Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
@@ -1610,7 +1610,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1066150",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Liquid",
         "dire_team_name": "BetBoom Team",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png",
@@ -1637,7 +1637,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065970",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Tundra Esports",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
@@ -1674,7 +1674,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065960",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Natus Vincere",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
@@ -1711,7 +1711,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065958",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -1748,7 +1748,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065959",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "MOUZ",
         "dire_team_name": "Execration",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
@@ -1785,7 +1785,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065906",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -1822,7 +1822,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065903",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "OG",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -1859,7 +1859,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065902",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "paiN Gaming",
         "dire_team_name": "BetBoom Team",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
@@ -1896,7 +1896,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065897",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -1923,7 +1923,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_normalized_Team_Yandex_vs_Yakult_Brothers_20502",
-        "series_type": "BO1",
+        "series_type": "BO3",
         "radiant_team_name": "Yakult Brothers",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
@@ -1950,7 +1950,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065858",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "MOUZ",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
@@ -1987,7 +1987,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065857",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Spirit",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
@@ -2024,7 +2024,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065855",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -2061,7 +2061,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065852",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Execration",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
@@ -2098,7 +2098,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065842",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "OG",
         "dire_team_name": "paiN Gaming",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -2125,7 +2125,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065835",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -2162,7 +2162,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065832",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -2199,7 +2199,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065831",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "PARIVISION",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/10501094611027794535/1569CC553CB72963C8EC4C3F807EE50DA925BDC2/",
@@ -2236,7 +2236,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065668",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Xtreme Gaming",
         "dire_team_name": "Tundra Esports",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2402194226059610590/E3CF4B6C4B2CFB974A9B415141E4A37317AD4D80/",
@@ -2273,7 +2273,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065653",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "GamerLegion",
         "dire_team_name": "Natus Vincere",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13245379764580870318/1048428BEFAC87EC1C64E15706A4758A173B5BFB/",
@@ -2310,7 +2310,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065638",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Execration",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
@@ -2347,7 +2347,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065602",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "OG",
         "dire_team_name": "Team Yandex",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -2384,7 +2384,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065583",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "BetBoom Team",
         "dire_team_name": "PARIVISION",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9995426432403529725/51E13136D4CCC8C7D8062861541A1D13B8ED87E0/",
@@ -2421,7 +2421,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065588",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Yakult Brothers",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/9580393375914418016/A3EDE6125A651D94E1DAAF0F3361ACEB9FB858C4/",
@@ -2458,7 +2458,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065561",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Natus Vincere",
         "dire_team_name": "Team Falcons",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/36.png",
@@ -2495,7 +2495,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065552",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Execration",
         "dire_team_name": "GamerLegion",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2490004871924581269/9132E5E0903B2A368A00780415D69766292F5893/",
@@ -2532,7 +2532,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065556",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "MOUZ",
         "dire_team_name": "Team Spirit",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/14936784213521439739/3EA33A8516BDE538B7963F044CD1B7AB4B0BB60D/",
@@ -2569,7 +2569,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065531",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Yandex",
         "dire_team_name": "Team Liquid",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/12970505637628494427/B04C3358F4E815ADFC2F8B1B8BE3AB0CE75C8881/",
@@ -2606,7 +2606,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065529",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "paiN Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -2643,7 +2643,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065530",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "OG",
         "dire_team_name": "Yakult Brothers",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2586976.png",
@@ -2680,7 +2680,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065356",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Tundra Esports",
         "dire_team_name": "MOUZ",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/2031716132171967904/07B168B8063D9B22CDAD53AB421ECAF3D4B2E07E/",
@@ -2717,7 +2717,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065279",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Aurora Gaming",
         "dire_team_name": "BetBoom Team",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/",
@@ -2754,7 +2754,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065245",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "Team Spirit",
         "dire_team_name": "Xtreme Gaming",
         "radiant_team_logo": "https://cdn.steamusercontent.com/ugc/1839179120711951766/CD7E0885CB527334205CC7885E9C101B7BC17702/",
@@ -2791,7 +2791,7 @@
       },
       {
         "series_id": "series_dreamleague-s28_series_1065226",
-        "series_type": "BO1",
+        "series_type": "BO2",
         "radiant_team_name": "paiN Gaming",
         "dire_team_name": "PARIVISION",
         "radiant_team_logo": "https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/67.png",
