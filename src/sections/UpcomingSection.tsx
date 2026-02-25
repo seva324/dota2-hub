@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -91,7 +91,7 @@ function getAbbr(teamName: string | null | undefined): string {
 }
 
 // Render team name with responsive display: abbrev on mobile, full name on desktop
-function renderTeamName(teamName: string | null | undefined): JSX.Element {
+function renderTeamName(teamName: string | null | undefined): React.JSX.Element {
   const abbrev = getAbbr(teamName);
   return (
     <>

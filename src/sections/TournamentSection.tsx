@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'lucide-react';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -135,7 +135,7 @@ function getTeamAbbrev(teamName: string): string {
 }
 
 // Render team name with responsive display: abbrev on mobile, full name on desktop
-function renderTeamName(teamName: string, className?: string): JSX.Element {
+function renderTeamName(teamName: string, className?: string): React.JSX.Element {
   const abbrev = getTeamAbbrev(teamName);
   return (
     <span className={className}>
