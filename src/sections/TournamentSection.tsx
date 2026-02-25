@@ -130,7 +130,7 @@ function getTeamAbbrev(teamName: string): string {
     'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
     'Team Nemesis': 'Nemesis', '1w Team': '1w',
     'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
-    'Gaimin Gladiators': 'GG',
+    'Gaimin Gladiators': 'GG', 'HEROIC': 'HEROIC',
   };
   return abbr[teamName] || teamName.substring(0, 3).toUpperCase();
 }

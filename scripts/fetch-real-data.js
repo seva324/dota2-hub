@@ -122,23 +122,24 @@ async function main() {
   console.log('Team IDs:', [...allTeamIds].join(', '));
 
   // Step 2: Fetch team info for unknown teams
-  const teamInfo = { ...KNOWN_TEAMS };
+  // Always fetch team info from API for all team IDs
+  const teamInfo = {};
   
-  console.log('\nFetching team info...');
+  console.log('\nFetching team info from OpenDota API...');
   for (const teamId of allTeamIds) {
-    if (!teamInfo[teamId]) {
-      console.log(`  Fetching team ${teamId}...`);
-      const info = await fetchTeam(teamId);
-      if (info && info.name) {
-        teamInfo[teamId] = {
-          name: info.name,
-          tag: info.tag || info.name.substring(0, 3).toUpperCase(),
-          logo: info.logo_url
-        };
-        console.log(`    -> ${info.name}`);
-      }
-      await new Promise(r => setTimeout(r, 100)); // Rate limiting
+    console.log(`  Fetching team ${teamId}...`);
+    const info = await fetchTeam(teamId);
+    if (info && info.name) {
+      teamInfo[teamId] = {
+        name: info.name,
+        tag: info.tag || info.name.substring(0, 3).toUpperCase(),
+        logo: info.logo_url || ''
+      };
+      console.log(`    -> ${info.name}`);
+    } else {
+      console.log(`    -> NOT FOUND`);
     }
+    await new Promise(r => setTimeout(r, 100)); // Rate limiting
   }
 
   // Step 3: Process matches with team names
