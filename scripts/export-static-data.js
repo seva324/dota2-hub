@@ -171,15 +171,10 @@ const matches = runQuery(`
   SELECT m.*,
          COALESCE(m.tournament_name, t.name) as tournament_name,
          COALESCE(m.tournament_name_cn, t.name_cn) as tournament_name_cn,
-         t.tier as tournament_tier,
-         CASE
-           WHEN m.radiant_score > m.dire_score THEN 1
-           ELSE 0
-         END as radiant_win
+         t.tier as tournament_tier
   FROM matches m
   LEFT JOIN tournaments t ON m.tournament_id = t.id
   ORDER BY m.start_time DESC
-  LIMIT 200
 `);
 
 // 去重 matches
@@ -297,11 +292,7 @@ for (const t of tournaments) {
   if (!leagueId) continue;
   
   const tournamentMatches = runQuery(`
-    SELECT m.*,
-           CASE
-             WHEN m.radiant_score > m.dire_score THEN 1
-             ELSE 0
-           END as radiant_win
+    SELECT m.*
     FROM matches m
     WHERE m.league_id = ?
     ORDER BY m.start_time DESC

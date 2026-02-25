@@ -288,20 +288,20 @@
             "dire_team_name": "Gaimin Gladiators",
             "radiant_score": 31,
             "dire_score": 30,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1771871340,
             "duration": 4150
           }
         ],
-        "radiant_wins": 2,
-        "dire_wins": 1,
+        "radiant_wins": 1,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Tundra",
         "dire_team_name_cn": "GG",
-        "radiant_score": 2,
-        "dire_score": 1
+        "radiant_score": 1,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_PARIVISION_vs_Xtreme Gaming_BO3_20507",
@@ -352,7 +352,7 @@
             "dire_team_name": "MOUZ",
             "radiant_score": 28,
             "dire_score": 30,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1771842851,
             "duration": 2823
           },
@@ -367,15 +367,15 @@
             "duration": 2256
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 0,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "MOUZ",
         "dire_team_name_cn": "BB",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_Gaimin Gladiators_vs_Team Spirit_BO3_20506",
@@ -463,7 +463,7 @@
             "dire_team_name": "Tundra Esports",
             "radiant_score": 28,
             "dire_score": 24,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1771766698,
             "duration": 3320
           },
@@ -478,15 +478,15 @@
             "duration": 2822
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 2,
+        "dire_wins": 0,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Tundra",
         "dire_team_name_cn": "PARI",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 2,
+        "dire_score": 0
       },
       {
         "series_id": "cleaned_unknown_MOUZ_vs_Xtreme Gaming_BO3_20506",
@@ -1196,20 +1196,20 @@
             "dire_team_name": "Natus Vincere",
             "radiant_score": 21,
             "dire_score": 18,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1771522800,
             "duration": 2802
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 0,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Heroic",
         "dire_team_name_cn": "NAVI",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_Gaimin Gladiators_vs_PARIVISION_BO1_20503",
@@ -1482,7 +1482,7 @@
             "dire_team_name": "BetBoom Team",
             "radiant_score": 35,
             "dire_score": 32,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1771498501,
             "duration": 3629
           },
@@ -1497,15 +1497,15 @@
             "duration": 1947
           }
         ],
-        "radiant_wins": 2,
-        "dire_wins": 0,
+        "radiant_wins": 1,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Liquid",
         "dire_team_name_cn": "BB",
-        "radiant_score": 2,
-        "dire_score": 0
+        "radiant_score": 1,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_Gaimin Gladiators_vs_OG_BO1_20503",
@@ -1603,20 +1603,20 @@
             "dire_team_name": "Natus Vincere",
             "radiant_score": 43,
             "dire_score": 48,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1771502099,
             "duration": 3487
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 2,
+        "dire_wins": 0,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "GL",
         "dire_team_name_cn": "NAVI",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 2,
+        "dire_score": 0
       },
       {
         "series_id": "cleaned_unknown_Team Spirit_vs_Tundra Esports_BO1_20502",
@@ -1630,7 +1630,7 @@
             "dire_team_name": "Team Spirit",
             "radiant_score": 29,
             "dire_score": 48,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1771440475,
             "duration": 3413
           },
@@ -1645,15 +1645,15 @@
             "duration": 2477
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 0,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Spirit",
         "dire_team_name_cn": "Tundra",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_Evil Geniuses_vs_Xtreme Gaming_BO1_20502",
@@ -2244,20 +2244,20 @@
             "dire_team_name": "Tundra Esports",
             "radiant_score": 32,
             "dire_score": 35,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1766089195,
             "duration": 4030
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 2,
+        "radiant_wins": 2,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Heroic",
         "dire_team_name_cn": "Tundra",
-        "radiant_score": 1,
-        "dire_score": 2
+        "radiant_score": 2,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_PARIVISION_vs_Team Spirit_BO3_20440",
@@ -2392,7 +2392,7 @@
             "dire_team_name": "Xtreme Gaming",
             "radiant_score": 38,
             "dire_score": 48,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1765981499,
             "duration": 4187
           },
@@ -2407,15 +2407,15 @@
             "duration": 2255
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 0,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "XG",
         "dire_team_name_cn": "Spirit",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_PARIVISION_vs_Team Spirit_BO3_20439",
@@ -2503,7 +2503,7 @@
             "dire_team_name": "1w Team",
             "radiant_score": 42,
             "dire_score": 53,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1765821306,
             "duration": 4331
           },
@@ -2518,15 +2518,15 @@
             "duration": 3623
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 0,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "1w",
         "dire_team_name_cn": "HEROIC",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_Nigma Galaxy_vs_PARIVISION_BO3_20437",
@@ -3701,7 +3701,7 @@
             "dire_team_name": "Evil Geniuses",
             "radiant_score": 38,
             "dire_score": 31,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1771103039,
             "duration": 3645
           },
@@ -3716,15 +3716,15 @@
             "duration": 2426
           }
         ],
-        "radiant_wins": 2,
-        "dire_wins": 3,
+        "radiant_wins": 3,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "EG",
         "dire_team_name_cn": "Heroic",
-        "radiant_score": 2,
-        "dire_score": 3
+        "radiant_score": 3,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_OG_vs_Team Liquid_BO5_20498",
@@ -3758,20 +3758,20 @@
             "dire_team_name": "OG",
             "radiant_score": 32,
             "dire_score": 36,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1771081498,
             "duration": 5107
           }
         ],
-        "radiant_wins": 2,
-        "dire_wins": 1,
+        "radiant_wins": 3,
+        "dire_wins": 0,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Liquid",
         "dire_team_name_cn": "OG",
-        "radiant_score": 2,
-        "dire_score": 1
+        "radiant_score": 3,
+        "dire_score": 0
       },
       {
         "series_id": "cleaned_unknown_HEROIC_vs_Heroic_BO5_20497",
@@ -4141,20 +4141,20 @@
             "dire_team_name": "MOUZ",
             "radiant_score": 44,
             "dire_score": 36,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1770325944,
             "duration": 3059
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
+        "radiant_wins": 0,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "HEROIC",
         "dire_team_name_cn": "MOUZ",
-        "radiant_score": 1,
-        "dire_score": 0
+        "radiant_score": 0,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_Team Spirit_vs_Tundra Esports_BO1_20489",
@@ -4664,20 +4664,20 @@
             "dire_team_name": "Team Spirit",
             "radiant_score": 26,
             "dire_score": 23,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1770281927,
             "duration": 2822
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
+        "radiant_wins": 0,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "OG",
         "dire_team_name_cn": "Spirit",
-        "radiant_score": 1,
-        "dire_score": 0
+        "radiant_score": 0,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_MOUZ_vs_Team Spirit_BO1_20489",
@@ -4772,20 +4772,20 @@
             "dire_team_name": "Tundra Esports",
             "radiant_score": 32,
             "dire_score": 25,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1770236156,
             "duration": 2829
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
+        "radiant_wins": 0,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "HEROIC",
         "dire_team_name_cn": "Tundra",
-        "radiant_score": 1,
-        "dire_score": 0
+        "radiant_score": 0,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_BetBoom Team_vs_REKONIX_BO1_20488",
@@ -5079,20 +5079,20 @@
             "dire_team_name": "Team Liquid",
             "radiant_score": 39,
             "dire_score": 36,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1770214226,
             "duration": 3797
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
+        "radiant_wins": 0,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Spirit",
         "dire_team_name_cn": "Liquid",
-        "radiant_score": 1,
-        "dire_score": 0
+        "radiant_score": 0,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_BetBoom Team_vs_Team Spirit_BO1_20488",
@@ -5349,20 +5349,20 @@
             "dire_team_name": "Xtreme Gaming",
             "radiant_score": 38,
             "dire_score": 16,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1770147284,
             "duration": 3396
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
+        "radiant_wins": 0,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "HEROIC",
         "dire_team_name_cn": "XG",
-        "radiant_score": 1,
-        "dire_score": 0
+        "radiant_score": 0,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_Evil Geniuses_vs_Team Spirit_BO1_20487",
@@ -6220,7 +6220,7 @@
             "dire_team_name": "Xtreme Gaming",
             "radiant_score": 34,
             "dire_score": 34,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1769761549,
             "duration": 5884
           },
@@ -6245,15 +6245,15 @@
             "duration": 1274
           }
         ],
-        "radiant_wins": 0,
-        "dire_wins": 3,
+        "radiant_wins": 1,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "TEA",
         "dire_team_name_cn": "XG",
-        "radiant_score": 0,
-        "dire_score": 3
+        "radiant_score": 1,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_Thriving_vs_YB.Tearlaments_BO3_20483",
@@ -6422,20 +6422,20 @@
             "dire_team_name": "Roar",
             "radiant_score": 31,
             "dire_score": 27,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1768128255,
             "duration": 3988
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 1,
+        "radiant_wins": 0,
+        "dire_wins": 2,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "THR",
         "dire_team_name_cn": "ROA",
-        "radiant_score": 1,
-        "dire_score": 1
+        "radiant_score": 0,
+        "dire_score": 2
       },
       {
         "series_id": "cleaned_unknown_Surge Gaming_vs_Thriving_BO1_20464",
@@ -6611,20 +6611,20 @@
             "dire_team_name": "Game Master",
             "radiant_score": 24,
             "dire_score": 25,
-            "radiant_win": 0,
+            "radiant_win": 1,
             "start_time": 1767522709,
             "duration": 2269
           }
         ],
-        "radiant_wins": 0,
-        "dire_wins": 1,
+        "radiant_wins": 1,
+        "dire_wins": 0,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "YB.TT",
         "dire_team_name_cn": "GM",
-        "radiant_score": 0,
-        "dire_score": 1
+        "radiant_score": 1,
+        "dire_score": 0
       },
       {
         "series_id": "cleaned_unknown_Game Master_vs_Roar_BO1_20457",
@@ -6800,20 +6800,20 @@
             "dire_team_name": "American Boy",
             "radiant_score": 40,
             "dire_score": 39,
-            "radiant_win": 1,
+            "radiant_win": 0,
             "start_time": 1767344800,
             "duration": 3707
           }
         ],
-        "radiant_wins": 1,
-        "dire_wins": 0,
+        "radiant_wins": 0,
+        "dire_wins": 1,
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Jitsu",
         "dire_team_name_cn": "AB",
-        "radiant_score": 1,
-        "dire_score": 0
+        "radiant_score": 0,
+        "dire_score": 1
       },
       {
         "series_id": "cleaned_unknown_Cloud Dawning_vs_NGNB_BO1_20455",
