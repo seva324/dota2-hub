@@ -13,7 +13,6 @@ const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'az
  * 从 Liquipedia API 获取比赛数据 (使用 gzip)
  */
 async function fetchLiquipediaMatches() {
-  const https = await import('https');
   const zlib = await import('zlib');
 
   return new Promise((resolve) => {
@@ -27,63 +26,68 @@ async function fetchLiquipediaMatches() {
     const url = `${LIQUIPEDIA_API}?${params}`;
     console.log('[Liquipedia Sync] Fetching from:', url);
 
-    const options = new URL(url);
-    options.headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept-Encoding': 'gzip',
-      'Accept': 'application/json'
-    };
+    // Use dynamic import for node builtins
+    import('node:https').then(({ default: https }) => {
+      const options = new URL(url);
+      options.headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept-Encoding': 'gzip',
+        'Accept': 'application/json'
+      };
 
-    const req = https.get(options, (res) => {
-      const chunks = [];
+      const req = https.get(options, (res) => {
+        const chunks = [];
 
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => {
-        const buffer = Buffer.concat(chunks);
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks);
 
-        try {
-          if (res.headers['content-encoding'] === 'gzip') {
-            zlib.gunzip(buffer, (err, decompressed) => {
-              if (err) {
-                resolve({ html: '', success: false, error: err.message });
-              } else {
-                const text = decompressed.toString('utf-8');
-                const data = JSON.parse(text);
-                console.log('[Liquipedia Sync] API response received');
+          try {
+            if (res.headers['content-encoding'] === 'gzip') {
+              zlib.gunzip(buffer, (err, decompressed) => {
+                if (err) {
+                  resolve({ html: '', success: false, error: err.message });
+                } else {
+                  const text = decompressed.toString('utf-8');
+                  const data = JSON.parse(text);
+                  console.log('[Liquipedia Sync] API response received');
 
-                if (!data.parse || !data.parse.text) {
-                  resolve({ html: '', success: false, error: 'Invalid API response' });
-                  return;
+                  if (!data.parse || !data.parse.text) {
+                    resolve({ html: '', success: false, error: 'Invalid API response' });
+                    return;
+                  }
+
+                  resolve({ html: data.parse.text['*'], success: true });
                 }
+              });
+            } else {
+              const text = buffer.toString('utf-8');
+              const data = JSON.parse(text);
+              console.log('[Liquipedia Sync] API response received');
 
-                resolve({ html: data.parse.text['*'], success: true });
+              if (!data.parse || !data.parse.text) {
+                resolve({ html: '', success: false, error: 'Invalid API response' });
+                return;
               }
-            });
-          } else {
-            const text = buffer.toString('utf-8');
-            const data = JSON.parse(text);
-            console.log('[Liquipedia Sync] API response received');
 
-            if (!data.parse || !data.parse.text) {
-              resolve({ html: '', success: false, error: 'Invalid API response' });
-              return;
+              resolve({ html: data.parse.text['*'], success: true });
             }
-
-            resolve({ html: data.parse.text['*'], success: true });
+          } catch (e) {
+            resolve({ html: '', success: false, error: e.message });
           }
-        } catch (e) {
-          resolve({ html: '', success: false, error: e.message });
-        }
+        });
       });
-    });
 
-    req.on('error', (e) => {
+      req.on('error', (e) => {
+        resolve({ html: '', success: false, error: e.message });
+      });
+
+      req.setTimeout(15000, () => {
+        req.destroy();
+        resolve({ html: '', success: false, error: 'Request timeout' });
+      });
+    }).catch(e => {
       resolve({ html: '', success: false, error: e.message });
-    });
-
-    req.setTimeout(15000, () => {
-      req.destroy();
-      resolve({ html: '', success: false, error: 'Request timeout' });
     });
   });
 }
