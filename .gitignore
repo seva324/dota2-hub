@@ -10,3 +10,5 @@ data/
 dist/docs/
 *.exe
 !public/data/
+.vercel
+.env*.local

@@ -56,12 +56,13 @@ function findTeamLogo(logoMap, teamName) {
   return null;
 }
 
-// Add logos to series data
+// Add logos to series data (preserve existing logos if present)
 function addLogosToSeries(series, logoMap) {
   return series.map(s => ({
     ...s,
-    radiant_team_logo: findTeamLogo(logoMap, s.radiant_team_name),
-    dire_team_logo: findTeamLogo(logoMap, s.dire_team_name)
+    // Only add logo if not already present
+    radiant_team_logo: s.radiant_team_logo || findTeamLogo(logoMap, s.radiant_team_name),
+    dire_team_logo: s.dire_team_logo || findTeamLogo(logoMap, s.dire_team_name)
   }));
 }
 

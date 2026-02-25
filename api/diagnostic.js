@@ -42,6 +42,38 @@ export default async function handler(req, res) {
     const matchPattern = html.match(/(\d{1,2}:\d{2})[^<>]*?vs[^<>]*/gi);
     const matches = matchPattern ? matchPattern.slice(0, 10) : [];
 
+    // 查找API端点
+    const apiPatterns = [
+      /api\/([a-z\/]+)/gi,
+      /fetch\("([^"]+)"/gi,
+      /url:\s*["']([^"']+)["']/gi,
+    ];
+    const apiEndpoints = [];
+    for (const pattern of apiPatterns) {
+      const matches = html.match(pattern);
+      if (matches) {
+        apiEndpoints.push(...matches.slice(0, 5));
+      }
+    }
+
+    // 尝试调用可能的API
+    const possibleApis = [
+      '/api/matches',
+      '/api/v1/matches',
+      '/matches/api',
+      'dltv.org/api',
+    ];
+    const apiResults = {};
+    for (const api of possibleApis) {
+      try {
+        const testUrl = api.startsWith('http') ? api : `https://dltv.org${api}`;
+        const testRes = await fetch(testUrl, { signal: AbortSignal.timeout(5000) });
+        apiResults[api] = { status: testRes.status, ok: testRes.ok };
+      } catch (e) {
+        apiResults[api] = { error: e.message };
+      }
+    }
+
     // 查找JSON数据 - 尝试多种模式
     let jsonData = null;
     const jsonPatterns = [
@@ -84,6 +116,8 @@ export default async function handler(req, res) {
       rowCount,
       vsCount: vsCells ? vsCells.slice(0, 5) : [],
       timeElements: timeElements ? timeElements.slice(0, 20) : [],
+      apiEndpoints: apiEndpoints.slice(0, 10),
+      apiResults,
       htmlSample: sample
     });
 
