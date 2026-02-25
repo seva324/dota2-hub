@@ -98,6 +98,8 @@ function aggregateSeries(matches) {
         series_type: seriesType,
         radiant_team_name: teamA,
         dire_team_name: teamB,
+        radiant_team_logo: match.radiant_team_logo || '',
+        dire_team_logo: match.dire_team_logo || '',
         games: [],
         radiant_wins: 0,
         dire_wins: 0,
@@ -144,6 +146,8 @@ function aggregateSeries(matches) {
       match_id: match.match_id,
       radiant_team_name: match.radiant_team_name,
       dire_team_name: match.dire_team_name,
+      radiant_team_logo: match.radiant_team_logo || '',
+      dire_team_logo: match.dire_team_logo || '',
       radiant_score: match.radiant_score || 0,
       dire_score: match.dire_score || 0,
       radiant_win: radiantWin,
@@ -257,8 +261,8 @@ const cnMatches = runQuery(`
 fs.writeFileSync(path.join(outputDir, 'cn-matches.json'), JSON.stringify(cnMatches, null, 2));
 console.log(`Exported ${cnMatches.length} XG/YB/VG matches`);
 
-// 导出赛事数据 - 从 league_id 构建
-const leagueIds = runQuery('SELECT DISTINCT league_id FROM matches WHERE league_id IS NOT NULL');
+// 导出赛事数据 - 从 tournament_id 构建
+const tournamentIds = runQuery('SELECT DISTINCT tournament_id FROM matches WHERE tournament_id IS NOT NULL');
 
 const tournamentInfo = {
   19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S', location: '线上', prize: '$1,000,000', status: 'completed', start_date: '2026-02-03', end_date: '2026-03-02' },
@@ -274,8 +278,8 @@ const leagueIdMap = {
   'blast-slam-vi': 19099,
 };
 
-const tournaments = leagueIds.map(l => {
-  const info = tournamentInfo[l.league_id];
+const tournaments = tournamentIds.map(t => {
+  const info = tournamentInfo[t.tournament_id];
   if (!info) return null;
   return {
     ...info,
@@ -288,16 +292,17 @@ console.log(`Exported ${tournaments.length} tournaments`);
 // 按赛事分组并聚合系列赛
 const seriesByTournament = {};
 for (const t of tournaments) {
-  const leagueId = leagueIdMap[t.id];
-  if (!leagueId) continue;
+  const tournamentId = t.id;  // This is the tournament_id string like "dreamleague-s28"
+  // Map back to numeric tournament_id used in database
+  const dbTournamentId = Object.entries(leagueIdMap).find(([k]) => k === t.id)?.[1] || t.id;
   
   const tournamentMatches = runQuery(`
     SELECT m.*
     FROM matches m
-    WHERE m.league_id = ?
+    WHERE m.tournament_id = ?
     ORDER BY m.start_time DESC
     LIMIT 100
-  `, [leagueId]);
+  `, [String(dbTournamentId)]);
   
   seriesByTournament[t.id] = aggregateSeries(tournamentMatches);
 }
