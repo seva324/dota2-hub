@@ -90,6 +90,17 @@ function getAbbr(teamName: string | null | undefined): string {
   return teamAbbr[teamName] || teamName;
 }
 
+// Render team name with responsive display: abbrev on mobile, full name on desktop
+function renderTeamName(teamName: string | null | undefined): JSX.Element {
+  const abbrev = getAbbr(teamName);
+  return (
+    <>
+      <span className="sm:hidden">{abbrev}</span>
+      <span className="hidden sm:inline">{teamName}</span>
+    </>
+  );
+}
+
 function formatCSTTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
   const hours = date.getHours().toString().padStart(2, '0');
@@ -334,7 +345,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className={`text-sm font-bold truncate ${radiantIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
-                                    {getAbbr(match.radiant_team_name)}
+                                    {renderTeamName(match.radiant_team_name)}
                                   </div>
                                   {match.radiant_team_name_cn && (
                                     <div className="text-xs text-slate-500 truncate hidden sm:block">{match.radiant_team_name_cn}</div>
@@ -353,7 +364,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                               <div className={`flex-1 flex items-center gap-3 justify-end ${direIsCN ? 'group/team-b' : ''}`}>
                                 <div className="flex-1 min-w-0 text-right">
                                   <div className={`text-sm font-bold truncate ${direIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
-                                    {getAbbr(match.dire_team_name)}
+                                    {renderTeamName(match.dire_team_name)}
                                   </div>
                                   {match.dire_team_name_cn && (
                                     <div className="text-xs text-slate-500 truncate hidden sm:block">{match.dire_team_name_cn}</div>

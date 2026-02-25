@@ -77,6 +77,17 @@ function getAbbr(teamName: string | null | undefined): string {
   return teamAbbr[teamName] || teamName;
 }
 
+// Render team name with responsive display: abbrev on mobile, full name on desktop
+function renderTeamName(teamName: string | null | undefined): JSX.Element {
+  const abbrev = getAbbr(teamName);
+  return (
+    <>
+      <span className="sm:hidden">{abbrev}</span>
+      <span className="hidden sm:inline">{teamName}</span>
+    </>
+  );
+}
+
 function formatCSTTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
@@ -209,11 +220,11 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                         <div className={`flex items-center gap-2 py-1.5 border-b border-white/5 ${layout.topIsCN ? 'text-red-400' : ''}`}>
                           {getTeamLogo(layout.top) ? <img src={getTeamLogo(layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
                           
-                          <span className="text-sm font-bold">{getAbbr(layout.top)}</span>
+                          <span className="text-sm font-bold">{renderTeamName(layout.top)}</span>
                         </div>
                         <div className="flex items-center gap-2 py-1.5">
                           {getTeamLogo(layout.bottom) ? <img src={getTeamLogo(layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
-                          <span className="text-sm font-bold text-white">{getAbbr(layout.bottom)}</span>
+                          <span className="text-sm font-bold text-white">{renderTeamName(layout.bottom)}</span>
                         </div>
                       </div>
                     </CardContent>

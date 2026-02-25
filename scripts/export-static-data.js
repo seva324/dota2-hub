@@ -107,14 +107,26 @@ function aggregateSeries(matches) {
       };
     }
     
-    // 记录这场谁赢了（按战队名，不按radiant/dire，因为每局会换边）
+    // 记录这场谁赢了 - check which team was on radiant side for this specific game
+    const matchRadiantTeam = match.radiant_team_name || '';
+    const matchDireTeam = match.dire_team_name || '';
     const radiantWin = match.radiant_win !== undefined ? match.radiant_win : (match.radiant_score > match.dire_score);
-    const winner = radiantWin ? teamA : teamB;
-    
+
+    // Determine winner based on which team was actually on radiant side for this match
+    const winner = radiantWin ? matchRadiantTeam : matchDireTeam;
+
     if (winner === groups[groupKey].radiant_team_name) {
       groups[groupKey].radiant_wins++;
     } else {
       groups[groupKey].dire_wins++;
+    }
+
+    // Store the Chinese team names for the series
+    if (!groups[groupKey].radiant_team_name_cn && match.radiant_team_name_cn) {
+      groups[groupKey].radiant_team_name_cn = match.radiant_team_name_cn;
+    }
+    if (!groups[groupKey].dire_team_name_cn && match.dire_team_name_cn) {
+      groups[groupKey].dire_team_name_cn = match.dire_team_name_cn;
     }
     
     // 添加比赛详情

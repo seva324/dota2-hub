@@ -7,6 +7,42 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LEAGUE_IDS = [19269, 18988, 19099, 19130];
 const OPENDOTA_API_BASE = 'https://api.opendota.com/api';
 
+// Team abbreviation lookup (for name_cn fields)
+const TEAM_ABBREV = {
+    'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
+    'Team Spirit': 'Spirit', 'Natus Vincere': "Na'Vi",
+    'Tundra Esports': 'Tundra', 'Team Liquid': 'Liquid',
+    'Team Falcons': 'Falcons', 'OG': 'OG',
+    'GamerLegion': 'GL', 'PARIVISION': 'PARI',
+    'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
+    'Aurora Gaming': 'AG', 'Execration': 'XctN',
+    'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
+    'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
+    'Team Nemesis': 'Nemesis', '1w Team': '1w',
+    'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
+    'G2 Bit': 'G2', 'Team Secret': 'Secret',
+    'EHOME': 'EHOME', 'EHOME.IR': 'EHOME',
+    'LGD Gaming': 'LGD', 'Aster': 'Aster',
+    'Bright': 'Bright', 'VP': 'VP',
+    'Talon': 'Talon', 'Thunder Awaken': 'TA',
+    'Raven': 'Raven', 'Hokage': 'Hokage',
+    'Polaris': 'Polaris', 'Nouns': 'Nouns',
+    'Wanderers': 'Wanderers', 'Leviathan': 'Leviathan',
+    'Darko': 'Darko', 'KB Uprising': 'KBU',
+    'Heroic': 'Heroic', 'Mineski': 'Mineski',
+    'TNC Predator': 'TNC', 'Fnatic': 'Fnatic',
+    'Royal Never Give Up': 'RNG', 'Evil Geniuses': 'EG',
+    ' Quincy Crew': 'QC', 'Undying': 'Undying',
+    '4 Zoomers': '4Z', 'Elephant': 'Elephant',
+    'RNG': 'RNG', 'Sentinel': 'Sentinel',
+    'Navi': "Na'Vi", 'Spirit': 'Spirit',
+};
+
+function getTeamAbbrev(teamName) {
+    if (!teamName) return null;
+    return TEAM_ABBREV[teamName] || teamName.substring(0, 4).toUpperCase();
+}
+
 async function fetchWithRetry(url, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -62,9 +98,9 @@ async function syncHistoricalMatches() {
             radiant_team_id: m.radiant?.team_id || 'unknown',
             dire_team_id: m.dire?.team_id || 'unknown',
             radiant_team_name: m.radiant?.name || null,
-            radiant_team_name_cn: m.radiant?.name || null,
+            radiant_team_name_cn: getTeamAbbrev(m.radiant?.name) || m.radiant?.name || null,
             dire_team_name: m.dire?.name || null,
-            dire_team_name_cn: m.dire?.name || null,
+            dire_team_name_cn: getTeamAbbrev(m.dire?.name) || m.dire?.name || null,
             radiant_score: m.radiant_score || 0,
             dire_score: m.dire_score || 0,
             radiant_game_wins: status === 'finished' ? (rw ? 1 : 0) : 0,

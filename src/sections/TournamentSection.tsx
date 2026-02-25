@@ -134,6 +134,17 @@ function getTeamAbbrev(teamName: string): string {
   return abbr[teamName] || teamName.substring(0, 3).toUpperCase();
 }
 
+// Render team name with responsive display: abbrev on mobile, full name on desktop
+function renderTeamName(teamName: string, className?: string): JSX.Element {
+  const abbrev = getTeamAbbrev(teamName);
+  return (
+    <span className={className}>
+      <span className="sm:hidden">{abbrev}</span>
+      <span className="hidden sm:inline">{teamName}</span>
+    </span>
+  );
+}
+
 interface TournamentSectionProps {
   tournaments: Tournament[];
   seriesByTournament?: Record<string, Series[]>;
@@ -421,7 +432,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
 
                               {/* Team A Name */}
                               <span className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.radiant_score > series.dire_score ? 'text-green-400' : teamAIsCN ? 'text-red-400' : 'text-white'}`}>
-                                {getTeamAbbrev(series.radiant_team_name)}
+                                {renderTeamName(series.radiant_team_name)}
                               </span>
 
                               {/* Score - Center */}
@@ -437,7 +448,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
 
                               {/* Team B Name */}
                               <span className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.dire_score > series.radiant_score ? 'text-green-400' : teamBIsCN ? 'text-red-400' : 'text-white'}`}>
-                                {getTeamAbbrev(series.dire_team_name)}
+                                {renderTeamName(series.dire_team_name)}
                               </span>
 
                               {/* Team B Logo - Right */}
