@@ -136,15 +136,15 @@
         "dire_score": 2
       },
       {
-        "series_id": "cleaned_unknown_PARIVISION_vs_Yakult Brothers_BO3_20508",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_PARIVISION_BO3_20508",
         "series_type": "BO3",
-        "radiant_team_name": "Yakult Brothers",
+        "radiant_team_name": "BetBoom Team",
         "dire_team_name": "PARIVISION",
         "games": [
           {
             "match_id": "8704584247",
             "radiant_team_name": "PARIVISION",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 18,
             "dire_score": 5,
             "radiant_win": 1,
@@ -153,7 +153,7 @@
           },
           {
             "match_id": "8704672982",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "PARIVISION",
             "radiant_score": 36,
             "dire_score": 22,
@@ -163,7 +163,7 @@
           },
           {
             "match_id": "8704809958",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "PARIVISION",
             "radiant_score": 33,
             "dire_score": 5,
@@ -177,7 +177,7 @@
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
-        "radiant_team_name_cn": "YB",
+        "radiant_team_name_cn": "BB",
         "dire_team_name_cn": "PARI",
         "radiant_score": 2,
         "dire_score": 1
@@ -341,14 +341,14 @@
         "dire_score": 0
       },
       {
-        "series_id": "cleaned_unknown_MOUZ_vs_Yakult Brothers_BO3_20507",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_MOUZ_BO3_20507",
         "series_type": "BO3",
         "radiant_team_name": "MOUZ",
-        "dire_team_name": "Yakult Brothers",
+        "dire_team_name": "BetBoom Team",
         "games": [
           {
             "match_id": "8702997623",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "MOUZ",
             "radiant_score": 28,
             "dire_score": 30,
@@ -359,7 +359,7 @@
           {
             "match_id": "8703101544",
             "radiant_team_name": "MOUZ",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 18,
             "dire_score": 33,
             "radiant_win": 0,
@@ -373,7 +373,7 @@
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "MOUZ",
-        "dire_team_name_cn": "YB",
+        "dire_team_name_cn": "BB",
         "radiant_score": 1,
         "dire_score": 1
       },
@@ -415,14 +415,14 @@
         "dire_score": 0
       },
       {
-        "series_id": "cleaned_unknown_Team Liquid_vs_Yakult Brothers_BO3_20506",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Team Liquid_BO3_20506",
         "series_type": "BO3",
         "radiant_team_name": "Team Liquid",
-        "dire_team_name": "Yakult Brothers",
+        "dire_team_name": "BetBoom Team",
         "games": [
           {
             "match_id": "8701978003",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "Team Liquid",
             "radiant_score": 12,
             "dire_score": 17,
@@ -433,7 +433,7 @@
           {
             "match_id": "8702081221",
             "radiant_team_name": "Team Liquid",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 39,
             "dire_score": 8,
             "radiant_win": 1,
@@ -447,7 +447,7 @@
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Liquid",
-        "dire_team_name_cn": "YB",
+        "dire_team_name_cn": "BB",
         "radiant_score": 2,
         "dire_score": 0
       },
@@ -526,14 +526,14 @@
         "dire_score": 2
       },
       {
-        "series_id": "cleaned_unknown_Team Spirit_vs_Yakult Brothers_BO3_20505",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Team Spirit_BO3_20505",
         "series_type": "BO3",
-        "radiant_team_name": "Yakult Brothers",
+        "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Team Spirit",
         "games": [
           {
             "match_id": "8700643559",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "Team Spirit",
             "radiant_score": 14,
             "dire_score": 28,
@@ -543,7 +543,7 @@
           },
           {
             "match_id": "8700717009",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "Team Spirit",
             "radiant_score": 19,
             "dire_score": 36,
@@ -557,7 +557,7 @@
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
-        "radiant_team_name_cn": "YB",
+        "radiant_team_name_cn": "BB",
         "dire_team_name_cn": "Spirit",
         "radiant_score": 0,
         "dire_score": 2
@@ -684,14 +684,14 @@
         "dire_score": 2
       },
       {
-        "series_id": "cleaned_unknown_OG_vs_Yakult Brothers_BO3_20504",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_OG_BO3_20504",
         "series_type": "BO3",
         "radiant_team_name": "OG",
-        "dire_team_name": "Yakult Brothers",
+        "dire_team_name": "BetBoom Team",
         "games": [
           {
             "match_id": "8698782516",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "OG",
             "radiant_score": 32,
             "dire_score": 18,
@@ -702,7 +702,7 @@
           {
             "match_id": "8698904895",
             "radiant_team_name": "OG",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 32,
             "dire_score": 9,
             "radiant_win": 1,
@@ -712,7 +712,7 @@
           {
             "match_id": "8698996024",
             "radiant_team_name": "OG",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 19,
             "dire_score": 33,
             "radiant_win": 0,
@@ -726,7 +726,7 @@
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "OG",
-        "dire_team_name_cn": "YB",
+        "dire_team_name_cn": "BB",
         "radiant_score": 1,
         "dire_score": 2
       },
@@ -879,15 +879,15 @@
         "dire_score": 1
       },
       {
-        "series_id": "cleaned_unknown_OG_vs_Yakult Brothers_BO1_20504",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_OG_BO1_20504",
         "series_type": "BO1",
-        "radiant_team_name": "Yakult Brothers",
+        "radiant_team_name": "BetBoom Team",
         "dire_team_name": "OG",
         "games": [
           {
             "match_id": "8698367105",
             "radiant_team_name": "OG",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 25,
             "dire_score": 12,
             "radiant_win": 1,
@@ -896,7 +896,7 @@
           },
           {
             "match_id": "8698436662",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "OG",
             "radiant_score": 25,
             "dire_score": 34,
@@ -910,7 +910,7 @@
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
-        "radiant_team_name_cn": "YB",
+        "radiant_team_name_cn": "BB",
         "dire_team_name_cn": "OG",
         "radiant_score": 0,
         "dire_score": 2
@@ -1286,14 +1286,14 @@
         "dire_score": 2
       },
       {
-        "series_id": "cleaned_unknown_GamerLegion_vs_Yakult Brothers_BO1_20503",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_GamerLegion_BO1_20503",
         "series_type": "BO1",
         "radiant_team_name": "GamerLegion",
-        "dire_team_name": "Yakult Brothers",
+        "dire_team_name": "BetBoom Team",
         "games": [
           {
             "match_id": "8697450883",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "GamerLegion",
             "radiant_score": 27,
             "dire_score": 17,
@@ -1304,7 +1304,7 @@
           {
             "match_id": "8697542120",
             "radiant_team_name": "GamerLegion",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 18,
             "dire_score": 33,
             "radiant_win": 0,
@@ -1318,7 +1318,7 @@
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "GL",
-        "dire_team_name_cn": "YB",
+        "dire_team_name_cn": "BB",
         "radiant_score": 0,
         "dire_score": 2
       },
@@ -1471,15 +1471,15 @@
         "dire_score": 2
       },
       {
-        "series_id": "cleaned_unknown_Team Liquid_vs_Yakult Brothers_BO1_20503",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Team Liquid_BO1_20503",
         "series_type": "BO1",
         "radiant_team_name": "Team Liquid",
-        "dire_team_name": "Yakult Brothers",
+        "dire_team_name": "BetBoom Team",
         "games": [
           {
             "match_id": "8697089342",
             "radiant_team_name": "Team Liquid",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 35,
             "dire_score": 32,
             "radiant_win": 1,
@@ -1489,7 +1489,7 @@
           {
             "match_id": "8697190420",
             "radiant_team_name": "Team Liquid",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 37,
             "dire_score": 17,
             "radiant_win": 1,
@@ -1503,7 +1503,7 @@
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Liquid",
-        "dire_team_name_cn": "YB",
+        "dire_team_name_cn": "BB",
         "radiant_score": 2,
         "dire_score": 0
       },
@@ -1831,14 +1831,14 @@
         "dire_score": 0
       },
       {
-        "series_id": "cleaned_unknown_Natus Vincere_vs_Yakult Brothers_BO1_20502",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Natus Vincere_BO1_20502",
         "series_type": "BO1",
-        "radiant_team_name": "Yakult Brothers",
+        "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Natus Vincere",
         "games": [
           {
             "match_id": "8696295052",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "Natus Vincere",
             "radiant_score": 44,
             "dire_score": 23,
@@ -1852,7 +1852,7 @@
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
-        "radiant_team_name_cn": "YB",
+        "radiant_team_name_cn": "BB",
         "dire_team_name_cn": "NAVI",
         "radiant_score": 1,
         "dire_score": 0
@@ -2603,14 +2603,14 @@
         "dire_score": 0
       },
       {
-        "series_id": "cleaned_unknown_Heroic_vs_Yakult Brothers_BO3_20437",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Heroic_BO3_20437",
         "series_type": "BO3",
         "radiant_team_name": "Heroic",
-        "dire_team_name": "Yakult Brothers",
+        "dire_team_name": "BetBoom Team",
         "games": [
           {
             "match_id": "8606503226",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "Heroic",
             "radiant_score": 26,
             "dire_score": 9,
@@ -2621,7 +2621,7 @@
           {
             "match_id": "8606610716",
             "radiant_team_name": "Heroic",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 52,
             "dire_score": 28,
             "radiant_win": 1,
@@ -2631,7 +2631,7 @@
           {
             "match_id": "8606735701",
             "radiant_team_name": "Heroic",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 38,
             "dire_score": 11,
             "radiant_win": 1,
@@ -2645,7 +2645,7 @@
         "tournament_name": null,
         "stage": "",
         "radiant_team_name_cn": "Heroic",
-        "dire_team_name_cn": "YB",
+        "dire_team_name_cn": "BB",
         "radiant_score": 2,
         "dire_score": 1
       },
@@ -3060,15 +3060,15 @@
         "dire_score": 0
       },
       {
-        "series_id": "cleaned_unknown_Pipsqueak+4_vs_Yakult Brothers_BO3_20436",
+        "series_id": "cleaned_unknown_BetBoom Team_vs_Pipsqueak+4_BO3_20436",
         "series_type": "BO3",
-        "radiant_team_name": "Yakult Brothers",
+        "radiant_team_name": "BetBoom Team",
         "dire_team_name": "Pipsqueak+4",
         "games": [
           {
             "match_id": "8605411433",
             "radiant_team_name": "Pipsqueak+4",
-            "dire_team_name": "Yakult Brothers",
+            "dire_team_name": "BetBoom Team",
             "radiant_score": 18,
             "dire_score": 35,
             "radiant_win": 0,
@@ -3077,7 +3077,7 @@
           },
           {
             "match_id": "8605514511",
-            "radiant_team_name": "Yakult Brothers",
+            "radiant_team_name": "BetBoom Team",
             "dire_team_name": "Pipsqueak+4",
             "radiant_score": 46,
             "dire_score": 14,
@@ -3091,7 +3091,7 @@
         "tournament_id": null,
         "tournament_name": null,
         "stage": "",
-        "radiant_team_name_cn": "YB",
+        "radiant_team_name_cn": "BB",
         "dire_team_name_cn": "PIPS4",
         "radiant_score": 2,
         "dire_score": 0
