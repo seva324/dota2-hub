@@ -10,7 +10,7 @@ const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
 const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
 
 /**
- * 从 Liquipedia API 获取比赛数据
+ * 从 Liquipedia API 获取比赛数据 (需要 gzip)
  */
 async function fetchLiquipediaMatches() {
   try {
@@ -28,6 +28,7 @@ async function fetchLiquipediaMatches() {
       signal: AbortSignal.timeout(15000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept-Encoding': 'gzip',
       },
     });
 
@@ -35,7 +36,21 @@ async function fetchLiquipediaMatches() {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const data = await response.json();
+    // 处理 gzip 响应
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // 检查是否需要解压
+    const contentEncoding = response.headers.get('content-encoding');
+    let text;
+    if (contentEncoding === 'gzip') {
+      const zlib = await import('zlib');
+      text = zlib.gunzipSync(buffer).toString('utf-8');
+    } else {
+      text = buffer.toString('utf-8');
+    }
+
+    const data = JSON.parse(text);
     console.log('[Liquipedia Sync] API response received');
 
     if (!data.parse || !data.parse.text) {
