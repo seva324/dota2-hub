@@ -1,9 +1,25 @@
 /**
  * 获取赛事数据 API
+ * 数据源: Redis (由 sync-opendota API 写入)
+ * 回退: 本地 JSON 文件
  */
 
 import fs from 'fs';
 import path from 'path';
+
+const REDIS_URL = process.env.REDIS_URL;
+
+// Redis client singleton
+let redis = null;
+
+async function getRedis() {
+  if (!redis && REDIS_URL) {
+    const { createClient } = await import('redis');
+    redis = createClient({ url: REDIS_URL });
+    await redis.connect();
+  }
+  return redis;
+}
 
 // Load teams data for logo matching
 function getTeams() {
@@ -87,69 +103,61 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  try {
-    // Try to import @vercel/kv dynamically to avoid build errors
-    let kv;
-    try {
-      const kvModule = await import('@vercel/kv');
-      kv = kvModule.kv;
-    } catch (importError) {
-      console.log('KV not available, using local file');
-      kv = null;
+  // Helper to process tournaments data with logos
+  function processTournaments(tournamentsData) {
+    if (!tournamentsData) return null;
+    const teams = getTeams();
+    const logoMap = createTeamLogoMap(teams);
+
+    const seriesByTournament = {};
+    for (const [tournamentId, series] of Object.entries(tournamentsData.seriesByTournament || {})) {
+      seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
     }
 
-    if (kv) {
-      const tournaments = await kv.get('tournaments');
-      
-      if (tournaments) {
-        // Load teams for logo matching
-        const teams = getTeams();
-        const logoMap = createTeamLogoMap(teams);
-        
-        // Add logos to series data
-        const seriesByTournament = {};
-        for (const [tournamentId, series] of Object.entries(tournaments.seriesByTournament || {})) {
-          seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
+    return {
+      ...tournamentsData,
+      seriesByTournament
+    };
+  }
+
+  try {
+    // Try Redis first
+    let redisClient;
+    try {
+      redisClient = await getRedis();
+    } catch (redisError) {
+      console.log('[Tournaments API] Redis not available:', redisError.message);
+    }
+
+    if (redisClient) {
+      try {
+        const tournaments = await redisClient.get('tournaments');
+
+        if (tournaments) {
+          console.log('[Tournaments API] Found data in Redis');
+          const parsed = JSON.parse(tournaments);
+          const processed = processTournaments(parsed);
+          return res.status(200).json(processed);
+        } else {
+          console.log('[Tournaments API] No data in Redis, using fallback');
         }
-        
-        // Return full object with tournaments and seriesByTournament with logos
-        return res.status(200).json({
-          ...tournaments,
-          seriesByTournament
-        });
+      } catch (redisError) {
+        console.log('[Tournaments API] Redis get failed:', redisError.message);
       }
     }
-    
-    // Fallback to local JSON file - return full object with logos
-    const teams = getTeams();
-    const logoMap = createTeamLogoMap(teams);
+
+    // Fallback to local JSON file
+    console.log('[Tournaments API] Using local JSON fallback');
     const localData = getLocalTournaments();
-    
-    // Add logos to series data
-    const seriesByTournament = {};
-    for (const [tournamentId, series] of Object.entries(localData.seriesByTournament || {})) {
-      seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
-    }
-    
-    return res.status(200).json({
-      ...localData,
-      seriesByTournament
-    });
+    const processed = processTournaments(localData);
+
+    return res.status(200).json(processed);
   } catch (error) {
-    console.error('Error:', error);
-    // Fallback to local JSON on error with logos
-    const teams = getTeams();
-    const logoMap = createTeamLogoMap(teams);
+    console.error('[Tournaments API] Error:', error);
+    // Fallback to local JSON on error
     const localData = getLocalTournaments();
-    
-    const seriesByTournament = {};
-    for (const [tournamentId, series] of Object.entries(localData.seriesByTournament || {})) {
-      seriesByTournament[tournamentId] = addLogosToSeries(series, logoMap);
-    }
-    
-    return res.status(200).json({
-      ...localData,
-      seriesByTournament
-    });
+    const processed = processTournaments(localData);
+
+    return res.status(200).json(processed);
   }
 }
