@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { neon } from '@neondatabase/serverless';
 import { LEAGUE_TO_TOURNAMENT_MAP } from './league-mapping.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,6 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const outputDir = path.join(__dirname, '..', 'public', 'data');
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 // 目标战队 (仅用于首页推荐)
 const TARGET_TEAM_IDS = ['xtreme-gaming', 'yakult-brothers', 'vici-gaming'];
@@ -17,6 +19,13 @@ const placeholders = TARGET_TEAM_IDS.map(() => '?').join(',');
 // 确保输出目录存在
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
+}
+
+// 使用 Neon 数据库
+let neonDb = null;
+if (DATABASE_URL) {
+  neonDb = neon(DATABASE_URL);
+  console.log('Using Neon database');
 }
 
 const SQL = await initSqlJs();
@@ -34,8 +43,15 @@ try {
   db = new SQL.Database();
 }
 
-// Helper function to run queries and get results
+// Helper function to run queries - sync for SQLite only
 function runQuery(sql, params = []) {
+  // 如果有 Neon 数据库，跳过这个脚本（使用 API 导出）
+  if (neonDb) {
+    console.log('ERROR: This script does not support Neon. Use /api/export-data instead.');
+    return [];
+  }
+
+  // 回退到 SQLite
   try {
     const stmt = db.prepare(sql);
     if (params.length > 0) {

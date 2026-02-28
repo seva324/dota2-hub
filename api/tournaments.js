@@ -103,6 +103,8 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const db = getDb();
+
   // Helper to process tournaments data with logos
   function processTournaments(tournamentsData) {
     if (!tournamentsData) return null;
@@ -120,20 +122,134 @@ export default async function handler(req, res) {
     };
   }
 
+  // Try to read from Neon first
+  if (db) {
+    try {
+      // Get all tournaments
+      const tournaments = await db`SELECT * FROM tournaments`;
+
+      // Create tournament lookup by league_id
+      const tournamentByLeagueId = {};
+      for (const t of tournaments) {
+        console.log('[Tournaments] Tournament:', t.id, 'league_id:', t.league_id, 'type:', typeof t.league_id);
+        if (t.league_id !== null && t.league_id !== undefined) {
+          tournamentByLeagueId[t.league_id] = t;
+        }
+      }
+
+      // Get matches
+      const matches = await db`
+        SELECT match_id, league_id FROM matches
+        ORDER BY start_time DESC
+        LIMIT 10
+      `;
+
+      console.log('[Tournaments API] Sample matches league_ids:', matches.map(m => ({ match_id: m.match_id, league_id: m.league_id, type: typeof m.league_id })));
+      console.log('[Tournaments API] Tournament lookup keys:', Object.keys(tournamentByLeagueId));
+
+      // Get teams for logo lookup
+      const teams = await db`SELECT * FROM teams`;
+
+      // Build series from matches
+      const seriesByTournament = {};
+
+      // Group matches by tournament (using league_id) and teams
+      const matchGroups = {};
+      for (const m of matches) {
+        // Use league_id to find tournament
+        const leagueId = m.league_id;
+        const tournament = tournamentByLeagueId[leagueId];
+        const tid = tournament?.id || `league_${leagueId}` || 'unknown';
+
+        const key = `${tid}_${[m.radiant_team_name, m.dire_team_name].sort().join('_vs_')}`;
+
+        if (!matchGroups[key]) {
+          matchGroups[key] = {
+            tournament_id: tid,
+            radiant_team_name: m.radiant_team_name,
+            dire_team_name: m.dire_team_name,
+            radiant_team_logo: m.radiant_team_logo,
+            dire_team_logo: m.dire_team_logo,
+            games: []
+          };
+        }
+        matchGroups[key].games.push({
+          match_id: String(m.match_id),
+          radiant_team_name: m.radiant_team_name,
+          dire_team_name: m.dire_team_name,
+          radiant_team_logo: m.radiant_team_logo,
+          dire_team_logo: m.dire_team_logo,
+          radiant_score: m.radiant_score,
+          dire_score: m.dire_score,
+          radiant_win: m.radiant_win ? 1 : 0,
+          start_time: m.start_time,
+          duration: m.duration
+        });
+      }
+
+      // Initialize seriesByTournament for all tournaments
+      for (const t of tournaments) {
+        seriesByTournament[t.id] = [];
+      }
+
+      // Convert to series format
+      for (const [key, group] of Object.entries(matchGroups)) {
+        const tid = group.tournament_id;
+        if (!seriesByTournament[tid]) {
+          seriesByTournament[tid] = [];
+        }
+
+        // Calculate wins
+        let radiantWins = 0, direWins = 0;
+        for (const g of group.games) {
+          if (g.radiant_win) radiantWins++;
+          else direWins++;
+        }
+
+        seriesByTournament[tid].push({
+          series_id: `neon_${key}`,
+          series_type: group.games.length >= 5 ? 'BO5' : group.games.length >= 3 ? 'BO3' : 'BO1',
+          radiant_team_name: group.radiant_team_name,
+          dire_team_name: group.dire_team_name,
+          radiant_team_logo: group.radiant_team_logo,
+          dire_team_logo: group.dire_team_logo,
+          radiant_score: radiantWins,
+          dire_score: direWins,
+          radiant_wins: radiantWins,
+          dire_wins: direWins,
+          games: group.games.sort((a, b) => a.start_time - b.start_time)
+        });
+      }
+
+      const result = {
+        tournaments: tournaments.map(t => ({
+          id: t.id,
+          name: t.name,
+          name_cn: t.name_cn,
+          tier: t.tier,
+          location: t.location,
+          status: t.status,
+          start_date: t.start_date,
+          end_date: t.end_date,
+          prize_pool: t.prize_pool
+        })),
+        seriesByTournament
+      };
+
+      const processed = processTournaments(result);
+      return res.status(200).json(processed);
+    } catch (error) {
+      console.error('[Tournaments API] Neon error:', error.message);
+    }
+  }
+
+  // Fallback to local JSON
   try {
-    // Always fallback to local JSON for now (Neon integration can be added later)
     const localData = getLocalTournaments();
     const processed = processTournaments(localData);
     return res.status(200).json(processed);
   } catch (error) {
     console.error('[Tournaments API] Error:', error);
-    // Fallback to local JSON on error
-    try {
-      const localData = getLocalTournaments();
-      const processed = processTournaments(localData);
-      return res.status(200).json(processed);
-    } catch (fallbackError) {
-      return res.status(500).json({ error: fallbackError.message });
-    }
+    return res.status(500).json({ error: error.message });
   }
 }
