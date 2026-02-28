@@ -37,7 +37,7 @@ interface HeroData {
 
 // Load teams data
 let teamsData: TeamData[] = [];
-let heroesData: Record<number, HeroData> = {};
+const heroesData: Record<number, HeroData> = {};
 
 // Fetch teams and heroes data
 async function loadStaticData() {
@@ -205,40 +205,38 @@ function App() {
         // Load static data first (teams, heroes)
         await loadStaticData();
         
-        const apiBase = window.location.origin;
-        console.log('API Base:', apiBase);
-        
-        const isLocalDev = apiBase.includes('localhost');
-        
-        // 加载 tournaments.json 数据
+        // 加载 tournaments 数据 from API (Neon/Redis fallback)
         let tournamentsData;
-        if (isLocalDev) {
-          const tournamentsRes = await fetch('/data/tournaments.json');
+        try {
+          const tournamentsRes = await fetch('/api/tournaments');
           tournamentsData = await tournamentsRes.json();
-          console.log('Local tournaments loaded:', tournamentsData.tournaments?.length || 0);
-        } else {
-          // 生产环境：从 API 获取
-          const tournamentsRes = await fetch(`${apiBase}/api/tournaments`);
-          if (!tournamentsRes.ok) throw new Error(`HTTP ${tournamentsRes.status}`);
-          const response = await tournamentsRes.json();
-          // API 返回完整对象格式，包含 tournaments 和 seriesByTournament
-          tournamentsData = {
-            tournaments: response.tournaments || response || [],
-            seriesByTournament: response.seriesByTournament || {}
-          };
+        } catch (e) {
+          console.error('Failed to load tournaments from API:', e);
+          tournamentsData = { tournaments: [], seriesByTournament: {} };
         }
+        console.log('Tournaments loaded:', tournamentsData.tournaments?.length || 0);
 
-        // 加载 matches.json 数据
+        // 加载 matches 数据 from API (Neon/Redis fallback)
         let matches;
-        if (isLocalDev) {
-          const matchesRes = await fetch('/data/matches.json');
+        try {
+          const matchesRes = await fetch('/api/matches');
           matches = await matchesRes.json();
-          console.log('Local matches loaded:', matches.length);
-        } else {
-          const matchesRes = await fetch(`${apiBase}/api/matches`);
-          if (!matchesRes.ok) throw new Error(`HTTP ${matchesRes.status}`);
-          matches = await matchesRes.json();
+        } catch (e) {
+          console.error('Failed to load matches from API:', e);
+          matches = [];
         }
+        console.log('Matches loaded:', matches.length);
+
+        // 加载 upcoming 数据 from API (Neon/Redis fallback)
+        let upcomingData;
+        try {
+          const upcomingRes = await fetch('/api/upcoming');
+          upcomingData = await upcomingRes.json();
+        } catch (e) {
+          console.error('Failed to load upcoming from API:', e);
+          upcomingData = [];
+        }
+        console.log('Upcoming loaded:', upcomingData.length);
 
         // 使用 tournaments.json 中已有的 tournaments 和 seriesByTournament
         const formattedTournaments = (tournamentsData.tournaments || []).map((t: any) => ({
@@ -255,9 +253,9 @@ function App() {
         }));
 
         // 首先尝试从 matches.json 中动态生成 series
-        // 过滤目标 league_id 的比赛
-        const targetLeagueMatches = matches.filter((m: any) => 
-          TARGET_LEAGUE_IDS.includes(m.league_id)
+        // 过滤目标 tournament_id 的比赛
+        const targetLeagueMatches = matches.filter((m: any) =>
+          m.tournament_id && TARGET_LEAGUE_IDS.includes(Number(m.tournament_id))
         );
         
         console.log('Target league matches:', targetLeagueMatches.length);
@@ -293,13 +291,20 @@ function App() {
             leagueid: m.league_id || null
           }));
         
-        // 获取即将开始的比赛
+        // 使用 API 返回的 upcoming 数据，如果没有则从 cnMatches 中生成
         const now = Date.now() / 1000;
-        const upcoming = cnMatches
-          .filter((m: any) => m.start_time > now)
-          .sort((a: any, b: any) => a.start_time - b.start_time)
-          .slice(0, 10)
-          .map((m: any) => ({ ...m, tournament_name: 'Dota 2 Pro League' }));
+        let upcoming = upcomingData && upcomingData.length > 0
+          ? upcomingData.map((m: any) => ({
+              ...m,
+              id: m.id || m.match_id,
+              radiant_team_name: m.radiant_team_name || m.radiant_team_name_cn || 'TBD',
+              dire_team_name: m.dire_team_name || m.dire_team_name_cn || 'TBD',
+            }))
+          : cnMatches
+              .filter((m: any) => m.start_time > now)
+              .sort((a: any, b: any) => a.start_time - b.start_time)
+              .slice(0, 10)
+              .map((m: any) => ({ ...m, tournament_name: 'Dota 2 Pro League' }));
 
         // 格式化数据
         const homeData = {

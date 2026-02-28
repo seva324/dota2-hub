@@ -1,13 +1,14 @@
 /**
  * 获取赛事数据 API
- * 数据源: Redis (由 sync-opendota API 写入)
- * 回退: 本地 JSON 文件
+ * 数据源: Neon PostgreSQL (primary), Redis (fallback), Local JSON (final fallback)
  */
 
 import fs from 'fs';
 import path from 'path';
+import { neon } from '@neondatabase/serverless';
 
 const REDIS_URL = process.env.REDIS_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 // Redis client singleton
 let redis = null;
@@ -19,6 +20,16 @@ async function getRedis() {
     await redis.connect();
   }
   return redis;
+}
+
+// Neon SQL client singleton
+let sql = null;
+
+function getDb() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
 }
 
 // Load teams data for logo matching
@@ -51,24 +62,24 @@ function createTeamLogoMap(teams) {
 // Find logo URL for a team name with fuzzy matching
 function findTeamLogo(logoMap, teamName) {
   if (!teamName) return null;
-  
+
   const normalizedName = teamName.toLowerCase().trim();
-  
+
   // Exact match first
   if (logoMap.has(normalizedName)) {
     return logoMap.get(normalizedName);
   }
-  
+
   // Fuzzy match: check if any key is contained in the team name or vice versa
   for (const [key, logoUrl] of logoMap.entries()) {
     // Skip short tags that cause false matches
     if (key.length <= 2) continue;
-    
+
     if (normalizedName.includes(key) || key.includes(normalizedName)) {
       return logoUrl;
     }
   }
-  
+
   return null;
 }
 
@@ -91,6 +102,64 @@ function getLocalTournaments() {
   } catch (error) {
     console.error('Error reading local tournaments:', error);
     return { tournaments: [], seriesByTournament: {} };
+  }
+}
+
+// Query tournaments from Neon
+async function getTournamentsFromNeon(db) {
+  if (!db) return null;
+
+  try {
+    // Get tournaments
+    const tournaments = await db`
+      SELECT id, name, name_cn, tier, location, status, league_id
+      FROM tournaments
+      ORDER BY league_id DESC
+    `;
+
+    if (tournaments.length === 0) {
+      return null;
+    }
+
+    // Get series for each tournament
+    const seriesByTournament = {};
+
+    for (const t of tournaments) {
+      const series = await db`
+        SELECT series_id, tournament_id, radiant_team_name, dire_team_name,
+               radiant_team_logo, dire_team_logo, radiant_wins, dire_wins, series_type
+        FROM tournament_series
+        WHERE tournament_id = ${t.id}
+      `;
+
+      seriesByTournament[t.id] = series.map(s => ({
+        series_id: s.series_id,
+        series_type: s.series_type,
+        radiant_team_name: s.radiant_team_name,
+        dire_team_name: s.dire_team_name,
+        radiant_team_logo: s.radiant_team_logo,
+        dire_team_logo: s.dire_team_logo,
+        radiant_wins: s.radiant_wins,
+        dire_wins: s.dire_wins,
+        games: [] // Games would require another query
+      }));
+    }
+
+    return {
+      tournaments: tournaments.map(t => ({
+        id: t.id,
+        name: t.name,
+        name_cn: t.name_cn,
+        tier: t.tier,
+        location: t.location,
+        status: t.status,
+        leagueid: t.league_id
+      })),
+      seriesByTournament
+    };
+  } catch (e) {
+    console.error('[Tournaments API] Neon query failed:', e.message);
+    return null;
   }
 }
 
@@ -121,7 +190,40 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Try Redis first
+    // Try Neon first
+    const db = getDb();
+    const localData = getLocalTournaments();
+    const localTournamentIds = new Set(localData.tournaments.map(t => t.id));
+
+    if (db) {
+      const neonData = await getTournamentsFromNeon(db);
+      if (neonData && neonData.tournaments.length > 0) {
+        console.log('[Tournaments API] Found data in Neon');
+
+        // Merge with local data to ensure all tournaments are present
+        const neonTournamentIds = new Set(neonData.tournaments.map(t => t.id));
+
+        // Add missing tournaments from local
+        for (const localT of localData.tournaments) {
+          if (!neonTournamentIds.has(localT.id)) {
+            neonData.tournaments.push(localT);
+            neonData.seriesByTournament[localT.id] = localData.seriesByTournament[localT.id] || [];
+          }
+        }
+
+        // Add missing series from local
+        for (const [tournamentId, series] of Object.entries(localData.seriesByTournament)) {
+          if (!neonData.seriesByTournament[tournamentId]) {
+            neonData.seriesByTournament[tournamentId] = series;
+          }
+        }
+
+        const processed = processTournaments(neonData);
+        return res.status(200).json(processed);
+      }
+    }
+
+    // Try Redis second
     let redisClient;
     try {
       redisClient = await getRedis();
