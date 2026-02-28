@@ -353,9 +353,9 @@ async function saveMatchToDb(db, match) {
         ${parseInt(match.match_id)}, ${match.radiant_team_id}, ${match.radiant_team_name},
         ${match.radiant_team_name_cn}, ${match.radiant_team_logo}, ${match.dire_team_id},
         ${match.dire_team_name}, ${match.dire_team_name_cn}, ${match.dire_team_logo},
-        ${match.radiant_score}, ${match.dire_score}, match.radiant_win === 1,
-        ${match.start_time}, ${match.duration}, ${match.leagueid}, ${match.series_type},
-        ${match.status}, ${JSON.stringify(match)}, NOW()
+        ${match.radiant_score || 0}, ${match.dire_score || 0}, ${match.radiant_win ? 1 : 0},
+        ${match.start_time}, ${match.duration || 0}, ${match.leagueid}, ${match.series_type || 'BO3'},
+        ${match.status || 'finished'}, ${JSON.stringify(match)}, NOW()
       )
       ON CONFLICT (match_id) DO UPDATE SET
         radiant_score = EXCLUDED.radiant_score,
