@@ -506,6 +506,8 @@ export default async function handler(req, res) {
       }
     }
 
+    console.log('[Sync] cn.length before save:', cn.length);
+
     // 保存 matches 和队伍 - 强制保存到数据库不管是否已存在
     let saved = 0;
     let dbSaved = 0;
