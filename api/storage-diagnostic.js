@@ -63,9 +63,11 @@ export default async function handler(req, res) {
       // Check matches table
       try {
         const matches = await db`SELECT COUNT(*) as count FROM matches`;
+        const sample = await db`SELECT match_id, league_id, radiant_team_name, dire_team_name FROM matches LIMIT 5`;
         result.neon.tables.matches = {
           exists: true,
-          count: matches[0]?.count || 0
+          count: matches[0]?.count || 0,
+          sample: sample
         };
       } catch (e) {
         result.neon.tables.matches = { error: e.message };
