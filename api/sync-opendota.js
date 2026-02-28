@@ -5,13 +5,19 @@
  * 2. 同步联赛/赛事数据 (tournaments)
  * 3. 构建 seriesByTournament 数据
  * 4. 更新 teams.json
+ *
+ * Storage: Dual-write to Redis and Neon PostgreSQL
  */
 
 import { createClient } from 'redis';
+import { neon } from '@neondatabase/serverless';
 
 const REDIS_URL = process.env.REDIS_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 let redis;
+let sql = null;
+
 async function getRedis() {
   if (!redis && REDIS_URL) {
     redis = createClient({ url: REDIS_URL });
@@ -20,15 +26,71 @@ async function getRedis() {
   return redis;
 }
 
+function getDb() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
+
 const OPENDOTA = 'https://api.opendota.com/api';
 
-// League IDs 映射到赛事 ID
+// League NAME 映射到赛事 ID (使用 league_name 因为 league_id 常为 null)
+const LEAGUE_NAME_MAP = {
+  'dream league season28': { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  'dreamleague season 28': { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  'dream league s28': { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  'dream league season27': { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  'dreamleague season 27': { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  'blast slam': { id: 'blast-slam', name: 'BLAST Slam', name_cn: 'BLAST 锦标赛', tier: 'S' },
+  'esl one': { id: 'esl-one', name: 'ESL One', name_cn: 'ESL One', tier: 'S' },
+  'pgl': { id: 'pgl', name: 'PGL', name_cn: 'PGL', tier: 'S' },
+  'ultras dota pro league': { id: 'ultras-dpl', name: 'Ultras Dota Pro League', name_cn: '超级DPL', tier: 'A' },
+  'destiny league': { id: 'destiny-league', name: 'Destiny League', name_cn: '命运联赛', tier: 'B' },
+  'epl championship': { id: 'epl-championship', name: 'EPL Championship', name_cn: 'EPL 锦标赛', tier: 'A' },
+  'snake trophy': { id: 'snake-trophy', name: 'Snake Trophy', name_cn: '蛇杯', tier: 'B' },
+  'dota 2 space league': { id: 'space-league', name: 'Dota 2 Space League', name_cn: '太空联赛', tier: 'C' },
+};
+
+// Fallback: League IDs 映射 (用于有 league_id 的情况)
 const LEAGUE_IDS = {
   19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
   18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
-  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'A' },
 };
+
+/**
+ * 根据 league_name 查找赛事信息
+ */
+function findTournamentByLeagueName(leagueName) {
+  if (!leagueName) return null;
+  const normalized = leagueName.toLowerCase().trim().replace(/\s+/g, '');
+  const trimmed = leagueName.toLowerCase().trim();
+
+  // Try exact match (with spaces removed)
+  if (LEAGUE_NAME_MAP[normalized]) {
+    return LEAGUE_NAME_MAP[normalized];
+  }
+  // Try exact match with original spacing
+  if (LEAGUE_NAME_MAP[trimmed]) {
+    return LEAGUE_NAME_MAP[trimmed];
+  }
+  // Try partial match
+  for (const [key, value] of Object.entries(LEAGUE_NAME_MAP)) {
+    const keyNormalized = key.replace(/\s+/g, '');
+    if (normalized.includes(keyNormalized) || keyNormalized.includes(normalized)) {
+      return value;
+    }
+  }
+  return null;
+}
+
+/**
+ * 根据 league_id 查找赛事信息 (备用)
+ */
+function findTournamentByLeagueId(leagueId) {
+  if (!leagueId) return null;
+  return LEAGUE_IDS[leagueId] || null;
+}
 
 // 中国战队 ID 映射
 const TEAMS = {
@@ -96,10 +158,16 @@ async function syncTournaments(r, matchesData) {
 
   for (const matchId of matchIds) {
     const m = matchesData[matchId];
-    if (!m.leagueid) continue;
 
-    const leagueId = String(m.leagueid);
-    const tournamentInfo = LEAGUE_IDS[leagueId];
+    // 优先使用 league_name 识别赛事 (因为 league_id 常为 null)
+    let tournamentInfo = null;
+    if (m.league_name) {
+      tournamentInfo = findTournamentByLeagueName(m.league_name);
+    }
+    // 备用: 使用 league_id
+    if (!tournamentInfo && m.leagueid) {
+      tournamentInfo = findTournamentByLeagueId(m.leagueid);
+    }
     if (!tournamentInfo) continue;
 
     const tournamentId = tournamentInfo.id;
@@ -150,19 +218,48 @@ async function syncTournaments(r, matchesData) {
     }
   }
 
-  // 构建 tournaments 列表
+  // 构建 tournaments 列表 - 从 seriesByTournament 的 key 构建
   const tournaments = [];
-  for (const [leagueId, info] of Object.entries(LEAGUE_IDS)) {
-    if (seriesByTournament[info.id] && seriesByTournament[info.id].length > 0) {
+  const addedTournamentIds = new Set();
+
+  // 合并所有可能的 tournament info 来源
+  const allTournamentInfo = { ...LEAGUE_NAME_MAP, ...LEAGUE_IDS };
+
+  for (const tournamentId of Object.keys(seriesByTournament)) {
+    if (addedTournamentIds.has(tournamentId)) continue;
+    if (seriesByTournament[tournamentId].length === 0) continue;
+
+    // 查找 tournament 信息
+    let info = allTournamentInfo[tournamentId];
+    if (!info) {
+      // 尝试从 league_name_map 的值中查找
+      for (const v of Object.values(LEAGUE_NAME_MAP)) {
+        if (v.id === tournamentId) {
+          info = v;
+          break;
+        }
+      }
+    }
+    if (!info) {
+      // 尝试从 league_ids 的值中查找
+      for (const v of Object.values(LEAGUE_IDS)) {
+        if (v.id === tournamentId) {
+          info = v;
+          break;
+        }
+      }
+    }
+
+    if (info) {
       tournaments.push({
         id: info.id,
         name: info.name,
         name_cn: info.name_cn,
         tier: info.tier,
         location: 'Online',
-        status: 'completed',
-        leagueid: parseInt(leagueId)
+        status: 'completed'
       });
+      addedTournamentIds.add(tournamentId);
     }
   }
 
@@ -173,6 +270,59 @@ async function syncTournaments(r, matchesData) {
   console.log(`Synced ${tournaments.length} tournaments with series data`);
 
   return { tournaments, seriesByTournament };
+}
+
+/**
+ * Save match to Neon database
+ */
+async function saveMatchToDb(db, match) {
+  if (!db) return;
+  try {
+    await db`
+      INSERT INTO matches (
+        match_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
+        radiant_team_logo, dire_team_id, dire_team_name, dire_team_name_cn,
+        dire_team_logo, radiant_score, dire_score, radiant_win, start_time,
+        duration, league_id, series_type, status, raw_json, updated_at
+      ) VALUES (
+        ${parseInt(match.match_id)}, ${match.radiant_team_id}, ${match.radiant_team_name},
+        ${match.radiant_team_name_cn}, ${match.radiant_team_logo}, ${match.dire_team_id},
+        ${match.dire_team_name}, ${match.dire_team_name_cn}, ${match.dire_team_logo},
+        ${match.radiant_score}, ${match.dire_score}, match.radiant_win === 1,
+        ${match.start_time}, ${match.duration}, ${match.leagueid}, ${match.series_type},
+        ${match.status}, ${JSON.stringify(match)}, NOW()
+      )
+      ON CONFLICT (match_id) DO UPDATE SET
+        radiant_score = EXCLUDED.radiant_score,
+        dire_score = EXCLUDED.dire_score,
+        radiant_win = EXCLUDED.radiant_win,
+        updated_at = NOW()
+    `;
+  } catch (e) {
+    console.error(`[DB] Failed to save match ${match.match_id}:`, e.message);
+  }
+}
+
+/**
+ * Save tournament to Neon database
+ */
+async function saveTournamentToDb(db, tournament) {
+  if (!db) return;
+  try {
+    await db`
+      INSERT INTO tournaments (id, name, name_cn, tier, location, status, league_id, updated_at)
+      VALUES (${tournament.id}, ${tournament.name}, ${tournament.name_cn},
+        ${tournament.tier}, ${tournament.location}, ${tournament.status},
+        ${tournament.leagueid}, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        name_cn = EXCLUDED.name_cn,
+        tier = EXCLUDED.tier,
+        updated_at = NOW()
+    `;
+  } catch (e) {
+    console.error(`[DB] Failed to save tournament ${tournament.id}:`, e.message);
+  }
 }
 
 function identify(name) {
@@ -245,6 +395,14 @@ export default async function handler(req, res) {
     await r.ping();
     console.log('Redis connected!');
 
+    // Get Neon DB
+    const db = getDb();
+    if (db) {
+      console.log('[DB] Neon database connected');
+    } else {
+      console.log('[DB] DATABASE_URL not configured, skipping database write');
+    }
+
     // 获取现有数据
     let existing = {};
     try {
@@ -280,8 +438,17 @@ export default async function handler(req, res) {
 
     // 保存 matches
     let saved = 0;
+    let dbSaved = 0;
     for (const m of cn) {
-      if (!existing[m.match_id]) { existing[m.match_id] = m; saved++; }
+      if (!existing[m.match_id]) {
+        existing[m.match_id] = m;
+        saved++;
+        // Dual-write to Neon
+        if (db) {
+          await saveMatchToDb(db, m);
+          dbSaved++;
+        }
+      }
     }
     await r.set('matches', JSON.stringify(existing));
 
@@ -291,9 +458,16 @@ export default async function handler(req, res) {
     // 同步 tournaments 数据
     const tournamentsResult = await syncTournaments(r, existing);
 
+    // Save tournaments to Neon
+    if (db) {
+      for (const t of tournamentsResult.tournaments) {
+        await saveTournamentToDb(db, t);
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      matches: { saved, total: Object.keys(existing).length },
+      matches: { saved, total: Object.keys(existing).length, dbSaved },
       tournaments: { count: tournamentsResult.tournaments.length, seriesCount: Object.keys(tournamentsResult.seriesByTournament).length }
     });
   } catch (e) {

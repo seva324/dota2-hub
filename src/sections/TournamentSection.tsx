@@ -22,7 +22,7 @@ interface HeroPick {
 }
 
 // Load heroes data
-let heroesData: Record<number, HeroData> = {};
+const heroesData: Record<number, HeroData> = {};
 
 async function loadHeroesData() {
   try {
@@ -95,7 +95,7 @@ interface TeamData {
 }
 
 // Load teams data for team abbreviations
-let teamsData: Record<string, TeamData> = {};
+const teamsData: Record<string, TeamData> = {};
 
 async function loadTeamsData() {
   try {

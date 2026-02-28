@@ -1,9 +1,6 @@
 /**
- * Dota2 比赛同步 API
- * 数据源: Liquipedia API (https://liquipedia.net/dota2/api.php)
- * 功能: 同步即将开始的比赛信息
- *
- * Storage: Dual-write to Redis and Neon PostgreSQL
+ * Liquipedia Data Sync API
+ * Fetches upcoming matches from Liquipedia and saves to Neon
  */
 
 import { neon } from '@neondatabase/serverless';
@@ -16,7 +13,6 @@ const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'az
 
 /**
  * 从 Liquipedia API 获取比赛数据
- * 使用 fetch API with compression support
  */
 async function fetchLiquipediaMatches() {
   try {
@@ -35,8 +31,6 @@ async function fetchLiquipediaMatches() {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
-      // Use automatic decompression
-      compress: true
     });
 
     console.log('[Liquipedia Sync] Response status:', response.status);
@@ -104,7 +98,7 @@ function parseLiquipediaMatches(html) {
 
   console.log('[Liquipedia Sync] HTML length:', html.length);
 
-  // Split by match-info div (Liquipedia uses this class)
+  // Split by match-info div
   const parts = html.split('<div class="match-info">');
 
   console.log('[Liquipedia Sync] Found', parts.length - 1, 'potential match sections');
@@ -150,11 +144,11 @@ function parseLiquipediaMatches(html) {
       const team1Info = identifyTeam(team1);
       const team2Info = identifyTeam(team2);
 
-      // Extract tournament - try multiple patterns
+      // Extract tournament
       let tournament = '';
       const tourneySection = part.substring(endIdx);
 
-      // Pattern 1: Try to match the tournament link
+      // Try multiple patterns
       const tourneyMatch = tourneySection.match(/<div class="match-info-tournament"[^>]*>[^<]*(?:<a[^>]*>)?([^<]+)/);
       if (tourneyMatch) {
         tournament = tourneyMatch[1].trim();
@@ -166,13 +160,6 @@ function parseLiquipediaMatches(html) {
         if (dataTourneyMatch) tournament = dataTourneyMatch[1].trim();
       }
 
-      // Pattern 3: Try to find text in tournament cell
-      if (!tournament) {
-        const cellMatch = tourneySection.match(/<td[^>]*class="[^"]*tournament[^"]*"[^>]*>([^<]+)/i);
-        if (cellMatch) tournament = cellMatch[1].trim();
-      }
-
-      // Debug: log if tournament is empty
       if (!tournament) {
         console.log(`[Liquipedia Sync] Warning: Could not extract tournament for ${team1} vs ${team2}`);
       }
@@ -182,7 +169,7 @@ function parseLiquipediaMatches(html) {
         team1,
         team2,
         start_time: matchTime,
-        tournament_name: tournament || null, // Leave null if not extracted
+        tournament_name: tournament || null,
         team1Info,
         team2Info,
         status: 'upcoming',
@@ -213,7 +200,6 @@ function isChineseTeam(teamName) {
  */
 function convertToAppFormat(matches) {
   return matches.map(m => {
-    // Use team info from Liquipedia if available, otherwise detect
     const radiantInfo = m.team1Info || { name_cn: isChineseTeam(m.team1) ? m.team1 : undefined, is_cn: isChineseTeam(m.team1) };
     const direInfo = m.team2Info || { name_cn: isChineseTeam(m.team2) ? m.team2 : undefined, is_cn: isChineseTeam(m.team2) };
 
@@ -252,6 +238,8 @@ async function saveUpcomingToDb(db, match) {
       )
       ON CONFLICT (id) DO UPDATE SET
         start_time = EXCLUDED.start_time,
+        tournament_name = EXCLUDED.tournament_name,
+        tournament_name_cn = EXCLUDED.tournament_name_cn,
         status = 'upcoming',
         updated_at = NOW()
     `;
@@ -261,7 +249,6 @@ async function saveUpcomingToDb(db, match) {
 }
 
 export default async function handler(req, res) {
-  // CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -274,55 +261,29 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Initialize Redis client
-  let redisClient;
-  const REDIS_URL = process.env.REDIS_URL;
-
-  if (!REDIS_URL) {
+  // Initialize Neon DB
+  let db = null;
+  if (DATABASE_URL) {
+    try {
+      db = neon(DATABASE_URL);
+      await db`SELECT 1`;
+      console.log('[Liquipedia Sync] Neon DB connected');
+    } catch (dbError) {
+      console.error('[Liquipedia Sync] Neon DB connection failed:', dbError.message);
+      return res.status(503).json({
+        error: 'Database unavailable',
+        message: 'Failed to connect to Neon: ' + dbError.message
+      });
+    }
+  } else {
     return res.status(503).json({
-      error: 'Storage service unavailable',
-      message: 'REDIS_URL environment variable is not configured.'
-    });
-  }
-
-  try {
-    const redis = await import('redis');
-    redisClient = redis.createClient({ url: REDIS_URL });
-    await redisClient.connect();
-    console.log('[Liquipedia Sync] Redis connected');
-  } catch (redisError) {
-    console.error('[Liquipedia Sync] Redis connection failed:', redisError.message);
-    return res.status(503).json({
-      error: 'Storage service unavailable',
-      message: 'Failed to connect to Redis: ' + redisError.message
+      error: 'Database not configured',
+      message: 'DATABASE_URL environment variable is not set'
     });
   }
 
   try {
     console.log('[Liquipedia Sync] Starting...');
-
-    // Initialize Neon DB
-    let db = null;
-    if (DATABASE_URL) {
-      try {
-        db = neon(DATABASE_URL);
-        await db`SELECT 1`;
-        console.log('[Liquipedia Sync] Neon DB connected');
-      } catch (dbError) {
-        console.error('[Liquipedia Sync] Neon DB connection failed:', dbError.message);
-      }
-    }
-
-    // 获取现有 upcoming 数据
-    let existingUpcoming = [];
-    try {
-      const data = await redisClient.get('upcoming');
-      existingUpcoming = data ? JSON.parse(data) : [];
-      console.log(`[Liquipedia Sync] Existing matches: ${existingUpcoming.length}`);
-    } catch (kvError) {
-      console.error('[Liquipedia Sync] Redis get failed:', kvError.message);
-      existingUpcoming = [];
-    }
 
     // 从 Liquipedia API 获取数据
     console.log('[Liquipedia Sync] Fetching from Liquipedia API...');
@@ -340,58 +301,16 @@ export default async function handler(req, res) {
     // 转换为应用格式
     const appMatches = convertToAppFormat(parsedMatches);
 
-    // 与现有数据合并
-    const allMatches = [...existingUpcoming];
-
-    for (const match of appMatches) {
-      const isDuplicate = allMatches.some(
-        existing =>
-          existing.radiant_team_name === match.radiant_team_name &&
-          existing.dire_team_name === match.dire_team_name &&
-          Math.abs(existing.start_time - match.start_time) < 3600 // 1小时内视为同一场
-      );
-
-      if (!isDuplicate) {
-        allMatches.push(match);
-      }
-    }
-
-    // 按时间排序，只保留 upcoming 状态
-    const upcomingMatches = allMatches
-      .filter(m => m.start_time > Date.now() / 1000)
-      .sort((a, b) => a.start_time - b.start_time)
-      .slice(0, 50);
-
-    // 保存到 Redis
-    try {
-      await redisClient.set('upcoming', JSON.stringify(upcomingMatches));
-      console.log(`[Liquipedia Sync] Saved ${upcomingMatches.length} upcoming matches to Redis`);
-    } catch (kvError) {
-      console.error('[Liquipedia Sync] Redis set failed:', kvError.message);
-    }
-
-    // Save to Neon (dual-write)
+    // Save to Neon
     let dbSaved = 0;
-    if (db) {
-      for (const match of upcomingMatches) {
-        await saveUpcomingToDb(db, match);
-        dbSaved++;
-      }
-      console.log(`[Liquipedia Sync] Saved ${dbSaved} upcoming matches to Neon`);
+    for (const match of appMatches) {
+      await saveUpcomingToDb(db, match);
+      dbSaved++;
     }
-
-    // 同时保存到 Vercel KV (用于 upcoming API)
-    try {
-      const kvModule = await import('@vercel/kv');
-      const kv = kvModule.kv;
-      await kv.set('upcoming', upcomingMatches);
-      console.log(`[Liquipedia Sync] Saved ${upcomingMatches.length} upcoming matches to KV`);
-    } catch (kvError) {
-      console.log('[Liquipedia Sync] KV not available:', kvError.message);
-    }
+    console.log(`[Liquipedia Sync] Saved ${dbSaved} upcoming matches to Neon`);
 
     // 打印 XG 比赛
-    const xgMatches = upcomingMatches.filter(m =>
+    const xgMatches = appMatches.filter(m =>
       m.radiant_team_name?.toLowerCase().includes('xg') ||
       m.dire_team_name?.toLowerCase().includes('xg') ||
       m.radiant_team_name?.toLowerCase().includes('xtreme') ||
@@ -408,9 +327,9 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      count: upcomingMatches.length,
+      count: appMatches.length,
       xgMatches: xgMatches.length,
-      message: `Synced ${upcomingMatches.length} upcoming matches`
+      message: `Synced ${appMatches.length} upcoming matches`
     });
 
   } catch (error) {
@@ -419,14 +338,5 @@ export default async function handler(req, res) {
       error: 'Sync failed',
       message: error.message
     });
-  } finally {
-    // 确保 Redis 连接关闭
-    if (redisClient) {
-      try {
-        await redisClient.disconnect();
-      } catch (disconnectError) {
-        console.error('[Liquipedia Sync] Redis disconnect error:', disconnectError.message);
-      }
-    }
   }
 }
