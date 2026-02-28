@@ -139,12 +139,13 @@ export default async function handler(req, res) {
 
       // Get matches
       const matches = await db`
-        SELECT match_id, league_id FROM matches
+        SELECT * FROM matches
         ORDER BY start_time DESC
-        LIMIT 10
+        LIMIT 500
       `;
 
-      console.log('[Tournaments API] Sample matches league_ids:', matches.map(m => ({ match_id: m.match_id, league_id: m.league_id, type: typeof m.league_id })));
+      console.log('[Tournaments API] Found', matches.length, 'matches');
+      console.log('[Tournaments API] Sample matches:', matches.slice(0, 3).map(m => ({ match_id: m.match_id, league_id: m.league_id, radiant: m.radiant_team_name })));
       console.log('[Tournaments API] Tournament lookup keys:', Object.keys(tournamentByLeagueId));
 
       // Get teams for logo lookup
