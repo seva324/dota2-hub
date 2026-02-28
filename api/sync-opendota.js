@@ -126,11 +126,76 @@ const TEAM_LOGOS = {
   'spirit': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2583775.png',
 };
 
-// 获取队伍 Logo
+// 获取队伍 Logo - 同步版本，只检查本地缓存
 function getTeamLogo(teamName) {
   if (!teamName) return null;
   const name = teamName.toLowerCase();
   return TEAM_LOGOS[name] || null;
+}
+
+// 获取队伍 Logo - 异步版本，检查本地缓存 + 数据库
+async function getTeamLogoFromDb(db, teamName) {
+  if (!teamName) return null;
+  const name = teamName.toLowerCase();
+
+  // 先检查本地缓存
+  if (TEAM_LOGOS[name]) return TEAM_LOGOS[name];
+
+  // 如果数据库可用，从数据库获取
+  if (db) {
+    try {
+      const [team] = await db`SELECT logo_url FROM teams WHERE LOWER(name) = ${name} OR LOWER(name_cn) = ${name} OR LOWER(tag) = ${name}`;
+      if (team?.logo_url) {
+        return team.logo_url;
+      }
+    } catch (e) {
+      console.log(`[Teams] DB query failed: ${e.message}`);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 保存队伍到数据库（如果不存在则创建）
+ */
+async function saveTeamToDb(db, teamName, teamId = null) {
+  if (!db || !teamName) return;
+
+  // 检查队伍是否已存在
+  const [existing] = await db`SELECT id FROM teams WHERE LOWER(name) = ${teamName.toLowerCase()}`;
+
+  if (existing) return; // 已存在
+
+  // 调用 OpenDota API 获取队伍信息
+  try {
+    const opendotaTeamsUrl = teamId
+      ? `${OPENDOTA}/teams/${teamId}`
+      : `${OPENDOTA}/teams?search=${encodeURIComponent(teamName)}`;
+    const response = await fetch(opendotaTeamsUrl);
+    if (!response.ok) return;
+
+    const teamData = teamId ? [await response.json()] : await response.json();
+    const team = teamData.find(t => t.name?.toLowerCase() === teamName.toLowerCase()) || teamData[0];
+
+    if (team?.team_id) {
+      // 识别中文名
+      const nameCn = identify(teamName).name_cn;
+      const isCn = identify(teamName).is_cn;
+
+      await db`
+        INSERT INTO teams (id, name, name_cn, tag, logo_url, region, is_cn_team, created_at, updated_at)
+        VALUES (${String(team.team_id)}, ${team.name}, ${nameCn}, ${team.tag || ''}, ${team.logo_url || ''}, ${team.region || 'Unknown'}, ${isCn ? 1 : 0}, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Date.now() / 1000)})
+        ON CONFLICT (id) DO UPDATE SET
+          logo_url = EXCLUDED.logo_url,
+          name_cn = EXCLUDED.name_cn,
+          updated_at = NOW()
+      `;
+      console.log(`[Teams] Added/Updated: ${team.name} (${team.team_id})`);
+    }
+  } catch (e) {
+    console.log(`[Teams] Failed to fetch team ${teamName}: ${e.message}`);
+  }
 }
 
 async function fetchJSON(url) {
@@ -436,15 +501,29 @@ export default async function handler(req, res) {
       }
     }
 
-    // 保存 matches
+    // 保存 matches 和队伍
     let saved = 0;
     let dbSaved = 0;
+    const processedTeams = new Set();
+
     for (const m of cn) {
       if (!existing[m.match_id]) {
         existing[m.match_id] = m;
         saved++;
-        // Dual-write to Neon
+
+        // 自动保存新队伍到数据库
         if (db) {
+          // 保存 radiant team
+          if (m.radiant_team_name && !processedTeams.has(m.radiant_team_name.toLowerCase())) {
+            await saveTeamToDb(db, m.radiant_team_name, m.radiant_team_id);
+            processedTeams.add(m.radiant_team_name.toLowerCase());
+          }
+          // 保存 dire team
+          if (m.dire_team_name && !processedTeams.has(m.dire_team_name.toLowerCase())) {
+            await saveTeamToDb(db, m.dire_team_name, m.dire_team_id);
+            processedTeams.add(m.dire_team_name.toLowerCase());
+          }
+
           await saveMatchToDb(db, m);
           dbSaved++;
         }

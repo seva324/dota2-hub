@@ -112,6 +112,22 @@ export default async function handler(req, res) {
     `;
     console.log('[Init DB] Created tournament_series table');
 
+    // Create teams table
+    await db`
+      CREATE TABLE IF NOT EXISTS teams (
+        id TEXT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        name_cn VARCHAR(255),
+        tag VARCHAR(50),
+        logo_url VARCHAR(500),
+        region VARCHAR(100),
+        is_cn_team BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    console.log('[Init DB] Created teams table');
+
     // Create indexes
     await db`CREATE INDEX IF NOT EXISTS idx_matches_start_time ON matches(start_time DESC)`;
     await db`CREATE INDEX IF NOT EXISTS idx_matches_league_id ON matches(league_id)`;

@@ -6,6 +6,7 @@
 import { neon } from '@neondatabase/serverless';
 
 const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
+const OPENDOTA = 'https://api.opendota.com/api';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 // 中国战队关键词
@@ -248,6 +249,41 @@ async function saveUpcomingToDb(db, match) {
   }
 }
 
+/**
+ * 保存队伍到数据库（如果不存在则创建）
+ */
+async function saveTeamToDb(db, teamName) {
+  if (!db || !teamName) return;
+
+  // 检查队伍是否已存在
+  try {
+    const [existing] = await db`SELECT id FROM teams WHERE LOWER(name) = ${teamName.toLowerCase()}`;
+    if (existing) return;
+
+    // 调用 OpenDota API 获取队伍信息
+    const response = await fetch(`${OPENDOTA}/teams?search=${encodeURIComponent(teamName)}`);
+    if (!response.ok) return;
+
+    const teams = await response.json();
+    const team = teams.find(t => t.name?.toLowerCase() === teamName.toLowerCase()) || teams[0];
+
+    if (team?.team_id) {
+      const info = identifyTeam(teamName);
+      await db`
+        INSERT INTO teams (id, name, name_cn, tag, logo_url, region, is_cn_team, created_at, updated_at)
+        VALUES (${String(team.team_id)}, ${team.name}, ${info.name_cn}, ${team.tag || ''}, ${team.logo_url || ''}, ${team.region || 'Unknown'}, ${info.is_cn ? 1 : 0}, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Date.now() / 1000)})
+        ON CONFLICT (id) DO UPDATE SET
+          logo_url = EXCLUDED.logo_url,
+          name_cn = EXCLUDED.name_cn,
+          updated_at = NOW()
+      `;
+      console.log(`[Teams] Added: ${team.name} (${team.team_id})`);
+    }
+  } catch (e) {
+    console.log(`[Teams] Failed to save ${teamName}: ${e.message}`);
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -303,9 +339,22 @@ export default async function handler(req, res) {
 
     // Save to Neon
     let dbSaved = 0;
+    const processedTeams = new Set();
     for (const match of appMatches) {
       await saveUpcomingToDb(db, match);
       dbSaved++;
+
+      // 自动保存新队伍到数据库
+      if (db) {
+        if (match.radiant_team_name && !processedTeams.has(match.radiant_team_name.toLowerCase())) {
+          await saveTeamToDb(db, match.radiant_team_name);
+          processedTeams.add(match.radiant_team_name.toLowerCase());
+        }
+        if (match.dire_team_name && !processedTeams.has(match.dire_team_name.toLowerCase())) {
+          await saveTeamToDb(db, match.dire_team_name);
+          processedTeams.add(match.dire_team_name.toLowerCase());
+        }
+      }
     }
     console.log(`[Liquipedia Sync] Saved ${dbSaved} upcoming matches to Neon`);
 
