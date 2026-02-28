@@ -343,6 +343,7 @@ async function syncTournaments(r, matchesData) {
 async function saveMatchToDb(db, match) {
   if (!db) return;
   try {
+    console.log('[DB] Saving match:', match.match_id, 'leagueid:', match.leagueid, 'radiant:', match.radiant_team_name);
     await db`
       INSERT INTO matches (
         match_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
@@ -363,6 +364,7 @@ async function saveMatchToDb(db, match) {
         radiant_win = EXCLUDED.radiant_win,
         updated_at = NOW()
     `;
+    console.log('[DB] Saved match:', match.match_id);
   } catch (e) {
     console.error(`[DB] Failed to save match ${match.match_id}:`, e.message);
   }
@@ -505,11 +507,14 @@ export default async function handler(req, res) {
     let saved = 0;
     let dbSaved = 0;
     const processedTeams = new Set();
+    console.log('[Sync] Total new matches to save:', cn.length);
+    console.log('[Sync] Existing matches in Redis:', Object.keys(existing).length);
 
     for (const m of cn) {
       if (!existing[m.match_id]) {
         existing[m.match_id] = m;
         saved++;
+        console.log('[Sync] New match:', m.match_id, 'leagueid:', m.leagueid);
 
         // 自动保存新队伍到数据库
         if (db) {
