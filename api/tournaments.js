@@ -1,33 +1,25 @@
 /**
  * 获取赛事数据 API
- * 数据源: Neon PostgreSQL (primary), Redis (fallback), Local JSON (final fallback)
+ * 数据源: Neon PostgreSQL (primary), Local JSON (fallback)
  */
 
 import fs from 'fs';
 import path from 'path';
 import { neon } from '@neondatabase/serverless';
 
-const REDIS_URL = process.env.REDIS_URL;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-// Redis client singleton
-let redis = null;
-
-async function getRedis() {
-  if (!redis && REDIS_URL) {
-    const { createClient } = await import('redis');
-    redis = createClient({ url: REDIS_URL });
-    await redis.connect();
-  }
-  return redis;
-}
 
 // Neon SQL client singleton
 let sql = null;
 
 function getDb() {
   if (!sql && DATABASE_URL) {
-    sql = neon(DATABASE_URL);
+    try {
+      sql = neon(DATABASE_URL);
+    } catch (error) {
+      console.error('[Tournaments API] Failed to create Neon client:', error.message);
+      return null;
+    }
   }
   return sql;
 }
@@ -220,31 +212,6 @@ export default async function handler(req, res) {
 
         const processed = processTournaments(neonData);
         return res.status(200).json(processed);
-      }
-    }
-
-    // Try Redis second
-    let redisClient;
-    try {
-      redisClient = await getRedis();
-    } catch (redisError) {
-      console.log('[Tournaments API] Redis not available:', redisError.message);
-    }
-
-    if (redisClient) {
-      try {
-        const tournaments = await redisClient.get('tournaments');
-
-        if (tournaments) {
-          console.log('[Tournaments API] Found data in Redis');
-          const parsed = JSON.parse(tournaments);
-          const processed = processTournaments(parsed);
-          return res.status(200).json(processed);
-        } else {
-          console.log('[Tournaments API] No data in Redis, using fallback');
-        }
-      } catch (redisError) {
-        console.log('[Tournaments API] Redis get failed:', redisError.message);
       }
     }
 

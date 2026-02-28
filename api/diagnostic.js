@@ -2,8 +2,6 @@
  * 诊断 API - 用于调试 dltv.org 抓取问题
  */
 
-import { createClient } from 'redis';
-
 const DLTV_URL = 'https://dltv.org/matches';
 
 export default async function handler(req, res) {

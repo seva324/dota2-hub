@@ -1,25 +1,26 @@
 /**
  * 获取比赛数据 API
+ * 数据源: Neon PostgreSQL (primary), Local JSON (fallback)
  */
 
-import { createClient } from 'redis';
+import { neon } from '@neondatabase/serverless';
 import fs from 'fs';
 import path from 'path';
 
-const REDIS_URL = process.env.REDIS_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-let redis;
-async function getRedis() {
-  if (!redis && REDIS_URL) {
+let sql = null;
+
+function getDb() {
+  if (!sql && DATABASE_URL) {
     try {
-      redis = createClient({ url: REDIS_URL });
-      await redis.connect();
+      sql = neon(DATABASE_URL);
     } catch (error) {
-      console.error('Redis connection error:', error);
+      console.error('[Matches API] Failed to create Neon client:', error.message);
       return null;
     }
   }
-  return redis;
+  return sql;
 }
 
 // Fallback to local JSON file
@@ -34,6 +35,52 @@ function getLocalMatches() {
   }
 }
 
+// Query matches from Neon
+async function getMatchesFromNeon(db) {
+  if (!db) return null;
+
+  try {
+    const matches = await db`
+      SELECT match_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
+             radiant_team_logo, dire_team_id, dire_team_name, dire_team_name_cn,
+             dire_team_logo, radiant_score, dire_score, radiant_win,
+             start_time, duration, league_id, series_type, status
+      FROM matches
+      ORDER BY start_time DESC
+      LIMIT 500
+    `;
+
+    if (matches.length === 0) {
+      return null;
+    }
+
+    return matches.map(m => ({
+      match_id: String(m.match_id),
+      radiant_team_id: m.radiant_team_id,
+      radiant_team_name: m.radiant_team_name,
+      radiant_team_name_cn: m.radiant_team_name_cn,
+      radiant_team_logo: m.radiant_team_logo,
+      dire_team_id: m.dire_team_id,
+      dire_team_name: m.dire_team_name,
+      dire_team_name_cn: m.dire_team_name_cn,
+      dire_team_logo: m.dire_team_logo,
+      radiant_score: m.radiant_score,
+      dire_score: m.dire_score,
+      radiant_win: m.radiant_win ? 1 : 0,
+      radiant_game_wins: m.radiant_win ? 1 : 0,
+      dire_game_wins: m.radiant_win ? 0 : 1,
+      start_time: m.start_time,
+      duration: m.duration,
+      league_id: m.league_id,
+      series_type: m.series_type || 'BO3',
+      status: m.status
+    }));
+  } catch (e) {
+    console.error('[Matches API] Neon query failed:', e.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -44,27 +91,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const r = await getRedis();
-    
-    if (r) {
-      const matchesListJson = await r.get('matches:list');
-      
-      if (matchesListJson) {
-        const matchesList = JSON.parse(matchesListJson);
-        return res.status(200).json(matchesList);
-      }
-      
-      const matchesJson = await r.get('matches');
-      if (matchesJson) {
-        const matches = JSON.parse(matchesJson);
-        const list = Object.values(matches)
-          .sort((a, b) => b.start_time - a.start_time)
-          .slice(0, 500);
-        return res.status(200).json(list);
+    // Try Neon first
+    const db = getDb();
+    if (db) {
+      const neonData = await getMatchesFromNeon(db);
+      if (neonData && neonData.length > 0) {
+        console.log('[Matches API] Found data in Neon');
+        return res.status(200).json(neonData);
       }
     }
-    
+
     // Fallback to local JSON file
+    console.log('[Matches API] Using local JSON fallback');
     const localMatches = getLocalMatches();
     const sortedMatches = localMatches
       .sort((a, b) => b.start_time - a.start_time)

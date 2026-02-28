@@ -1,24 +1,77 @@
 /**
  * 获取即将开始的比赛 API
- * 数据源: Redis (由 sync-liquipedia API 写入)
- * 回退: 本地 JSON 文件
+ * 数据源: Neon PostgreSQL (primary), Local JSON (fallback)
  */
 
 import fs from 'fs';
 import path from 'path';
+import { neon } from '@neondatabase/serverless';
+import { mapTier } from './utils/tier-mapper.js';
 
-const REDIS_URL = process.env.REDIS_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-// Redis client singleton
-let redis = null;
-
-async function getRedis() {
-  if (!redis && REDIS_URL) {
-    const { createClient } = await import('redis');
-    redis = createClient({ url: REDIS_URL });
-    await redis.connect();
+// Load teams data for logo matching
+function getTeams() {
+  try {
+    const localPath = path.join(process.cwd(), 'public', 'data', 'teams.json');
+    const data = fs.readFileSync(localPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('[Upcoming API] Error reading local teams:', error);
+    return [];
   }
-  return redis;
+}
+
+// Create a map of team names to logo URLs
+function createTeamLogoMap(teams) {
+  const logoMap = new Map();
+  teams.forEach(team => {
+    logoMap.set(team.name.toLowerCase(), team.logo_url);
+    if (team.name_cn) {
+      logoMap.set(team.name_cn.toLowerCase(), team.logo_url);
+    }
+    if (team.tag) {
+      logoMap.set(team.tag.toLowerCase(), team.logo_url);
+    }
+  });
+  return logoMap;
+}
+
+// Find logo URL for a team name with fuzzy matching
+function findTeamLogo(logoMap, teamName) {
+  if (!teamName) return null;
+
+  const normalizedName = teamName.toLowerCase().trim();
+
+  // Exact match first
+  if (logoMap.has(normalizedName)) {
+    return logoMap.get(normalizedName);
+  }
+
+  // Fuzzy match
+  for (const [key, logoUrl] of logoMap.entries()) {
+    if (key.length <= 2) continue;
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return logoUrl;
+    }
+  }
+
+  return null;
+}
+
+// Neon SQL client singleton
+let sql = null;
+
+function getDb() {
+  if (!sql && DATABASE_URL) {
+    try {
+      sql = neon(DATABASE_URL);
+    } catch (error) {
+      console.error('[Upcoming API] Failed to create Neon client:', error.message);
+      return null;
+    }
+  }
+  return sql;
 }
 
 // Fallback to local JSON file
@@ -33,6 +86,55 @@ function getLocalUpcoming() {
   }
 }
 
+// Query upcoming from Neon
+async function getUpcomingFromNeon(db) {
+  if (!db) return null;
+
+  try {
+    const now = Math.floor(Date.now() / 1000);
+
+    const matches = await db`
+      SELECT id, match_id, radiant_team_name, radiant_team_name_cn,
+             dire_team_name, dire_team_name_cn, start_time, series_type,
+             tournament_name, tournament_name_cn, league_id, status, source
+      FROM upcoming_matches
+      WHERE start_time > ${now}
+      ORDER BY start_time ASC
+      LIMIT 50
+    `;
+
+    if (matches.length === 0) {
+      return null;
+    }
+
+    // Load teams for logo matching
+    const teams = getTeams();
+    const logoMap = createTeamLogoMap(teams);
+
+    return matches.map(m => ({
+      id: m.id,
+      match_id: m.match_id,
+      radiant_team_name: m.radiant_team_name,
+      radiant_team_name_cn: m.radiant_team_name_cn,
+      radiant_team_logo: findTeamLogo(logoMap, m.radiant_team_name) || findTeamLogo(logoMap, m.radiant_team_name_cn),
+      dire_team_name: m.dire_team_name,
+      dire_team_name_cn: m.dire_team_name_cn,
+      dire_team_logo: findTeamLogo(logoMap, m.dire_team_name) || findTeamLogo(logoMap, m.dire_team_name_cn),
+      start_time: m.start_time,
+      series_type: m.series_type,
+      tournament_name: m.tournament_name,
+      tournament_name_cn: m.tournament_name_cn,
+      league_id: m.league_id,
+      tier: mapTier(m.tournament_name, m.league_id),
+      status: m.status,
+      source: m.source
+    }));
+  } catch (e) {
+    console.error('[Upcoming API] Neon query failed:', e.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -43,38 +145,38 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Try Redis first
-    let redisClient;
-    try {
-      redisClient = await getRedis();
-    } catch (redisError) {
-      console.log('[Upcoming API] Redis not available:', redisError.message);
-    }
-
-    if (redisClient) {
-      try {
-        const upcoming = await redisClient.get('upcoming');
-
-        if (upcoming) {
-          console.log('[Upcoming API] Found data in Redis');
-          const parsed = JSON.parse(upcoming);
-          return res.status(200).json(parsed);
-        } else {
-          console.log('[Upcoming API] No data in Redis, using fallback');
-        }
-      } catch (redisError) {
-        console.log('[Upcoming API] Redis get failed:', redisError.message);
+    // Try Neon first
+    const db = getDb();
+    if (db) {
+      const neonData = await getUpcomingFromNeon(db);
+      if (neonData && neonData.length > 0) {
+        console.log('[Upcoming API] Found data in Neon');
+        return res.status(200).json(neonData);
       }
     }
 
     // Fallback to local JSON file
     console.log('[Upcoming API] Using local JSON fallback');
-    const localUpcoming = getLocalUpcoming();
+    const teams = getTeams();
+    const logoMap = createTeamLogoMap(teams);
+    const localUpcoming = getLocalUpcoming().map(m => ({
+      ...m,
+      radiant_team_logo: m.radiant_team_logo || findTeamLogo(logoMap, m.radiant_team_name) || findTeamLogo(logoMap, m.radiant_team_name_cn),
+      dire_team_logo: m.dire_team_logo || findTeamLogo(logoMap, m.dire_team_name) || findTeamLogo(logoMap, m.dire_team_name_cn),
+      tier: mapTier(m.tournament_name, m.league_id)
+    }));
     return res.status(200).json(localUpcoming);
   } catch (error) {
     console.error('[Upcoming API] Error:', error);
     // Fallback to local JSON on error
-    const localUpcoming = getLocalUpcoming();
+    const teams = getTeams();
+    const logoMap = createTeamLogoMap(teams);
+    const localUpcoming = getLocalUpcoming().map(m => ({
+      ...m,
+      radiant_team_logo: m.radiant_team_logo || findTeamLogo(logoMap, m.radiant_team_name) || findTeamLogo(logoMap, m.radiant_team_name_cn),
+      dire_team_logo: m.dire_team_logo || findTeamLogo(logoMap, m.dire_team_name) || findTeamLogo(logoMap, m.dire_team_name_cn),
+      tier: mapTier(m.tournament_name, m.league_id)
+    }));
     return res.status(200).json(localUpcoming);
   }
 }
