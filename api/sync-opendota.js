@@ -341,13 +341,9 @@ async function syncTournaments(r, matchesData) {
  * Save match to Neon database
  */
 async function saveMatchToDb(db, match) {
-  if (!db) {
-    console.log('[DB] No db connection, skipping');
-    return;
-  }
+  if (!db) return;
   try {
-    console.log('[DB] Saving match:', match.match_id, 'leagueid:', match.leagueid, 'radiant:', match.radiant_team_name);
-    const result = await db`
+    await db`
       INSERT INTO matches (
         match_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
         radiant_team_logo, dire_team_id, dire_team_name, dire_team_name_cn,
@@ -367,7 +363,6 @@ async function saveMatchToDb(db, match) {
         radiant_win = EXCLUDED.radiant_win,
         updated_at = NOW()
     `;
-    console.log('[DB] Saved match:', match.match_id, 'result:', result.count);
   } catch (e) {
     console.error(`[DB] Failed to save match ${match.match_id}:`, e.message, e.stack);
   }
@@ -506,24 +501,18 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log('[Sync] cn.length before save:', cn.length);
-
     // 保存 matches 和队伍 - 强制保存到数据库不管是否已存在
     let saved = 0;
     let dbSaved = 0;
     const processedTeams = new Set();
-    console.log('[Sync] Total matches to process:', cn.length);
-    console.log('[Sync] Existing matches in Redis:', Object.keys(existing).length);
 
     // 强制保存所有比赛到数据库
     for (const m of cn) {
       existing[m.match_id] = m;
       saved++;
 
-      // 强制保存到 Neon 数据库
+      // 保存到 Neon 数据库
       if (db) {
-        console.log('[Sync] Saving to DB:', m.match_id, 'leagueid:', m.leagueid);
-
         // 自动保存新队伍到数据库
         if (db) {
           // 保存 radiant team

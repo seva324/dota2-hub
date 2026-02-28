@@ -131,7 +131,6 @@ export default async function handler(req, res) {
       // Create tournament lookup by league_id
       const tournamentByLeagueId = {};
       for (const t of tournaments) {
-        console.log('[Tournaments] Tournament:', t.id, 'league_id:', t.league_id, 'type:', typeof t.league_id);
         if (t.league_id !== null && t.league_id !== undefined) {
           tournamentByLeagueId[t.league_id] = t;
         }
@@ -139,13 +138,10 @@ export default async function handler(req, res) {
 
       // Get matches
       const matches = await db`
-        SELECT match_id, league_id, radiant_team_name, dire_team_name FROM matches
+        SELECT * FROM matches
         ORDER BY start_time DESC
-        LIMIT 10
+        LIMIT 500
       `;
-
-      console.log('[Tournaments API] Sample matches:', JSON.stringify(matches));
-      console.log('[Tournaments API] Tournament lookup keys:', Object.keys(tournamentByLeagueId));
 
       // Get teams for logo lookup
       const teams = await db`SELECT * FROM teams`;
