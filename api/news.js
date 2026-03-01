@@ -40,50 +40,69 @@ async function scrapeHawkLive() {
     const response = await fetchWithTimeout(`${baseUrl}${tagUrl}`, {}, 15000);
     const html = await response.text();
 
-    // Look for embedded posts JSON in the HTML
-    const postsMatch = html.match(/"posts"\s*:\s*\[(\{.*?\}|\[.*?\])*\]/s);
-    console.log('[News API] Posts match found:', !!postsMatch);
+    // Look for embedded posts JSON in the HTML - more flexible pattern
+    const postsMatch = html.match(/"posts"\s*:\s*\[/);
+    console.log('[News API] Posts pattern found:', !!postsMatch);
+
     if (postsMatch) {
-      try {
-        // Extract just the posts array content
-        const postsJson = '{' + postsMatch[0] + '}';
-        const decodedHtml = postsJson
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>');
+      // Find the start of the posts array
+      const startIdx = html.indexOf('"posts":[');
+      if (startIdx !== -1) {
+        // Find matching closing bracket
+        let bracketCount = 0;
+        let endIdx = startIdx + 8; // start after "["
+        let foundStart = false;
 
-        const data = JSON.parse(decodedHtml);
-        const posts = data.posts || [];
-        console.log('[News API] Parsed posts count:', posts.length);
-
-        if (Array.isArray(posts) && posts.length > 0) {
-          const items = posts.slice(0, 12).map(post => {
-            // Get image URL from variants
-            let imageUrl = post.image?.url;
-            if (post.image?.variants && post.image.variants.length > 0) {
-              // Prefer webp variant
-              const webp = post.image.variants.find(v => v.format === 'webp');
-              imageUrl = webp?.url || post.image.variants[0].url;
-            }
-
-            return {
-              id: generateId(post.slug || String(post.id), source),
-              title: post.title || 'Hawk Live News',
-              summary: post.image?.altText || '',
-              url: `${baseUrl}/posts/${post.slug || post.id}`,
-              imageUrl: imageUrl,
-              source: 'Hawk Live',
-              publishedAt: new Date(post.publishAt || post.publishedAt || post.created_at),
-              category: 'tournament',
-            };
-          });
-
-          return { items, source: 'hawk', success: true };
+        for (let i = startIdx + 8; i < html.length; i++) {
+          if (html[i] === '[') { bracketCount++; foundStart = true; }
+          else if (html[i] === ']') {
+            if (foundStart && bracketCount === 0) { endIdx = i; break; }
+            bracketCount--;
+          }
         }
-      } catch (e) {
-        console.log('[News API] Failed to parse posts JSON:', e.message);
+
+        const postsJson = html.slice(startIdx, endIdx + 1);
+        console.log('[News API] Posts JSON slice length:', postsJson.length);
+
+        try {
+          // Decode HTML entities
+          const decoded = postsJson
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>');
+
+          const posts = JSON.parse(decoded);
+          console.log('[News API] Parsed posts count:', posts.length);
+
+          if (Array.isArray(posts) && posts.length > 0) {
+            const items = posts.slice(0, 12).map(post => {
+              // Get image URL from variants
+              let imageUrl = post.image?.url;
+              if (post.image?.variants && post.image.variants.length > 0) {
+                // Prefer webp variant
+                const webp = post.image.variants.find(v => v.format === 'webp');
+                imageUrl = webp?.url || post.image.variants[0].url;
+              }
+
+              return {
+                id: generateId(post.slug || String(post.id), source),
+                title: post.title || 'Hawk Live News',
+                summary: post.image?.altText || '',
+                url: `${baseUrl}/posts/${post.slug || post.id}`,
+                imageUrl: imageUrl,
+                source: 'Hawk Live',
+                publishedAt: new Date(post.publishAt || post.publishedAt || post.created_at),
+                category: 'tournament',
+              };
+            });
+
+            return { items, source: 'hawk', success: true };
+          }
+        } catch (e) {
+          console.log('[News API] Failed to parse posts JSON:', e.message);
+        }
       }
     }
 
