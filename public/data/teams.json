@@ -1,1 +1,134 @@
-[]
+[
+  {
+    "id": "xtreme-gaming",
+    "name": "Xtreme Gaming",
+    "name_cn": "XG",
+    "tag": "XG",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/8261502.png",
+    "region": "CN",
+    "is_cn_team": 1,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "yakult-brother",
+    "name": "Yakult Brothers",
+    "name_cn": "YB",
+    "tag": "YB",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/8255888.png",
+    "region": "CN",
+    "is_cn_team": 1,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "vici-gaming",
+    "name": "Vici Gaming",
+    "name_cn": "VG",
+    "tag": "VG",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/7391077.png",
+    "region": "CN",
+    "is_cn_team": 1,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "mouz",
+    "name": "MOUZ",
+    "name_cn": "MOUZ",
+    "tag": "MOUZ",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/104918.png",
+    "region": "EU",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "tundra-esports",
+    "name": "Tundra Esports",
+    "name_cn": "Tundra",
+    "tag": "Tundra",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/104958.png",
+    "region": "EU",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "betboom-team",
+    "name": "BetBoom Team",
+    "name_cn": "BetBoom",
+    "tag": "BetBoom",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/1371884.png",
+    "region": "CIS",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "aurora-gaming",
+    "name": "Aurora Gaming",
+    "name_cn": "Aurora",
+    "tag": "Aurora",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/1163959.png",
+    "region": "EU",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "team-spirit",
+    "name": "Team Spirit",
+    "name_cn": "Spirit",
+    "tag": "Spirit",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/1371884.png",
+    "region": "CIS",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "pain-gaming",
+    "name": "paiN Gaming",
+    "name_cn": "paiN",
+    "tag": "paiN",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/67.png",
+    "region": "SA",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "parivision",
+    "name": "PARIVISION",
+    "name_cn": "PARIVISION",
+    "tag": "PARI",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/1163959.png",
+    "region": "EU",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "team-liquid",
+    "name": "Team Liquid",
+    "name_cn": "Liquid",
+    "tag": "Liquid",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/2163.png",
+    "region": "EU",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  },
+  {
+    "id": "natus-vincere",
+    "name": "Natus Vincere",
+    "name_cn": "Na'Vi",
+    "tag": "Na'Vi",
+    "logo_url": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/team_logos/36.png",
+    "region": "CIS",
+    "is_cn_team": 0,
+    "created_at": 1771292070,
+    "updated_at": 1771292070
+  }
+]

@@ -193,10 +193,17 @@ function formatDuration(seconds: number): string {
 }
 
 export function TournamentSection({ tournaments, seriesByTournament }: TournamentSectionProps) {
-  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournaments[0] || null);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
+
+  // Set initial tournament when tournaments are loaded
+  useEffect(() => {
+    if (tournaments && tournaments.length > 0 && !selectedTournament) {
+      setSelectedTournament(tournaments[0]);
+    }
+  }, [tournaments, selectedTournament]);
 
   // Load heroes data on mount
   useEffect(() => {
@@ -218,7 +225,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
     setExpandedSeries(newExpanded);
   };
 
-  if (!tournaments.length) {
+  if (!tournaments || !tournaments.length) {
     return (
       <section id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
         {/* 背景光效 */}
