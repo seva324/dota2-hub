@@ -42,6 +42,7 @@ async function scrapeHawkLive() {
 
     // Look for embedded posts JSON in the HTML
     const postsMatch = html.match(/"posts"\s*:\s*\[(\{.*?\}|\[.*?\])*\]/s);
+    console.log('[News API] Posts match found:', !!postsMatch);
     if (postsMatch) {
       try {
         // Extract just the posts array content
@@ -55,6 +56,7 @@ async function scrapeHawkLive() {
 
         const data = JSON.parse(decodedHtml);
         const posts = data.posts || [];
+        console.log('[News API] Parsed posts count:', posts.length);
 
         if (Array.isArray(posts) && posts.length > 0) {
           const items = posts.slice(0, 12).map(post => {
