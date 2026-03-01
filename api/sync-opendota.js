@@ -364,7 +364,7 @@ async function saveMatchToDb(db, match) {
         ${match.radiant_team_name_cn}, ${match.radiant_team_logo}, ${match.dire_team_id},
         ${match.dire_team_name}, ${match.dire_team_name_cn}, ${match.dire_team_logo},
         ${match.radiant_score || 0}, ${match.dire_score || 0}, ${match.radiant_win ? 1 : 0},
-        ${match.start_time}, ${match.duration || 0}, ${match.leagueid}, ${match.series_type || 'BO3'},
+        ${match.start_time}, ${match.duration || 0}, ${match.league_id}, ${match.series_type || 'BO3'},
         ${match.status || 'finished'}, ${JSON.stringify(match)}, NOW()
       )
       ON CONFLICT (match_id) DO UPDATE SET
@@ -442,7 +442,7 @@ function convert(m, td = null) {
       radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
       // radiant_win 表示 radiant 方是否获胜
       radiant_game_wins: rw ? 1 : 0, dire_game_wins: rw ? 0 : 1,
-      start_time: m.start_time, duration: m.duration || 0, leagueid: m.leagueid,
+      start_time: m.start_time, duration: m.duration || 0, league_id: m.leagueid,
       series_type: m.series_type !== undefined ? String(m.series_type) : 'BO3',
       status, lobby_type: 7, radiant_win: rw ? 1 : 0,
     };
@@ -462,7 +462,7 @@ function convert(m, td = null) {
     radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
     radiant_game_wins: status === 'finished' ? (rw ? 1 : 0) : 0,
     dire_game_wins: status === 'finished' ? (rw ? 0 : 1) : 0,
-    start_time: m.start_time, duration: m.duration || 0, leagueid: m.leagueid || null,
+    start_time: m.start_time, duration: m.duration || 0, league_id: m.leagueid || null,
     series_type: m.series_type !== undefined ? String(m.series_type) : 'BO3',
     status, lobby_type: m.lobby_type || 0, radiant_win: rw ? 1 : 0,
   };
