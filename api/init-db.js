@@ -56,6 +56,14 @@ export default async function handler(req, res) {
     `;
     console.log('[Init DB] Created matches table');
 
+    // Add series_id column if it doesn't exist
+    try {
+      await db`ALTER TABLE matches ADD COLUMN IF NOT EXISTS series_id VARCHAR(100)`;
+      console.log('[Init DB] Added series_id column to matches');
+    } catch (e) {
+      console.log('[Init DB] series_id column might already exist:', e.message);
+    }
+
     // Create upcoming_matches table
     await db`
       CREATE TABLE IF NOT EXISTS upcoming_matches (
