@@ -8,6 +8,7 @@ interface NewsItem {
   summary?: string;
   source: string;
   url: string;
+  image_url?: string;
   published_at: number;
   category: string;
 }
@@ -57,11 +58,22 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
               >
                 <Card className="h-full border-slate-800 bg-slate-900/50 hover:border-amber-500/30 transition-all overflow-hidden">
                   <div className="relative h-40 overflow-hidden">
-                    <img
-                      src={`/dota2-hub/images/patch-update.jpg`}
-                      alt={item.title}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/dota2-hub/images/patch-update.jpg';
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/dota2-hub/images/patch-update.jpg"
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
                     <Badge className={`absolute top-3 left-3 ${categoryColors[item.category] || categoryColors.default}`}>
                       {categoryLabels[item.category] || categoryLabels.default}

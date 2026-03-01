@@ -238,6 +238,17 @@ function App() {
         }
         console.log('Upcoming loaded:', upcomingData.length);
 
+        // 加载 news 数据 from API
+        let newsData;
+        try {
+          const newsRes = await fetch('/api/news');
+          newsData = await newsRes.json();
+        } catch (e) {
+          console.error('Failed to load news from API:', e);
+          newsData = [];
+        }
+        console.log('News loaded:', newsData.length);
+
         // 使用 tournaments.json 中已有的 tournaments 和 seriesByTournament
         const formattedTournaments = (tournamentsData.tournaments || []).map((t: any) => ({
           id: t.id,
@@ -312,7 +323,7 @@ function App() {
           cnMatches: cnMatches.slice(0, 50),
           tournaments: formattedTournaments,
           seriesByTournament: seriesWithLogos,
-          news: [],
+          news: newsData || [],
           community: [],
           lastUpdated: new Date().toISOString()
         };
