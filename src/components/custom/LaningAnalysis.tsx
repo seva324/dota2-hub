@@ -52,11 +52,11 @@ interface LaningAnalysisProps {
 
 // Chinese hero names
 const heroesCnData: Record<number, string> = {};
-fetch('/dota2-hub/data/heroes_cn.json')
+fetch('/data/hero_cn_names.json')
   .then(res => res.json())
   .then(data => {
     for (const [key, value] of Object.entries(data)) {
-      heroesCnData[parseInt(key)] = (value as any).name_cn || '';
+      heroesCnData[parseInt(key)] = value as string;
     }
   })
   .catch(() => {});

@@ -81,12 +81,19 @@ function findTeamLogo(logoMap, teamName) {
   return null;
 }
 
+// Normalize logo URL to use correct Steam CDN domain
+function normalizeLogoUrl(url) {
+  if (!url) return null;
+  // Fix: steamcdn-a.akamaihd.net -> cdn.steamstatic.com
+  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+}
+
 // Add logos to series data
 function addLogosToSeries(series, logoMap) {
   return series.map(s => ({
     ...s,
-    radiant_team_logo: s.radiant_team_logo || findTeamLogo(logoMap, s.radiant_team_name),
-    dire_team_logo: s.dire_team_logo || findTeamLogo(logoMap, s.dire_team_name)
+    radiant_team_logo: normalizeLogoUrl(s.radiant_team_logo) || findTeamLogo(logoMap, s.radiant_team_name),
+    dire_team_logo: normalizeLogoUrl(s.dire_team_logo) || findTeamLogo(logoMap, s.dire_team_name)
   }));
 }
 

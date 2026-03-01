@@ -35,6 +35,12 @@ function getLocalMatches() {
   }
 }
 
+// Normalize logo URL to use correct Steam CDN domain
+function normalizeLogoUrl(url) {
+  if (!url) return null;
+  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+}
+
 // Query matches from Neon
 async function getMatchesFromNeon(db) {
   if (!db) return null;
@@ -59,11 +65,11 @@ async function getMatchesFromNeon(db) {
       radiant_team_id: m.radiant_team_id,
       radiant_team_name: m.radiant_team_name,
       radiant_team_name_cn: m.radiant_team_name_cn,
-      radiant_team_logo: m.radiant_team_logo,
+      radiant_team_logo: normalizeLogoUrl(m.radiant_team_logo),
       dire_team_id: m.dire_team_id,
       dire_team_name: m.dire_team_name,
       dire_team_name_cn: m.dire_team_name_cn,
-      dire_team_logo: m.dire_team_logo,
+      dire_team_logo: normalizeLogoUrl(m.dire_team_logo),
       radiant_score: m.radiant_score,
       dire_score: m.dire_score,
       radiant_win: m.radiant_win ? 1 : 0,

@@ -11,7 +11,7 @@ import { AIReportSection } from './AIReportSection';
 let proPlayersMap: Record<number, { name: string; team_name: string; realname: string }> = {};
 
 // Load pro players
-fetch('/dota2-hub/data/pro_players.json')
+fetch('/data/pro_players.json')
   .then(res => res.json())
   .then(data => { proPlayersMap = data; })
   .catch(() => {});

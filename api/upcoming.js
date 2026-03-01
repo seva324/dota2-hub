@@ -54,6 +54,12 @@ function findTeamLogo(logoMap, teamName) {
   return null;
 }
 
+// Normalize logo URL to use correct Steam CDN domain
+function normalizeLogoUrl(url) {
+  if (!url) return null;
+  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -93,10 +99,10 @@ export default async function handler(req, res) {
         match_id: m.match_id,
         radiant_team_name: m.radiant_team_name,
         radiant_team_name_cn: m.radiant_team_name_cn,
-        radiant_team_logo: findTeamLogo(logoMap, m.radiant_team_name) || findTeamLogo(logoMap, m.radiant_team_name_cn),
+        radiant_team_logo: normalizeLogoUrl(findTeamLogo(logoMap, m.radiant_team_name) || findTeamLogo(logoMap, m.radiant_team_name_cn)),
         dire_team_name: m.dire_team_name,
         dire_team_name_cn: m.dire_team_name_cn,
-        dire_team_logo: findTeamLogo(logoMap, m.dire_team_name) || findTeamLogo(logoMap, m.dire_team_name_cn),
+        dire_team_logo: normalizeLogoUrl(findTeamLogo(logoMap, m.dire_team_name) || findTeamLogo(logoMap, m.dire_team_name_cn)),
         start_time: m.start_time,
         series_type: m.series_type,
         tournament_name: m.tournament_name,
