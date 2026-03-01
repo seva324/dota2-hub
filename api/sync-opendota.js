@@ -52,10 +52,20 @@ const LEAGUE_NAME_MAP = {
   'dota 2 space league': { id: 'space-league', name: 'Dota 2 Space League', name_cn: '太空联赛', tier: 'C' },
 };
 
+// Target leagues to sync
+const TARGET_LEAGUES = [
+  { league_id: 19269, id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  { league_id: 18988, id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  { league_id: 19099, id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
+  { league_id: 19130, id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
+];
+
 // Fallback: League IDs 映射 (用于有 league_id 的情况)
 const LEAGUE_IDS = {
   19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
   18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
+  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' },
 };
 
 /**
@@ -498,20 +508,16 @@ export default async function handler(req, res) {
       for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
     }
 
-    // Fetch only recent matches from leagues (last 30 days to avoid timeout)
-    const thirtyDaysAgo = Date.now() / 1000 - 30 * 24 * 60 * 60;
-    const leagueIds = Object.keys(LEAGUE_IDS).map(id => parseInt(id));
-    for (const leagueId of leagueIds) {
+    // Fetch matches from target leagues only
+    for (const league of TARGET_LEAGUES) {
       try {
-        const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${leagueId}/matches`);
-        // Filter to only recent matches
-        const recentMatches = leagueMatches.filter(m => m.start_time > thirtyDaysAgo);
-        for (const m of recentMatches) {
+        const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${league.league_id}/matches`);
+        for (const m of leagueMatches) {
           const c = convert(m);
           if (c) cn.push(c);
         }
       } catch (e) {
-        console.error(`Failed to fetch league ${leagueId}:`, e.message);
+        console.error(`Failed to fetch league ${league.league_id}:`, e.message);
       }
     }
 
