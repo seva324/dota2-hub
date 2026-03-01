@@ -135,14 +135,7 @@ export default async function handler(req, res) {
     try {
       // Get all tournaments
       const tournaments = await db`SELECT * FROM tournaments`;
-
-      // Create tournament lookup by league_id
-      const tournamentByLeagueId = {};
-      for (const t of tournaments) {
-        if (t.league_id !== null && t.league_id !== undefined) {
-          tournamentByLeagueId[t.league_id] = t;
-        }
-      }
+      console.log('[Tournaments API] Found tournaments:', tournaments.length);
 
       // Get matches
       const matches = await db`
@@ -154,6 +147,7 @@ export default async function handler(req, res) {
         ORDER BY start_time DESC
         LIMIT 500
       `;
+      console.log('[Tournaments API] Found matches:', matches.length, 'with series_id:', matches.filter(m => m.series_id).length);
 
       // Get teams for logo lookup
       const teams = await db`SELECT * FROM teams`;
