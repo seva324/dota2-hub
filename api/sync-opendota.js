@@ -498,22 +498,15 @@ export default async function handler(req, res) {
       if (data) existing = JSON.parse(data);
     } catch (e) { console.log('No existing'); }
 
-    // 获取新数据
+    // 获取新数据 - only from target leagues to avoid timeout
     let cn = [];
-    const pro = await fetchJSON(`${OPENDOTA}/proMatches?limit=30`);
-    for (const m of pro) { const c = convert(m); if (c) cn.push(c); }
-
-    for (const [, td] of Object.entries(TEAMS)) {
-      const tm = await fetchJSON(`${OPENDOTA}/teams/${td.id}/matches`);
-      for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
-    }
 
     // Fetch matches from target leagues only (last 7 days to avoid timeout)
     const sevenDaysAgo = Date.now() / 1000 - 7 * 24 * 60 * 60;
     for (const league of TARGET_LEAGUES) {
       try {
         const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${league.league_id}/matches`);
-        // Filter to last 90 days to avoid timeout
+        // Filter to last 7 days to avoid timeout
         const recentMatches = leagueMatches.filter(m => m.start_time > sevenDaysAgo);
         for (const m of recentMatches) {
           const c = convert(m);
