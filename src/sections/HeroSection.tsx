@@ -20,36 +20,39 @@ interface Match {
   tournament_name_cn?: string;
 }
 
-// 战队Logo映射
-const teamLogoMap: Record<string, string> = {
-  'xg': '/dota2-hub/images/teams/xg.png',
-  'xtreme gaming': '/dota2-hub/images/teams/xg.png',
-  'yb': '/dota2-hub/images/teams/yb.png',
-  'yakult brothers': '/dota2-hub/images/teams/yb.png',
-  'vg': '/dota2-hub/images/teams/vg.png',
-  'vici gaming': '/dota2-hub/images/teams/vg.png',
-  'lgd': '/dota2-hub/images/teams/lgd.png',
-  'psg.lgd': '/dota2-hub/images/teams/lgd.png',
-  'aurora gaming': '/dota2-hub/images/teams/aurora.png',
-  'natus vincere': '/dota2-hub/images/teams/navi.png',
-  'team liquid': '/dota2-hub/images/teams/liquid.png',
-  'team falcons': '/dota2-hub/images/teams/falcons.png',
-  'og': '/dota2-hub/images/teams/og.png',
-  'tundra esports': '/dota2-hub/images/teams/tundra.png',
-  'gamerlegion': '/dota2-hub/images/teams/gamerlegion.png',
-  'parivision': '/dota2-hub/images/teams/parivision.png',
-  'betboom team': '/dota2-hub/images/teams/betboom.png',
-  'pain gaming': '/dota2-hub/images/teams/pain.png',
-  'team yandex': '/dota2-hub/images/teams/yandex.png',
-  'execration': '/dota2-hub/images/teams/execration.png',
-  'mouz': '/dota2-hub/images/teams/mouz.png',
-  'team spirit': '/dota2-hub/images/teams/spirit.png',
+// 战队Logo fallback 映射（当 API 没有返回 logo 时使用）
+const teamLogoFallbackMap: Record<string, string> = {
+  'xg': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
+  'xtreme gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
+  'yb': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8255888.png',
+  'yakult brothers': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8255888.png',
+  'vg': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7391077.png',
+  'vici gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7391077.png',
+  'lgd': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/5014976.png',
+  'psg.lgd': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/5014976.png',
+  'aurora gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1163959.png',
+  'natus vincere': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png',
+  'team liquid': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/2163.png',
+  'team falcons': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/4972334.png',
+  'og': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/2587576.png',
+  'tundra esports': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104958.png',
+  'gamerlegion': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9756454.png',
+  'parivision': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png',
+  'betboom team': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
+  'pain gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/67.png',
+  'team yandex': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7481929.png',
+  'execration': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8317125.png',
+  'mouz': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104918.png',
+  'team spirit': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
 };
 
-function getTeamLogo(teamName: string | undefined): string {
+function getTeamLogo(apiLogoUrl: string | undefined, teamName: string | undefined): string {
+  // 优先使用 API 返回的 logo URL
+  if (apiLogoUrl) return apiLogoUrl;
+  // 否则使用 fallback 映射
   if (!teamName) return '';
   const key = teamName.toLowerCase();
-  return teamLogoMap[key] || '';
+  return teamLogoFallbackMap[key] || '';
 }
 
 const cnTeams = ['xg', 'xtreme', 'yb', 'yakult', 'tearlaments', 'vg', 'vici', 'game master', 'tidebound', 'refuser', 'thriving', 'azure'];
@@ -218,12 +221,12 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
                       {/* Teams */}
                       <div className="px-3 py-2">
                         <div className={`flex items-center gap-2 py-1.5 border-b border-white/5 ${layout.topIsCN ? 'text-red-400' : ''}`}>
-                          {getTeamLogo(layout.top) ? <img src={getTeamLogo(layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
-                          
+                          {getTeamLogo(layout.topIsCN ? match.radiant_team_logo : match.dire_team_logo, layout.top) ? <img src={getTeamLogo(layout.topIsCN ? match.radiant_team_logo : match.dire_team_logo, layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+
                           <span className="text-sm font-bold">{renderTeamName(layout.top)}</span>
                         </div>
                         <div className="flex items-center gap-2 py-1.5">
-                          {getTeamLogo(layout.bottom) ? <img src={getTeamLogo(layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+                          {getTeamLogo(layout.topIsCN ? match.dire_team_logo : match.radiant_team_logo, layout.bottom) ? <img src={getTeamLogo(layout.topIsCN ? match.dire_team_logo : match.radiant_team_logo, layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
                           <span className="text-sm font-bold text-white">{renderTeamName(layout.bottom)}</span>
                         </div>
                       </div>
