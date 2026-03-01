@@ -144,10 +144,13 @@ export default async function handler(req, res) {
         }
       }
 
-      // Get matches - only those with series_id to avoid grouping issues
+      // Get matches
       const matches = await db`
-        SELECT * FROM matches
-        WHERE series_id IS NOT NULL
+        SELECT match_id, series_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
+               radiant_team_logo, dire_team_id, dire_team_name, dire_team_name_cn,
+               dire_team_logo, radiant_score, dire_score, radiant_win, start_time,
+               duration, league_id, series_type
+        FROM matches
         ORDER BY start_time DESC
         LIMIT 500
       `;
@@ -166,8 +169,9 @@ export default async function handler(req, res) {
         const tournament = LEAGUE_IDS[leagueId];
         const tid = tournament?.id || 'unknown';
 
-        // 使用 series_id 作为分组键，如果没有则使用 match_id 的前几位
-        const seriesId = m.series_id ? String(m.series_id) : `match_${String(m.match_id).slice(0, -3)}`;
+        // 使用 series_id 作为分组键 (OpenDota提供的)，如果为null则跳过
+        if (!m.series_id) continue;
+        const seriesId = String(m.series_id);
         const groupKey = `${tid}_${seriesId}`;
 
         if (!seriesGroups[groupKey]) {
