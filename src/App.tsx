@@ -252,10 +252,10 @@ function App() {
           league_id: t.league_id
         }));
 
-        // 首先尝试从 matches.json 中动态生成 series
-        // 过滤目标 tournament_id 的比赛
+        // 首先尝试从 matches 中动态生成 series
+        // 过滤目标 league_id 的比赛
         const targetLeagueMatches = matches.filter((m: any) =>
-          m.tournament_id && TARGET_LEAGUE_IDS.includes(Number(m.tournament_id))
+          m.league_id && TARGET_LEAGUE_IDS.includes(Number(m.league_id))
         );
         
         console.log('Target league matches:', targetLeagueMatches.length);
