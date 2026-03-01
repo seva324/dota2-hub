@@ -508,11 +508,14 @@ export default async function handler(req, res) {
       for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
     }
 
-    // Fetch matches from target leagues only
+    // Fetch matches from target leagues only (last 90 days to avoid timeout)
+    const ninetyDaysAgo = Date.now() / 1000 - 90 * 24 * 60 * 60;
     for (const league of TARGET_LEAGUES) {
       try {
         const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${league.league_id}/matches`);
-        for (const m of leagueMatches) {
+        // Filter to last 90 days to avoid timeout
+        const recentMatches = leagueMatches.filter(m => m.start_time > ninetyDaysAgo);
+        for (const m of recentMatches) {
           const c = convert(m);
           if (c) cn.push(c);
         }
