@@ -332,7 +332,8 @@ async function syncTournaments(r, matchesData) {
         name_cn: info.name_cn,
         tier: info.tier,
         location: 'Online',
-        status: 'completed'
+        status: 'completed',
+        league_id: info.league_id
       });
       addedTournamentIds.add(tournamentId);
     }
@@ -389,7 +390,7 @@ async function saveTournamentToDb(db, tournament) {
       INSERT INTO tournaments (id, name, name_cn, tier, location, status, league_id, updated_at)
       VALUES (${tournament.id}, ${tournament.name}, ${tournament.name_cn},
         ${tournament.tier}, ${tournament.location}, ${tournament.status},
-        ${tournament.leagueid}, NOW())
+        ${tournament.league_id}, NOW())
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         name_cn = EXCLUDED.name_cn,
