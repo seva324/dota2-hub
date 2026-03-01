@@ -345,12 +345,12 @@ async function saveMatchToDb(db, match) {
   try {
     await db`
       INSERT INTO matches (
-        match_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
+        match_id, series_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
         radiant_team_logo, dire_team_id, dire_team_name, dire_team_name_cn,
         dire_team_logo, radiant_score, dire_score, radiant_win, start_time,
         duration, league_id, series_type, status, raw_json, updated_at
       ) VALUES (
-        ${parseInt(match.match_id)}, ${match.radiant_team_id}, ${match.radiant_team_name},
+        ${parseInt(match.match_id)}, ${match.series_id || null}, ${match.radiant_team_id}, ${match.radiant_team_name},
         ${match.radiant_team_name_cn}, ${match.radiant_team_logo}, ${match.dire_team_id},
         ${match.dire_team_name}, ${match.dire_team_name_cn}, ${match.dire_team_logo},
         ${match.radiant_score || 0}, ${match.dire_score || 0}, ${match.radiant_win ? 1 : 0},
@@ -361,6 +361,7 @@ async function saveMatchToDb(db, match) {
         radiant_score = EXCLUDED.radiant_score,
         dire_score = EXCLUDED.dire_score,
         radiant_win = EXCLUDED.radiant_win,
+        series_id = EXCLUDED.series_id,
         updated_at = NOW()
     `;
   } catch (e) {
@@ -401,47 +402,59 @@ function identify(name) {
 }
 
 function convert(m, td = null) {
-  const rt = identify(m.radiant_name), dt = identify(m.dire_name);
-  // Remove Chinese team filter - get ALL matches from tournaments
-  // if (!rt.is_cn && !dt.is_cn && !td) return null;
+  // 直接使用 OpenDota 提供的原始战队名称，不做任何转换
   const now = Date.now() / 1000;
   const status = m.start_time < now - 3600 ? 'finished' : m.start_time < now ? 'live' : 'scheduled';
   const rw = m.radiant_win;
 
-  // 获取队伍 logo
+  // 获取战队名称 - 直接使用 OpenDota 提供的原始名称
   const radiantTeamName = td && m.radiant ? td.name : (m.radiant_name || null);
   const direTeamName = td && !m.radiant ? td.name : (m.opposing_team_name || m.dire_name || null);
+
+  // 获取队伍 logo - 用英文名查找
   const radiantLogo = getTeamLogo(radiantTeamName);
   const direLogo = getTeamLogo(direTeamName);
 
   if (td) {
     const isR = m.radiant;
     return {
-      match_id: String(m.match_id), radiant_team_id: isR ? td.id : 'unknown',
+      match_id: String(m.match_id),
+      series_id: m.series_id ? String(m.series_id) : null,
+      radiant_team_id: isR ? td.id : 'unknown',
       dire_team_id: isR ? 'unknown' : td.id,
-      radiant_team_name: isR ? td.name : m.opposing_team_name,
-      radiant_team_name_cn: isR ? td.name_cn : identify(m.opposing_team_name).name_cn,
-      dire_team_name: isR ? m.opposing_team_name : td.name,
-      dire_team_name_cn: isR ? identify(m.opposing_team_name).name_cn : td.name_cn,
+      // 直接使用 OpenDota 提供的名称
+      radiant_team_name: isR ? td.name : (m.opposing_team_name || null),
+      radiant_team_name_cn: null,
+      dire_team_name: isR ? (m.opposing_team_name || null) : td.name,
+      dire_team_name_cn: null,
       radiant_team_logo: isR ? radiantLogo : getTeamLogo(m.opposing_team_name),
       dire_team_logo: isR ? getTeamLogo(m.opposing_team_name) : direLogo,
       radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
+      // radiant_win 表示 radiant 方是否获胜
       radiant_game_wins: rw ? 1 : 0, dire_game_wins: rw ? 0 : 1,
       start_time: m.start_time, duration: m.duration || 0, leagueid: m.leagueid,
-      series_type: 'BO3', status, lobby_type: 7, radiant_win: rw ? 1 : 0,
+      series_type: m.series_type !== undefined ? String(m.series_type) : 'BO3',
+      status, lobby_type: 7, radiant_win: rw ? 1 : 0,
     };
   }
+  // 非 td 模式 - 直接使用 OpenDota 原始名称
   return {
-    match_id: String(m.match_id), radiant_team_id: rt.id, dire_team_id: dt.id,
-    radiant_team_name: m.radiant_name || null, radiant_team_name_cn: rt.name_cn,
-    dire_team_name: m.dire_name || null, dire_team_name_cn: dt.name_cn,
+    match_id: String(m.match_id),
+    series_id: m.series_id ? String(m.series_id) : null,
+    radiant_team_id: m.radiant_team_id || null,
+    dire_team_id: m.dire_team_id || null,
+    radiant_team_name: m.radiant_name || null,
+    radiant_team_name_cn: null,
+    dire_team_name: m.dire_name || null,
+    dire_team_name_cn: null,
     radiant_team_logo: radiantLogo,
     dire_team_logo: direLogo,
     radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
     radiant_game_wins: status === 'finished' ? (rw ? 1 : 0) : 0,
     dire_game_wins: status === 'finished' ? (rw ? 0 : 1) : 0,
     start_time: m.start_time, duration: m.duration || 0, leagueid: m.leagueid || null,
-    series_type: 'BO3', status, lobby_type: m.lobby_type || 0, radiant_win: rw ? 1 : 0,
+    series_type: m.series_type !== undefined ? String(m.series_type) : 'BO3',
+    status, lobby_type: m.lobby_type || 0, radiant_win: rw ? 1 : 0,
   };
 }
 

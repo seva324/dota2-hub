@@ -32,6 +32,7 @@ export default async function handler(req, res) {
     await db`
       CREATE TABLE IF NOT EXISTS matches (
         match_id BIGINT PRIMARY KEY,
+        series_id VARCHAR(100),
         radiant_team_id VARCHAR(50),
         radiant_team_name VARCHAR(255),
         radiant_team_name_cn VARCHAR(255),

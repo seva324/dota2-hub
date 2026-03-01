@@ -154,30 +154,35 @@ export default async function handler(req, res) {
       // Get teams for logo lookup
       const teams = await db`SELECT * FROM teams`;
 
-      // Build series from matches
+      // Build series from matches - 使用 series_id 分组
       const seriesByTournament = {};
 
-      // Group matches by tournament (using LEAGUE_IDS mapping)
-      const matchGroups = {};
+      // 按 series_id 分组
+      const seriesGroups = {};
       for (const m of matches) {
         // Use LEAGUE_IDS mapping to find tournament id
         const leagueId = m.league_id;
         const tournament = LEAGUE_IDS[leagueId];
         const tid = tournament?.id || 'unknown';
 
-        const key = `${tid}_${[m.radiant_team_name, m.dire_team_name].sort().join('_vs_')}`;
+        // 使用 series_id 作为分组键，如果没有则使用 match_id 的前几位
+        const seriesId = m.series_id ? String(m.series_id) : `match_${String(m.match_id).slice(0, -3)}`;
+        const groupKey = `${tid}_${seriesId}`;
 
-        if (!matchGroups[key]) {
-          matchGroups[key] = {
+        if (!seriesGroups[groupKey]) {
+          seriesGroups[groupKey] = {
             tournament_id: tid,
+            series_id: seriesId,
+            // 直接使用 OpenDota 提供的战队名称
             radiant_team_name: m.radiant_team_name,
             dire_team_name: m.dire_team_name,
             radiant_team_logo: m.radiant_team_logo,
             dire_team_logo: m.dire_team_logo,
+            series_type: m.series_type || 'BO3',
             games: []
           };
         }
-        matchGroups[key].games.push({
+        seriesGroups[groupKey].games.push({
           match_id: String(m.match_id),
           radiant_team_name: m.radiant_team_name,
           dire_team_name: m.dire_team_name,
@@ -185,6 +190,7 @@ export default async function handler(req, res) {
           dire_team_logo: m.dire_team_logo,
           radiant_score: m.radiant_score,
           dire_score: m.dire_score,
+          // radiant_win: 1 表示 radiant 方获胜，0 表示 dire 方获胜
           radiant_win: m.radiant_win ? 1 : 0,
           start_time: m.start_time,
           duration: m.duration
@@ -196,23 +202,39 @@ export default async function handler(req, res) {
         seriesByTournament[t.id] = [];
       }
 
-      // Convert to series format
-      for (const [key, group] of Object.entries(matchGroups)) {
+      // Convert to series format - 正确计算胜负
+      for (const [key, group] of Object.entries(seriesGroups)) {
         const tid = group.tournament_id;
         if (!seriesByTournament[tid]) {
           seriesByTournament[tid] = [];
         }
 
-        // Calculate wins
-        let radiantWins = 0, direWins = 0;
+        // 计算每个战队的胜场数
+        // radiant_win = 1 表示 radiant 战队获胜
+        // radiant_win = 0 表示 dire 战队获胜
+        const teamWins = {};
+
         for (const g of group.games) {
-          if (g.radiant_win) radiantWins++;
-          else direWins++;
+          const radiant = g.radiant_team_name;
+          const dire = g.dire_team_name;
+
+          if (!teamWins[radiant]) teamWins[radiant] = 0;
+          if (!teamWins[dire]) teamWins[dire] = 0;
+
+          if (g.radiant_win === 1) {
+            teamWins[radiant]++;
+          } else {
+            teamWins[dire]++;
+          }
         }
 
+        // 确定 radiant 和 dire 的胜场
+        const radiantWins = teamWins[group.radiant_team_name] || 0;
+        const direWins = teamWins[group.dire_team_name] || 0;
+
         seriesByTournament[tid].push({
-          series_id: `neon_${key}`,
-          series_type: group.games.length >= 5 ? 'BO5' : group.games.length >= 3 ? 'BO3' : 'BO1',
+          series_id: String(group.series_id),
+          series_type: group.series_type || (group.games.length >= 5 ? 'BO5' : group.games.length >= 3 ? 'BO3' : 'BO1'),
           radiant_team_name: group.radiant_team_name,
           dire_team_name: group.dire_team_name,
           radiant_team_logo: group.radiant_team_logo,
