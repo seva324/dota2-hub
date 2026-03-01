@@ -117,7 +117,8 @@ async function loadTeamsData() {
   }
 }
 
-function getTeamAbbrev(teamName: string): string {
+function getTeamAbbrev(teamName: string | null | undefined): string {
+  if (!teamName) return 'TBD';
   const abbr: Record<string, string> = {
     'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
     'Team Spirit': 'Spirit', 'Natus Vincere': "Na'Vi",

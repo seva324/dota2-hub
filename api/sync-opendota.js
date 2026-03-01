@@ -189,13 +189,12 @@ async function saveTeamToDb(db, teamName, teamId = null) {
     const team = teamData.find(t => t.name?.toLowerCase() === teamName.toLowerCase()) || teamData[0];
 
     if (team?.team_id) {
-      // 识别中文名
-      const nameCn = identify(teamName).name_cn;
-      const isCn = identify(teamName).is_cn;
+      // 直接使用 OpenDota 返回的原始队名，不做任何转换
+      const nameCn = null; // 从 OpenDota 获取的 name 已经是原始名称
 
       await db`
         INSERT INTO teams (id, name, name_cn, tag, logo_url, region, is_cn_team, created_at, updated_at)
-        VALUES (${String(team.team_id)}, ${team.name}, ${nameCn}, ${team.tag || ''}, ${team.logo_url || ''}, ${team.region || 'Unknown'}, ${isCn ? 1 : 0}, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Date.now() / 1000)})
+        VALUES (${String(team.team_id)}, ${team.name}, ${nameCn}, ${team.tag || ''}, ${team.logo_url || ''}, ${team.region || 'Unknown'}, 0, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Date.now() / 1000)})
         ON CONFLICT (id) DO UPDATE SET
           logo_url = EXCLUDED.logo_url,
           name_cn = EXCLUDED.name_cn,

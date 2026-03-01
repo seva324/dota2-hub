@@ -90,7 +90,7 @@ function getTeamLogo(apiLogoUrl: string | undefined, teamName: string | undefine
 
 function getAbbr(teamName: string | null | undefined): string {
   if (!teamName) return '';
-  return teamAbbr[teamName] || teamName;
+  return teamAbbr[teamName] || teamName || '';
 }
 
 // Render team name with responsive display: abbrev on mobile, full name on desktop
