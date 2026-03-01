@@ -30,42 +30,58 @@ async function fetchWithTimeout(url, options = {}, timeout = 15000) {
   }
 }
 
-// Hawk.live scraper - uses Inertia/Nuxt SSR
+// Hawk.live scraper - extracts embedded JSON from SSR page
 async function scrapeHawkLive() {
   const source = 'hawk';
   const baseUrl = 'https://hawk.live';
   const tagUrl = '/tags/dota-2-news';
 
   try {
-    // Try to get the initial state from the page
     const response = await fetchWithTimeout(`${baseUrl}${tagUrl}`, {}, 15000);
     const html = await response.text();
 
-    // Look for Inertia page data
-    const inertiaMatch = html.match(/window\.__INERTIA_STATE__\s*=\s*({.*?});/s);
-    if (inertiaMatch) {
+    // Look for embedded posts JSON in the HTML
+    const postsMatch = html.match(/"posts"\s*:\s*\[(\{.*?\}|\[.*?\])*\]/s);
+    if (postsMatch) {
       try {
-        const inertiaState = JSON.parse(inertiaMatch[1]);
-        // Try to find posts in the component props
-        const props = inertiaState?.page?.props || {};
-        const posts = props.posts || props.articles || props.data || [];
+        // Extract just the posts array content
+        const postsJson = '{' + postsMatch[0] + '}';
+        const decodedHtml = postsJson
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>');
+
+        const data = JSON.parse(decodedHtml);
+        const posts = data.posts || [];
 
         if (Array.isArray(posts) && posts.length > 0) {
-          const items = posts.slice(0, 12).map(post => ({
-            id: generateId(post.slug || post.id, source),
-            title: post.title || post.name || 'Hawk Live News',
-            summary: post.excerpt || post.description,
-            url: post.url || `${baseUrl}/posts/${post.slug || post.id}`,
-            imageUrl: post.image || post.cover_image || post.thumbnail,
-            source: 'Hawk Live',
-            publishedAt: new Date(post.published_at || post.date || post.created_at),
-            category: 'tournament',
-          }));
+          const items = posts.slice(0, 12).map(post => {
+            // Get image URL from variants
+            let imageUrl = post.image?.url;
+            if (post.image?.variants && post.image.variants.length > 0) {
+              // Prefer webp variant
+              const webp = post.image.variants.find(v => v.format === 'webp');
+              imageUrl = webp?.url || post.image.variants[0].url;
+            }
+
+            return {
+              id: generateId(post.slug || String(post.id), source),
+              title: post.title || 'Hawk Live News',
+              summary: post.image?.altText || '',
+              url: `${baseUrl}/posts/${post.slug || post.id}`,
+              imageUrl: imageUrl,
+              source: 'Hawk Live',
+              publishedAt: new Date(post.publishAt || post.publishedAt || post.created_at),
+              category: 'tournament',
+            };
+          });
 
           return { items, source: 'hawk', success: true };
         }
       } catch (e) {
-        console.log('[News API] Failed to parse Inertia state:', e.message);
+        console.log('[News API] Failed to parse posts JSON:', e.message);
       }
     }
 
