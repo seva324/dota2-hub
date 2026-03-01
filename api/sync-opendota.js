@@ -501,13 +501,13 @@ export default async function handler(req, res) {
     // 获取新数据 - only from target leagues to avoid timeout
     let cn = [];
 
-    // Fetch matches from target leagues only (last 7 days to avoid timeout)
-    const sevenDaysAgo = Date.now() / 1000 - 7 * 24 * 60 * 60;
+    // Fetch matches from target leagues only (last 30 days to get series_id)
+    const thirtyDaysAgo = Date.now() / 1000 - 30 * 24 * 60 * 60;
     for (const league of TARGET_LEAGUES) {
       try {
         const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${league.league_id}/matches`);
-        // Filter to last 7 days to avoid timeout
-        const recentMatches = leagueMatches.filter(m => m.start_time > sevenDaysAgo);
+        // Filter to last 30 days to get series_id
+        const recentMatches = leagueMatches.filter(m => m.start_time > thirtyDaysAgo);
         for (const m of recentMatches) {
           const c = convert(m);
           if (c) cn.push(c);
