@@ -485,14 +485,15 @@ export default async function handler(req, res) {
       for (const m of tm) { const c = convert(m, td); if (c) cn.push(c); }
     }
 
-    // Fetch ALL historical matches from specified leagues (complete history, not filtered)
+    // Fetch only recent matches from leagues (last 30 days to avoid timeout)
+    const thirtyDaysAgo = Date.now() / 1000 - 30 * 24 * 60 * 60;
     const leagueIds = Object.keys(LEAGUE_IDS).map(id => parseInt(id));
     for (const leagueId of leagueIds) {
       try {
-        console.log(`Fetching all matches for league ${leagueId}...`);
         const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${leagueId}/matches`);
-        console.log(`League ${leagueId}: found ${leagueMatches.length} matches`);
-        for (const m of leagueMatches) {
+        // Filter to only recent matches
+        const recentMatches = leagueMatches.filter(m => m.start_time > thirtyDaysAgo);
+        for (const m of recentMatches) {
           const c = convert(m);
           if (c) cn.push(c);
         }
