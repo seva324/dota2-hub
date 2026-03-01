@@ -144,9 +144,10 @@ export default async function handler(req, res) {
         }
       }
 
-      // Get matches
+      // Get matches - only those with series_id to avoid grouping issues
       const matches = await db`
         SELECT * FROM matches
+        WHERE series_id IS NOT NULL
         ORDER BY start_time DESC
         LIMIT 500
       `;
