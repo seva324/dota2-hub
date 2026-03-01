@@ -135,8 +135,6 @@ export default async function handler(req, res) {
     try {
       // Get all tournaments
       const tournaments = await db`SELECT * FROM tournaments`;
-      console.log('[Tournaments API] Found tournaments:', tournaments.length);
-
       // Get matches
       const matches = await db`
         SELECT match_id, series_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
@@ -147,8 +145,6 @@ export default async function handler(req, res) {
         ORDER BY start_time DESC
         LIMIT 500
       `;
-      console.log('[Tournaments API] Found matches:', matches.length, 'with series_id:', matches.filter(m => m.series_id).length);
-
       // Get teams for logo lookup
       const teams = await db`SELECT * FROM teams`;
 
