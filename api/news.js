@@ -15,8 +15,8 @@ export default async function handler(req, res) {
   }
 
   // Import scrapers inside handler
-  const { scrapeHawkLive } = await import('../src/services/news-scraper/hawk.live');
-  const { scrapeBO3 } = await import('../src/services/news-scraper/bo3.gg');
+  const { scrapeHawkLive } = await import('./utils/hawk-live.js');
+  const { scrapeBO3 } = await import('./utils/bo3-gg.js');
 
   // Firecrawl import - optional, falls back to HTTP scraping
   let FirecrawlApp = null;
