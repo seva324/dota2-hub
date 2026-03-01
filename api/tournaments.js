@@ -9,6 +9,14 @@ import { neon } from '@neondatabase/serverless';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
+// League ID to Tournament ID 映射
+const LEAGUE_IDS = {
+  19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
+  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
+};
+
 // Neon SQL client singleton
 let sql = null;
 
@@ -149,13 +157,13 @@ export default async function handler(req, res) {
       // Build series from matches
       const seriesByTournament = {};
 
-      // Group matches by tournament (using league_id) and teams
+      // Group matches by tournament (using LEAGUE_IDS mapping)
       const matchGroups = {};
       for (const m of matches) {
-        // Use league_id to find tournament
+        // Use LEAGUE_IDS mapping to find tournament id
         const leagueId = m.league_id;
-        const tournament = tournamentByLeagueId[leagueId];
-        const tid = tournament?.id || `league_${leagueId}` || 'unknown';
+        const tournament = LEAGUE_IDS[leagueId];
+        const tid = tournament?.id || 'unknown';
 
         const key = `${tid}_${[m.radiant_team_name, m.dire_team_name].sort().join('_vs_')}`;
 
