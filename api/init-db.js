@@ -1,8 +1,7 @@
 /**
- * Database Initialization API (Simplified)
+ * Database Initialization API (New Schema)
  *
- * Creates tables and indexes in Neon database.
- * Run this once to set up the database.
+ * Creates tables: teams, tournaments, series, matches, upcoming_series
  *
  * Usage: POST /api/init-db
  */
@@ -28,125 +27,120 @@ export default async function handler(req, res) {
     const db = neon(DATABASE_URL);
     console.log('[Init DB] Starting database initialization...');
 
-    // Create matches table
-    await db`
-      CREATE TABLE IF NOT EXISTS matches (
-        match_id BIGINT PRIMARY KEY,
-        series_id VARCHAR(100),
-        radiant_team_id VARCHAR(50),
-        radiant_team_name VARCHAR(255),
-        radiant_team_name_cn VARCHAR(255),
-        radiant_team_logo VARCHAR(500),
-        dire_team_id VARCHAR(50),
-        dire_team_name VARCHAR(255),
-        dire_team_name_cn VARCHAR(255),
-        dire_team_logo VARCHAR(500),
-        radiant_score INTEGER DEFAULT 0,
-        dire_score INTEGER DEFAULT 0,
-        radiant_win BOOLEAN,
-        start_time INTEGER,
-        duration INTEGER,
-        league_id INTEGER,
-        series_type VARCHAR(10),
-        status VARCHAR(20),
-        raw_json JSONB,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `;
-    console.log('[Init DB] Created matches table');
-
-    // Add series_id column if it doesn't exist
-    try {
-      await db`ALTER TABLE matches ADD COLUMN IF NOT EXISTS series_id VARCHAR(100)`;
-      console.log('[Init DB] Added series_id column to matches');
-    } catch (e) {
-      console.log('[Init DB] series_id column might already exist:', e.message);
-    }
-
-    // Create upcoming_matches table
-    await db`
-      CREATE TABLE IF NOT EXISTS upcoming_matches (
-        id VARCHAR(100) PRIMARY KEY,
-        match_id BIGINT,
-        radiant_team_name VARCHAR(255),
-        radiant_team_name_cn VARCHAR(255),
-        dire_team_name VARCHAR(255),
-        dire_team_name_cn VARCHAR(255),
-        start_time INTEGER,
-        series_type VARCHAR(10),
-        tournament_name VARCHAR(255),
-        tournament_name_cn VARCHAR(255),
-        status VARCHAR(20) DEFAULT 'upcoming',
-        source VARCHAR(50),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `;
-    console.log('[Init DB] Created upcoming_matches table');
-
-    // Create tournaments table
-    await db`
-      CREATE TABLE IF NOT EXISTS tournaments (
-        id VARCHAR(50) PRIMARY KEY,
-        name VARCHAR(255),
-        name_cn VARCHAR(255),
-        tier VARCHAR(5),
-        location VARCHAR(100),
-        status VARCHAR(20),
-        league_id INTEGER,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `;
-    console.log('[Init DB] Created tournaments table');
-
-    // Create tournament_series table
-    await db`
-      CREATE TABLE IF NOT EXISTS tournament_series (
-        id SERIAL PRIMARY KEY,
-        series_id VARCHAR(100) NOT NULL,
-        tournament_id VARCHAR(50),
-        radiant_team_name VARCHAR(255),
-        dire_team_name VARCHAR(255),
-        radiant_team_logo VARCHAR(500),
-        dire_team_logo VARCHAR(500),
-        radiant_wins INTEGER DEFAULT 0,
-        dire_wins INTEGER DEFAULT 0,
-        series_type VARCHAR(10),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(tournament_id, series_id)
-      )
-    `;
-    console.log('[Init DB] Created tournament_series table');
+    // Drop existing tables (clean slate)
+    console.log('[Init DB] Dropping existing tables...');
+    await db`DROP TABLE IF EXISTS matches CASCADE`;
+    await db`DROP TABLE IF EXISTS series CASCADE`;
+    await db`DROP TABLE IF EXISTS upcoming_series CASCADE`;
+    await db`DROP TABLE IF EXISTS tournaments CASCADE`;
+    await db`DROP TABLE IF EXISTS teams CASCADE`;
 
     // Create teams table
     await db`
-      CREATE TABLE IF NOT EXISTS teams (
-        id TEXT PRIMARY KEY,
+      CREATE TABLE teams (
+        team_id VARCHAR(50) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         name_cn VARCHAR(255),
-        tag VARCHAR(50),
+        tag VARCHAR(10),
         logo_url VARCHAR(500),
-        region VARCHAR(100),
-        is_cn_team BOOLEAN DEFAULT FALSE,
+        region VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `;
     console.log('[Init DB] Created teams table');
 
-    // Create indexes
+    // Create tournaments table
+    await db`
+      CREATE TABLE tournaments (
+        league_id INTEGER PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        name_cn VARCHAR(255),
+        tier VARCHAR(5),
+        location VARCHAR(100),
+        status VARCHAR(20),
+        start_time INTEGER,
+        end_time INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    console.log('[Init DB] Created tournaments table');
+
+    // Create series table
+    await db`
+      CREATE TABLE series (
+        series_id VARCHAR(100) PRIMARY KEY,
+        league_id INTEGER,
+        radiant_team_id VARCHAR(50),
+        dire_team_id VARCHAR(50),
+        radiant_wins INTEGER DEFAULT 0,
+        dire_wins INTEGER DEFAULT 0,
+        series_type VARCHAR(10),
+        status VARCHAR(20),
+        start_time INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        FOREIGN KEY (league_id) REFERENCES tournaments(league_id),
+        FOREIGN KEY (radiant_team_id) REFERENCES teams(team_id),
+        FOREIGN KEY (dire_team_id) REFERENCES teams(team_id)
+      )
+    `;
+    console.log('[Init DB] Created series table');
+
+    // Create matches table
+    await db`
+      CREATE TABLE matches (
+        match_id BIGINT PRIMARY KEY,
+        series_id VARCHAR(100),
+        radiant_team_id VARCHAR(50),
+        dire_team_id VARCHAR(50),
+        radiant_score INTEGER DEFAULT 0,
+        dire_score INTEGER DEFAULT 0,
+        radiant_win BOOLEAN,
+        start_time INTEGER,
+        duration INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        FOREIGN KEY (series_id) REFERENCES series(series_id),
+        FOREIGN KEY (radiant_team_id) REFERENCES teams(team_id),
+        FOREIGN KEY (dire_team_id) REFERENCES teams(team_id)
+      )
+    `;
+    console.log('[Init DB] Created matches table');
+
+    // Create upcoming_series table
+    await db`
+      CREATE TABLE upcoming_series (
+        id VARCHAR(100) PRIMARY KEY,
+        series_id VARCHAR(100),
+        league_id INTEGER,
+        radiant_team_id VARCHAR(50),
+        dire_team_id VARCHAR(50),
+        start_time INTEGER,
+        series_type VARCHAR(10),
+        status VARCHAR(20) DEFAULT 'upcoming',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        FOREIGN KEY (league_id) REFERENCES tournaments(league_id),
+        FOREIGN KEY (radiant_team_id) REFERENCES teams(team_id),
+        FOREIGN KEY (dire_team_id) REFERENCES teams(team_id)
+      )
+    `;
+    console.log('[Init DB] Created upcoming_series table');
+
+    // Create indexes (use IF NOT EXISTS to handle existing indexes)
+    await db`CREATE INDEX IF NOT EXISTS idx_series_league ON series(league_id)`;
+    await db`CREATE INDEX IF NOT EXISTS idx_matches_series ON matches(series_id)`;
     await db`CREATE INDEX IF NOT EXISTS idx_matches_start_time ON matches(start_time DESC)`;
-    await db`CREATE INDEX IF NOT EXISTS idx_matches_league_id ON matches(league_id)`;
-    await db`CREATE INDEX IF NOT EXISTS idx_upcoming_start_time ON upcoming_matches(start_time)`;
-    await db`CREATE INDEX IF NOT EXISTS idx_series_tournament ON tournament_series(tournament_id)`;
+    await db`CREATE INDEX IF NOT EXISTS idx_upcoming_start_time ON upcoming_series(start_time)`;
+    await db`CREATE INDEX IF NOT EXISTS idx_upcoming_league ON upcoming_series(league_id)`;
     console.log('[Init DB] Created indexes');
 
     return res.status(200).json({
       success: true,
-      message: 'Database schema initialized successfully'
+      message: 'Database schema initialized successfully',
+      tables: ['teams', 'tournaments', 'series', 'matches', 'upcoming_series']
     });
   } catch (error) {
     console.error('[Init DB] Error:', error);

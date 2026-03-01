@@ -1,30 +1,15 @@
 /**
- * OpenDota 数据同步 API
- * 功能：
- * 1. 同步比赛数据 (matches)
- * 2. 同步联赛/赛事数据 (tournaments)
- * 3. 构建 seriesByTournament 数据
- * 4. 更新 teams.json
+ * OpenDota Data Sync API
  *
- * Storage: Dual-write to Redis and Neon PostgreSQL
+ * Syncs: teams, tournaments, series, matches
+ * Storage: Neon PostgreSQL only
+ *
+ * Usage: POST /api/sync-opendota
  */
 
-import { createClient } from 'redis';
 import { neon } from '@neondatabase/serverless';
 
-const REDIS_URL = process.env.REDIS_URL;
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-let redis;
-let sql = null;
-
-async function getRedis() {
-  if (!redis && REDIS_URL) {
-    redis = createClient({ url: REDIS_URL });
-    await redis.connect();
-  }
-  return redis;
-}
 
 function getDb() {
   if (!sql && DATABASE_URL) {
@@ -33,179 +18,17 @@ function getDb() {
   return sql;
 }
 
+let sql = null;
+
 const OPENDOTA = 'https://api.opendota.com/api';
 
-// League NAME 映射到赛事 ID (使用 league_name 因为 league_id 常为 null)
-const LEAGUE_NAME_MAP = {
-  'dream league season28': { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  'dreamleague season 28': { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  'dream league s28': { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  'dream league season27': { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  'dreamleague season 27': { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  'blast slam': { id: 'blast-slam', name: 'BLAST Slam', name_cn: 'BLAST 锦标赛', tier: 'S' },
-  'esl one': { id: 'esl-one', name: 'ESL One', name_cn: 'ESL One', tier: 'S' },
-  'pgl': { id: 'pgl', name: 'PGL', name_cn: 'PGL', tier: 'S' },
-  'ultras dota pro league': { id: 'ultras-dpl', name: 'Ultras Dota Pro League', name_cn: '超级DPL', tier: 'A' },
-  'destiny league': { id: 'destiny-league', name: 'Destiny League', name_cn: '命运联赛', tier: 'B' },
-  'epl championship': { id: 'epl-championship', name: 'EPL Championship', name_cn: 'EPL 锦标赛', tier: 'A' },
-  'snake trophy': { id: 'snake-trophy', name: 'Snake Trophy', name_cn: '蛇杯', tier: 'B' },
-  'dota 2 space league': { id: 'space-league', name: 'Dota 2 Space League', name_cn: '太空联赛', tier: 'C' },
-};
-
-// Target leagues to sync
+// Target leagues
 const TARGET_LEAGUES = [
-  { league_id: 19269, id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  { league_id: 18988, id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  { league_id: 19099, id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
-  { league_id: 19130, id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
+  { league_id: 19269, name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  { league_id: 18988, name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  { league_id: 19099, name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
+  { league_id: 19130, name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
 ];
-
-// Fallback: League IDs 映射 (用于有 league_id 的情况)
-const LEAGUE_IDS = {
-  19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
-  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' },
-};
-
-/**
- * 根据 league_name 查找赛事信息
- */
-function findTournamentByLeagueName(leagueName) {
-  if (!leagueName) return null;
-  const normalized = leagueName.toLowerCase().trim().replace(/\s+/g, '');
-  const trimmed = leagueName.toLowerCase().trim();
-
-  // Try exact match (with spaces removed)
-  if (LEAGUE_NAME_MAP[normalized]) {
-    return LEAGUE_NAME_MAP[normalized];
-  }
-  // Try exact match with original spacing
-  if (LEAGUE_NAME_MAP[trimmed]) {
-    return LEAGUE_NAME_MAP[trimmed];
-  }
-  // Try partial match
-  for (const [key, value] of Object.entries(LEAGUE_NAME_MAP)) {
-    const keyNormalized = key.replace(/\s+/g, '');
-    if (normalized.includes(keyNormalized) || keyNormalized.includes(normalized)) {
-      return value;
-    }
-  }
-  return null;
-}
-
-/**
- * 根据 league_id 查找赛事信息 (备用)
- */
-function findTournamentByLeagueId(leagueId) {
-  if (!leagueId) return null;
-  return LEAGUE_IDS[leagueId] || null;
-}
-
-// 中国战队 ID 映射
-const TEAMS = {
-  'xtreme-gaming': { name: 'Xtreme Gaming', name_cn: 'XG', id: 8261502 },
-  'yakult-brothers': { name: 'Yakult Brothers', name_cn: 'YB', id: 8255888 },
-  'vici-gaming': { name: 'Vici Gaming', name_cn: 'VG', id: 7391077 },
-};
-
-// 已知战队 Logo URL 映射
-const TEAM_LOGOS = {
-  'xtreme gaming': 'https://cdn.steamusercontent.com/ugc/2497048774300606299/9E80D5D82C03B2C9EB89365E6E0A1B87C8E73F94/',
-  'xg': 'https://cdn.steamusercontent.com/ugc/2497048774300606299/9E80D5D82C03B2C9EB89365E6E0A1B87C8E73F94/',
-  'yakult brothers': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
-  'yb': 'https://liquipedia.net/commons/images/4/43/Yakult_Brothers_allmode.png',
-  'vici gaming': 'https://liquipedia.net/commons/images/6/6a/Vici_Gaming_2020_allmode.png',
-  'vg': 'https://liquipedia.net/commons/images/6/6a/Vici_Gaming_2020_allmode.png',
-  'team liquid': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2163.png',
-  'team spirit': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2583775.png',
-  'tundra esports': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/4972334.png',
-  'og': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/174725042.png',
-  'aurora gaming': 'https://cdn.steamusercontent.com/ugc/13052583756685508/22B0338D7E09FB2F021E5DB5BBEFFD170D5E5E1A/',
-  'psg.lgd': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/8878.png',
-  'lgd gaming': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/8878.png',
-  'azure ray': 'https://liquipedia.net/commons/images/6/60/Azure_Ray_2023_allmode.png',
-  'ar': 'https://liquipedia.net/commons/images/6/60/Azure_Ray_2023_allmode.png',
-  'gaimin gladiators': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/956540635.png',
-  'betera': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/5458640.png',
-  'nigma galaxy': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/125006419.png',
-  't1': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/4974022.png',
-  'nouns': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/1013301416.png',
-  'heroic': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/940393583.png',
-  'gamerlegion': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/6376678.png',
-  'spirit': 'https://steamcdn-a.akamaihd.net/apps/dota2/images/team_logos/2583775.png',
-};
-
-// 获取队伍 Logo - 同步版本，只检查本地缓存
-function getTeamLogo(teamName) {
-  if (!teamName) return null;
-  const name = teamName.toLowerCase();
-  return TEAM_LOGOS[name] || null;
-}
-
-// 获取队伍 Logo - 异步版本，检查本地缓存 + 数据库
-async function getTeamLogoFromDb(db, teamName) {
-  if (!teamName) return null;
-  const name = teamName.toLowerCase();
-
-  // 先检查本地缓存
-  if (TEAM_LOGOS[name]) return TEAM_LOGOS[name];
-
-  // 如果数据库可用，从数据库获取
-  if (db) {
-    try {
-      const [team] = await db`SELECT logo_url FROM teams WHERE LOWER(name) = ${name} OR LOWER(name_cn) = ${name} OR LOWER(tag) = ${name}`;
-      if (team?.logo_url) {
-        return team.logo_url;
-      }
-    } catch (e) {
-      console.log(`[Teams] DB query failed: ${e.message}`);
-    }
-  }
-
-  return null;
-}
-
-/**
- * 保存队伍到数据库（如果不存在则创建）
- */
-async function saveTeamToDb(db, teamName, teamId = null) {
-  if (!db || !teamName) return;
-
-  // 检查队伍是否已存在
-  const [existing] = await db`SELECT id FROM teams WHERE LOWER(name) = ${teamName.toLowerCase()}`;
-
-  if (existing) return; // 已存在
-
-  // 调用 OpenDota API 获取队伍信息
-  try {
-    const opendotaTeamsUrl = teamId
-      ? `${OPENDOTA}/teams/${teamId}`
-      : `${OPENDOTA}/teams?search=${encodeURIComponent(teamName)}`;
-    const response = await fetch(opendotaTeamsUrl);
-    if (!response.ok) return;
-
-    const teamData = teamId ? [await response.json()] : await response.json();
-    const team = teamData.find(t => t.name?.toLowerCase() === teamName.toLowerCase()) || teamData[0];
-
-    if (team?.team_id) {
-      // 直接使用 OpenDota 返回的原始队名，不做任何转换
-      const nameCn = null; // 从 OpenDota 获取的 name 已经是原始名称
-
-      await db`
-        INSERT INTO teams (id, name, name_cn, tag, logo_url, region, is_cn_team, created_at, updated_at)
-        VALUES (${String(team.team_id)}, ${team.name}, ${nameCn}, ${team.tag || ''}, ${team.logo_url || ''}, ${team.region || 'Unknown'}, 0, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Date.now() / 1000)})
-        ON CONFLICT (id) DO UPDATE SET
-          logo_url = EXCLUDED.logo_url,
-          name_cn = EXCLUDED.name_cn,
-          updated_at = NOW()
-      `;
-      console.log(`[Teams] Added/Updated: ${team.name} (${team.team_id})`);
-    }
-  } catch (e) {
-    console.log(`[Teams] Failed to fetch team ${teamName}: ${e.message}`);
-  }
-}
 
 async function fetchJSON(url) {
   const res = await fetch(url);
@@ -214,257 +37,135 @@ async function fetchJSON(url) {
 }
 
 /**
- * 从 OpenDota 获取联赛信息并同步 tournaments 数据
+ * Save team to database
  */
-async function syncTournaments(r, matchesData) {
-  console.log('=== Syncing Tournaments ===');
+async function saveTeam(db, team) {
+  if (!db || !team?.team_id) return;
 
-  // 获取现有 tournaments 数据
-  let existingTournaments = { tournaments: [], seriesByTournament: {} };
-  try {
-    const data = await r.get('tournaments');
-    if (data) existingTournaments = JSON.parse(data);
-  } catch (e) { console.log('No existing tournaments'); }
-
-  // 从 matches 构建 seriesByTournament
-  const seriesByTournament = {};
-  const matchIds = Object.keys(matchesData);
-
-  for (const matchId of matchIds) {
-    const m = matchesData[matchId];
-
-    // 优先使用 league_name 识别赛事 (因为 league_id 常为 null)
-    let tournamentInfo = null;
-    if (m.league_name) {
-      tournamentInfo = findTournamentByLeagueName(m.league_name);
-    }
-    // 备用: 使用 league_id
-    if (!tournamentInfo && m.leagueid) {
-      tournamentInfo = findTournamentByLeagueId(m.leagueid);
-    }
-    if (!tournamentInfo) continue;
-
-    const tournamentId = tournamentInfo.id;
-
-    // 初始化赛事
-    if (!seriesByTournament[tournamentId]) {
-      seriesByTournament[tournamentId] = [];
-    }
-
-    // 按 series_id 分组 (基于相同对战组合)
-    const seriesKey = `${m.radiant_team_name}_vs_${m.dire_team_name}_${m.series_type || 'BO3'}`;
-    let series = seriesByTournament[tournamentId].find(s => s.series_id === seriesKey);
-
-    if (!series) {
-      series = {
-        series_id: seriesKey,
-        series_type: m.series_type || 'BO3',
-        radiant_team_name: m.radiant_team_name,
-        dire_team_name: m.dire_team_name,
-        radiant_team_logo: m.radiant_team_logo || null,
-        dire_team_logo: m.dire_team_logo || null,
-        radiant_wins: 0,
-        dire_wins: 0,
-        games: []
-      };
-      seriesByTournament[tournamentId].push(series);
-    }
-
-    // 添加比赛到系列赛
-    series.games.push({
-      match_id: m.match_id,
-      radiant_team_name: m.radiant_team_name,
-      dire_team_name: m.dire_team_name,
-      radiant_team_logo: m.radiant_team_logo || null,
-      dire_team_logo: m.dire_team_logo || null,
-      radiant_score: m.radiant_score || 0,
-      dire_score: m.dire_score || 0,
-      radiant_win: m.radiant_win,
-      start_time: m.start_time,
-      duration: m.duration
-    });
-
-    // 更新胜负统计
-    if (m.radiant_win === 1) {
-      series.radiant_wins++;
-    } else {
-      series.dire_wins++;
-    }
-  }
-
-  // 构建 tournaments 列表 - 从 seriesByTournament 的 key 构建
-  const tournaments = [];
-  const addedTournamentIds = new Set();
-
-  // 合并所有可能的 tournament info 来源
-  const allTournamentInfo = { ...LEAGUE_NAME_MAP, ...LEAGUE_IDS };
-
-  for (const tournamentId of Object.keys(seriesByTournament)) {
-    if (addedTournamentIds.has(tournamentId)) continue;
-    if (seriesByTournament[tournamentId].length === 0) continue;
-
-    // 查找 tournament 信息
-    let info = allTournamentInfo[tournamentId];
-    if (!info) {
-      // 尝试从 league_name_map 的值中查找
-      for (const v of Object.values(LEAGUE_NAME_MAP)) {
-        if (v.id === tournamentId) {
-          info = v;
-          break;
-        }
-      }
-    }
-    if (!info) {
-      // 尝试从 league_ids 的值中查找
-      for (const v of Object.values(LEAGUE_IDS)) {
-        if (v.id === tournamentId) {
-          info = v;
-          break;
-        }
-      }
-    }
-
-    if (info) {
-      tournaments.push({
-        id: info.id,
-        name: info.name,
-        name_cn: info.name_cn,
-        tier: info.tier,
-        location: 'Online',
-        status: 'completed',
-        league_id: info.league_id
-      });
-      addedTournamentIds.add(tournamentId);
-    }
-  }
-
-  // 保存到 Redis
-  const newTournaments = { tournaments, seriesByTournament };
-  await r.set('tournaments', JSON.stringify(newTournaments));
-
-  console.log(`Synced ${tournaments.length} tournaments with series data`);
-
-  return { tournaments, seriesByTournament };
-}
-
-/**
- * Save match to Neon database
- */
-async function saveMatchToDb(db, match) {
-  if (!db) return;
   try {
     await db`
-      INSERT INTO matches (
-        match_id, series_id, radiant_team_id, radiant_team_name, radiant_team_name_cn,
-        radiant_team_logo, dire_team_id, dire_team_name, dire_team_name_cn,
-        dire_team_logo, radiant_score, dire_score, radiant_win, start_time,
-        duration, league_id, series_type, status, raw_json, updated_at
-      ) VALUES (
-        ${parseInt(match.match_id)}, ${match.series_id || null}, ${match.radiant_team_id}, ${match.radiant_team_name},
-        ${match.radiant_team_name_cn}, ${match.radiant_team_logo}, ${match.dire_team_id},
-        ${match.dire_team_name}, ${match.dire_team_name_cn}, ${match.dire_team_logo},
-        ${match.radiant_score || 0}, ${match.dire_score || 0}, ${match.radiant_win ? 1 : 0},
-        ${match.start_time}, ${match.duration || 0}, ${match.league_id}, ${match.series_type || 'BO3'},
-        ${match.status || 'finished'}, ${JSON.stringify(match)}, NOW()
-      )
-      ON CONFLICT (match_id) DO UPDATE SET
-        radiant_score = EXCLUDED.radiant_score,
-        dire_score = EXCLUDED.dire_score,
-        radiant_win = EXCLUDED.radiant_win,
-        series_id = EXCLUDED.series_id,
+      INSERT INTO teams (team_id, name, tag, logo_url, region, created_at, updated_at)
+      VALUES (${String(team.team_id)}, ${team.name}, ${team.tag || null}, ${team.logo_url || null}, ${team.region || null}, NOW(), NOW())
+      ON CONFLICT (team_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        tag = EXCLUDED.tag,
+        logo_url = EXCLUDED.logo_url,
+        region = EXCLUDED.region,
         updated_at = NOW()
     `;
   } catch (e) {
-    console.error(`[DB] Failed to save match ${match.match_id}:`, e.message, e.stack);
+    console.log(`[Teams] Failed to save ${team.name}: ${e.message}`);
   }
 }
 
 /**
- * Save tournament to Neon database
+ * Save tournament to database
  */
-async function saveTournamentToDb(db, tournament) {
-  if (!db) return;
+async function saveTournament(db, tournament) {
+  if (!db || !tournament?.league_id) return;
+
   try {
     await db`
-      INSERT INTO tournaments (id, name, name_cn, tier, location, status, league_id, updated_at)
-      VALUES (${tournament.id}, ${tournament.name}, ${tournament.name_cn},
-        ${tournament.tier}, ${tournament.location}, ${tournament.status},
-        ${tournament.league_id}, NOW())
-      ON CONFLICT (id) DO UPDATE SET
+      INSERT INTO tournaments (league_id, name, name_cn, tier, location, status, start_time, end_time, created_at, updated_at)
+      VALUES (${tournament.league_id}, ${tournament.name}, ${tournament.name_cn}, ${tournament.tier}, ${tournament.location || 'Online'}, ${tournament.status || 'completed'}, ${tournament.start_time || null}, ${tournament.end_time || null}, NOW(), NOW())
+      ON CONFLICT (league_id) DO UPDATE SET
         name = EXCLUDED.name,
         name_cn = EXCLUDED.name_cn,
         tier = EXCLUDED.tier,
+        status = EXCLUDED.status,
         updated_at = NOW()
     `;
   } catch (e) {
-    console.error(`[DB] Failed to save tournament ${tournament.id}:`, e.message);
+    console.log(`[Tournaments] Failed to save ${tournament.name}: ${e.message}`);
   }
 }
 
-function identify(name) {
-  if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
-  const u = name.toUpperCase(), l = name.toLowerCase();
-  if (u === 'XG' || l.includes('xtreme')) return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
-  if (u === 'YB' || l.includes('yakult') || u === 'AR' || l.includes('azure')) 
-    return { id: 'yakult-brothers', name_cn: 'YB', is_cn: true };
-  if (u === 'VG' || l.includes('vici')) return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
-  return { id: 'unknown', name_cn: name, is_cn: false };
+/**
+ * Save series to database
+ */
+async function saveSeries(db, series) {
+  if (!db || !series?.series_id) return;
+
+  try {
+    await db`
+      INSERT INTO series (series_id, league_id, radiant_team_id, dire_team_id, radiant_wins, dire_wins, series_type, status, start_time, created_at, updated_at)
+      VALUES (${series.series_id}, ${series.league_id}, ${series.radiant_team_id}, ${series.dire_team_id}, ${series.radiant_wins || 0}, ${series.dire_wins || 0}, ${series.series_type}, ${series.status || 'completed'}, ${series.start_time}, NOW(), NOW())
+      ON CONFLICT (series_id) DO UPDATE SET
+        radiant_team_id = EXCLUDED.radiant_team_id,
+        dire_team_id = EXCLUDED.dire_team_id,
+        radiant_wins = EXCLUDED.radiant_wins,
+        dire_wins = EXCLUDED.dire_wins,
+        series_type = EXCLUDED.series_type,
+        status = EXCLUDED.status,
+        updated_at = NOW()
+    `;
+  } catch (e) {
+    console.log(`[Series] Failed to save ${series.series_id}: ${e.message}`);
+  }
 }
 
-function convert(m, td = null) {
-  // 直接使用 OpenDota 提供的原始战队名称，不做任何转换
+/**
+ * Save match to database
+ */
+async function saveMatch(db, match) {
+  if (!db || !match?.match_id) return;
+
+  try {
+    await db`
+      INSERT INTO matches (match_id, series_id, radiant_team_id, dire_team_id, radiant_score, dire_score, radiant_win, start_time, duration, created_at, updated_at)
+      VALUES (${parseInt(match.match_id)}, ${match.series_id}, ${match.radiant_team_id}, ${match.dire_team_id}, ${match.radiant_score || 0}, ${match.dire_score || 0}, ${match.radiant_win ? true : false}, ${match.start_time}, ${match.duration || 0}, NOW(), NOW())
+      ON CONFLICT (match_id) DO UPDATE SET
+        series_id = EXCLUDED.series_id,
+        radiant_team_id = EXCLUDED.radiant_team_id,
+        dire_team_id = EXCLUDED.dire_team_id,
+        radiant_score = EXCLUDED.radiant_score,
+        dire_score = EXCLUDED.dire_score,
+        radiant_win = EXCLUDED.radiant_win,
+        duration = EXCLUDED.duration,
+        updated_at = NOW()
+    `;
+  } catch (e) {
+    console.log(`[Matches] Failed to save ${match.match_id}: ${e.message}`);
+  }
+}
+
+/**
+ * Convert OpenDota series_type to human-readable format
+ * 0 = BO1, 1 = BO3, 2 = BO5, 3 = BO2
+ */
+function convertSeriesType(seriesType) {
+  const map = {
+    0: 'BO1',
+    1: 'BO3',
+    2: 'BO5',
+    3: 'BO2'
+  };
+  return map[seriesType] || 'BO3';
+}
+
+/**
+ * Convert OpenDota match to our format
+ */
+function convertMatch(m) {
   const now = Date.now() / 1000;
-  const status = m.start_time < now - 3600 ? 'finished' : m.start_time < now ? 'live' : 'scheduled';
-  const rw = m.radiant_win;
+  const status = m.start_time < now - 3600 ? 'finished' : m.start_time < now ? 'live' : 'upcoming';
+  const radiantWin = m.radiant_win === true || m.radiant_win === 1;
 
-  // 获取战队名称 - 直接使用 OpenDota 提供的原始名称
-  const radiantTeamName = td && m.radiant ? td.name : (m.radiant_name || null);
-  const direTeamName = td && !m.radiant ? td.name : (m.opposing_team_name || m.dire_name || null);
-
-  // 获取队伍 logo - 用英文名查找
-  const radiantLogo = getTeamLogo(radiantTeamName);
-  const direLogo = getTeamLogo(direTeamName);
-
-  if (td) {
-    const isR = m.radiant;
-    return {
-      match_id: String(m.match_id),
-      series_id: m.series_id ? String(m.series_id) : null,
-      radiant_team_id: isR ? td.id : 'unknown',
-      dire_team_id: isR ? 'unknown' : td.id,
-      // 直接使用 OpenDota 提供的名称
-      radiant_team_name: isR ? td.name : (m.opposing_team_name || null),
-      radiant_team_name_cn: null,
-      dire_team_name: isR ? (m.opposing_team_name || null) : td.name,
-      dire_team_name_cn: null,
-      radiant_team_logo: isR ? radiantLogo : getTeamLogo(m.opposing_team_name),
-      dire_team_logo: isR ? getTeamLogo(m.opposing_team_name) : direLogo,
-      radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
-      // radiant_win 表示 radiant 方是否获胜
-      radiant_game_wins: rw ? 1 : 0, dire_game_wins: rw ? 0 : 1,
-      start_time: m.start_time, duration: m.duration || 0, league_id: m.leagueid,
-      series_type: m.series_type !== undefined ? String(m.series_type) : 'BO3',
-      status, lobby_type: 7, radiant_win: rw ? 1 : 0,
-    };
-  }
-  // 非 td 模式 - 直接使用 OpenDota 原始名称
   return {
     match_id: String(m.match_id),
     series_id: m.series_id ? String(m.series_id) : null,
-    radiant_team_id: m.radiant_team_id || null,
-    dire_team_id: m.dire_team_id || null,
+    radiant_team_id: m.radiant_team_id ? String(m.radiant_team_id) : null,
+    dire_team_id: m.dire_team_id ? String(m.dire_team_id) : null,
     radiant_team_name: m.radiant_name || null,
-    radiant_team_name_cn: null,
     dire_team_name: m.dire_name || null,
-    dire_team_name_cn: null,
-    radiant_team_logo: radiantLogo,
-    dire_team_logo: direLogo,
-    radiant_score: m.radiant_score || 0, dire_score: m.dire_score || 0,
-    radiant_game_wins: status === 'finished' ? (rw ? 1 : 0) : 0,
-    dire_game_wins: status === 'finished' ? (rw ? 0 : 1) : 0,
-    start_time: m.start_time, duration: m.duration || 0, league_id: m.leagueid || null,
-    series_type: m.series_type !== undefined ? String(m.series_type) : 'BO3',
-    status, lobby_type: m.lobby_type || 0, radiant_win: rw ? 1 : 0,
+    radiant_score: m.radiant_score || 0,
+    dire_score: m.dire_score || 0,
+    radiant_win: radiantWin ? 1 : 0,
+    start_time: m.start_time,
+    duration: m.duration || 0,
+    league_id: m.leagueid,
+    series_type: convertSeriesType(m.series_type),
+    status
   };
 }
 
@@ -474,100 +175,187 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const db = getDb();
+  if (!db) {
+    return res.status(500).json({ error: 'DATABASE_URL not configured' });
+  }
+
+  console.log('[Sync] Starting sync...');
+
   try {
-    if (!REDIS_URL) {
-      return res.status(500).json({ error: 'REDIS_URL not configured' });
-    }
+    // Time window: sync all matches for target leagues (no filter on initial sync)
+    // For regular sync, you could add: const twoDaysAgo = now - 2 * 24 * 60 * 60;
+    // const relevant = leagueMatches.filter(m => m.start_time > twoDaysAgo);
 
-    const r = await getRedis();
-    await r.ping();
-    console.log('Redis connected!');
-
-    // Get Neon DB
-    const db = getDb();
-    if (db) {
-      console.log('[DB] Neon database connected');
-    } else {
-      console.log('[DB] DATABASE_URL not configured, skipping database write');
-    }
-
-    // 获取现有数据
-    let existing = {};
-    try {
-      const data = await r.get('matches');
-      if (data) existing = JSON.parse(data);
-    } catch (e) { console.log('No existing'); }
-
-    // 获取新数据 - only from target leagues to avoid timeout
-    let cn = [];
-
-    // Fetch matches from target leagues only (last 30 days to get series_id)
-    const thirtyDaysAgo = Date.now() / 1000 - 30 * 24 * 60 * 60;
+    // Step 1: Save target tournaments
+    console.log('[Sync] Saving tournaments...');
     for (const league of TARGET_LEAGUES) {
+      await saveTournament(db, {
+        league_id: league.league_id,
+        name: league.name,
+        name_cn: league.name_cn,
+        tier: league.tier,
+        location: 'Online',
+        status: 'completed',
+        start_time: null,
+        end_time: null
+      });
+    }
+    console.log('[Sync] Saved tournaments');
+
+    // Step 2: Fetch and process matches
+    const allMatches = [];
+    const seriesMap = new Map();
+    const teamsToFetch = new Set();
+    const teamIds = new Set();
+
+    for (const league of TARGET_LEAGUES) {
+      console.log(`[Sync] Fetching league ${league.league_id}...`);
       try {
         const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${league.league_id}/matches`);
-        // Filter to last 30 days to get series_id
-        const recentMatches = leagueMatches.filter(m => m.start_time > thirtyDaysAgo);
-        for (const m of recentMatches) {
-          const c = convert(m);
-          if (c) cn.push(c);
+
+        // Filter to relevant matches
+        // No date filter - sync all matches for these leagues
+        const relevant = leagueMatches;
+        console.log(`[Sync] League ${league.league_id}: ${leagueMatches.length} total, ${relevant.length} relevant`);
+
+        for (const m of relevant) {
+          const match = convertMatch(m);
+          match.league_id = league.league_id;
+          allMatches.push(match);
+
+          // Track team IDs
+          if (match.radiant_team_id) teamIds.add(match.radiant_team_id);
+          if (match.dire_team_id) teamIds.add(match.dire_team_id);
+
+          // Group by series
+          if (match.series_id) {
+            if (!seriesMap.has(match.series_id)) {
+              // First match in series - determine the two teams
+              seriesMap.set(match.series_id, {
+                series_id: match.series_id,
+                league_id: league.league_id,
+                // Store team IDs from first match - these represent the two teams in the series
+                radiant_team_id: match.radiant_team_id,
+                dire_team_id: match.dire_team_id,
+                radiant_wins: 0,
+                dire_wins: 0,
+                series_type: convertSeriesType(match.series_type),
+                status: match.status,
+                start_time: match.start_time,
+                matches: []
+              });
+            }
+            const series = seriesMap.get(match.series_id);
+            series.matches.push(match.match_id);
+
+            // Update wins - use CURRENT match's team IDs
+            // radiant_win = 1: radiant side won
+            // radiant_win = 0: dire side won
+            // Track wins by matching the winner to series' original teams
+            if (match.radiant_win) {
+              // Current match's radiant team won - but we track wins for series' original teams
+              // Check which of the two series teams is the winner
+              if (match.radiant_team_id === series.radiant_team_id) {
+                series.radiant_wins++;
+              } else if (match.radiant_team_id === series.dire_team_id) {
+                series.dire_wins++;
+              }
+            } else {
+              // Current match's dire team won
+              if (match.dire_team_id === series.radiant_team_id) {
+                series.radiant_wins++;
+              } else if (match.dire_team_id === series.dire_team_id) {
+                series.dire_wins++;
+              }
+            }
+          }
         }
       } catch (e) {
-        console.error(`Failed to fetch league ${league.league_id}:`, e.message);
+        console.error(`[Sync] Failed to fetch league ${league.league_id}:`, e.message);
       }
     }
 
-    // 保存 matches 和队伍 - 强制保存到数据库不管是否已存在
-    let saved = 0;
-    let dbSaved = 0;
-    const processedTeams = new Set();
+    // Step 3: Fix null team names by fetching match details
+    console.log('[Sync] Fetching match details for null team names...');
+    const seriesWithNullTeams = [];
+    for (const [seriesId, series] of seriesMap) {
+      if (!series.radiant_team_id || !series.dire_team_id) {
+        seriesWithNullTeams.push(series);
+      }
+    }
 
-    // 强制保存所有比赛到数据库
-    for (const m of cn) {
-      existing[m.match_id] = m;
-      saved++;
-
-      // 保存到 Neon 数据库
-      if (db) {
-        // 自动保存新队伍到数据库
-        if (db) {
-          // 保存 radiant team
-          if (m.radiant_team_name && !processedTeams.has(m.radiant_team_name.toLowerCase())) {
-            await saveTeamToDb(db, m.radiant_team_name, m.radiant_team_id);
-            processedTeams.add(m.radiant_team_name.toLowerCase());
+    for (const series of seriesWithNullTeams) {
+      if (series.matches?.length > 0) {
+        try {
+          const details = await fetchJSON(`${OPENDOTA}/matches/${series.matches[0]}`);
+          if (details.radiant_team_id) series.radiant_team_id = String(details.radiant_team_id);
+          if (details.dire_team_id) series.dire_team_id = String(details.dire_team_id);
+          if (details.radiant_name) {
+            // Also save team info
+            teamsToFetch.add(details.radiant_team_id);
           }
-          // 保存 dire team
-          if (m.dire_team_name && !processedTeams.has(m.dire_team_name.toLowerCase())) {
-            await saveTeamToDb(db, m.dire_team_name, m.dire_team_id);
-            processedTeams.add(m.dire_team_name.toLowerCase());
+          if (details.dire_name) {
+            teamsToFetch.add(details.dire_team_id);
           }
-
-          await saveMatchToDb(db, m);
-          dbSaved++;
+        } catch (e) {
+          // Ignore
         }
       }
     }
-    await r.set('matches', JSON.stringify(existing));
 
-    const list = Object.values(existing).sort((a,b) => b.start_time - a.start_time).slice(0, 500);
-    await r.set('matches:list', JSON.stringify(list));
-
-    // 同步 tournaments 数据
-    const tournamentsResult = await syncTournaments(r, existing);
-
-    // Save tournaments to Neon
-    if (db) {
-      for (const t of tournamentsResult.tournaments) {
-        await saveTournamentToDb(db, t);
+    // Step 4: Fetch team details for team IDs we have
+    console.log('[Sync] Fetching team details...');
+    for (const teamId of teamIds) {
+      try {
+        const teamData = await fetchJSON(`${OPENDOTA}/teams/${teamId}`);
+        if (teamData?.team_id) {
+          await saveTeam(db, teamData);
+        }
+      } catch (e) {
+        // Ignore
       }
     }
+
+    // Also fetch teams from null series
+    for (const teamId of teamsToFetch) {
+      if (!teamIds.has(String(teamId))) {
+        try {
+          const teamData = await fetchJSON(`${OPENDOTA}/teams/${teamId}`);
+          if (teamData?.team_id) {
+            await saveTeam(db, teamData);
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
+
+    // Step 5: Save series
+    console.log('[Sync] Saving series...');
+    for (const series of seriesMap.values()) {
+      await saveSeries(db, series);
+    }
+
+    // Step 6: Save matches
+    console.log('[Sync] Saving matches...');
+    for (const match of allMatches) {
+      await saveMatch(db, match);
+    }
+
+    console.log('[Sync] Complete!');
 
     return res.status(200).json({
       success: true,
-      matches: { saved, total: Object.keys(existing).length, dbSaved },
-      tournaments: { count: tournamentsResult.tournaments.length, seriesCount: Object.keys(tournamentsResult.seriesByTournament).length }
+      stats: {
+        tournaments: TARGET_LEAGUES.length,
+        series: seriesMap.size,
+        matches: allMatches.length,
+        teams: teamIds.size
+      }
     });
   } catch (e) {
+    console.error('[Sync] Error:', e);
     return res.status(500).json({ error: e.message });
   }
 }

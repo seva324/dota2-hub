@@ -1,61 +1,36 @@
 /**
- * 获取即将开始的比赛 API
+ * Upcoming Series API
+ * Data: Neon PostgreSQL
  */
 
-import fs from 'fs';
-import path from 'path';
 import { neon } from '@neondatabase/serverless';
-import { mapTier } from './utils/tier-mapper.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
+// League ID to Tournament mapping
+const LEAGUE_ID_MAP = {
+  19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
+  18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
+  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
+  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
+};
+
+let sql = null;
+
 function getDb() {
-  if (!DATABASE_URL) return null;
-  return neon(DATABASE_URL);
-}
-
-function getTeams() {
-  try {
-    const localPath = path.join(process.cwd(), 'public', 'data', 'teams.json');
-    const data = fs.readFileSync(localPath, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('[Upcoming API] Error reading teams:', error);
-    return [];
-  }
-}
-
-function createTeamLogoMap(teams) {
-  const logoMap = new Map();
-  teams.forEach(team => {
-    logoMap.set(team.name.toLowerCase(), team.logo_url);
-    if (team.name_cn) {
-      logoMap.set(team.name_cn.toLowerCase(), team.logo_url);
-    }
-    if (team.tag) {
-      logoMap.set(team.tag.toLowerCase(), team.logo_url);
-    }
-  });
-  return logoMap;
-}
-
-function findTeamLogo(logoMap, teamName) {
-  if (!teamName) return null;
-  const normalizedName = teamName.toLowerCase().trim();
-  if (logoMap.has(normalizedName)) {
-    return logoMap.get(normalizedName);
-  }
-  for (const [key, logoUrl] of logoMap.entries()) {
-    if (key.length <= 2) continue;
-    if (normalizedName.includes(key) || key.includes(normalizedName)) {
-      return logoUrl;
+  if (!sql && DATABASE_URL) {
+    try {
+      sql = neon(DATABASE_URL);
+    } catch (e) {
+      console.error('[Upcoming API] Failed to create client:', e.message);
+      return null;
     }
   }
-  return null;
+  return sql;
 }
 
-// Normalize logo URL to use correct Steam CDN domain
-function normalizeLogoUrl(url) {
+// Normalize logo URL
+function normalizeLogo(url) {
   if (!url) return null;
   return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
 }
@@ -69,52 +44,57 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const db = getDb();
+  if (!db) {
+    return res.status(500).json({ error: 'Database not available' });
+  }
+
   try {
-    const db = getDb();
+    // Get upcoming series (status = 'upcoming' and start_time > now)
+    const now = Math.floor(Date.now() / 1000);
 
-    if (!db) {
-      return res.status(200).json([]);
-    }
-
-    // Query Neon directly
-    const matches = await db`
-      SELECT * FROM upcoming_matches
-      ORDER BY start_time ASC
+    const upcoming = await db`
+      SELECT s.*, t.name as tournament_name, t.name_cn as tournament_name_cn
+      FROM upcoming_series s
+      LEFT JOIN tournaments t ON s.league_id = t.league_id
+      WHERE s.start_time > ${now}
+      ORDER BY s.start_time ASC
       LIMIT 50
     `;
 
-    if (matches.length === 0) {
-      return res.status(200).json([]);
+    // Get teams for logo lookup
+    const teams = await db`SELECT * FROM teams`;
+    const teamMap = new Map();
+    for (const t of teams) {
+      teamMap.set(t.team_id, t);
     }
 
-    // Add logos and tier
-    const teams = getTeams();
-    const logoMap = createTeamLogoMap(teams);
+    const result = upcoming.map(s => {
+      const info = LEAGUE_ID_MAP[s.league_id];
+      const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
+      const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
 
-    const now = Math.floor(Date.now() / 1000);
-    const result = matches
-      .filter(m => m.start_time > now)
-      .map(m => ({
-        id: m.id,
-        match_id: m.match_id,
-        radiant_team_name: m.radiant_team_name,
-        radiant_team_name_cn: m.radiant_team_name_cn,
-        radiant_team_logo: normalizeLogoUrl(findTeamLogo(logoMap, m.radiant_team_name) || findTeamLogo(logoMap, m.radiant_team_name_cn)),
-        dire_team_name: m.dire_team_name,
-        dire_team_name_cn: m.dire_team_name_cn,
-        dire_team_logo: normalizeLogoUrl(findTeamLogo(logoMap, m.dire_team_name) || findTeamLogo(logoMap, m.dire_team_name_cn)),
-        start_time: m.start_time,
-        series_type: m.series_type,
-        tournament_name: m.tournament_name,
-        tournament_name_cn: m.tournament_name_cn,
-        tier: mapTier(m.tournament_name, m.league_id),
-        status: m.status,
-        source: m.source
-      }));
+      return {
+        id: s.id,
+        series_id: s.series_id ? String(s.series_id) : null,
+        radiant_team_id: s.radiant_team_id,
+        dire_team_id: s.dire_team_id,
+        radiant_team_name: radiantTeam?.name || null,
+        dire_team_name: direTeam?.name || null,
+        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
+        dire_team_logo: normalizeLogo(direTeam?.logo_url),
+        start_time: s.start_time,
+        series_type: s.series_type,
+        tournament_name: info?.name || s.tournament_name || null,
+        tournament_name_cn: info?.name_cn || s.tournament_name_cn || null,
+        tier: info?.tier || 'S',
+        status: s.status
+      };
+    });
 
     return res.status(200).json(result);
-  } catch (error) {
-    console.error('[Upcoming] Error:', error.message);
-    return res.status(200).json([]);
+  } catch (e) {
+    console.error('[Upcoming API] Error:', e.message);
+    return res.status(500).json({ error: e.message });
   }
 }

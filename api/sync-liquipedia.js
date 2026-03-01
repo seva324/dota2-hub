@@ -1,287 +1,316 @@
 /**
- * Liquipedia Data Sync API
- * Fetches upcoming matches from Liquipedia and saves to Neon
+ * Sync Upcoming Series from Liquipedia
+ * Fetches upcoming matches from Liquipedia:Matches page
+ * - Games with starttime > now and starttime < now + 7 days
+ *
+ * Usage: POST /api/sync-liquipedia
  */
 
 import { neon } from '@neondatabase/serverless';
 
-const LIQUIPEDIA_API = 'https://liquipedia.net/dota2/api.php';
-const OPENDOTA = 'https://api.opendota.com/api';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-// 中国战队关键词
-const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
+function getDb() {
+  if (!sql && DATABASE_URL) {
+    sql = neon(DATABASE_URL);
+  }
+  return sql;
+}
+
+let sql = null;
+
+const OPENDOTA = 'https://api.opendota.com/api';
+
+// Our target teams - key is unique identifier, name is display name
+const TARGET_TEAMS = {
+  'xg': { id: '8261500', name: 'Xtreme Gaming', tag: 'XG' },
+  'yb': { id: '9351740', name: 'Yakult Brothers', tag: 'YB' },
+  'vg': { id: '726228', name: 'Vici Gaming', tag: 'VG' },
+  'spirit': { id: '2583775', name: 'Team Spirit', tag: 'Spirit' },
+  'liquid': { id: '2163', name: 'Team Liquid', tag: 'Liquid' },
+  'tundra': { id: '8291895', name: 'Tundra Esports', tag: 'Tundra' },
+  'falcons': { id: '2587234', name: 'Team Falcons', tag: 'Falcons' },
+  'og': { id: '2586976', name: 'OG', tag: 'OG' },
+  'gaimin': { id: '7119388', name: 'Gaimin Gladiators', tag: 'GG' },
+};
+
+// Target leagues - empty means get all
+const TARGET_LEAGUE_KEYWORDS = [];
+
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
 /**
- * 从 Liquipedia API 获取比赛数据
+ * Fetch team by name from OpenDota
  */
-async function fetchLiquipediaMatches() {
+async function saveTeamFromOpenDota(db, teamName) {
+  if (!db || !teamName) return null;
+
   try {
-    const params = new URLSearchParams({
-      action: 'parse',
-      page: 'Liquipedia:Matches',
-      format: 'json',
-      prop: 'text'
-    });
+    const existing = await db`SELECT team_id FROM teams WHERE LOWER(name) = ${teamName.toLowerCase()}`;
+    if (existing.length > 0) return existing[0].team_id;
 
-    const url = `${LIQUIPEDIA_API}?${params}`;
-    console.log('[Liquipedia Sync] Fetching from:', url);
+    const teams = await fetchJSON(`${OPENDOTA}/teams?search=${encodeURIComponent(teamName)}`);
+    const team = teams.find(t => t.name?.toLowerCase() === teamName.toLowerCase());
 
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(15000),
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-
-    console.log('[Liquipedia Sync] Response status:', response.status);
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.log('[Liquipedia Sync] Error response:', text.substring(0, 200));
-      throw new Error(`HTTP ${response.status}`);
+    if (team?.team_id) {
+      await db`
+        INSERT INTO teams (team_id, name, tag, logo_url, region, created_at, updated_at)
+        VALUES (${String(team.team_id)}, ${team.name}, ${team.tag || null}, ${team.logo_url || null}, ${team.region || null}, NOW(), NOW())
+        ON CONFLICT (team_id) DO UPDATE SET name = EXCLUDED.name, tag = EXCLUDED.tag, logo_url = EXCLUDED.logo_url, updated_at = NOW()
+      `;
+      return String(team.team_id);
     }
-
-    const text = await response.text();
-    console.log('[Liquipedia Sync] Response length:', text.length);
-
-    const data = JSON.parse(text);
-    console.log('[Liquipedia Sync] API response received');
-
-    if (!data.parse || !data.parse.text) {
-      throw new Error('Invalid API response');
-    }
-
-    return { html: data.parse.text['*'], success: true };
-  } catch (error) {
-    console.error('[Liquipedia Sync] Fetch error:', error.message);
-    return { html: '', success: false, error: error.message };
+  } catch (e) {
+    console.log(`[Liquipedia] Failed to fetch team ${teamName}: ${e.message}`);
   }
+  return null;
 }
 
 /**
- * 识别战队信息
+ * Save upcoming series to database
  */
-function identifyTeam(name) {
-  if (!name) return { id: 'unknown', name_cn: name, is_cn: false };
+async function saveUpcomingSeries(db, series) {
+  if (!db || !series?.id) return;
 
-  const upperName = name.toUpperCase().trim();
-  const lowerName = name.toLowerCase();
-
-  if (upperName === 'XG' || lowerName.includes('xtreme')) {
-    return { id: 'xtreme-gaming', name_cn: 'XG', is_cn: true };
-  }
-
-  if (upperName === 'YB' || lowerName.includes('yakult') ||
-      upperName === 'AR' || lowerName.includes('azure')) {
-    return { id: 'yakult-brother', name_cn: 'YB', is_cn: true };
-  }
-
-  if (upperName === 'VG' || lowerName.includes('vici')) {
-    return { id: 'vici-gaming', name_cn: 'VG', is_cn: true };
-  }
-
-  return { id: 'unknown', name_cn: name, is_cn: false };
-}
-
-/**
- * 解析 Liquipedia HTML 获取比赛数据
- */
-function parseLiquipediaMatches(html) {
-  const matches = [];
-  const now = Math.floor(Date.now() / 1000);
-  const thirtyDaysLater = now + (30 * 24 * 60 * 60);
-
-  if (!html) {
-    console.log('[Liquipedia Sync] No HTML to parse');
-    return matches;
-  }
-
-  console.log('[Liquipedia Sync] HTML length:', html.length);
-
-  // Split by match-info div
-  const parts = html.split('<div class="match-info">');
-
-  console.log('[Liquipedia Sync] Found', parts.length - 1, 'potential match sections');
-
-  for (let i = 1; i < parts.length; i++) {
-    try {
-      const part = parts[i];
-
-      const endIdx = part.indexOf('<div class="match-info-tournament">');
-      if (endIdx === -1) continue;
-
-      const matchHtml = part.substring(0, endIdx);
-
-      // Extract timestamp
-      const tsMatch = matchHtml.match(/data-timestamp="(\d+)"/);
-      if (!tsMatch) continue;
-      const matchTime = parseInt(tsMatch[1]);
-
-      // Only future matches within 30 days
-      if (matchTime < now || matchTime > thirtyDaysLater) continue;
-
-      // Extract teams
-      const opponentRegex = /<div class="match-info-header-opponent[^"]*">/g;
-      const opponentDivs = matchHtml.split(opponentRegex);
-
-      let team1 = 'TBD';
-      let team2 = 'TBD';
-
-      if (opponentDivs.length >= 2) {
-        const t1Match = opponentDivs[1].match(/title="([^"]+)"/);
-        if (t1Match) team1 = t1Match[1].trim();
-      }
-
-      if (opponentDivs.length >= 3) {
-        const t2Match = opponentDivs[2].match(/title="([^"]+)"/);
-        if (t2Match) team2 = t2Match[1].trim();
-      }
-
-      // Skip if teams are TBD
-      if (team1 === 'TBD' || team2 === 'TBD') continue;
-
-      // Get team info
-      const team1Info = identifyTeam(team1);
-      const team2Info = identifyTeam(team2);
-
-      // Extract tournament
-      let tournament = '';
-      const tourneySection = part.substring(endIdx);
-
-      // Try multiple patterns
-      const tourneyMatch = tourneySection.match(/<div class="match-info-tournament"[^>]*>[^<]*(?:<a[^>]*>)?([^<]+)/);
-      if (tourneyMatch) {
-        tournament = tourneyMatch[1].trim();
-      }
-
-      // Pattern 2: Try data-tournament attribute
-      if (!tournament) {
-        const dataTourneyMatch = part.match(/data-tournament="([^"]+)"/);
-        if (dataTourneyMatch) tournament = dataTourneyMatch[1].trim();
-      }
-
-      if (!tournament) {
-        console.log(`[Liquipedia Sync] Warning: Could not extract tournament for ${team1} vs ${team2}`);
-      }
-
-      matches.push({
-        id: `liquipedia_${matchTime}_${team1Info.id}_${team2Info.id}`,
-        team1,
-        team2,
-        start_time: matchTime,
-        tournament_name: tournament || null,
-        team1Info,
-        team2Info,
-        status: 'upcoming',
-        source: 'liquipedia.net',
-      });
-
-    } catch (e) {
-      // Skip individual parse errors
-    }
-  }
-
-  console.log('[Liquipedia Sync] Parsed', matches.length, 'upcoming matches');
-
-  return matches;
-}
-
-/**
- * 检查是否为中国战队
- */
-function isChineseTeam(teamName) {
-  if (!teamName) return false;
-  const name = teamName.toLowerCase();
-  return CN_TEAMS.some(cn => name.includes(cn));
-}
-
-/**
- * 转换为应用所需的格式
- */
-function convertToAppFormat(matches) {
-  return matches.map(m => {
-    const radiantInfo = m.team1Info || { name_cn: isChineseTeam(m.team1) ? m.team1 : undefined, is_cn: isChineseTeam(m.team1) };
-    const direInfo = m.team2Info || { name_cn: isChineseTeam(m.team2) ? m.team2 : undefined, is_cn: isChineseTeam(m.team2) };
-
-    return {
-      id: m.id,
-      match_id: parseInt(m.id.replace(/\D/g, '')) || Math.floor(Math.random() * 1000000),
-      radiant_team_name: m.team1,
-      radiant_team_name_cn: radiantInfo.is_cn ? (radiantInfo.name_cn || m.team1) : undefined,
-      dire_team_name: m.team2,
-      dire_team_name_cn: direInfo.is_cn ? (direInfo.name_cn || m.team2) : undefined,
-      start_time: m.start_time,
-      series_type: 'BO3',
-      tournament_name: m.tournament_name || 'Dota 2 Pro League',
-      tournament_name_cn: m.tournament_name,
-    };
-  });
-}
-
-/**
- * Save upcoming match to Neon database
- */
-async function saveUpcomingToDb(db, match) {
-  if (!db) return;
   try {
     await db`
-      INSERT INTO upcoming_matches (
-        id, match_id, radiant_team_name, radiant_team_name_cn,
-        dire_team_name, dire_team_name_cn, start_time, series_type,
-        tournament_name, tournament_name_cn, status, source, updated_at
-      ) VALUES (
-        ${match.id}, ${match.match_id}, ${match.radiant_team_name},
-        ${match.radiant_team_name_cn}, ${match.dire_team_name},
-        ${match.dire_team_name_cn}, ${match.start_time}, ${match.series_type},
-        ${match.tournament_name}, ${match.tournament_name_cn}, 'upcoming',
-        ${match.source || 'liquipedia.net'}, NOW()
-      )
+      INSERT INTO upcoming_series (id, series_id, league_id, radiant_team_id, dire_team_id, start_time, series_type, status, created_at, updated_at)
+      VALUES (${series.id}, ${series.series_id}, ${series.league_id}, ${series.radiant_team_id}, ${series.dire_team_id}, ${series.start_time}, ${series.series_type || 'BO3'}, ${series.status || 'upcoming'}, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
+        radiant_team_id = EXCLUDED.radiant_team_id,
+        dire_team_id = EXCLUDED.dire_team_id,
         start_time = EXCLUDED.start_time,
-        tournament_name = EXCLUDED.tournament_name,
-        tournament_name_cn = EXCLUDED.tournament_name_cn,
-        status = 'upcoming',
+        series_type = EXCLUDED.series_type,
+        status = EXCLUDED.status,
         updated_at = NOW()
     `;
   } catch (e) {
-    console.error(`[DB] Failed to save upcoming ${match.id}:`, e.message);
+    console.log(`[Liquipedia] Failed to save ${series.id}: ${e.message}`);
   }
 }
 
 /**
- * 保存队伍到数据库（如果不存在则创建）
+ * Build team lookup map for matching
+ * Maps various forms of team names to their keys
  */
-async function saveTeamToDb(db, teamName) {
-  if (!db || !teamName) return;
+function buildTeamLookup() {
+  const lookup = {};
 
-  // 检查队伍是否已存在
-  try {
-    const [existing] = await db`SELECT id FROM teams WHERE LOWER(name) = ${teamName.toLowerCase()}`;
-    if (existing) return;
+  // Exact match only - don't use substrings
+  // Key: team key, Value: { variations: array of exact matches, requireWordBoundary: boolean }
+  const teamVariations = {
+    'xg': { variations: ['xtreme gaming', 'xg'], exact: true },
+    'yb': { variations: ['yakult brothers', 'yb', 'ar'], exact: true },
+    'vg': { variations: ['vici gaming', 'vg'], exact: true },
+    'spirit': { variations: ['team spirit', 'spirit'], exact: false },
+    'liquid': { variations: ['team liquid', 'liquid'], exact: false },
+    'tundra': { variations: ['tundra esports', 'tundra'], exact: false },
+    'falcons': { variations: ['team falcons', 'falcons'], exact: false },
+    'og': { variations: ['og'], exact: true },
+    'gaimin': { variations: ['gaimin gladiators', 'gaimin gladiators'], exact: true },
+  };
 
-    // 调用 OpenDota API 获取队伍信息
-    const response = await fetch(`${OPENDOTA}/teams?search=${encodeURIComponent(teamName)}`);
-    if (!response.ok) return;
-
-    const teams = await response.json();
-    const team = teams.find(t => t.name?.toLowerCase() === teamName.toLowerCase()) || teams[0];
-
-    if (team?.team_id) {
-      const info = identifyTeam(teamName);
-      await db`
-        INSERT INTO teams (id, name, name_cn, tag, logo_url, region, is_cn_team, created_at, updated_at)
-        VALUES (${String(team.team_id)}, ${team.name}, ${info.name_cn}, ${team.tag || ''}, ${team.logo_url || ''}, ${team.region || 'Unknown'}, ${info.is_cn ? 1 : 0}, ${Math.floor(Date.now() / 1000)}, ${Math.floor(Date.now() / 1000)})
-        ON CONFLICT (id) DO UPDATE SET
-          logo_url = EXCLUDED.logo_url,
-          name_cn = EXCLUDED.name_cn,
-          updated_at = NOW()
-      `;
-      console.log(`[Teams] Added: ${team.name} (${team.team_id})`);
+  for (const [key, config] of Object.entries(teamVariations)) {
+    for (const v of config.variations) {
+      lookup[v] = { key, exact: config.exact };
     }
-  } catch (e) {
-    console.log(`[Teams] Failed to save ${teamName}: ${e.message}`);
   }
+
+  return lookup;
+}
+
+/**
+ * Check if team name matches a pattern
+ */
+function matchesPattern(teamName, pattern, requireExact) {
+  const lower = teamName.toLowerCase();
+  const pat = pattern.toLowerCase();
+
+  if (requireExact) {
+    // Exact match only
+    return lower === pat;
+  } else {
+    // Word boundary match - use regex
+    const regex = new RegExp(`\\b${escapeRegex(pat)}\\b`, 'i');
+    return regex.test(lower);
+  }
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Fetch upcoming matches from Liquipedia:Matches
+ */
+async function fetchLiquipediaUpcoming() {
+  const url = 'https://liquipedia.net/dota2/api.php?action=parse&page=Liquipedia:Matches&format=json&prop=text';
+
+  const res = await fetch(url, {
+    headers: {
+      'Accept-Encoding': 'gzip',
+      'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)'
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  const text = await res.text();
+  const data = JSON.parse(text);
+  const html = data?.parse?.text?.['*'] || '';
+
+  // Debug info to return
+  const debug = { responseLength: html.length };
+
+  if (html.length < 1000) {
+    console.log('[Liquipedia] Empty or too short response');
+    return { upcoming: [], debug };
+  }
+
+  // Debug: check what match patterns exist
+  const matchCount = (html.match(/class="[^"]*match[^"]*"/g) || []).length;
+  debug.matchPatterns = matchCount;
+
+  const now = Math.floor(Date.now() / 1000);
+  const weekLater = now + 7 * 24 * 60 * 60;
+
+  const upcoming = [];
+  const teamLookup = buildTeamLookup();
+
+  // Split HTML by match blocks - check for different patterns
+  let matchBlocks = html.split(/<div class="match-info">/);
+  if (matchBlocks.length <= 1) {
+    // Try alternative pattern
+    matchBlocks = html.split(/<div[^>]*class="[^"]*match[^"]*"[^>]*>/);
+  }
+  debug.matchBlocksFound = matchBlocks.length - 1;
+
+  console.log(`[Liquipedia] Found ${matchBlocks.length - 1} match blocks`);
+
+  for (let i = 1; i < matchBlocks.length; i++) {
+    const block = matchBlocks[i].substring(0, 5000);
+
+    // Extract timestamp
+    const tsMatch = block.match(/data-timestamp="(\d+)"/);
+    const timestamp = tsMatch ? parseInt(tsMatch[1]) : null;
+
+    // Filter: only upcoming within 14 days (for debugging)
+    if (!timestamp || timestamp < now || timestamp > weekLater * 2) {
+      continue;
+    }
+
+    console.log(`[Liquipedia] Timestamp ${timestamp} is valid (now=${now})`);
+
+    // Extract team names - preserve order (left team first, right team second)
+    // teamNames[0] = left team (radiant), teamNames[1] = right team (dire)
+    const teamNamesSet = new Set();
+
+    // Pattern 1: <a href="/dota2/TeamName" title="TeamName"><img...
+    const pattern1 = /href="\/dota2\/([^"]+)"\s+title="([^"]+)"/g;
+    let m;
+    while ((m = pattern1.exec(block)) !== null && teamNamesSet.size < 2) {
+      const href = m[1].trim();
+      const title = m[2].trim();
+      // Skip if href contains special characters
+      if (href.includes('/') || href.includes('#')) continue;
+      if (title.length >= 2 && title.length < 40) {
+        teamNamesSet.add(title);  // Set automatically dedupes
+      }
+    }
+
+    const teamNames = [...teamNamesSet];
+    if (teamNames.length < 2) continue;
+
+    console.log(`[Liquipedia] Found teams: [${teamNames.join(', ')}]`);
+
+    // Add to debug
+    if (!debug.sampleTeams) debug.sampleTeams = [];
+    if (debug.sampleTeams.length < 5) {
+      debug.sampleTeams.push(teamNames.slice(0, 4));
+    }
+
+    // Check if any of our target teams are in this match
+    // teamNames[0] = left team (radiant), teamNames[1] = right team (dire)
+    let matchedTeam = null;
+    let isOurTeamRadiant = false;
+
+    // First check if our target team is on the left (radiant position)
+    for (let i = 0; i < teamNames.length; i++) {
+      const name = teamNames[i];
+
+      for (const [pattern, config] of Object.entries(teamLookup)) {
+        if (matchesPattern(name, pattern, config.exact)) {
+          matchedTeam = { key: config.key, name: name };
+          isOurTeamRadiant = (i === 0);  // true if left team, false if right team
+          break;
+        }
+      }
+      if (matchedTeam) break;
+    }
+
+    if (!matchedTeam) continue; // Not one of our target teams
+
+    // Determine opponent based on our team's position
+    const opponentName = isOurTeamRadiant ? teamNames[1] : teamNames[0];
+
+    // Debug: log all extracted teams
+    console.log(`[Liquipedia] Debug teams: teamNames=[${teamNames.join(', ')}], matched=${matchedTeam.name}, opp=${opponentName}`);
+
+    // Extract tournament
+    const tournMatch = block.match(/class="match-info-tournament"[^]*?title="([^"]+)"/);
+    let tournament = '';
+    if (tournMatch) {
+      const parts = tournMatch[1].replace(/_/g, ' ').split('/');
+      const name = parts[0].trim();
+      const season = parts[1] ? parts[1].trim() : '';
+      tournament = season ? `${name} Season ${season}` : name;
+    }
+
+    // Filter by target leagues (if any)
+    const isTargetLeague = TARGET_LEAGUE_KEYWORDS.length === 0 || TARGET_LEAGUE_KEYWORDS.some(kw =>
+      tournament.toLowerCase().includes(kw)
+    );
+    if (!isTargetLeague) continue;
+
+    // Skip if opponent is the same as our team (BYE match)
+    if (opponentName.toLowerCase() === matchedTeam.name.toLowerCase()) {
+      console.log(`[Liquipedia] Skipping BYE match: ${matchedTeam.name} vs ${opponentName}`);
+      continue;
+    }
+
+    // Debug: log extracted team names
+    console.log(`[Liquipedia] Match: [${teamNames[0]}] vs [${teamNames[1]}] -> our=${matchedTeam.name}(${isOurTeamRadiant ? 'radiant' : 'dire'}) opp=${opponentName}`);
+
+    // Extract best-of
+    const boMatch = block.match(/\(Bo(\d+)\)/i);
+    const bestOf = boMatch ? `BO${boMatch[1]}` : 'BO3';
+
+    upcoming.push({
+      ourTeamKey: matchedTeam.key,
+      ourTeamName: matchedTeam.name,
+      opponentName,
+      isOurTeamRadiant,
+      tournament,
+      bestOf,
+      timestamp
+    });
+  }
+
+  // Sort by timestamp
+  upcoming.sort((a, b) => a.timestamp - b.timestamp);
+
+  console.log(`[Liquipedia] Found ${upcoming.length} upcoming matches for our teams`);
+
+  // Debug: return team names extracted
+  console.log(`[Liquipedia] DEBUG: ${JSON.stringify(upcoming.map(u => ({ teams: [u.ourTeamName, u.opponentName], isRadiant: u.isOurTeamRadiant })))}`);
+
+  return { upcoming, debug };
 }
 
 export default async function handler(req, res) {
@@ -289,103 +318,130 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const db = getDb();
+  if (!db) {
+    return res.status(500).json({ error: 'DATABASE_URL not configured' });
   }
 
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Initialize Neon DB
-  let db = null;
-  if (DATABASE_URL) {
-    try {
-      db = neon(DATABASE_URL);
-      await db`SELECT 1`;
-      console.log('[Liquipedia Sync] Neon DB connected');
-    } catch (dbError) {
-      console.error('[Liquipedia Sync] Neon DB connection failed:', dbError.message);
-      return res.status(503).json({
-        error: 'Database unavailable',
-        message: 'Failed to connect to Neon: ' + dbError.message
-      });
-    }
-  } else {
-    return res.status(503).json({
-      error: 'Database not configured',
-      message: 'DATABASE_URL environment variable is not set'
-    });
-  }
+  console.log('[Sync Liquipedia] Starting...');
 
   try {
-    console.log('[Liquipedia Sync] Starting...');
+    const now = Math.floor(Date.now() / 1000);
 
-    // 从 Liquipedia API 获取数据
-    console.log('[Liquipedia Sync] Fetching from Liquipedia API...');
-    const result = await fetchLiquipediaMatches();
+    // Step 1: Clean up past series and invalid data
+    console.log('[Sync Liquipedia] Cleaning up past/invalid series...');
+    await db`DELETE FROM upcoming_series WHERE start_time < ${now}`;
 
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch from Liquipedia API');
+    // Also clean up matches where radiant == dire (invalid BYE matches)
+    await db`DELETE FROM upcoming_series WHERE radiant_team_id = dire_team_id`;
+
+    // Step 2: Remove series that already have matches
+    await db`
+      DELETE FROM upcoming_series us
+      WHERE EXISTS (
+        SELECT 1 FROM matches m
+        WHERE m.series_id = us.series_id
+        AND m.series_id IS NOT NULL
+      )
+    `;
+    console.log('[Sync Liquipedia] Cleaned up series that already have matches');
+
+    // Step 3: Fetch from Liquipedia
+    console.log('[Sync Liquipedia] Fetching from Liquipedia...');
+    let liquipediaUpcoming = [];
+
+    try {
+      const result = await fetchLiquipediaUpcoming();
+      liquipediaUpcoming = result.upcoming;
+    } catch (e) {
+      console.log(`[Sync Liquipedia] Liquipedia fetch failed: ${e.message}`);
     }
 
-    // 解析比赛数据
-    console.log('[Liquipedia Sync] Parsing matches...');
-    const parsedMatches = parseLiquipediaMatches(result.html);
-    console.log(`[Liquipedia Sync] Parsed ${parsedMatches.length} matches`);
+    // Step 4: Get teams from database
+    console.log('[Sync Liquipedia] Loading teams from database...');
+    const allTeams = await db`SELECT team_id, name, tag FROM teams`;
+    const teamNameToId = new Map();
 
-    // 转换为应用格式
-    const appMatches = convertToAppFormat(parsedMatches);
-
-    // Save to Neon
-    let dbSaved = 0;
-    const processedTeams = new Set();
-    for (const match of appMatches) {
-      await saveUpcomingToDb(db, match);
-      dbSaved++;
-
-      // 自动保存新队伍到数据库
-      if (db) {
-        if (match.radiant_team_name && !processedTeams.has(match.radiant_team_name.toLowerCase())) {
-          await saveTeamToDb(db, match.radiant_team_name);
-          processedTeams.add(match.radiant_team_name.toLowerCase());
-        }
-        if (match.dire_team_name && !processedTeams.has(match.dire_team_name.toLowerCase())) {
-          await saveTeamToDb(db, match.dire_team_name);
-          processedTeams.add(match.dire_team_name.toLowerCase());
-        }
+    for (const t of allTeams) {
+      teamNameToId.set(t.name.toLowerCase(), t.team_id);
+      if (t.tag) {
+        teamNameToId.set(t.tag.toLowerCase(), t.team_id);
       }
     }
-    console.log(`[Liquipedia Sync] Saved ${dbSaved} upcoming matches to Neon`);
+    console.log(`[Sync Liquipedia] Loaded ${allTeams.length} teams from database`);
 
-    // 打印 XG 比赛
-    const xgMatches = appMatches.filter(m =>
-      m.radiant_team_name?.toLowerCase().includes('xg') ||
-      m.dire_team_name?.toLowerCase().includes('xg') ||
-      m.radiant_team_name?.toLowerCase().includes('xtreme') ||
-      m.dire_team_name?.toLowerCase().includes('xtreme')
-    );
+    // Step 5: Save new upcoming series
+    let saved = 0;
 
-    if (xgMatches.length > 0) {
-      console.log('[Liquipedia Sync] XG matches found:');
-      xgMatches.forEach(m => {
-        const time = new Date(m.start_time * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-        console.log(`  - ${m.radiant_team_name} vs ${m.dire_team_name} @ ${time}`);
+    for (const m of liquipediaUpcoming) {
+      const ourTeam = TARGET_TEAMS[m.ourTeamKey];
+      const ourNameLower = ourTeam.name.toLowerCase();
+      const opponentLower = m.opponentName.toLowerCase();
+
+      // Find team IDs from database
+      let radiantTeamId = teamNameToId.get(ourNameLower);
+      let direTeamId = teamNameToId.get(opponentLower);
+
+      // If not found, fetch from OpenDota
+      if (!radiantTeamId) {
+        radiantTeamId = await saveTeamFromOpenDota(db, ourTeam.name);
+      }
+      if (!direTeamId) {
+        direTeamId = await saveTeamFromOpenDota(db, m.opponentName);
+      }
+
+      if (!radiantTeamId || !direTeamId) {
+        console.log(`[Liquipedia] Could not find team IDs: ${ourTeam.name} -> ${radiantTeamId}, ${m.opponentName} -> ${direTeamId}`);
+        continue;
+      }
+
+      // Determine league_id from tournament name
+      let leagueId = null;
+      const tourneyLower = m.tournament.toLowerCase();
+      if (tourneyLower.includes('dreamleague') && (tourneyLower.includes('28') || tourneyLower.includes('season 28'))) {
+        leagueId = 19269;
+      } else if (tourneyLower.includes('dreamleague') && (tourneyLower.includes('27') || tourneyLower.includes('season 27'))) {
+        leagueId = 18988;
+      } else if (tourneyLower.includes('blast') && tourneyLower.includes('slam') && tourneyLower.includes('vi')) {
+        leagueId = 19099;
+      } else if (tourneyLower.includes('esl') && tourneyLower.includes('challenger') && tourneyLower.includes('china')) {
+        leagueId = 19130;
+      }
+
+      if (!leagueId) {
+        console.log(`[Liquipedia] Skipping unknown tournament: ${m.tournament}`);
+        continue;
+      }
+
+      const seriesId = `${leagueId}_${ourTeam.name}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
+      const id = `${leagueId}_${m.timestamp}_${ourTeam.name}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
+
+      await saveUpcomingSeries(db, {
+        id,
+        series_id: seriesId,
+        league_id: leagueId,
+        radiant_team_id: radiantTeamId,
+        dire_team_id: direTeamId,
+        start_time: m.timestamp,
+        series_type: m.bestOf,
+        status: 'upcoming'
       });
+      saved++;
     }
+
+    console.log(`[Sync Liquipedia] Saved ${saved} upcoming series`);
 
     return res.status(200).json({
       success: true,
-      count: appMatches.length,
-      xgMatches: xgMatches.length,
-      message: `Synced ${appMatches.length} upcoming matches`
+      stats: {
+        liquipedia: liquipediaUpcoming.length,
+        saved
+      }
     });
-
-  } catch (error) {
-    console.error('[Liquipedia Sync] Error:', error);
-    return res.status(500).json({
-      error: 'Sync failed',
-      message: error.message
-    });
+  } catch (e) {
+    console.error('[Sync Liquipedia] Error:', e);
+    return res.status(500).json({ error: e.message });
   }
 }
