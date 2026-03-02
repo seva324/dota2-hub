@@ -14,7 +14,7 @@ const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
-const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || 'ab01b0b0-c459-4524-92eb-0b6af0cdc415';
+const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY;
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
 
 // XG战队信息

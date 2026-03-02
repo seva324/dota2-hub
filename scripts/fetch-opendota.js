@@ -13,7 +13,7 @@ import { getTournamentIdByLeagueId } from './league-mapping.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY || 'ab01b0b0-c459-4524-92eb-0b6af0cdc415';
+const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY;
 const OPENDOTA_BASE_URL = 'https://api.opendota.com/api';
 
 const dbPath = path.join(__dirname, '..', 'data', 'dota2.db');

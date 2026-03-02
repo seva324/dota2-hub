@@ -12,3 +12,16 @@ dist/docs/
 !public/data/
 .vercel
 .env*.local
+
+# Claude files
+.claude/
+CLAUDE.md
+*_SUMMARY.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
