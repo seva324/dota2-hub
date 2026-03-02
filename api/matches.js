@@ -27,6 +27,23 @@ function normalizeLogo(url) {
   return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
 }
 
+// Convert OpenDota series_type to human-readable format
+// OpenDota: 0=BO1, 1=BO3, 2=BO5, 3=BO2
+function convertSeriesType(seriesType) {
+  if (!seriesType) return 'BO3';
+  const map = {
+    0: 'BO1',
+    1: 'BO3',
+    2: 'BO5',
+    3: 'BO2'
+  };
+  // If already a string (e.g., 'BO3'), return as-is
+  if (typeof seriesType === 'string') {
+    return seriesType.startsWith('BO') ? seriesType : map[seriesType] || 'BO3';
+  }
+  return map[seriesType] || 'BO3';
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -77,7 +94,7 @@ export default async function handler(req, res) {
         start_time: m.start_time,
         duration: m.duration,
         league_id: m.league_id,
-        series_type: m.series_type,
+        series_type: convertSeriesType(m.series_type),
         status: m.status
       };
     });

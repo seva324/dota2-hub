@@ -35,6 +35,23 @@ function normalizeLogo(url) {
   return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
 }
 
+// Convert OpenDota series_type to human-readable format
+// OpenDota: 0=BO1, 1=BO3, 2=BO5, 3=BO2
+function convertSeriesType(seriesType) {
+  if (!seriesType) return 'BO3';
+  const map = {
+    0: 'BO1',
+    1: 'BO3',
+    2: 'BO5',
+    3: 'BO2'
+  };
+  // If already a string (e.g., 'BO3'), return as-is
+  if (typeof seriesType === 'string') {
+    return seriesType.startsWith('BO') ? seriesType : map[seriesType] || 'BO3';
+  }
+  return map[seriesType] || 'BO3';
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -84,7 +101,7 @@ export default async function handler(req, res) {
         radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
         dire_team_logo: normalizeLogo(direTeam?.logo_url),
         start_time: s.start_time,
-        series_type: s.series_type,
+        series_type: convertSeriesType(s.series_type),
         tournament_name: info?.name || s.tournament_name || null,
         tournament_name_cn: info?.name_cn || s.tournament_name_cn || null,
         tier: info?.tier || 'S',
