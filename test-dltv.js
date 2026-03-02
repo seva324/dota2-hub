@@ -4,7 +4,20 @@
 
 const DLTV_URL = 'https://dltv.org/matches';
 
-const CN_TEAMS = ['xg', 'xtreme', 'yb', 'yakult', 'vg', 'vici', 'lgd', 'ar', 'azure', 'astral'];
+// Chinese teams - used to identify CN matches
+// Updated from lib/teams.ts - sync any changes there
+const CN_TEAMS = [
+  'xg', 'xtreme',       // Xtreme Gaming
+  'yb', 'yakult',       // Yakult Brothers
+  'yb.tt', 'tearlaments', // YB.Tearlaments
+  'roar',               // Roar Gaming
+  'vg', 'vici',         // Vici Gaming
+  'game master', 'gm',  // Game Master
+  'refuser',            // Team Refuser
+  'thriving',           // Thriving
+  'lgd', 'psg.lgd',     // PSG.LGD
+  'azure', 'ar',        // Azure Ray
+];
 
 async function fetchDLTVMatches() {
   try {

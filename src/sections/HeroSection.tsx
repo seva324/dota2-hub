@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { isChineseTeam } from '@/lib/teams';
 
 interface Match {
   id: number;
@@ -55,8 +56,6 @@ function getTeamLogo(apiLogoUrl: string | undefined, teamName: string | undefine
   return teamLogoFallbackMap[key] || '';
 }
 
-const cnTeams = ['xg', 'xtreme', 'yb', 'yakult', 'tearlaments', 'vg', 'vici', 'game master', 'tidebound', 'refuser', 'thriving', 'azure'];
-
 const teamAbbr: Record<string, string> = {
   'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
   'Team Spirit': 'Spirit', 'Natus Vincere': 'NAVI',
@@ -68,12 +67,6 @@ const teamAbbr: Record<string, string> = {
   'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
   'Team Yandex': 'Yandex', 'Team Nemesis': 'Nemesis',
 };
-
-function isChineseTeam(teamName: string | undefined): boolean {
-  if (!teamName) return false;
-  const name = teamName.toLowerCase();
-  return cnTeams.some(cn => name.includes(cn));
-}
 
 function getAbbr(teamName: string | null | undefined): string {
   if (!teamName) return '';

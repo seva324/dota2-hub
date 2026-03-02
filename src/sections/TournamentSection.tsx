@@ -3,6 +3,7 @@ import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'luc
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { isChineseTeam } from '@/lib/teams';
 
 // Hero data type
 interface HeroData {
@@ -169,19 +170,6 @@ const statusMap: Record<string, { label: string; color: string; gradient: string
     gradient: 'from-slate-500 to-slate-600'
   },
 };
-
-const chineseTeamNames = [
-  'xg', 'xtreme', 
-  'yb', 'yakult', 'tearlaments', 
-  'vg', 'vici', 'game master', 'tidebound', 
-  'refuser', 'thriving', 'azure'
-];
-
-function isChineseTeam(teamName: string | undefined): boolean {
-  if (!teamName) return false;
-  const name = teamName.toLowerCase();
-  return chineseTeamNames.some(cn => name.includes(cn));
-}
 
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { isChineseTeam } from '@/lib/teams';
 
 
 
@@ -50,8 +51,6 @@ const teamLogoFallbackMap: Record<string, string> = {
   'team spirit': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
 };
 
-const cnTeams = ['xg', 'xtreme', 'yb', 'yakult', 'tearlaments', 'vg', 'vici', 'game master', 'tidebound', 'refuser', 'thriving', 'azure'];
-
 const teamAbbr: Record<string, string> = {
   'Xtreme Gaming': 'XG',
   'Yakult Brothers': 'YB',
@@ -72,12 +71,6 @@ const teamAbbr: Record<string, string> = {
   'PSG.LGD': 'LGD',
   'Team Yandex': 'Yandex',
 };
-
-function isChineseTeam(teamName: string | undefined): boolean {
-  if (!teamName) return false;
-  const name = teamName.toLowerCase();
-  return cnTeams.some(cn => name.includes(cn));
-}
 
 function getTeamLogo(apiLogoUrl: string | undefined, teamName: string | undefined): string {
   // 优先使用 API 返回的 logo URL
