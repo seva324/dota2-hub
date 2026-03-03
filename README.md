@@ -1,41 +1,65 @@
 # DOTA2 Pro Hub
 
-专业的DOTA2战报与赛事预测平台，重点关注中国战队（XG、YB、VG、LGD、AR），汇集T1级别赛事结果、转会动态、社区热点。
+专业的 DOTA2 战报与赛事资讯平台，聚合赛事、赛程、新闻与社区内容。
 
 ## 功能特性
 
-- **赛事战报**：T1级别赛事实时比分与排名，突出显示中国战队
-- **赛事预告**：即将开始的比赛和赛事日历
-- **新闻与转会**：最新DOTA2电竞资讯与选手动态
-- **社区热点**：Reddit、NGA、X 热门讨论
+- **赛事战报**：实时比分、关键战绩与赛事汇总
+- **赛事预告**：即将开赛对阵与时间线
+- **新闻聚合**：聚合 BO3.gg 与 Hawk Live 新闻
+- **中文翻译**：新闻标题、摘要、正文自动翻译并入库
+- **内容过滤**：自动过滤博彩相关新闻
+
+## 新闻抓取与翻译流程
+
+1. `GET/POST /api/sync-news` 抓取 BO3.gg + Hawk Live 新闻，并写入 `news_articles`。
+2. 入库时保存英文原文字段（`*_en`）。
+3. 对新增或更新文章触发 MiniMax 翻译，写入中文字段（`*_zh`）。
+4. `GET /api/news` 直接读取数据库，按发布时间倒序返回中文优先内容。
+
+说明：
+- BO3 正文仅从 `.c-article-body .c-editorjs-render` 提取，保留正文段落、正文内链接和正文图片。
+- 已存在且未变化的新闻不会重复抓取/重复翻译。
+
+## 关键 API
+
+- `GET /api/news`：读取新闻列表（中文优先）
+- `GET/POST /api/sync-news`：手动触发新闻同步与增量翻译
+- `POST /api/translate-news-content`：正文翻译接口（按需使用）
+
+## 自动任务（Vercel Cron）
+
+`vercel.json` 中配置了定时任务：
+- `/api/sync-opendota`：`0 8 * * *`
+- `/api/aggregate-tournaments`：`0 8 * * *`
+- `/api/sync-liquipedia`：`0 14 * * *`
+- `/api/sync-news`：`30 9 * * *`
+
+## 环境变量
+
+- `DATABASE_URL` 或 `POSTGRES_URL`：PostgreSQL 连接串（Neon）
+- `MINIMAX_API_KEY`：MiniMax API Key，用于中文翻译
+- `MINIMAX_MODEL`：可选，默认 `MiniMax-M2.5`
 
 ## 数据来源
 
 - [OpenDota API](https://docs.opendota.com/)
-- [Liquidpedia](https://liquipedia.net/dota2)
-- [Dotabuff](https://www.dotabuff.com)
-- [GosuGamers](https://www.gosugamers.net/dota2)
+- [Liquipedia](https://liquipedia.net/dota2)
+- [BO3.gg](https://bo3.gg/dota2/news)
+- [Hawk Live](https://hawk.live/tags/dota-2-news)
 
 ## 技术栈
 
 - React + TypeScript + Vite
-- Tailwind CSS
-- shadcn/ui
-
-## 自动更新
-
-网站每天早上 8:00（北京时间）自动更新，通过 GitHub Actions 工作流实现。
+- Vercel Serverless Functions
+- PostgreSQL (Neon)
+- Tailwind CSS + shadcn/ui
 
 ## 本地开发
 
 ```bash
-# 安装依赖
 npm install
-
-# 启动开发服务器
 npm run dev
-
-# 构建
 npm run build
 ```
 

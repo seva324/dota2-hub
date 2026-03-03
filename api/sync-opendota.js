@@ -140,6 +140,13 @@ function convertSeriesType(seriesType) {
     2: 'BO5',
     3: 'BO2'
   };
+  if (seriesType === null || seriesType === undefined || seriesType === '') return 'BO3';
+  if (typeof seriesType === 'string') {
+    const normalized = seriesType.toUpperCase();
+    if (normalized.startsWith('BO')) return normalized;
+    const parsed = Number(seriesType);
+    return Number.isInteger(parsed) && map[parsed] ? map[parsed] : 'BO3';
+  }
   return map[seriesType] || 'BO3';
 }
 
@@ -240,7 +247,8 @@ export default async function handler(req, res) {
                 dire_team_id: match.dire_team_id,
                 radiant_wins: 0,
                 dire_wins: 0,
-                series_type: convertSeriesType(match.series_type),
+                // match.series_type is already normalized in convertMatch()
+                series_type: match.series_type || 'BO3',
                 status: match.status,
                 start_time: match.start_time,
                 matches: []

@@ -14,6 +14,10 @@
     {
       "path": "/api/sync-liquipedia",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/sync-news",
+      "schedule": "30 9 * * *"
     }
   ]
 }

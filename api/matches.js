@@ -30,7 +30,7 @@ function normalizeLogo(url) {
 // Convert OpenDota series_type to human-readable format
 // OpenDota: 0=BO1, 1=BO3, 2=BO5, 3=BO2
 function convertSeriesType(seriesType) {
-  if (!seriesType) return 'BO3';
+  if (seriesType === null || seriesType === undefined || seriesType === '') return 'BO3';
   const map = {
     0: 'BO1',
     1: 'BO3',
@@ -39,7 +39,10 @@ function convertSeriesType(seriesType) {
   };
   // If already a string (e.g., 'BO3'), return as-is
   if (typeof seriesType === 'string') {
-    return seriesType.startsWith('BO') ? seriesType : map[seriesType] || 'BO3';
+    const normalized = seriesType.toUpperCase();
+    if (normalized.startsWith('BO')) return normalized;
+    const parsed = Number(seriesType);
+    return Number.isInteger(parsed) && map[parsed] ? map[parsed] : 'BO3';
   }
   return map[seriesType] || 'BO3';
 }
