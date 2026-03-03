@@ -234,17 +234,22 @@ function extractBo3BodyData(detailHtml, baseUrl) {
   return { contentMarkdown, contentImages: images };
 }
 
-function parseBo3PublishedAt(detailHtml) {
-  const dateLiMatch = detailHtml.match(
-    /<li[^>]*class=["'][^"']*o-list-bare__item[^"']*\bdate\b[^"']*["'][^>]*>\s*<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i
-  );
-  const match = dateLiMatch || detailHtml.match(/<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i);
+function parseBo3DateTimeString(input = '') {
+  const match = String(input).match(/(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})/);
   if (!match) return null;
 
   const [hour, minute] = match[1].split(':').map(Number);
   const [day, month, year] = match[2].split('.').map(Number);
   if ([hour, minute, day, month, year].some((x) => Number.isNaN(x))) return null;
   return new Date(Date.UTC(year, month - 1, day, hour, minute));
+}
+
+function parseBo3PublishedAt(detailHtml) {
+  const dateLiMatch = detailHtml.match(
+    /<li[^>]*class=["'][^"']*o-list-bare__item[^"']*\bdate\b[^"']*["'][^>]*>\s*<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i
+  );
+  const anyPMatch = detailHtml.match(/<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i);
+  return parseBo3DateTimeString(dateLiMatch?.[0] || anyPMatch?.[0] || detailHtml);
 }
 
 function isBettingNews(item = {}) {
@@ -836,11 +841,10 @@ async function scrapeBO3(options = {}) {
           summary: content.slice(0, 220),
           content,
           content_markdown: contentMarkdown,
-          contentImages: images,
           url,
           imageUrl: images[0],
           source: 'BO3.gg',
-          publishedAt: new Date(),
+          publishedAt: parseBo3DateTimeString(textContent) || new Date(),
           category: 'tournament',
         };
       }
