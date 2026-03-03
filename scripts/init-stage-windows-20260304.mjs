@@ -94,40 +94,31 @@ const stageWindowsByLeague = {
   // DreamLeague Season 27
   18988: [
     {
-      key: 'group_stage_1',
-      label: 'Group Stage 1',
-      label_cn: '小组赛第一阶段',
+      key: 'group_stage',
+      label: 'Group Stage',
+      label_cn: '小组赛',
       kind: 'group',
-      start: dayStart('2025-11-10'),
-      end: dayEnd('2025-11-13'),
+      start: dayStart('2025-12-10'),
+      end: dayEnd('2025-12-16'),
       priority: 10
-    },
-    {
-      key: 'group_stage_2',
-      label: 'Group Stage 2',
-      label_cn: '小组赛第二阶段',
-      kind: 'group',
-      start: dayStart('2025-11-14'),
-      end: dayEnd('2025-11-21'),
-      priority: 20
     },
     {
       key: 'playoffs',
       label: 'Playoffs',
       label_cn: '淘汰赛',
       kind: 'playoff',
-      start: dayStart('2025-11-22'),
-      end: dayEnd('2025-12-08'),
-      priority: 30
+      start: dayStart('2025-12-17'),
+      end: dayEnd('2025-12-20'),
+      priority: 20
     },
     {
       key: 'grand_final',
       label: 'Grand Final',
       label_cn: '总决赛',
       kind: 'final',
-      start: dayStart('2025-12-08'),
-      end: dayEnd('2025-12-08'),
-      priority: 40
+      start: dayStart('2025-12-21'),
+      end: dayEnd('2025-12-21'),
+      priority: 30
     }
   ],
 
