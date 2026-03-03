@@ -710,7 +710,7 @@ async function collectBo3UrlsViaJina(baseUrl) {
   }
 }
 
-async function scrapeBO3() {
+async function scrapeBO3(options = {}) {
   const source = 'bo3';
   const baseUrl = 'https://bo3.gg';
   const listUrl = `${baseUrl}/dota2/news`;
@@ -721,48 +721,55 @@ async function scrapeBO3() {
   ];
 
   try {
-    // Strategy 1: RSS
-    for (const rssUrl of rssUrls) {
+    // If test URL is specified, bypass list discovery and scrape only target article(s).
+    const targetUrls = Array.isArray(options?.urls)
+      ? options.urls.map((u) => normalizeBo3NewsUrl(u, baseUrl)).filter(Boolean)
+      : [];
+    let urls = Array.from(new Set(targetUrls));
+
+    if (urls.length === 0) {
+      // Strategy 1: RSS
+      for (const rssUrl of rssUrls) {
+        try {
+          const rssResponse = await fetchWithTimeout(rssUrl, {
+            headers: {
+              Accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.7',
+            },
+          }, 8000);
+
+          if (!rssResponse.ok) continue;
+
+          const rssXml = await rssResponse.text();
+          const rssItems = parseSimpleRss(rssXml, 'BO3.gg', source).filter((x) => !isBettingNews(x));
+          if (rssItems.length > 0) {
+            console.log(`[News API] BO3 RSS items: ${rssItems.length}`);
+            return { items: rssItems, source, success: true };
+          }
+        } catch {
+          // Try next RSS source
+        }
+      }
+
+      // Strategy 2: HTML list parsing
       try {
-        const rssResponse = await fetchWithTimeout(rssUrl, {
-          headers: {
-            Accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.7',
-          },
-        }, 8000);
-
-        if (!rssResponse.ok) continue;
-
-        const rssXml = await rssResponse.text();
-        const rssItems = parseSimpleRss(rssXml, 'BO3.gg', source).filter((x) => !isBettingNews(x));
-        if (rssItems.length > 0) {
-          console.log(`[News API] BO3 RSS items: ${rssItems.length}`);
-          return { items: rssItems, source, success: true };
+        const response = await fetchWithTimeout(listUrl, {}, 9000);
+        if (response.ok) {
+          const html = await response.text();
+          urls = extractBo3NewsUrls(html, baseUrl);
         }
       } catch {
-        // Try next RSS source
+        // Continue to fallback
       }
-    }
 
-    // Strategy 2: HTML list parsing
-    let urls = [];
-    try {
-      const response = await fetchWithTimeout(listUrl, {}, 9000);
-      if (response.ok) {
-        const html = await response.text();
-        urls = extractBo3NewsUrls(html, baseUrl);
+      // Strategy 3: sitemap fallback when HTML fails
+      if (urls.length === 0) {
+        urls = await collectBo3FallbackUrls(baseUrl);
       }
-    } catch {
-      // Continue to fallback
-    }
 
-    // Strategy 3: sitemap fallback when HTML fails
-    if (urls.length === 0) {
-      urls = await collectBo3FallbackUrls(baseUrl);
-    }
-
-    // Strategy 4: jina.ai fallback for anti-bot pages
-    if (urls.length === 0) {
-      urls = await collectBo3UrlsViaJina(baseUrl);
+      // Strategy 4: jina.ai fallback for anti-bot pages
+      if (urls.length === 0) {
+        urls = await collectBo3UrlsViaJina(baseUrl);
+      }
     }
 
     console.log(`[News API] BO3 list URLs: ${urls.length}`);
@@ -1306,7 +1313,25 @@ export async function syncNewsToDb(options = {}) {
   }
 
   await ensureNewsTable(db);
-  const sourceResults = await Promise.allSettled([scrapeHawkLive(), scrapeBO3()]);
+  let purgedBo3Count = 0;
+  if (options?.purgeBo3) {
+    const removed = await db`DELETE FROM news_articles WHERE source = 'BO3.gg' RETURNING url`;
+    purgedBo3Count = removed.length;
+  }
+
+  const onlySource = options?.onlySource === 'bo3' || options?.onlySource === 'hawk'
+    ? options.onlySource
+    : null;
+  const sourceTasks = [];
+  if (!onlySource || onlySource === 'hawk') {
+    sourceTasks.push(scrapeHawkLive());
+  }
+  if (!onlySource || onlySource === 'bo3') {
+    const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
+    sourceTasks.push(scrapeBO3({ urls: testUrl ? [testUrl] : [] }));
+  }
+
+  const sourceResults = await Promise.allSettled(sourceTasks);
   const allItems = [];
 
   for (const result of sourceResults) {
@@ -1382,7 +1407,10 @@ export async function syncNewsToDb(options = {}) {
     }
   }
 
-  for (const item of pendingTranslateItems.slice(0, TRANSLATE_BATCH_LIMIT)) {
+  const translateLimit = Number.isFinite(Number(options?.translateLimit))
+    ? Math.max(0, Number(options.translateLimit))
+    : TRANSLATE_BATCH_LIMIT;
+  for (const item of pendingTranslateItems.slice(0, translateLimit)) {
     const zh = await translateItem(apiKey, item);
     await db`
       UPDATE news_articles
@@ -1401,6 +1429,8 @@ export async function syncNewsToDb(options = {}) {
     totalFetched: news.length,
     pendingTranslate: Math.max(0, pendingTranslateItems.length - translatedCount),
     translatedCount,
+    purgedBo3Count,
+    onlySource: onlySource || 'all',
   };
 }
 

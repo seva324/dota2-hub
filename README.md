@@ -27,6 +27,12 @@
 - `GET/POST /api/sync-news`：手动触发新闻同步与增量翻译
 - `POST /api/translate-news-content`：正文翻译接口（按需使用）
 
+`/api/sync-news` 常用参数：
+- `onlySource=bo3|hawk`：仅同步指定来源
+- `purgeBo3=1`：同步前删除 BO3 历史数据
+- `testUrl=<bo3文章URL>`：仅抓取指定 BO3 文章（测试模式）
+- `translateLimit=<N>`：本次最多翻译 N 篇
+
 ## 自动任务（Vercel Cron）
 
 `vercel.json` 中配置了定时任务：
