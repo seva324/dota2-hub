@@ -207,16 +207,16 @@ function formatPrizeUsd(value?: number, fallback?: string): string {
   return fallback || 'TBD';
 }
 
-const STAGE_KIND_OPTIONS = [
-  { key: 'all', label: '全部', labelEn: 'All' },
-  { key: 'group', label: '小组赛', labelEn: 'Group' },
-  { key: 'playin', label: '入围赛', labelEn: 'Play-In' },
-  { key: 'playoff', label: '淘汰赛', labelEn: 'Playoff' },
-  { key: 'final', label: '总决赛', labelEn: 'Final' },
-  { key: 'other', label: '其他', labelEn: 'Other' }
-] as const;
+const STAGE_KIND_META = {
+  all: { label: '全部', labelEn: 'All' },
+  group: { label: '小组赛', labelEn: 'Group' },
+  playin: { label: '入围赛', labelEn: 'Play-In' },
+  playoff: { label: '淘汰赛', labelEn: 'Playoff' },
+  final: { label: '总决赛', labelEn: 'Final' },
+  other: { label: '其他', labelEn: 'Other' }
+} as const;
 
-type StageFilterKey = typeof STAGE_KIND_OPTIONS[number]['key'];
+type StageFilterKey = keyof typeof STAGE_KIND_META;
 
 const STAGE_CN_BY_LABEL: Record<string, string> = {
   'Group Stage': '小组赛',
@@ -247,6 +247,10 @@ function getSeriesStageLabel(series: Series): string {
   const stageKind = series.stage_kind || 'other';
   const stageCn = STAGE_CN_BY_LABEL[stageEn] || STAGE_CN_BY_KIND[stageKind] || '主赛事阶段';
   return `${stageCn} · ${stageEn}`;
+}
+
+function getSeriesStartTime(series: Series): number {
+  return series.games?.[0]?.start_time || 0;
 }
 
 export function TournamentSection({ tournaments, seriesByTournament }: TournamentSectionProps) {
@@ -333,12 +337,46 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
   }
 
   const currentSeries = selectedTournament ? (seriesByTournament?.[selectedTournament.id] || []) : [];
+  const seriesByStageKind = useMemo(() => {
+    const map = new Map<StageFilterKey, Series[]>();
+    for (const s of currentSeries) {
+      const kind = (s.stage_kind || 'other') as StageFilterKey;
+      if (!map.has(kind)) map.set(kind, []);
+      map.get(kind)?.push(s);
+    }
+    return map;
+  }, [currentSeries]);
+
+  const availableStageKinds = useMemo<StageFilterKey[]>(() => {
+    const kinds = Array.from(seriesByStageKind.keys());
+    kinds.sort((a, b) => {
+      const aLatest = Math.max(...(seriesByStageKind.get(a) || []).map(getSeriesStartTime), 0);
+      const bLatest = Math.max(...(seriesByStageKind.get(b) || []).map(getSeriesStartTime), 0);
+      return bLatest - aLatest;
+    });
+    return kinds;
+  }, [seriesByStageKind]);
+
+  const stageFilterOptions = useMemo<StageFilterKey[]>(() => {
+    const opts: StageFilterKey[] = ['all'];
+    for (const kind of availableStageKinds) {
+      if (!opts.includes(kind)) opts.push(kind);
+    }
+    return opts;
+  }, [availableStageKinds]);
+
+  useEffect(() => {
+    if (!stageFilterOptions.includes(stageFilter)) {
+      setStageFilter('all');
+    }
+  }, [stageFilterOptions, stageFilter]);
+
   const filteredSeries = currentSeries.filter((s) => {
     const kind = (s.stage_kind || 'other') as StageFilterKey;
     if (stageFilter === 'all') return true;
     if (stageFilter === 'other') return !s.stage_kind || !['group', 'playin', 'playoff', 'final'].includes(kind);
     return kind === stageFilter;
-  });
+  }).sort((a, b) => getSeriesStartTime(b) - getSeriesStartTime(a));
 
   // 统计中国战队参与的比赛
   const cnSeriesCount = currentSeries.filter(s => 
@@ -454,28 +492,29 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
 
             <CardContent className="p-6">
               <div className="mb-4 flex flex-wrap items-center gap-2">
-                {STAGE_KIND_OPTIONS.map((opt) => {
-                  const count = opt.key === 'all'
+                {stageFilterOptions.map((key) => {
+                  const meta = STAGE_KIND_META[key];
+                  const count = key === 'all'
                     ? currentSeries.length
                     : currentSeries.filter((s) => {
                         const kind = (s.stage_kind || 'other') as StageFilterKey;
-                        if (opt.key === 'other') {
+                        if (key === 'other') {
                           return !s.stage_kind || !['group', 'playin', 'playoff', 'final'].includes(kind);
                         }
-                        return kind === opt.key;
+                        return kind === key;
                       }).length;
-                  const active = stageFilter === opt.key;
+                  const active = stageFilter === key;
                   return (
                     <button
-                      key={opt.key}
-                      onClick={() => setStageFilter(opt.key)}
+                      key={key}
+                      onClick={() => setStageFilter(key)}
                       className={`px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                         active
                           ? 'bg-red-600/20 text-red-300 border-red-500/40'
                           : 'bg-slate-800/60 text-slate-300 border-slate-700 hover:border-slate-500'
                       }`}
                     >
-                      {opt.label} ({opt.labelEn}) · {count}
+                      {meta.label} ({meta.labelEn}) · {count}
                     </button>
                   );
                 })}
