@@ -278,9 +278,9 @@ function App() {
         const dynamicSeriesByTournament = groupMatchesIntoSeries(targetLeagueMatches);
         console.log('Dynamic series by tournament:', Object.keys(dynamicSeriesByTournament).map(k => `${k}: ${dynamicSeriesByTournament[k]?.length || 0} series`));
 
-        // 合并静态和动态的 seriesByTournament（动态优先）
+        // 合并静态和动态的 seriesByTournament（API 优先，动态兜底）
         const staticSeriesByTournament = tournamentsData.seriesByTournament || {};
-        const seriesByTournament = { ...staticSeriesByTournament, ...dynamicSeriesByTournament };
+        const seriesByTournament = { ...dynamicSeriesByTournament, ...staticSeriesByTournament };
 
         // Add team logos to all series
         const seriesWithLogos = addTeamLogosToSeries(seriesByTournament);
