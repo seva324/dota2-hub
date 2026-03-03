@@ -855,8 +855,12 @@ async function scrapeBO3(options = {}) {
       try {
         const detailResponse = await fetchWithTimeout(url, {}, 20000);
         detailHtml = await detailResponse.text();
-        if (!detailResponse.ok && !detailHtml.includes('c-article-body')) {
+        const hasArticleBody = detailHtml.includes('c-article-body');
+        if (!detailResponse.ok && !hasArticleBody) {
           throw new Error(`HTTP ${detailResponse.status}`);
+        }
+        if (!hasArticleBody) {
+          throw new Error('Missing article body');
         }
         detailLd = parseJsonLdBlocks(detailHtml);
         article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
