@@ -55,6 +55,49 @@ function convertSeriesType(seriesType) {
   return map[seriesType] || 'BO3';
 }
 
+function normalizeStageWindows(rawStageWindows) {
+  if (!Array.isArray(rawStageWindows)) return [];
+  return rawStageWindows
+    .map((w) => ({
+      key: w?.key || null,
+      label: w?.label || null,
+      label_cn: w?.label_cn || null,
+      kind: w?.kind || null,
+      start: Number(w?.start),
+      end: Number(w?.end),
+      priority: Number(w?.priority || 0)
+    }))
+    .filter((w) => Number.isFinite(w.start) && Number.isFinite(w.end) && w.start <= w.end);
+}
+
+function resolveSeriesStage(stageWindows, startTime, fallbackStage) {
+  if (!Number.isFinite(startTime)) {
+    return {
+      stage: fallbackStage || 'Main Stage',
+      stage_kind: null
+    };
+  }
+
+  const matched = stageWindows
+    .filter((w) => startTime >= w.start && startTime <= w.end)
+    .sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return (a.end - a.start) - (b.end - b.start);
+    })[0];
+
+  if (!matched) {
+    return {
+      stage: fallbackStage || 'Main Stage',
+      stage_kind: null
+    };
+  }
+
+  return {
+    stage: matched.label || matched.key || fallbackStage || 'Main Stage',
+    stage_kind: matched.kind || null
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -101,6 +144,11 @@ export default async function handler(req, res) {
 
     // Build series by tournament
     const seriesByTournament = {};
+    const leagueStageWindows = {};
+
+    for (const t of tournaments) {
+      leagueStageWindows[t.league_id] = normalizeStageWindows(t.stage_windows);
+    }
 
     // Initialize all target tournaments
     for (const [leagueId, info] of Object.entries(LEAGUE_ID_MAP)) {
@@ -124,6 +172,11 @@ export default async function handler(req, res) {
 
       const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
       const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
+      const stageInfo = resolveSeriesStage(
+        leagueStageWindows[s.league_id] || [],
+        Number(s.start_time),
+        s.stage
+      );
 
       const games = (seriesMatches[s.series_id] || [])
         .sort((a, b) => a.start_time - b.start_time)
@@ -156,6 +209,8 @@ export default async function handler(req, res) {
         dire_score: s.dire_wins,
         radiant_wins: s.radiant_wins,
         dire_wins: s.dire_wins,
+        stage: stageInfo.stage,
+        stage_kind: stageInfo.stage_kind,
         games
       });
     }
