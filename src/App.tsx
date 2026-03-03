@@ -255,9 +255,12 @@ function App() {
           name: t.name || t.name_cn || 'Unknown Tournament',
           name_cn: t.name_cn,
           prize_pool: t.prize_pool || t.prize,
+          prize_pool_usd: t.prize_pool_usd,
           location: t.location,
           start_date: t.start_date,
           end_date: t.end_date,
+          start_time: t.start_time,
+          end_time: t.end_time,
           status: t.status,
           image: t.image || '/images/tournament-default.jpg',
           league_id: t.league_id

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'lucide-react';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -54,9 +54,12 @@ interface Tournament {
   name: string;
   name_cn?: string;
   prize_pool?: string;
+  prize_pool_usd?: number;
   location?: string;
   start_date?: string;
   end_date?: string;
+  start_time?: number;
+  end_time?: number;
   status: string;
   image?: string;
 }
@@ -181,18 +184,58 @@ function formatDuration(seconds: number): string {
   return `${remainingMins}m`;
 }
 
+function formatDate(value?: string | number): string {
+  if (!value) return 'TBD';
+  const date = typeof value === 'number' ? new Date(value * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) return 'TBD';
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+}
+
+function formatPrizeUsd(value?: number, fallback?: string): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+  return fallback || 'TBD';
+}
+
 export function TournamentSection({ tournaments, seriesByTournament }: TournamentSectionProps) {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
 
+  const sortedTournaments = useMemo(() => {
+    return [...(tournaments || [])].sort((a, b) => {
+      const aStart = a.start_time ?? 0;
+      const bStart = b.start_time ?? 0;
+      if (bStart !== aStart) return bStart - aStart;
+      const aEnd = a.end_time ?? 0;
+      const bEnd = b.end_time ?? 0;
+      return bEnd - aEnd;
+    });
+  }, [tournaments]);
+
   // Set initial tournament when tournaments are loaded
   useEffect(() => {
-    if (tournaments && tournaments.length > 0 && !selectedTournament) {
-      setSelectedTournament(tournaments[0]);
+    if (sortedTournaments.length > 0 && !selectedTournament) {
+      setSelectedTournament(sortedTournaments[0]);
+      return;
     }
-  }, [tournaments, selectedTournament]);
+    if (selectedTournament && sortedTournaments.length > 0) {
+      const exists = sortedTournaments.some(t => t.id === selectedTournament.id);
+      if (!exists) {
+        setSelectedTournament(sortedTournaments[0]);
+      }
+    }
+  }, [sortedTournaments, selectedTournament]);
 
   // Load heroes data on mount
   useEffect(() => {
@@ -214,7 +257,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
     setExpandedSeries(newExpanded);
   };
 
-  if (!tournaments || !tournaments.length) {
+  if (!sortedTournaments.length) {
     return (
       <section id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
         {/* 背景光效 */}
@@ -288,7 +331,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         <div className="mb-6">
           <Card className="bg-slate-900/60 backdrop-blur-xl border border-white/10 overflow-hidden">
             <div className="flex gap-1 overflow-x-auto p-2 scrollbar-thin">
-              {tournaments.map((tournament) => {
+              {sortedTournaments.map((tournament) => {
                 const isSelected = selectedTournament?.id === tournament.id;
                 const statusInfo = statusMap[tournament.status] || statusMap.upcoming;
                 
@@ -344,14 +387,12 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                     </div>
                     <div className="flex items-center gap-2 min-w-0 text-slate-400">
                       <Calendar className="w-4 h-4" />
-                      <span>{selectedTournament.start_date} ~ {selectedTournament.end_date}</span>
+                      <span>{formatDate(selectedTournament.start_time || selectedTournament.start_date)} ~ {formatDate(selectedTournament.end_time || selectedTournament.end_date)}</span>
                     </div>
-                    {selectedTournament.prize_pool && (
-                      <div className="flex items-center gap-2 min-w-0 text-amber-400">
+                    <div className="flex items-center gap-2 min-w-0 text-amber-400">
                         <Award className="w-4 h-4" />
-                        <span className="font-bold">{selectedTournament.prize_pool}</span>
+                        <span className="font-bold">{formatPrizeUsd(selectedTournament.prize_pool_usd, selectedTournament.prize_pool)}</span>
                       </div>
-                    )}
                   </div>
                 </div>
               </div>
