@@ -267,6 +267,8 @@ function cutBo3ContentBeforeComments(text = '') {
     /\nRelated News\b/i,
     /\nNext article\b/i,
     /\nRead more\b/i,
+    /\nYou can follow the tournament schedule and results at this\b/i,
+    /\nDreamLeague Season \d+ runs from\b/i,
     /\n!\[Image 2:/i,
   ];
 
@@ -286,6 +288,22 @@ function cutBo3ContentBeforeComments(text = '') {
   }
 
   return content.trim();
+}
+
+function sanitizeBo3JinaContent(text = '') {
+  const raw = cutBo3ContentBeforeComments(cleanJinaBoilerplate(text));
+  const lines = String(raw).split('\n');
+  const noisyLine = /^(Sign In|Home|Matches|Schedule and Live|Finished|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games|eng|ua|ru|pt|de|pl|fr|es|tr|vn|id|kr|jp|ph|my|Like \d+)$/i;
+  const keep = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+    if (/^•\s*$/.test(t)) continue;
+    if (noisyLine.test(t)) continue;
+    if (/^•\s*(Sign In|Home|Matches|Schedule and Live|Finished|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games)\b/i.test(t)) continue;
+    keep.push(line);
+  }
+  return keep.join('\n').trim();
 }
 
 function extractBo3ImagesFromHtml(html = '') {
@@ -795,15 +813,17 @@ async function scrapeBO3(options = {}) {
         if (!textRes.ok) throw new Error(`Jina HTTP ${textRes.status}`);
         const textContent = await textRes.text();
         const rawClean = cleanJinaBoilerplate(textContent);
-        const cleaned = cutBo3ContentBeforeComments(rawClean);
+        const cleaned = sanitizeBo3JinaContent(textContent);
         const images = Array.from(new Set([...extractMarkdownImageUrls(rawClean), ...extractAnyImageUrls(rawClean)]));
-        const content = truncateText(markdownToText(cleaned));
+        const contentMarkdown = truncateText(cleaned);
+        const content = truncateText(markdownToText(contentMarkdown));
         const fallbackTitle = titleFromSlug(url);
         return {
           id: generateId(url, source),
           title: titleFromJinaText(textContent, fallbackTitle),
           summary: content.slice(0, 220),
           content,
+          content_markdown: contentMarkdown,
           contentImages: images,
           url,
           imageUrl: images[0],
@@ -829,24 +849,23 @@ async function scrapeBO3(options = {}) {
 
       const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
       const bo3Body = extractBo3BodyData(detailHtml, baseUrl);
-      let content = bo3Body.contentMarkdown;
+      let contentMarkdown = bo3Body.contentMarkdown;
       let jinaImageUrl;
       const htmlImages = [...bo3Body.contentImages, ...extractBo3ImagesFromHtml(detailHtml)];
       let extractedImages = [...htmlImages];
-      if (!content || content.length < 180) {
+      if (!contentMarkdown || contentMarkdown.length < 120) {
         try {
           const jinaUrl = `${JINA_PROXY}${url.replace(/^https?:\/\//, '')}`;
           const textRes = await fetchWithTimeout(jinaUrl, {}, 10000);
           if (textRes.ok) {
             const textContent = await textRes.text();
             const rawClean = cleanJinaBoilerplate(textContent);
-            const cleaned = cutBo3ContentBeforeComments(rawClean);
+            const cleaned = sanitizeBo3JinaContent(textContent);
             const images = Array.from(new Set([...extractMarkdownImageUrls(rawClean), ...extractAnyImageUrls(rawClean)]));
             extractedImages = Array.from(new Set([...extractedImages, ...images]));
             jinaImageUrl = images[0];
-            const jinaContent = truncateText(markdownToText(cleaned));
-            if (jinaContent && jinaContent.length > (content?.length || 0)) {
-              content = jinaContent;
+            if (cleaned && cleaned.length > (contentMarkdown?.length || 0)) {
+              contentMarkdown = cleaned;
             }
           }
         } catch {
@@ -868,8 +887,9 @@ async function scrapeBO3(options = {}) {
         }
       }
 
-      content = cutBo3ContentBeforeComments(content || '');
-      const markdownImages = Array.from(new Set([...extractMarkdownImageUrls(content || ''), ...extractAnyImageUrls(content || '')]));
+      contentMarkdown = cutBo3ContentBeforeComments(contentMarkdown || '');
+      const content = truncateText(markdownToText(contentMarkdown || ''));
+      const markdownImages = Array.from(new Set([...extractMarkdownImageUrls(contentMarkdown || ''), ...extractAnyImageUrls(contentMarkdown || '')]));
       const fallbackImage = imageUrl && !imageUrl.includes('/img/logo-og') ? imageUrl : undefined;
       const preferredImage = htmlImages[0] || jinaImageUrl || markdownImages[0] || fallbackImage || imageUrl;
       const contentImages = Array.from(new Set([...extractedImages, ...markdownImages]));
@@ -879,6 +899,7 @@ async function scrapeBO3(options = {}) {
         title,
         summary: summary || undefined,
         content,
+        content_markdown: contentMarkdown,
         contentImages,
         url,
         imageUrl: preferredImage,
@@ -964,14 +985,17 @@ function normalizeAndSortNews(items) {
     const publishedDate = item.publishedAt instanceof Date ? item.publishedAt : parseDate(item.publishedAt);
     const publishedAt = Math.floor((publishedDate || new Date()).getTime() / 1000);
 
-    const rawContent = item.content ? cleanJinaBoilerplate(String(item.content)) : '';
-    const markdownImages = extractMarkdownImageUrls(rawContent);
+    const rawMarkdown = item.content_markdown
+      ? cleanJinaBoilerplate(String(item.content_markdown))
+      : (item.content ? cleanJinaBoilerplate(String(item.content)) : '');
+    const rawContent = item.content ? String(item.content) : markdownToText(stripHtmlWithParagraphs(rawMarkdown));
+    const markdownImages = extractMarkdownImageUrls(rawMarkdown);
     const explicitImages = Array.isArray(item.contentImages) ? item.contentImages : [];
     const normalizedSummary = item.summary ? stripHtml(item.summary).slice(0, 320) : undefined;
     const normalizedContent = rawContent
       ? truncateText(markdownToText(stripHtmlWithParagraphs(rawContent)))
       : (normalizedSummary || '正文提取受限，请点击原文查看完整内容。');
-    const normalizedMarkdown = rawContent ? truncateText(rawContent) : undefined;
+    const normalizedMarkdown = rawMarkdown ? truncateText(rawMarkdown) : undefined;
 
     normalized.push({
       id: item.id || generateId(normalizedUrl, 'news'),
