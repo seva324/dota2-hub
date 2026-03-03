@@ -157,6 +157,15 @@ function markdownToText(text = '') {
     .trim();
 }
 
+function sanitizeStoredMarkdown(markdown = '') {
+  return String(markdown || '')
+    .replace(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi, '')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, '$1')
+    .replace(/https?:\/\/[^\s)]+/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function htmlInlineToMarkdown(input = '', baseUrl = '') {
   const withLinks = String(input).replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, text) => {
     const label = stripHtmlWithParagraphs(text).trim() || href;
@@ -226,7 +235,10 @@ function extractBo3BodyData(detailHtml, baseUrl) {
 }
 
 function parseBo3PublishedAt(detailHtml) {
-  const match = detailHtml.match(/<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i);
+  const dateLiMatch = detailHtml.match(
+    /<li[^>]*class=["'][^"']*o-list-bare__item[^"']*\bdate\b[^"']*["'][^>]*>\s*<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i
+  );
+  const match = dateLiMatch || detailHtml.match(/<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i);
   if (!match) return null;
 
   const [hour, minute] = match[1].split(':').map(Number);
@@ -852,7 +864,6 @@ async function scrapeBO3(options = {}) {
       let contentMarkdown = bo3Body.contentMarkdown;
       let jinaImageUrl;
       const htmlImages = [...bo3Body.contentImages, ...extractBo3ImagesFromHtml(detailHtml)];
-      let extractedImages = [...htmlImages];
       if (!contentMarkdown || contentMarkdown.length < 120) {
         try {
           const jinaUrl = `${JINA_PROXY}${url.replace(/^https?:\/\//, '')}`;
@@ -862,7 +873,6 @@ async function scrapeBO3(options = {}) {
             const rawClean = cleanJinaBoilerplate(textContent);
             const cleaned = sanitizeBo3JinaContent(textContent);
             const images = Array.from(new Set([...extractMarkdownImageUrls(rawClean), ...extractAnyImageUrls(rawClean)]));
-            extractedImages = Array.from(new Set([...extractedImages, ...images]));
             jinaImageUrl = images[0];
             if (cleaned && cleaned.length > (contentMarkdown?.length || 0)) {
               contentMarkdown = cleaned;
@@ -879,7 +889,6 @@ async function scrapeBO3(options = {}) {
             const textContent = await textRes.text();
             const rawClean = cleanJinaBoilerplate(textContent);
             const images = Array.from(new Set([...extractMarkdownImageUrls(rawClean), ...extractAnyImageUrls(rawClean)]));
-            extractedImages = Array.from(new Set([...extractedImages, ...images]));
             jinaImageUrl = images[0];
           }
         } catch {
@@ -887,12 +896,10 @@ async function scrapeBO3(options = {}) {
         }
       }
 
-      contentMarkdown = cutBo3ContentBeforeComments(contentMarkdown || '');
+      contentMarkdown = sanitizeStoredMarkdown(cutBo3ContentBeforeComments(contentMarkdown || ''));
       const content = truncateText(markdownToText(contentMarkdown || ''));
-      const markdownImages = Array.from(new Set([...extractMarkdownImageUrls(contentMarkdown || ''), ...extractAnyImageUrls(contentMarkdown || '')]));
       const fallbackImage = imageUrl && !imageUrl.includes('/img/logo-og') ? imageUrl : undefined;
-      const preferredImage = htmlImages[0] || jinaImageUrl || markdownImages[0] || fallbackImage || imageUrl;
-      const contentImages = Array.from(new Set([...extractedImages, ...markdownImages]));
+      const preferredImage = htmlImages[0] || jinaImageUrl || fallbackImage || imageUrl;
 
       const resultItem = {
         id: generateId(url, source),
@@ -900,7 +907,6 @@ async function scrapeBO3(options = {}) {
         summary: summary || undefined,
         content,
         content_markdown: contentMarkdown,
-        contentImages,
         url,
         imageUrl: preferredImage,
         source: 'BO3.gg',
@@ -988,14 +994,13 @@ function normalizeAndSortNews(items) {
     const rawMarkdown = item.content_markdown
       ? cleanJinaBoilerplate(String(item.content_markdown))
       : (item.content ? cleanJinaBoilerplate(String(item.content)) : '');
+    const sanitizedMarkdown = sanitizeStoredMarkdown(rawMarkdown);
     const rawContent = item.content ? String(item.content) : markdownToText(stripHtmlWithParagraphs(rawMarkdown));
-    const markdownImages = extractMarkdownImageUrls(rawMarkdown);
-    const explicitImages = Array.isArray(item.contentImages) ? item.contentImages : [];
     const normalizedSummary = item.summary ? stripHtml(item.summary).slice(0, 320) : undefined;
     const normalizedContent = rawContent
       ? truncateText(markdownToText(stripHtmlWithParagraphs(rawContent)))
       : (normalizedSummary || '正文提取受限，请点击原文查看完整内容。');
-    const normalizedMarkdown = rawMarkdown ? truncateText(rawMarkdown) : undefined;
+    const normalizedMarkdown = sanitizedMarkdown ? truncateText(sanitizedMarkdown) : undefined;
 
     normalized.push({
       id: item.id || generateId(normalizedUrl, 'news'),
@@ -1003,10 +1008,9 @@ function normalizeAndSortNews(items) {
       summary: normalizedSummary,
       content: normalizedContent,
       content_markdown: normalizedMarkdown,
-      content_images: Array.from(new Set([...explicitImages, ...markdownImages])).slice(0, 8),
       source: item.source || 'Unknown',
       url: normalizedUrl,
-      image_url: markdownImages[0] || (item.imageUrl ? normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl : undefined),
+      image_url: item.imageUrl ? normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl : undefined,
       published_at: publishedAt,
       category: item.category || 'tournament',
     });
@@ -1157,7 +1161,6 @@ async function ensureNewsTable(db) {
       url TEXT NOT NULL UNIQUE,
       category TEXT,
       image_url TEXT,
-      content_images JSONB,
       published_at BIGINT NOT NULL,
       title_en TEXT NOT NULL,
       summary_en TEXT,
@@ -1171,6 +1174,8 @@ async function ensureNewsTable(db) {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+
+  await db`ALTER TABLE news_articles DROP COLUMN IF EXISTS content_images`;
 }
 
 function splitTextChunks(text, maxLen = 1400) {
@@ -1301,33 +1306,18 @@ async function getStoredNews(db, limit = 20) {
     LIMIT ${limit}
   `;
 
-  return rows.map((row) => {
-    let contentImages = [];
-    if (Array.isArray(row.content_images)) {
-      contentImages = row.content_images;
-    } else if (typeof row.content_images === 'string') {
-      try {
-        const parsed = JSON.parse(row.content_images);
-        if (Array.isArray(parsed)) contentImages = parsed;
-      } catch {
-        contentImages = [];
-      }
-    }
-
-    return ({
+  return rows.map((row) => ({
     id: row.id,
     source: row.source,
     url: row.url,
     category: row.category || 'tournament',
     image_url: row.image_url,
-    content_images: contentImages,
     published_at: Number(row.published_at),
     title: row.title_zh || row.title_en,
     summary: row.summary_zh || row.summary_en,
     content: row.content_zh || row.content_en,
     content_markdown: row.content_markdown_zh || row.content_markdown_en,
-  });
-  }).filter((x) => !isBettingNews(x));
+  })).filter((x) => !isBettingNews(x));
 }
 
 export async function syncNewsToDb(options = {}) {
@@ -1398,12 +1388,12 @@ export async function syncNewsToDb(options = {}) {
 
     await db`
       INSERT INTO news_articles (
-        id, source, url, category, image_url, content_images, published_at,
+        id, source, url, category, image_url, published_at,
         title_en, summary_en, content_en, content_markdown_en,
         title_zh, summary_zh, content_zh, content_markdown_zh,
         updated_at
       ) VALUES (
-        ${item.id}, ${item.source}, ${item.url}, ${item.category}, ${item.image_url || null}, ${JSON.stringify(item.content_images || [])}::jsonb, ${item.published_at},
+        ${item.id}, ${item.source}, ${item.url}, ${item.category}, ${item.image_url || null}, ${item.published_at},
         ${item.title}, ${item.summary || null}, ${item.content || null}, ${item.content_markdown || null},
         ${existingZh.title_zh || null}, ${existingZh.summary_zh || null}, ${existingZh.content_zh || null}, ${existingZh.content_markdown_zh || null},
         NOW()
@@ -1413,7 +1403,6 @@ export async function syncNewsToDb(options = {}) {
         source = EXCLUDED.source,
         category = EXCLUDED.category,
         image_url = EXCLUDED.image_url,
-        content_images = EXCLUDED.content_images,
         published_at = EXCLUDED.published_at,
         title_en = EXCLUDED.title_en,
         summary_en = EXCLUDED.summary_en,
