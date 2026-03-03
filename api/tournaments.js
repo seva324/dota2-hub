@@ -169,7 +169,10 @@ export default async function handler(req, res) {
         name_cn: info?.name_cn || t.name_cn,
         tier: info?.tier || t.tier,
         location: t.location,
-        status: t.status
+        status: t.status,
+        start_time: t.start_time ?? null,
+        end_time: t.end_time ?? null,
+        prize_pool_usd: t.prize_pool_usd ?? null
       };
     });
 
