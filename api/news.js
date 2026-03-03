@@ -244,12 +244,46 @@ function parseBo3DateTimeString(input = '') {
   return new Date(Date.UTC(year, month - 1, day, hour, minute));
 }
 
+function parseJinaPublishedDate(text = '') {
+  const m = String(text).match(/Published Time:\s*(\d{4}-\d{2}-\d{2})/i);
+  if (!m) return null;
+  const date = new Date(`${m[1]}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function parseBo3PublishedAt(detailHtml) {
   const dateLiMatch = detailHtml.match(
     /<li[^>]*class=["'][^"']*o-list-bare__item[^"']*\bdate\b[^"']*["'][^>]*>\s*<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i
   );
   const anyPMatch = detailHtml.match(/<p[^>]*>\s*(\d{1,2}:\d{2})\s*,\s*(\d{2}\.\d{2}\.\d{4})\s*<\/p>/i);
   return parseBo3DateTimeString(dateLiMatch?.[0] || anyPMatch?.[0] || detailHtml);
+}
+
+async function resolveBo3PublishedAtFromRss(articleUrl, rssUrls, baseUrl) {
+  const normalizedArticleUrl = normalizeBo3NewsUrl(articleUrl, baseUrl);
+  if (!normalizedArticleUrl) return null;
+
+  for (const rssUrl of rssUrls) {
+    try {
+      const rssResponse = await fetchWithTimeout(rssUrl, {
+        headers: {
+          Accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.7',
+        },
+      }, 10000);
+      if (!rssResponse.ok) continue;
+
+      const rssXml = await rssResponse.text();
+      const rssItems = parseSimpleRss(rssXml, 'BO3.gg', 'bo3');
+      const matched = rssItems.find((x) => normalizeBo3NewsUrl(x.url, baseUrl) === normalizedArticleUrl);
+      if (!matched) continue;
+      const parsed = parseDate(matched.publishedAt);
+      if (parsed) return parsed;
+    } catch {
+      // Try next RSS endpoint
+    }
+  }
+
+  return null;
 }
 
 function isBettingNews(item = {}) {
@@ -837,6 +871,11 @@ async function scrapeBO3(options = {}) {
         const contentMarkdown = truncateText(cleaned);
         const content = truncateText(markdownToText(contentMarkdown));
         const fallbackTitle = titleFromSlug(url);
+        const fallbackPublishedAt =
+          parseBo3DateTimeString(textContent) ||
+          parseJinaPublishedDate(textContent) ||
+          (await resolveBo3PublishedAtFromRss(url, rssUrls, baseUrl)) ||
+          new Date();
         return {
           id: generateId(url, source),
           title: titleFromJinaText(textContent, fallbackTitle),
@@ -846,7 +885,7 @@ async function scrapeBO3(options = {}) {
           url,
           imageUrl: images[0],
           source: 'BO3.gg',
-          publishedAt: parseBo3DateTimeString(textContent) || new Date(),
+          publishedAt: fallbackPublishedAt,
           category: 'tournament',
         };
       }
