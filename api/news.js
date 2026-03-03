@@ -819,9 +819,11 @@ async function scrapeBO3(options = {}) {
       let detailLd = [];
 
       try {
-        const detailResponse = await fetchWithTimeout(url, {}, 10000);
-        if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
+        const detailResponse = await fetchWithTimeout(url, {}, 20000);
         detailHtml = await detailResponse.text();
+        if (!detailResponse.ok && !detailHtml.includes('c-article-body')) {
+          throw new Error(`HTTP ${detailResponse.status}`);
+        }
         detailLd = parseJsonLdBlocks(detailHtml);
         article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
       } catch {
