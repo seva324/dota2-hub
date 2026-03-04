@@ -9,7 +9,9 @@ import { neon } from '@neondatabase/serverless';
 
 const MAX_ITEMS = 30;
 const DETAIL_FETCH_LIMIT = 10;
+const HAWK_LIST_SCAN_LIMIT = 40;
 const MAX_CONTENT_LENGTH = 5000;
+const NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const TRANSLATE_BATCH_LIMIT = 2;
@@ -453,6 +455,21 @@ function collectValuesByKey(target, keyName, results = []) {
   return results;
 }
 
+function isValidHawkPostUrl(urlString) {
+  try {
+    const url = new URL(urlString);
+    const path = (url.pathname || '').toLowerCase();
+    if (!path.startsWith('/posts/')) return false;
+    const slug = path.slice('/posts/'.length).replace(/\/+$/, '');
+    if (!slug) return false;
+    if (slug === 'dota-2-guide') return false;
+    if (slug.startsWith('date/')) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function extractHawkListUrls(html, baseUrl) {
   const urls = new Set();
 
@@ -463,7 +480,7 @@ function extractHawkListUrls(html, baseUrl) {
       const raw = item?.url || item?.item?.url;
       if (typeof raw === 'string' && raw.includes('/posts/')) {
         const normalized = normalizeUrl(raw, baseUrl);
-        if (normalized) urls.add(normalized);
+        if (normalized && isValidHawkPostUrl(normalized)) urls.add(normalized);
       }
     }
   }
@@ -476,14 +493,14 @@ function extractHawkListUrls(html, baseUrl) {
       for (const slug of slugValues) {
         if (typeof slug !== 'string') continue;
         const normalized = normalizeUrl(`/posts/${slug}`, baseUrl);
-        if (normalized) urls.add(normalized);
+        if (normalized && isValidHawkPostUrl(normalized)) urls.add(normalized);
       }
 
       const pathValues = collectValuesByKey(nextData, 'url').flat().filter(Boolean);
       for (const path of pathValues) {
         if (typeof path !== 'string' || !path.includes('/posts/')) continue;
         const normalized = normalizeUrl(path, baseUrl);
-        if (normalized) urls.add(normalized);
+        if (normalized && isValidHawkPostUrl(normalized)) urls.add(normalized);
       }
     } catch {
       // Ignore malformed NEXT_DATA payload
@@ -496,10 +513,10 @@ function extractHawkListUrls(html, baseUrl) {
     const href = match[1];
     if (!href.includes('/posts/')) continue;
     const normalized = normalizeUrl(href, baseUrl);
-    if (normalized) urls.add(normalized);
+    if (normalized && isValidHawkPostUrl(normalized)) urls.add(normalized);
   }
 
-  return Array.from(urls).slice(0, DETAIL_FETCH_LIMIT);
+  return Array.from(urls).slice(0, HAWK_LIST_SCAN_LIMIT);
 }
 
 function normalizeBo3NewsUrl(rawUrl, baseUrl) {
@@ -1073,6 +1090,14 @@ function looksChinese(text = '') {
   return /[\u4e00-\u9fff]/.test(text);
 }
 
+function normalizeTitleForDedupe(title = '') {
+  return String(title || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\p{P}\p{S}]+/gu, ' ')
+    .replace(/\s+/g, ' ');
+}
+
 function safeParseJsonFromText(text = '') {
   if (!text) return null;
   try {
@@ -1405,7 +1430,72 @@ export async function syncNewsToDb(options = {}) {
 
   let news = normalizeAndSortNews(allItems);
   news = news.filter((x) => !isBettingNews(x));
-  if (news.length === 0) news = makeFallbackNews();
+  const totalFetched = news.length;
+  if (news.length === 0) {
+    return {
+      totalFetched: 0,
+      windowFilteredCount: 0,
+      dedupedByTitleCount: 0,
+      insertedCount: 0,
+      pendingTranslate: 0,
+      translatedCount: 0,
+      purgedBo3Count,
+      onlySource: onlySource || 'all',
+      cutoffSeconds: Math.floor(Date.now() / 1000) - NEWS_INCREMENTAL_WINDOW_SECONDS,
+    };
+  }
+
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - NEWS_INCREMENTAL_WINDOW_SECONDS;
+  news = news.filter((x) => Number(x.published_at) >= cutoffSeconds);
+  const windowFilteredCount = news.length;
+  if (news.length === 0) {
+    return {
+      totalFetched,
+      windowFilteredCount: 0,
+      dedupedByTitleCount: 0,
+      insertedCount: 0,
+      pendingTranslate: 0,
+      translatedCount: 0,
+      purgedBo3Count,
+      onlySource: onlySource || 'all',
+      cutoffSeconds,
+    };
+  }
+
+  const existingTitleRows = await db`
+    SELECT title_en
+    FROM news_articles
+    WHERE published_at >= ${cutoffSeconds - (7 * 24 * 60 * 60)}
+  `;
+  const existingTitleKeys = new Set(
+    existingTitleRows
+      .map((row) => normalizeTitleForDedupe(row.title_en || ''))
+      .filter(Boolean)
+  );
+  const seenBatchTitleKeys = new Set();
+  const beforeTitleDedupeCount = news.length;
+  news = news.filter((item) => {
+    const key = normalizeTitleForDedupe(item.title);
+    if (!key) return true;
+    if (existingTitleKeys.has(key)) return false;
+    if (seenBatchTitleKeys.has(key)) return false;
+    seenBatchTitleKeys.add(key);
+    return true;
+  });
+  const dedupedByTitleCount = Math.max(0, beforeTitleDedupeCount - news.length);
+  if (news.length === 0) {
+    return {
+      totalFetched,
+      windowFilteredCount,
+      dedupedByTitleCount,
+      insertedCount: 0,
+      pendingTranslate: 0,
+      translatedCount: 0,
+      purgedBo3Count,
+      onlySource: onlySource || 'all',
+      cutoffSeconds,
+    };
+  }
 
   const urls = news.map((x) => x.url);
   const existingRows = urls.length > 0
@@ -1415,6 +1505,7 @@ export async function syncNewsToDb(options = {}) {
   const apiKey = process.env.MINIMAX_API_KEY;
 
   let translatedCount = 0;
+  let insertedCount = 0;
   const pendingTranslateItems = [];
   for (const item of news) {
     const existing = existingMap.get(item.url);
@@ -1463,6 +1554,7 @@ export async function syncNewsToDb(options = {}) {
         content_markdown_zh = EXCLUDED.content_markdown_zh,
         updated_at = NOW()
     `;
+    insertedCount += 1;
 
     if (shouldTranslate) {
       pendingTranslateItems.push(item);
@@ -1488,11 +1580,15 @@ export async function syncNewsToDb(options = {}) {
   }
 
   return {
-    totalFetched: news.length,
+    totalFetched,
+    windowFilteredCount,
+    dedupedByTitleCount,
+    insertedCount,
     pendingTranslate: Math.max(0, pendingTranslateItems.length - translatedCount),
     translatedCount,
     purgedBo3Count,
     onlySource: onlySource || 'all',
+    cutoffSeconds,
   };
 }
 
