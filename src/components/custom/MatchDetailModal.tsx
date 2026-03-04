@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sword, Users, Clock, TrendingUp, FileText } from 'lucide-react';
+import { Users, Clock, TrendingUp, FileText } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -138,6 +138,16 @@ function formatDate(timestamp: number): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function getSeriesTypeLabel(seriesType: number): string {
+  const seriesTypes: Record<number, string> = {
+    0: 'BO1',
+    1: 'BO3',
+    2: 'BO5',
+    3: 'BO2',
+  };
+  return seriesTypes[seriesType] || 'Unknown';
 }
 
 function formatCompact(value: number): string {
@@ -321,6 +331,17 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   {formatDuration(match.duration)}
                 </div>
                 <div className="hidden xs:block">{formatDate(match.start_time)}</div>
+                <div className="mt-1 flex flex-wrap items-center justify-center md:justify-end gap-1.5 text-[11px]">
+                  <span className="rounded border border-slate-700 px-2 py-0.5 text-slate-300">
+                    赛制 {getSeriesTypeLabel(match.series_type)}
+                  </span>
+                  <span className="rounded border border-slate-700 px-2 py-0.5 text-slate-300">
+                    系列赛 ID {match.series_id || '-'}
+                  </span>
+                  <span className="rounded border border-slate-700 px-2 py-0.5 text-slate-300">
+                    Match ID {match.match_id}
+                  </span>
+                </div>
                 <Badge variant="outline" className="border-slate-700 text-slate-400 mt-1 text-xs">
                   {match.league_name || 'Professional Match'}
                 </Badge>
@@ -328,14 +349,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
             </div>
 
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-5">
+              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-4">
                 <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="hidden xs:inline">KDA 概要</span>
-                </TabsTrigger>
-                <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
-                  <Sword className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">概览</span>
                 </TabsTrigger>
                 <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -370,10 +387,6 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     itemsMap={itemsMap}
                   />
                 </div>
-              </TabsContent>
-
-              <TabsContent value="overview">
-                <OverviewSection match={match} />
               </TabsContent>
 
               <TabsContent value="economy">
@@ -600,36 +613,6 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
             </section>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function OverviewSection({ match }: { match: MatchDetail }) {
-  const seriesTypes: Record<number, string> = {
-    0: 'BO1',
-    1: 'BO3',
-    2: 'BO5',
-    3: 'BO2',
-  };
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="text-sm text-slate-400 mb-1">比赛时长</div>
-        <div className="text-xl font-bold text-white">{formatDuration(match.duration)}</div>
-      </div>
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="text-sm text-slate-400 mb-1">赛制</div>
-        <div className="text-xl font-bold text-white">{seriesTypes[match.series_type] || 'Unknown'}</div>
-      </div>
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="text-sm text-slate-400 mb-1">系列赛 ID</div>
-        <div className="text-xl font-bold text-white">{match.series_id || '-'}</div>
-      </div>
-      <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-800">
-        <div className="text-sm text-slate-400 mb-1">Match ID</div>
-        <div className="text-xl font-bold text-white">{match.match_id}</div>
       </div>
     </div>
   );
