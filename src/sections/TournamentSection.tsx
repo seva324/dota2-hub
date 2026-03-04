@@ -309,33 +309,6 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
     setExpandedSeries(newExpanded);
   };
 
-  if (!sortedTournaments.length) {
-    return (
-      <section id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
-        {/* 背景光效 */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl"></div>
-        
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)]">
-              <Trophy className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-bold text-white">赛事战报</h2>
-              <p className="text-slate-400 text-sm">Tournament Reports</p>
-            </div>
-          </div>
-          <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-800/50 mb-4">
-              <Trophy className="w-10 h-10 text-slate-600" />
-            </div>
-            <p className="text-slate-500 text-lg">暂无赛事数据</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   const currentSeries = selectedTournament ? (seriesByTournament?.[selectedTournament.id] || []) : [];
   const seriesByStageKind = useMemo(() => {
     const map = new Map<StageFilterKey, Series[]>();
@@ -370,6 +343,33 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
       setStageFilter('all');
     }
   }, [stageFilterOptions, stageFilter]);
+
+  if (!sortedTournaments.length) {
+    return (
+      <section id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
+        {/* 背景光效 */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl"></div>
+
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+              <Trophy className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-white">赛事战报</h2>
+              <p className="text-slate-400 text-sm">Tournament Reports</p>
+            </div>
+          </div>
+          <div className="text-center py-20">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-800/50 mb-4">
+              <Trophy className="w-10 h-10 text-slate-600" />
+            </div>
+            <p className="text-slate-500 text-lg">暂无赛事数据</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const filteredSeries = currentSeries.filter((s) => {
     const kind = (s.stage_kind || 'other') as StageFilterKey;
