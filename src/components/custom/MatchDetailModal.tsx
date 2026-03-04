@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Sword, Users, Target, Clock, TrendingUp, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Sword, Users, Clock, TrendingUp, FileText } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -7,26 +7,50 @@ import { MatchGraphs } from './MatchGraphs';
 import { LaningAnalysis } from './LaningAnalysis';
 import { AIReportSection } from './AIReportSection';
 
-// Pro player mapping (loaded from data file)
 let proPlayersMap: Record<number, { name: string; team_name: string; realname: string }> = {};
+let heroesData: Record<number, HeroInfo> = {};
+let cachedItemsMap: Record<number, ItemInfo> = {};
 
-// Load pro players
 fetch('/data/pro_players.json')
-  .then(res => res.json())
-  .then(data => { proPlayersMap = data; })
+  .then((res) => res.json())
+  .then((data) => {
+    proPlayersMap = data;
+  })
   .catch(() => {});
+
+fetch('/data/heroes.json')
+  .then((res) => res.json())
+  .then((data) => {
+    heroesData = data;
+  })
+  .catch(() => {});
+
+interface HeroInfo {
+  id: number;
+  name: string;
+  img: string;
+  name_cn: string;
+  nicknames?: string[];
+}
+
+interface ItemInfo {
+  id: number;
+  name: string;
+  img: string;
+}
 
 interface Player {
   player_slot: number;
   account_id: number;
   personaname?: string;
-  name?: string; // Pro player name from OpenDota
+  name?: string;
   hero_id: number;
   level: number;
   kills: number;
   deaths: number;
   assists: number;
   gold?: number;
+  net_worth?: number;
   gold_per_min: number;
   xp_per_min: number;
   last_hits: number;
@@ -34,9 +58,19 @@ interface Player {
   hero_damage: number;
   tower_damage: number;
   hero_healing: number;
-  items: number[];
+  lane?: number;
+  items?: number[];
   neutral_item?: number;
-  lane?: number; // 1=天辉优势路/夜魇劣势路, 2=中路, 3=天辉劣势路/夜魇优势路
+  item_0?: number;
+  item_1?: number;
+  item_2?: number;
+  item_3?: number;
+  item_4?: number;
+  item_5?: number;
+  item_neutral?: number;
+  backpack_0?: number;
+  backpack_1?: number;
+  backpack_2?: number;
 }
 
 interface PicksBans {
@@ -68,27 +102,7 @@ interface MatchDetail {
   radiant_xp_adv?: number[];
 }
 
-// Hero data - loaded from data file
-interface HeroInfo {
-  id: number;
-  name: string;
-  img: string;
-  name_cn: string;
-  nicknames?: string[];
-}
-let heroesData: Record<number, HeroInfo> = {};
-
-// Load heroes data from heroes.json (contains both English and Chinese names)
-fetch('/data/heroes.json')
-  .then(res => res.json())
-  .then(data => { 
-    heroesData = data;
-    console.log('Heroes loaded in MatchDetailModal:', Object.keys(heroesData).length);
-  })
-  .catch(err => console.error('Error loading heroes:', err));
-
 function getHeroName(id: number): string {
-  // Return Chinese name if available, otherwise English name
   const hero = heroesData[id];
   if (!hero) return `Hero ${id}`;
   return hero.name_cn || hero.name || `Hero ${id}`;
@@ -97,70 +111,17 @@ function getHeroName(id: number): string {
 function getHeroImg(id: number): string {
   const hero = heroesData[id];
   if (!hero?.img) {
-    // Fallback to CDN
-    return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/hero_${id}_lg.png`;
+    return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png`;
   }
   return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
 }
 
-// Get lane name in Chinese
 function getLaneName(lane: number | undefined, isRadiant: boolean): string {
   if (!lane) return '';
-  // lane: 1=天辉优势路/夜魇劣势路, 2=中路, 3=天辉劣势路/夜魇优势路
   if (lane === 1) return isRadiant ? '优势路' : '劣势路';
   if (lane === 2) return '中路';
   if (lane === 3) return isRadiant ? '劣势路' : '优势路';
   return '';
-}
-
-const TEAM_NAME_ABBR: Record<string, string> = {
-  'Xtreme Gaming': 'XG',
-  'Yakult Brothers': 'YB',
-  'Team Spirit': 'Spirit',
-  'Natus Vincere': 'NaVi',
-  'Tundra Esports': 'Tundra',
-  'Team Liquid': 'Liquid',
-  'Team Falcons': 'Falcons',
-  'GamerLegion': 'GL',
-  'PARIVISION': 'PARI',
-  'BetBoom Team': 'BB',
-  'paiN Gaming': 'paiN',
-  'Aurora Gaming': 'Aurora',
-  'Execration': 'XctN',
-  'Vici Gaming': 'VG',
-  'PSG.LGD': 'LGD',
-  'Team Yandex': 'Yandex',
-  'Nigma Galaxy': 'Nigma',
-  'Virtus.pro': 'VP',
-  'Gaimin Gladiators': 'GG',
-};
-
-function getTeamDisplayName(teamName: string, mobile = false): string {
-  if (!mobile) return teamName;
-  if (TEAM_NAME_ABBR[teamName]) return TEAM_NAME_ABBR[teamName];
-  const compact = teamName.replace(/\s+/g, '');
-  return compact.length > 8 ? compact.slice(0, 8) : compact;
-}
-
-function HeroIcon({ heroId, size = 'md' }: { heroId: number; size?: 'sm' | 'md' | 'lg' }) {
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16'
-  };
-  
-  return (
-    <div className={`${sizeClasses[size]} rounded bg-slate-800 overflow-hidden flex-shrink-0`}>
-      <img 
-        src={getHeroImg(heroId)} 
-        alt={getHeroName(heroId)}
-        className="w-full h-full object-cover"
-        onError={(e) => {
-          (e.target as HTMLImageElement).style.display = 'none';
-        }}
-      />
-    </div>
-  );
 }
 
 function formatDuration(seconds: number): string {
@@ -175,8 +136,82 @@ function formatDate(timestamp: number): string {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
+}
+
+function formatCompact(value: number): string {
+  if (!Number.isFinite(value)) return '-';
+  if (Math.abs(value) >= 1000) {
+    const compact = value / 1000;
+    return compact >= 100 ? `${compact.toFixed(0)}k` : `${compact.toFixed(1)}k`;
+  }
+  return String(Math.round(value));
+}
+
+function normalizeItemImg(img: string): string {
+  if (!img) return '';
+  if (img.startsWith('http://') || img.startsWith('https://')) return img;
+  if (img.startsWith('/apps/')) return `https://cdn.cloudflare.steamstatic.com${img}`;
+  return img;
+}
+
+async function fetchItemsMap(): Promise<Record<number, ItemInfo>> {
+  if (Object.keys(cachedItemsMap).length > 0) {
+    return cachedItemsMap;
+  }
+
+  const res = await fetch('https://api.opendota.com/api/constants/items');
+  const raw: Record<string, { id?: number; dname?: string; img?: string }> = await res.json();
+  const byId: Record<number, ItemInfo> = {};
+
+  Object.values(raw).forEach((item) => {
+    if (typeof item.id === 'number' && item.id > 0) {
+      byId[item.id] = {
+        id: item.id,
+        name: item.dname || `Item ${item.id}`,
+        img: normalizeItemImg(item.img || ''),
+      };
+    }
+  });
+
+  cachedItemsMap = byId;
+  return byId;
+}
+
+function getPlayerDisplayName(player: Player): string {
+  const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
+  if (player.name && player.name !== 'Unknown') return player.name;
+  if (proInfo?.name) return proInfo.name;
+  if (player.personaname) return player.personaname;
+  return player.account_id ? String(player.account_id) : 'Unknown';
+}
+
+function getMainItemIds(player: Player): number[] {
+  if (Array.isArray(player.items) && player.items.length > 0) {
+    return player.items.slice(0, 6).map((id) => (typeof id === 'number' ? id : 0));
+  }
+  return [
+    player.item_0 || 0,
+    player.item_1 || 0,
+    player.item_2 || 0,
+    player.item_3 || 0,
+    player.item_4 || 0,
+    player.item_5 || 0,
+  ];
+}
+
+function getBackpackItemIds(player: Player): number[] {
+  return [player.backpack_0 || 0, player.backpack_1 || 0, player.backpack_2 || 0];
+}
+
+function getNeutralItemId(player: Player): number {
+  return player.item_neutral || player.neutral_item || 0;
+}
+
+function getNetWorth(player: Player): number {
+  if (typeof player.net_worth === 'number') return player.net_worth;
+  return player.gold || 0;
 }
 
 interface MatchDetailModalProps {
@@ -189,24 +224,31 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [itemsMap, setItemsMap] = useState<Record<number, ItemInfo>>(cachedItemsMap);
+
+  useEffect(() => {
+    if (!open || Object.keys(itemsMap).length > 0) return;
+    fetchItemsMap()
+      .then((items) => setItemsMap(items))
+      .catch(() => {});
+  }, [open, itemsMap]);
 
   useEffect(() => {
     if (matchId && open) {
       setLoading(true);
       setError(null);
-      
-      // Convert to number in case it's a string
+
       const matchIdNum = typeof matchId === 'string' ? parseInt(matchId, 10) : matchId;
-      
+
       fetch(`https://api.opendota.com/api/matches/${matchIdNum}`)
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.error) {
             throw new Error(data.error);
           }
           setMatch(data);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error('Failed to fetch match:', err);
           setError(err.message || '加载失败');
         })
@@ -216,16 +258,15 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   if (!matchId) return null;
 
-  const radiantPlayers = match?.players.filter(p => p.player_slot < 128) || [];
-  const direPlayers = match?.players.filter(p => p.player_slot >= 128) || [];
+  const radiantPlayers = match?.players.filter((p) => p.player_slot < 128) || [];
+  const direPlayers = match?.players.filter((p) => p.player_slot >= 128) || [];
 
-  // Get team names from nested object or direct field
-  const getTeamName = (match: MatchDetail | null, side: 'radiant' | 'dire'): string => {
-    if (!match) return side === 'radiant' ? 'Radiant' : 'Dire';
+  const getTeamName = (target: MatchDetail | null, side: 'radiant' | 'dire'): string => {
+    if (!target) return side === 'radiant' ? 'Radiant' : 'Dire';
     if (side === 'radiant') {
-      return match.radiant_team?.name || match.radiant_team_name || 'Radiant';
+      return target.radiant_team?.name || target.radiant_team_name || 'Radiant';
     }
-    return match.dire_team?.name || match.dire_team_name || 'Dire';
+    return target.dire_team?.name || target.dire_team_name || 'Dire';
   };
 
   const radiantTeamName = getTeamName(match, 'radiant');
@@ -233,10 +274,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:w-[94vw] lg:w-[92vw] xl:w-[90vw] max-w-[1500px] max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
@@ -248,25 +289,30 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
         {match && !loading && (
           <>
-            {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-800 gap-2 sm:gap-4">
-              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 w-full justify-center md:justify-start">
-                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>
-                  <span className="md:hidden">{getTeamDisplayName(radiantTeamName, true)}</span>
-                  <span className="hidden md:inline">{radiantTeamName}</span>
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
+                <div
+                  className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none`}
+                >
+                  {radiantTeamName}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                  <span className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
+                  <span
+                    className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}
+                  >
                     {match.radiant_score}
                   </span>
                   <span className="text-slate-600 text-base sm:text-lg md:text-xl">:</span>
-                  <span className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>
+                  <span
+                    className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}
+                  >
                     {match.dire_score}
                   </span>
                 </div>
-                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>
-                  <span className="md:hidden">{getTeamDisplayName(direTeamName, true)}</span>
-                  <span className="hidden md:inline">{direTeamName}</span>
+                <div
+                  className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none`}
+                >
+                  {direTeamName}
                 </div>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
@@ -281,16 +327,11 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
               </div>
             </div>
 
-            {/* Tabs */}
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-6">
+              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-5">
                 <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">选手数据</span>
-                </TabsTrigger>
-                <TabsTrigger value="bp" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
-                  <Target className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">BP</span>
+                  <span className="hidden xs:inline">KDA 概要</span>
                 </TabsTrigger>
                 <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
                   <Sword className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -310,43 +351,39 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 </TabsTrigger>
               </TabsList>
 
-              {/* Players Tab */}
               <TabsContent value="players">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-                  {/* Radiant */}
-                  <div className="space-y-2">
-                    <div className="text-center font-bold text-green-400 mb-3">{radiantTeamName}</div>
-                    {radiantPlayers.map((player, idx) => (
-                      <PlayerCard key={idx} player={player} isWinner={match.radiant_win} isRadiant={true} />
-                    ))}
-                  </div>
-                  {/* Dire */}
-                  <div className="space-y-2">
-                    <div className="text-center font-bold text-red-400 mb-3">{direTeamName}</div>
-                    {direPlayers.map((player, idx) => (
-                      <PlayerCard key={idx} player={player} isWinner={!match.radiant_win} isRadiant={false} />
-                    ))}
-                  </div>
+                <div className="space-y-6">
+                  <TeamSummaryTable
+                    teamName={radiantTeamName}
+                    players={radiantPlayers}
+                    isRadiant={true}
+                    isWinner={match.radiant_win}
+                    picksBans={match.picks_bans || []}
+                    itemsMap={itemsMap}
+                  />
+                  <TeamSummaryTable
+                    teamName={direTeamName}
+                    players={direPlayers}
+                    isRadiant={false}
+                    isWinner={!match.radiant_win}
+                    picksBans={match.picks_bans || []}
+                    itemsMap={itemsMap}
+                  />
                 </div>
               </TabsContent>
 
-              {/* BP Tab */}
-              <TabsContent value="bp">
-                <BPSection picksBans={match.picks_bans || []} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
-              </TabsContent>
-
-              {/* Overview Tab */}
               <TabsContent value="overview">
                 <OverviewSection match={match} />
               </TabsContent>
+
               <TabsContent value="economy">
                 <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
               </TabsContent>
+
               <TabsContent value="laning">
                 <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
               </TabsContent>
-              
-              {/* AI Report Tab */}
+
               <TabsContent value="aireport">
                 <AIReportSection match={match} />
               </TabsContent>
@@ -358,135 +395,211 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
   );
 }
 
-function PlayerCard({ player, isWinner, isRadiant }: { player: Player; isWinner: boolean; isRadiant: boolean }) {
-  // Get pro player name - prioritize player.name (English pro name), then proPlayersMap, then account_id
-  const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
-  const displayName = (player.name && player.name !== 'Unknown') ? player.name : (proInfo?.name || (player.account_id ? `${player.account_id}` : 'Unknown'));
-  const accountId = player.account_id ? `${player.account_id}` : null;
-  
-  // Get lane name
-  const laneName = getLaneName(player.lane, isRadiant);
+function TeamSummaryTable({
+  teamName,
+  players,
+  isRadiant,
+  isWinner,
+  picksBans,
+  itemsMap,
+}: {
+  teamName: string;
+  players: Player[];
+  isRadiant: boolean;
+  isWinner: boolean;
+  picksBans: PicksBans[];
+  itemsMap: Record<number, ItemInfo>;
+}) {
+  const teamCode = isRadiant ? 0 : 1;
+
+  const total = players.reduce(
+    (acc, p) => {
+      acc.level += p.level || 0;
+      acc.kills += p.kills || 0;
+      acc.deaths += p.deaths || 0;
+      acc.assists += p.assists || 0;
+      acc.lastHits += p.last_hits || 0;
+      acc.denies += p.denies || 0;
+      acc.netWorth += getNetWorth(p);
+      acc.gpm += p.gold_per_min || 0;
+      acc.xpm += p.xp_per_min || 0;
+      return acc;
+    },
+    { level: 0, kills: 0, deaths: 0, assists: 0, lastHits: 0, denies: 0, netWorth: 0, gpm: 0, xpm: 0 }
+  );
+
+  const teamPicksBans = picksBans
+    .filter((entry) => entry.team === teamCode)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
-    <div className={`p-2 sm:p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
-      <div className="flex items-center justify-between mb-1 sm:mb-2 gap-2">
-        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-          <span className="text-sm sm:text-base font-medium text-white truncate md:whitespace-normal md:overflow-visible">{displayName}</span>
-          {laneName && (
-            <Badge className="text-[10px] px-1 py-0 bg-blue-600/20 text-blue-400 border border-blue-600/30">
-              {laneName}
-            </Badge>
-          )}
-        </div>
-        <Badge className={`flex-shrink-0 ${isWinner ? 'bg-green-600/20 text-green-400' : 'bg-slate-700 text-slate-400'} text-xs`}>
-          Lv.{player.level}
-        </Badge>
+    <div className="rounded-lg border border-slate-800 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-800/40 border-b border-slate-800">
+        <span className="text-sm sm:text-base font-semibold text-slate-100">{teamName} - 摘要</span>
+        {isWinner && <span className="text-xs sm:text-sm text-green-400 font-semibold">胜者</span>}
       </div>
-      <div className="flex items-center gap-2 sm:gap-3">
-        <HeroIcon heroId={player.hero_id} size="sm" />
-        <span className="text-xs sm:text-sm md:text-base font-bold text-yellow-400 truncate flex-1 min-w-0">{getHeroName(player.hero_id)}</span>
-        <div className="flex-shrink-0 text-right">
-          <span className={`text-sm sm:text-xl font-bold ${player.kills > player.deaths ? 'text-green-400' : player.kills < player.deaths ? 'text-red-400' : 'text-slate-400'}`}>
-            {player.kills} / {player.deaths} / {player.assists}
-          </span>
-        </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[940px]">
+          <thead className="bg-slate-900/70">
+            <tr className="text-xs text-slate-400">
+              <th className="text-left px-3 py-2 w-[260px]">玩家</th>
+              <th className="text-center px-2 py-2 w-[56px]">等级</th>
+              <th className="text-right px-2 py-2 w-[52px] text-green-400">击杀</th>
+              <th className="text-right px-2 py-2 w-[52px] text-red-400">死亡</th>
+              <th className="text-right px-2 py-2 w-[52px] text-slate-300">助攻</th>
+              <th className="text-right px-2 py-2 w-[90px]">正补/反补</th>
+              <th className="text-right px-2 py-2 w-[80px] text-yellow-400">NET</th>
+              <th className="text-right px-2 py-2 w-[96px]">GPM/XPM</th>
+              <th className="text-left px-3 py-2">物品</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((player) => {
+              const displayName = getPlayerDisplayName(player);
+              const laneName = getLaneName(player.lane, isRadiant);
+              const mainItems = getMainItemIds(player);
+              const backpackItems = getBackpackItemIds(player);
+              const neutral = getNeutralItemId(player);
+
+              return (
+                <tr key={`${player.player_slot}-${player.account_id}-${player.hero_id}`} className="border-t border-slate-800/70">
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-10 h-10 rounded overflow-hidden bg-slate-800 flex-shrink-0">
+                        <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm text-slate-100 truncate">{displayName}</div>
+                        <div className="text-xs text-slate-400 truncate">
+                          {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-2 py-2 text-center text-sm text-slate-200">{player.level}</td>
+                  <td className="px-2 py-2 text-right text-sm text-green-400">{player.kills}</td>
+                  <td className="px-2 py-2 text-right text-sm text-red-400">{player.deaths}</td>
+                  <td className="px-2 py-2 text-right text-sm text-slate-200">{player.assists}</td>
+                  <td className="px-2 py-2 text-right text-sm text-slate-300">
+                    {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
+                  </td>
+                  <td className="px-2 py-2 text-right text-sm text-yellow-400">{formatCompact(getNetWorth(player))}</td>
+                  <td className="px-2 py-2 text-right text-sm text-slate-300">
+                    {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <ItemStrip mainItems={mainItems} backpackItems={backpackItems} neutralItem={neutral} itemsMap={itemsMap} />
+                  </td>
+                </tr>
+              );
+            })}
+
+            <tr className="border-t border-slate-700 bg-slate-900/40 text-xs text-slate-300">
+              <td className="px-3 py-2" />
+              <td className="px-2 py-2 text-center">{total.level}</td>
+              <td className="px-2 py-2 text-right text-green-400">{total.kills}</td>
+              <td className="px-2 py-2 text-right text-red-400">{total.deaths}</td>
+              <td className="px-2 py-2 text-right">{total.assists}</td>
+              <td className="px-2 py-2 text-right">
+                {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
+              </td>
+              <td className="px-2 py-2 text-right text-yellow-400">{formatCompact(total.netWorth)}</td>
+              <td className="px-2 py-2 text-right">
+                {formatCompact(total.gpm)}/{formatCompact(total.xpm)}
+              </td>
+              <td className="px-3 py-2" />
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div className="mt-1 text-[10px] sm:text-xs text-slate-500 tabular-nums whitespace-nowrap overflow-x-auto">
-        {accountId ? `ID: ${accountId}` : 'ID: -'}
+
+      <PicksBansInline picksBans={teamPicksBans} />
+    </div>
+  );
+}
+
+function ItemStrip({
+  mainItems,
+  backpackItems,
+  neutralItem,
+  itemsMap,
+}: {
+  mainItems: number[];
+  backpackItems: number[];
+  neutralItem: number;
+  itemsMap: Record<number, ItemInfo>;
+}) {
+  const renderItem = (itemId: number, muted = false) => {
+    const item = itemId > 0 ? itemsMap[itemId] : undefined;
+    return (
+      <div
+        key={`${itemId}-${muted ? 'bp' : 'main'}`}
+        className={`w-9 h-7 rounded overflow-hidden border ${muted ? 'opacity-60 border-slate-700' : 'border-slate-600'} bg-slate-800 flex-shrink-0`}
+        title={item?.name || ''}
+      >
+        {item?.img ? (
+          <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full" />
+        )}
       </div>
-      <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-slate-400 flex flex-wrap justify-between gap-x-2">
-        <span>GPM: {player.gold_per_min}</span>
-        <span>XPM: {player.xp_per_min}</span>
-        <span>HD: {player.hero_damage}</span>
-        <span>TD: {player.tower_damage}</span>
+    );
+  };
+
+  const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        {mainItems.map((id, idx) => (
+          <div key={`main-${idx}`}>{renderItem(id)}</div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1">
+        {backpackItems.map((id, idx) => (
+          <div key={`backpack-${idx}`}>{renderItem(id, true)}</div>
+        ))}
+      </div>
+      <div
+        className="w-9 h-7 rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0"
+        title={neutral?.name || ''}
+      >
+        {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
       </div>
     </div>
   );
 }
 
-function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: PicksBans[]; radiantTeamName: string; direTeamName: string }) {
-  const radiantBans = picksBans.filter(pb => pb.team === 0 && !pb.is_pick).map(pb => pb.hero_id);
-  const radiantPicks = picksBans.filter(pb => pb.team === 0 && pb.is_pick).map(pb => pb.hero_id);
-  const direBans = picksBans.filter(pb => pb.team === 1 && !pb.is_pick).map(pb => pb.hero_id);
-  const direPicks = picksBans.filter(pb => pb.team === 1 && pb.is_pick).map(pb => pb.hero_id);
-
-  if (picksBans.length === 0) {
-    return (
-      <div className="text-center py-12 text-slate-500">
-        <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <p>暂无 BP 数据</p>
-      </div>
-    );
-  }
+function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
+  if (picksBans.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-6">
-      {/* Radiant */}
-      <div>
-        <div className="text-center font-bold text-green-400 mb-3">{radiantTeamName}</div>
-        <div className="space-y-4">
-          <div>
-            <div className="text-sm text-slate-400 mb-2">Ban</div>
-            <div className="flex flex-wrap gap-2">
-              {radiantBans.map((heroId, idx) => (
-                <div key={idx} className="relative group">
-                  <HeroIcon heroId={heroId} size="md" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
-                    {getHeroName(heroId)}
-                  </div>
-                </div>
-              ))}
-              {radiantBans.length === 0 && <span className="text-slate-500 text-sm">-</span>}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-slate-400 mb-2">Pick</div>
-            <div className="flex flex-wrap gap-2">
-              {radiantPicks.map((heroId, idx) => (
-                <div key={idx} className="relative group">
-                  <HeroIcon heroId={heroId} size="md" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
-                    {getHeroName(heroId)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
+      <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {picksBans.map((entry) => {
+          const label = entry.is_pick ? '选择' : '禁止';
+          const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
+          const heroName = getHeroName(entry.hero_id);
 
-      {/* Dire */}
-      <div>
-        <div className="text-center font-bold text-red-400 mb-3">{direTeamName}</div>
-        <div className="space-y-4">
-          <div>
-            <div className="text-sm text-slate-400 mb-2">Ban</div>
-            <div className="flex flex-wrap gap-2">
-              {direBans.map((heroId, idx) => (
-                <div key={idx} className="relative group">
-                  <HeroIcon heroId={heroId} size="md" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
-                    {getHeroName(heroId)}
-                  </div>
-                </div>
-              ))}
-              {direBans.length === 0 && <span className="text-slate-500 text-sm">-</span>}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-slate-400 mb-2">Pick</div>
-            <div className="flex flex-wrap gap-2">
-              {direPicks.map((heroId, idx) => (
-                <div key={idx} className="relative group">
-                  <HeroIcon heroId={heroId} size="md" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-10">
-                    {getHeroName(heroId)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          return (
+            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="flex-shrink-0">
+              <div className="w-11 h-11 rounded overflow-hidden bg-slate-800 border border-slate-700 relative">
+                <img
+                  src={getHeroImg(entry.hero_id)}
+                  alt={heroName}
+                  className={`w-full h-full object-cover ${entry.is_pick ? '' : 'grayscale brightness-75'}`}
+                  title={heroName}
+                />
+                {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
+              </div>
+              <aside className="mt-1 text-[11px] text-slate-400 text-center whitespace-nowrap">
+                {label} <b className="text-slate-200">{orderText}</b>
+              </aside>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -494,7 +607,10 @@ function BPSection({ picksBans, radiantTeamName, direTeamName }: { picksBans: Pi
 
 function OverviewSection({ match }: { match: MatchDetail }) {
   const seriesTypes: Record<number, string> = {
-    0: 'BO1', 1: 'BO3', 2: 'BO5', 3: 'BO2'
+    0: 'BO1',
+    1: 'BO3',
+    2: 'BO5',
+    3: 'BO2',
   };
 
   return (
