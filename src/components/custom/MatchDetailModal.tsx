@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Users, Clock, TrendingUp, FileText, Backpack } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { MatchGraphs } from './MatchGraphs';
 import { LaningAnalysis } from './LaningAnalysis';
 import { AIReportSection } from './AIReportSection';
@@ -355,20 +354,17 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                   {formatDuration(match.duration)}
                 </div>
                 <div className="hidden xs:block">{formatDate(match.start_time)}</div>
-                <div className="mt-1 flex flex-wrap items-center justify-center md:justify-end gap-1.5 text-[11px]">
-                  <span className="rounded border border-slate-700 px-2 py-0.5 text-slate-300">
-                    赛制 {getSeriesTypeLabel(match.series_type)}
-                  </span>
-                  <span className="rounded border border-slate-700 px-2 py-0.5 text-slate-300">
-                    系列赛 ID {match.series_id || '-'}
-                  </span>
-                  <span className="rounded border border-slate-700 px-2 py-0.5 text-slate-300">
-                    Match ID {match.match_id}
-                  </span>
+                <div className="mt-1 flex items-center justify-center md:justify-end text-[11px]">
+                  <div className="inline-flex items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300 whitespace-nowrap overflow-x-auto max-w-full">
+                    <span>{match.league_name || 'Professional Match'}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>赛制 {getSeriesTypeLabel(match.series_type)}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>系列赛 ID {match.series_id || '-'}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>Match ID {match.match_id}</span>
+                  </div>
                 </div>
-                <Badge variant="outline" className="border-slate-700 text-slate-400 mt-1 text-xs">
-                  {match.league_name || 'Professional Match'}
-                </Badge>
               </div>
             </div>
 
@@ -492,7 +488,7 @@ function TeamSummaryTable({
             </tr>
           </thead>
           <tbody>
-            {players.map((player) => {
+            {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
               const displayName = getPlayerDisplayName(player);
               const laneName = getLaneName(player.lane, isRadiant);
               const mainItems = getMainItemIds(player);
@@ -602,7 +598,7 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   return (
-    <div className="flex items-start justify-between gap-3 min-w-[420px]">
+    <div className="flex items-start justify-between gap-2 min-w-[410px]">
       <div className="min-w-0 space-y-1.5">
         <div className="flex items-center gap-1">
           {mainItems.map((id, idx) => (
@@ -628,18 +624,22 @@ function ItemStrip({
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-1.5 pt-0.5">
+      <div className="relative w-9 h-8 mt-0.5 flex-shrink-0">
         <img
-          src={`/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
+          src={`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
           alt="Aghanim's Scepter"
-          className="w-7 h-7 rounded border border-slate-700 bg-slate-900/80 p-0.5 object-contain"
+          className="absolute right-0 top-0 w-6 h-6 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain rotate-[7deg] z-10"
           title={hasScepter ? 'A杖: 已拥有' : 'A杖: 未拥有'}
+          loading="lazy"
+          referrerPolicy="no-referrer"
         />
         <img
-          src={`/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`}
+          src={`https://www.opendota.com/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`}
           alt="Aghanim's Shard"
-          className="w-7 h-7 rounded border border-slate-700 bg-slate-900/80 p-0.5 object-contain"
+          className="absolute left-0 bottom-0 w-6 h-6 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain -rotate-[7deg]"
           title={hasShard ? '魔晶: 已拥有' : '魔晶: 未拥有'}
+          loading="lazy"
+          referrerPolicy="no-referrer"
         />
       </div>
     </div>
