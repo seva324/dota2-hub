@@ -254,18 +254,20 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
   const getEventTone = (side: EventSide) => {
     if (side === 'radiant') {
       return {
-        active: 'border-red-400/80 bg-red-500/20 text-red-100',
-        idle: 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-red-400/50',
+        active: 'border-red-400/85 bg-red-500/25 text-red-100 ring-1 ring-red-300/70',
+        idle: 'border-red-400/70 bg-red-500/20 text-red-100 hover:border-red-300',
         badge: 'bg-red-500/15 text-red-200',
         panel: 'border-red-500/30 bg-red-500/5',
+        line: 'border-red-400/40',
       };
     }
     if (side === 'dire') {
       return {
-        active: 'border-green-400/80 bg-green-500/20 text-green-100',
-        idle: 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-green-400/50',
+        active: 'border-green-400/85 bg-green-500/25 text-green-100 ring-1 ring-green-300/70',
+        idle: 'border-green-400/70 bg-green-500/20 text-green-100 hover:border-green-300',
         badge: 'bg-green-500/15 text-green-200',
         panel: 'border-green-500/30 bg-green-500/5',
+        line: 'border-green-400/40',
       };
     }
     return {
@@ -273,7 +275,14 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       idle: 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-slate-500/50',
       badge: 'bg-slate-500/15 text-slate-200',
       panel: 'border-slate-700 bg-slate-950/60',
+      line: 'border-slate-500/35',
     };
+  };
+
+  const getEventAxisRatio = (seconds: number): number => {
+    if (axisCount <= 1 || !axisStep) return 0;
+    const idx = Math.max(0, Math.min(axisCount - 1, Math.round(seconds / axisStep)));
+    return idx / (axisCount - 1);
   };
 
   const advantageChartOption: EChartsOption = useMemo(
@@ -385,7 +394,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
 
     return {
       backgroundColor: 'transparent',
-      grid: { left: 56, right: 24, top: 42, bottom: 34 },
+      grid: { left: 56, right: 20, top: 42, bottom: 34 },
       legend: {
         top: 8,
         textStyle: { color: '#94a3b8', fontSize: 10 },
@@ -553,7 +562,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                                     className={`h-6 w-10 rounded object-cover ${fightPlayer.deaths && fightPlayer.deaths > 0 ? 'grayscale brightness-75' : ''}`}
                                     loading="lazy"
                                   />
-                                  {fightPlayer.deaths && fightPlayer.deaths > 0 && (
+                                  {(fightPlayer.deaths ?? 0) > 0 && (
                                     <span className="absolute inset-0 flex items-center justify-center rounded bg-slate-950/35">
                                       <Skull className="h-3.5 w-3.5 text-red-300" />
                                     </span>
@@ -571,13 +580,13 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                                   金钱 {fightPlayer.gold_delta && fightPlayer.gold_delta > 0 ? '+' : ''}
                                   {fightPlayer.gold_delta || 0}
                                 </div>
-                                {fightPlayer.buybacks && fightPlayer.buybacks > 0 ? (
+                                {(fightPlayer.buybacks ?? 0) > 0 ? (
                                   <div className="mt-0.5 flex items-center justify-end gap-1 text-amber-300">
                                     <RotateCcw className="h-3 w-3" />
                                     买活 {fightPlayer.buybacks}
                                   </div>
                                 ) : null}
-                                {fightPlayer.deaths && fightPlayer.deaths > 0 ? (
+                                {(fightPlayer.deaths ?? 0) > 0 ? (
                                   <div className="flex items-center justify-end gap-1 text-slate-300">
                                     <Skull className="h-3 w-3" />
                                     死亡 {fightPlayer.deaths}
@@ -599,15 +608,47 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
         <h4 className="mb-2 text-sm font-semibold text-slate-100">经济 / 经验优势曲线</h4>
-        <div className="h-60">
-          <ReactECharts option={advantageChartOption} style={{ height: '100%' }} />
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
-        <h4 className="mb-2 text-sm font-semibold text-slate-100">英雄经济成长曲线</h4>
-        <div className="h-72">
-          <ReactECharts option={netWorthChartOption} style={{ height: '100%' }} />
+        <div className="relative pt-10">
+          <div className="absolute inset-x-0 top-0 bottom-0 pointer-events-none">
+            {timelineEvents.map((event) => {
+              const ratio = getEventAxisRatio(event.time);
+              const tone = getEventTone(getEventSide(event));
+              const left = `calc(56px + (100% - 76px) * ${ratio})`;
+              const isActive = activeEvent?.id === event.id;
+              return (
+                <div key={`axis-${event.id}`} className="absolute top-0 bottom-0 -translate-x-1/2 flex flex-col items-center" style={{ left }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveEventId(event.id)}
+                    className={`pointer-events-auto inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] ${isActive ? tone.active : tone.idle}`}
+                    title={`${getAxisTimeLabel(getAlignedTime(event.time))}`}
+                  >
+                    {event.type === 'firstblood' ? (
+                      <Droplets className="h-3 w-3" />
+                    ) : event.type === 'roshan' ? (
+                      <img
+                        src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png"
+                        alt="Aegis"
+                        className="h-3 w-3 rounded-sm object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <Swords className="h-3 w-3" />
+                    )}
+                    <span>{getAxisTimeLabel(getAlignedTime(event.time))}</span>
+                  </button>
+                  <div className={`mt-1 w-px flex-1 border-l border-dashed ${tone.line}`} />
+                </div>
+              );
+            })}
+          </div>
+          <div className="h-60">
+            <ReactECharts option={advantageChartOption} style={{ height: '100%' }} />
+          </div>
+          <div className="mt-4 h-72">
+            <ReactECharts option={netWorthChartOption} style={{ height: '100%' }} />
+          </div>
         </div>
       </section>
 
