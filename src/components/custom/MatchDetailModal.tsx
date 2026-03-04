@@ -605,7 +605,7 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   return (
-    <div className="flex items-start justify-between gap-0.5 min-w-[402px]">
+    <div className="flex items-start justify-start gap-1.5">
       <div className="min-w-0 space-y-1.5">
         <div className="flex items-center gap-1">
           {mainItems.map((id, idx) => (
