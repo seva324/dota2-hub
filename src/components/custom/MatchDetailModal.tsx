@@ -274,7 +274,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
+      <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
