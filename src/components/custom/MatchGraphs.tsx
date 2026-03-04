@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
-import { Shield, Swords, Droplets, Skull } from 'lucide-react';
+import { Shield, Swords, Droplets, Skull, RotateCcw } from 'lucide-react';
 
 interface MatchObjective {
   time: number;
@@ -15,6 +15,7 @@ interface TeamfightPlayer {
   deaths?: number;
   gold_delta?: number;
   xp_delta?: number;
+  buybacks?: number;
 }
 
 interface TeamfightData {
@@ -166,17 +167,24 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       });
     }
 
+    const roshanEvents: TimelineRoshanEvent[] = [];
     objectives
       .filter((obj) => obj.type?.includes('AEGIS') || obj.type?.includes('ROSHAN'))
       .sort((a, b) => a.time - b.time)
       .forEach((obj, index) => {
-        result.push({
+        roshanEvents.push({
           id: `roshan-${obj.time}-${index}`,
           type: 'roshan',
           time: obj.time,
           owner: resolvePlayerFromObjective(obj, players, playersBySlot),
         });
       });
+    roshanEvents.forEach((event, idx) => {
+      const next = roshanEvents[idx + 1];
+      const shouldDropUnknownDuplicate =
+        !event.owner && !!next?.owner && Math.abs(next.time - event.time) <= 120;
+      if (!shouldDropUnknownDuplicate) result.push(event);
+    });
 
     teamfights
       .filter((fight) => Array.isArray(fight.players) && typeof fight.start === 'number' && typeof fight.end === 'number')
@@ -206,7 +214,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       legend: {
         top: 8,
         textStyle: { color: '#94a3b8', fontSize: 11 },
-        data: [`${radiantTeamName} 经济`, `${direTeamName} 经济`, `${radiantTeamName} 经验`, `${direTeamName} 经验`],
+        data: [`经济优势 (${radiantTeamName} + / ${direTeamName} -)`, `经验优势 (${radiantTeamName} + / ${direTeamName} -)`],
       },
       tooltip: {
         trigger: 'axis',
@@ -242,7 +250,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       },
       series: [
         {
-          name: `${radiantTeamName} 经济`,
+          name: `经济优势 (${radiantTeamName} + / ${direTeamName} -)`,
           type: 'line',
           smooth: 0.35,
           showSymbol: false,
@@ -252,29 +260,13 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
           markLine: { symbol: 'none', lineStyle: { color: '#64748b', type: 'dashed' }, data: [{ yAxis: 0 }] },
         },
         {
-          name: `${direTeamName} 经济`,
-          type: 'line',
-          smooth: 0.35,
-          showSymbol: false,
-          data: radiant_gold_adv.map((v) => -v),
-          lineStyle: { width: 1.8, color: '#ef4444', opacity: 0.85 },
-        },
-        {
-          name: `${radiantTeamName} 经验`,
+          name: `经验优势 (${radiantTeamName} + / ${direTeamName} -)`,
           type: 'line',
           smooth: 0.35,
           showSymbol: false,
           data: radiant_xp_adv,
           lineStyle: { width: 2.1, color: '#38bdf8' },
           areaStyle: { color: 'rgba(56, 189, 248, 0.12)' },
-        },
-        {
-          name: `${direTeamName} 经验`,
-          type: 'line',
-          smooth: 0.35,
-          showSymbol: false,
-          data: radiant_xp_adv.map((v) => -v),
-          lineStyle: { width: 1.7, color: '#f97316', opacity: 0.8 },
         },
       ],
     }),
@@ -387,7 +379,6 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                     >
                       <Droplets className="h-3.5 w-3.5" />
                       <span>{formatDuration(event.time)}</span>
-                      <span>First Blood</span>
                     </button>
                   );
                 }
@@ -411,7 +402,6 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                         referrerPolicy="no-referrer"
                       />
                       <span>{formatDuration(event.time)}</span>
-                      <span>Roshan</span>
                     </button>
                   );
                 }
@@ -428,7 +418,6 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                   >
                     <Swords className="h-3.5 w-3.5" />
                     <span>{formatDuration(event.time)}</span>
-                    <span>Teamfight</span>
                   </button>
                 );
               })}
@@ -479,12 +468,19 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                           <div key={`${player.player_slot}-${player.hero_id}`} className={`rounded border px-2 py-1 ${sideCls}`}>
                             <div className="flex items-center gap-2">
                               {getHeroImg(player.hero_id, heroesData) ? (
-                                <img
-                                  src={getHeroImg(player.hero_id, heroesData)}
-                                  alt={getHeroName(player.hero_id, heroesData)}
-                                  className="h-6 w-10 rounded object-cover"
-                                  loading="lazy"
-                                />
+                                <div className="relative">
+                                  <img
+                                    src={getHeroImg(player.hero_id, heroesData)}
+                                    alt={getHeroName(player.hero_id, heroesData)}
+                                    className={`h-6 w-10 rounded object-cover ${fightPlayer.deaths && fightPlayer.deaths > 0 ? 'grayscale brightness-75' : ''}`}
+                                    loading="lazy"
+                                  />
+                                  {fightPlayer.deaths && fightPlayer.deaths > 0 && (
+                                    <span className="absolute inset-0 flex items-center justify-center rounded bg-slate-950/35">
+                                      <Skull className="h-3.5 w-3.5 text-red-300" />
+                                    </span>
+                                  )}
+                                </div>
                               ) : (
                                 <div className="h-6 w-10 rounded bg-slate-800" />
                               )}
@@ -497,10 +493,18 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                                   金钱 {fightPlayer.gold_delta && fightPlayer.gold_delta > 0 ? '+' : ''}
                                   {fightPlayer.gold_delta || 0}
                                 </div>
-                                <div className="flex items-center justify-end gap-1 text-slate-300">
-                                  <Skull className="h-3 w-3" />
-                                  死亡 {fightPlayer.deaths || 0}
-                                </div>
+                                {fightPlayer.buybacks && fightPlayer.buybacks > 0 ? (
+                                  <div className="mt-0.5 flex items-center justify-end gap-1 text-amber-300">
+                                    <RotateCcw className="h-3 w-3" />
+                                    买活 {fightPlayer.buybacks}
+                                  </div>
+                                ) : null}
+                                {fightPlayer.deaths && fightPlayer.deaths > 0 ? (
+                                  <div className="flex items-center justify-end gap-1 text-slate-300">
+                                    <Skull className="h-3 w-3" />
+                                    死亡 {fightPlayer.deaths}
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
                           </div>
