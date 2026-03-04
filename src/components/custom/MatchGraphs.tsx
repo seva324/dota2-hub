@@ -440,8 +440,18 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
         return { player, fightPlayer };
       })
       .filter((row): row is { player: MatchPlayer; fightPlayer: TeamfightPlayer } => Boolean(row))
-      .sort((a, b) => Math.abs((b.fightPlayer.gold_delta || 0)) - Math.abs(a.fightPlayer.gold_delta || 0));
+      .sort((a, b) => a.player.player_slot - b.player.player_slot);
   }, [activeEvent, players]);
+
+  const activeFightRadiantRows = useMemo(
+    () => activeFightRows.filter(({ player }) => getPlayerSide(player) === 'radiant'),
+    [activeFightRows]
+  );
+
+  const activeFightDireRows = useMemo(
+    () => activeFightRows.filter(({ player }) => getPlayerSide(player) === 'dire'),
+    [activeFightRows]
+  );
 
   return (
     <div className="space-y-4">
@@ -518,10 +528,27 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                       <Droplets className="h-3 w-3" />
                       {getAxisTimeLabel(getAlignedTime(activeEvent.time))} First Blood
                     </span>
-                    <span className="text-slate-300">
-                      {activeEvent.killer ? getHeroName(activeEvent.killer.hero_id, heroesData) : '未知英雄'} 击杀了{' '}
-                      {activeEvent.victim ? getHeroName(activeEvent.victim.hero_id, heroesData) : '未知英雄'}
-                    </span>
+                    <div className="flex items-center gap-1.5 text-slate-200">
+                      {activeEvent.killer && getHeroImg(activeEvent.killer.hero_id, heroesData) ? (
+                        <img
+                          src={getHeroImg(activeEvent.killer.hero_id, heroesData)}
+                          alt={getHeroName(activeEvent.killer.hero_id, heroesData)}
+                          className="h-5 w-8 rounded object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <span>{activeEvent.killer ? getPlayerName(activeEvent.killer, heroesData) : '未知选手'}</span>
+                      <span className="text-slate-500">击杀了</span>
+                      {activeEvent.victim && getHeroImg(activeEvent.victim.hero_id, heroesData) ? (
+                        <img
+                          src={getHeroImg(activeEvent.victim.hero_id, heroesData)}
+                          alt={getHeroName(activeEvent.victim.hero_id, heroesData)}
+                          className="h-5 w-8 rounded object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <span>{activeEvent.victim ? getPlayerName(activeEvent.victim, heroesData) : '未知选手'}</span>
+                    </div>
                   </div>
                 )}
 
@@ -531,10 +558,25 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                       <Shield className="h-3 w-3" />
                       {getAxisTimeLabel(getAlignedTime(activeEvent.time))} Roshan
                     </span>
-                    <span>
-                      Aegis 归属：
-                      {activeEvent.owner ? `${getHeroName(activeEvent.owner.hero_id, heroesData)} (${getPlayerName(activeEvent.owner, heroesData)})` : '未知英雄'}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <img
+                        src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png"
+                        alt="Aegis"
+                        className="h-4 w-4 rounded-sm object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span className="text-slate-300">：</span>
+                      {activeEvent.owner && getHeroImg(activeEvent.owner.hero_id, heroesData) ? (
+                        <img
+                          src={getHeroImg(activeEvent.owner.hero_id, heroesData)}
+                          alt={getHeroName(activeEvent.owner.hero_id, heroesData)}
+                          className="h-5 w-8 rounded object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <span>{activeEvent.owner ? getPlayerName(activeEvent.owner, heroesData) : '未知选手'}</span>
+                    </div>
                   </div>
                 )}
 
@@ -544,8 +586,10 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                       <Swords className="h-3 w-3" />
                       {getAxisTimeLabel(getAlignedTime(activeEvent.time))} - {getAxisTimeLabel(getAlignedTime(activeEvent.end))} Teamfight
                     </div>
-                    <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
-                      {activeFightRows.map(({ player, fightPlayer }) => {
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-semibold text-red-300">Radiant</div>
+                        {activeFightRadiantRows.map(({ player, fightPlayer }) => {
                         const side = getPlayerSide(player);
                         const sideCls =
                           side === 'radiant'
@@ -597,6 +641,62 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                           </div>
                         );
                       })}
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-semibold text-green-300 text-right">Dire</div>
+                        {activeFightDireRows.map(({ player, fightPlayer }) => {
+                        const side = getPlayerSide(player);
+                        const sideCls =
+                          side === 'radiant'
+                            ? 'border-red-500/25 bg-red-500/8'
+                            : 'border-green-500/25 bg-green-500/8';
+                        return (
+                          <div key={`${player.player_slot}-${player.hero_id}`} className={`rounded border px-2 py-1 ${sideCls}`}>
+                            <div className="flex items-center gap-2">
+                              {getHeroImg(player.hero_id, heroesData) ? (
+                                <div className="relative">
+                                  <img
+                                    src={getHeroImg(player.hero_id, heroesData)}
+                                    alt={getHeroName(player.hero_id, heroesData)}
+                                    className={`h-6 w-10 rounded object-cover ${(fightPlayer.deaths ?? 0) > 0 ? 'grayscale brightness-75' : ''}`}
+                                    loading="lazy"
+                                  />
+                                  {(fightPlayer.deaths ?? 0) > 0 && (
+                                    <span className="absolute inset-0 flex items-center justify-center rounded bg-slate-950/35">
+                                      <Skull className="h-3.5 w-3.5 text-red-300" />
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="h-6 w-10 rounded bg-slate-800" />
+                              )}
+                              <div className="min-w-0">
+                                <div className="truncate text-xs text-slate-100">{getHeroName(player.hero_id, heroesData)}</div>
+                                <div className="text-[11px] text-slate-400">{getPlayerName(player, heroesData)}</div>
+                              </div>
+                              <div className="ml-auto text-right text-[11px]">
+                                <div className={`${(fightPlayer.gold_delta || 0) >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                                  金钱 {fightPlayer.gold_delta && fightPlayer.gold_delta > 0 ? '+' : ''}
+                                  {fightPlayer.gold_delta || 0}
+                                </div>
+                                {(fightPlayer.buybacks ?? 0) > 0 ? (
+                                  <div className="mt-0.5 flex items-center justify-end gap-1 text-amber-300">
+                                    <RotateCcw className="h-3 w-3" />
+                                    买活 {fightPlayer.buybacks}
+                                  </div>
+                                ) : null}
+                                {(fightPlayer.deaths ?? 0) > 0 ? (
+                                  <div className="flex items-center justify-end gap-1 text-slate-300">
+                                    <Skull className="h-3 w-3" />
+                                    死亡 {fightPlayer.deaths}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      </div>
                     </div>
                   </div>
                 )}
