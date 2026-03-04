@@ -214,10 +214,14 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
         borderColor: '#334155',
         textStyle: { color: '#e2e8f0' },
         formatter: (params: any) => {
-          const rows = (params || []) as Array<{ marker: string; seriesName: string; value: number }>;
-          const head = rows[0] ? `<b>${rows[0].axisValue}</b><br/>` : '';
+          const rows = (Array.isArray(params) ? params : [params]).filter(Boolean) as any[];
+          const axisText = rows[0]?.axisValueLabel ?? rows[0]?.axisValue ?? '';
+          const head = axisText ? `<b>${axisText}</b><br/>` : '';
           return `${head}${rows
-            .map((row) => `${row.marker}${row.seriesName}: ${row.value >= 0 ? '+' : ''}${Math.round(row.value).toLocaleString()}`)
+            .map((row) => {
+              const value = Number(row?.value ?? 0);
+              return `${row?.marker || ''}${row?.seriesName || ''}: ${value >= 0 ? '+' : ''}${Math.round(value).toLocaleString()}`;
+            })
             .join('<br/>')}`;
         },
       },
@@ -286,7 +290,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
     const series = [
       ...radiantPlayers.map((player, i) => ({
         name: getHeroName(player.hero_id, heroesData),
-        type: 'line',
+        type: 'line' as const,
         smooth: 0.28,
         showSymbol: false,
         data: player.gold_t || [],
@@ -295,7 +299,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       })),
       ...direPlayers.map((player, i) => ({
         name: getHeroName(player.hero_id, heroesData),
-        type: 'line',
+        type: 'line' as const,
         smooth: 0.28,
         showSymbol: false,
         data: player.gold_t || [],
@@ -310,7 +314,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       legend: {
         top: 8,
         textStyle: { color: '#94a3b8', fontSize: 10 },
-        type: 'scroll',
+        type: 'scroll' as const,
       },
       tooltip: {
         trigger: 'axis',
@@ -318,11 +322,12 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
         borderColor: '#334155',
         textStyle: { color: '#e2e8f0' },
         formatter: (params: any) => {
-          const rows = [...(params || [])].sort((a, b) => (b.value || 0) - (a.value || 0));
-          const header = rows[0] ? `<b>${rows[0].axisValue}</b><br/>` : '';
+          const rows = (Array.isArray(params) ? params : [params]).filter(Boolean).sort((a: any, b: any) => (b?.value || 0) - (a?.value || 0));
+          const axisText = rows[0]?.axisValueLabel ?? rows[0]?.axisValue ?? '';
+          const header = axisText ? `<b>${axisText}</b><br/>` : '';
           return `${header}${rows
             .slice(0, 10)
-            .map((row) => `${row.marker}${row.seriesName}: ${((row.value || 0) / 1000).toFixed(1)}k`)
+            .map((row: any) => `${row?.marker || ''}${row?.seriesName || ''}: ${((Number(row?.value) || 0) / 1000).toFixed(1)}k`)
             .join('<br/>')}`;
         },
       },
