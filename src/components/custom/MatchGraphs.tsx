@@ -59,6 +59,7 @@ interface TimelineTeamfightEvent {
 }
 
 type TimelineEvent = TimelineFirstBloodEvent | TimelineRoshanEvent | TimelineTeamfightEvent;
+type EventSide = 'radiant' | 'dire' | 'neutral';
 
 interface MatchGraphsProps {
   match: {
@@ -142,11 +143,29 @@ function getPlayerSide(player: MatchPlayer): 'radiant' | 'dire' {
 export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }: MatchGraphsProps) {
   const { radiant_gold_adv = [], radiant_xp_adv = [], duration, players = [], objectives = [], teamfights = [] } = match;
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
+  const axisCount = Math.max(radiant_gold_adv.length, radiant_xp_adv.length);
 
   const timeLabels = useMemo(
-    () => generateTimeLabels(duration, Math.max(radiant_gold_adv.length, radiant_xp_adv.length)),
-    [duration, radiant_gold_adv.length, radiant_xp_adv.length]
+    () => generateTimeLabels(duration, axisCount),
+    [duration, axisCount]
   );
+
+  const axisStep = useMemo(() => {
+    if (axisCount <= 1 || duration <= 0) return 0;
+    return duration / (axisCount - 1);
+  }, [axisCount, duration]);
+
+  const getAlignedTime = (seconds: number): number => {
+    if (!axisStep || !Number.isFinite(seconds)) return Math.max(0, Math.round(seconds));
+    const idx = Math.max(0, Math.min(axisCount - 1, Math.round(seconds / axisStep)));
+    return Math.round(idx * axisStep);
+  };
+
+  const getAxisTimeLabel = (seconds: number): string => {
+    if (!timeLabels.length || !axisStep) return formatDuration(Math.max(0, Math.round(seconds)));
+    const idx = Math.max(0, Math.min(timeLabels.length - 1, Math.round(seconds / axisStep)));
+    return timeLabels[idx];
+  };
 
   const playersBySlot = useMemo(() => new Map(players.map((p) => [p.player_slot, p])), [players]);
 
@@ -207,6 +226,56 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
     return timelineEvents.find((e) => e.id === activeEventId) || timelineEvents[0];
   }, [activeEventId, timelineEvents]);
 
+  const getEventSide = (event: TimelineEvent | null): EventSide => {
+    if (!event) return 'neutral';
+    if (event.type === 'firstblood') {
+      if (!event.killer) return 'neutral';
+      return getPlayerSide(event.killer) === 'radiant' ? 'radiant' : 'dire';
+    }
+    if (event.type === 'roshan') {
+      if (!event.owner) return 'neutral';
+      return getPlayerSide(event.owner) === 'radiant' ? 'radiant' : 'dire';
+    }
+    let radiantGoldDelta = 0;
+    let direGoldDelta = 0;
+    event.players.forEach((p, idx) => {
+      const player = players[idx];
+      if (!player) return;
+      if (getPlayerSide(player) === 'radiant') {
+        radiantGoldDelta += Number(p.gold_delta || 0);
+      } else {
+        direGoldDelta += Number(p.gold_delta || 0);
+      }
+    });
+    if (radiantGoldDelta === direGoldDelta) return 'neutral';
+    return radiantGoldDelta > direGoldDelta ? 'radiant' : 'dire';
+  };
+
+  const getEventTone = (side: EventSide) => {
+    if (side === 'radiant') {
+      return {
+        active: 'border-red-400/80 bg-red-500/20 text-red-100',
+        idle: 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-red-400/50',
+        badge: 'bg-red-500/15 text-red-200',
+        panel: 'border-red-500/30 bg-red-500/5',
+      };
+    }
+    if (side === 'dire') {
+      return {
+        active: 'border-green-400/80 bg-green-500/20 text-green-100',
+        idle: 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-green-400/50',
+        badge: 'bg-green-500/15 text-green-200',
+        panel: 'border-green-500/30 bg-green-500/5',
+      };
+    }
+    return {
+      active: 'border-slate-500/70 bg-slate-700/35 text-slate-100',
+      idle: 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-slate-500/50',
+      badge: 'bg-slate-500/15 text-slate-200',
+      panel: 'border-slate-700 bg-slate-950/60',
+    };
+  };
+
   const advantageChartOption: EChartsOption = useMemo(
     () => ({
       backgroundColor: 'transparent',
@@ -214,7 +283,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       legend: {
         top: 8,
         textStyle: { color: '#94a3b8', fontSize: 11 },
-        data: [`经济优势 (${radiantTeamName} + / ${direTeamName} -)`, `经验优势 (${radiantTeamName} + / ${direTeamName} -)`],
+        data: ['经济优势', '经验优势'],
       },
       tooltip: {
         trigger: 'axis',
@@ -250,7 +319,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       },
       series: [
         {
-          name: `经济优势 (${radiantTeamName} + / ${direTeamName} -)`,
+          name: '经济优势',
           type: 'line',
           smooth: 0.35,
           showSymbol: false,
@@ -260,13 +329,27 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
           markLine: { symbol: 'none', lineStyle: { color: '#64748b', type: 'dashed' }, data: [{ yAxis: 0 }] },
         },
         {
-          name: `经验优势 (${radiantTeamName} + / ${direTeamName} -)`,
+          name: '经验优势',
           type: 'line',
           smooth: 0.35,
           showSymbol: false,
           data: radiant_xp_adv,
           lineStyle: { width: 2.1, color: '#38bdf8' },
           areaStyle: { color: 'rgba(56, 189, 248, 0.12)' },
+        },
+      ],
+      graphic: [
+        {
+          type: 'text',
+          left: 66,
+          top: 48,
+          style: { text: radiantTeamName || 'Radiant', fill: '#f87171', fontSize: 11, fontWeight: 600 },
+        },
+        {
+          type: 'text',
+          left: 66,
+          bottom: 38,
+          style: { text: direTeamName || 'Dire', fill: '#4ade80', fontSize: 11, fontWeight: 600 },
         },
       ],
     }),
@@ -366,19 +449,18 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
             <div className="flex gap-2 overflow-x-auto pb-2">
               {timelineEvents.map((event) => {
                 const isActive = activeEvent?.id === event.id;
+                const tone = getEventTone(getEventSide(event));
                 if (event.type === 'firstblood') {
                   return (
                     <button
                       key={event.id}
                       onClick={() => setActiveEventId(event.id)}
                       className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-xs transition ${
-                        isActive
-                          ? 'border-red-400/70 bg-red-500/20 text-red-100'
-                          : 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-red-400/40'
+                        isActive ? tone.active : tone.idle
                       }`}
                     >
                       <Droplets className="h-3.5 w-3.5" />
-                      <span>{formatDuration(event.time)}</span>
+                      <span>{getAxisTimeLabel(getAlignedTime(event.time))}</span>
                     </button>
                   );
                 }
@@ -389,9 +471,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                       key={event.id}
                       onClick={() => setActiveEventId(event.id)}
                       className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-xs transition ${
-                        isActive
-                          ? 'border-amber-400/80 bg-amber-500/20 text-amber-100'
-                          : 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-amber-400/40'
+                        isActive ? tone.active : tone.idle
                       }`}
                     >
                       <img
@@ -401,7 +481,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                         loading="lazy"
                         referrerPolicy="no-referrer"
                       />
-                      <span>{formatDuration(event.time)}</span>
+                      <span>{getAxisTimeLabel(getAlignedTime(event.time))}</span>
                     </button>
                   );
                 }
@@ -411,25 +491,23 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                     key={event.id}
                     onClick={() => setActiveEventId(event.id)}
                     className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-xs transition ${
-                      isActive
-                        ? 'border-sky-400/80 bg-sky-500/20 text-sky-100'
-                        : 'border-slate-700 bg-slate-900/70 text-slate-300 hover:border-sky-400/40'
+                      isActive ? tone.active : tone.idle
                     }`}
                   >
                     <Swords className="h-3.5 w-3.5" />
-                    <span>{formatDuration(event.time)}</span>
+                    <span>{getAxisTimeLabel(getAlignedTime(event.time))}</span>
                   </button>
                 );
               })}
             </div>
 
             {activeEvent && (
-              <div className="rounded-md border border-slate-700 bg-slate-950/60 p-3">
+              <div className={`rounded-md border p-3 ${getEventTone(getEventSide(activeEvent)).panel}`}>
                 {activeEvent.type === 'firstblood' && (
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
-                    <span className="inline-flex items-center gap-1 rounded bg-red-500/15 px-2 py-0.5 text-red-200">
+                    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 ${getEventTone(getEventSide(activeEvent)).badge}`}>
                       <Droplets className="h-3 w-3" />
-                      {formatDuration(activeEvent.time)} First Blood
+                      {getAxisTimeLabel(getAlignedTime(activeEvent.time))} First Blood
                     </span>
                     <span className="text-slate-300">
                       {activeEvent.killer ? getHeroName(activeEvent.killer.hero_id, heroesData) : '未知英雄'} 击杀了{' '}
@@ -440,9 +518,9 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
 
                 {activeEvent.type === 'roshan' && (
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
-                    <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 text-amber-200">
+                    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 ${getEventTone(getEventSide(activeEvent)).badge}`}>
                       <Shield className="h-3 w-3" />
-                      {formatDuration(activeEvent.time)} Roshan
+                      {getAxisTimeLabel(getAlignedTime(activeEvent.time))} Roshan
                     </span>
                     <span>
                       Aegis 归属：
@@ -453,17 +531,17 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
 
                 {activeEvent.type === 'teamfight' && (
                   <div className="space-y-2">
-                    <div className="inline-flex items-center gap-1 rounded bg-sky-500/15 px-2 py-0.5 text-xs text-sky-100">
+                    <div className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs ${getEventTone(getEventSide(activeEvent)).badge}`}>
                       <Swords className="h-3 w-3" />
-                      {formatDuration(activeEvent.time)} - {formatDuration(activeEvent.end)} Teamfight
+                      {getAxisTimeLabel(getAlignedTime(activeEvent.time))} - {getAxisTimeLabel(getAlignedTime(activeEvent.end))} Teamfight
                     </div>
                     <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
                       {activeFightRows.map(({ player, fightPlayer }) => {
                         const side = getPlayerSide(player);
                         const sideCls =
                           side === 'radiant'
-                            ? 'border-green-500/25 bg-green-500/8'
-                            : 'border-red-500/25 bg-red-500/8';
+                            ? 'border-red-500/25 bg-red-500/8'
+                            : 'border-green-500/25 bg-green-500/8';
                         return (
                           <div key={`${player.player_slot}-${player.hero_id}`} className={`rounded border px-2 py-1 ${sideCls}`}>
                             <div className="flex items-center gap-2">

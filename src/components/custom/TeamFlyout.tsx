@@ -186,11 +186,12 @@ export function TeamFlyout({
       return resolveTeamSide(m) !== null;
     };
 
+    const threeMonthsAgo = now - 90 * 24 * 60 * 60;
     const recentRows: RecentRow[] = matches
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) <= now)
+      .filter((m) => Number(m.start_time) >= threeMonthsAgo)
       .sort((a, b) => Number(b.start_time || 0) - Number(a.start_time || 0))
-      .slice(0, 20)
       .map((m) => {
         const side = resolveTeamSide(m) || 'radiant';
         const onRadiant = side === 'radiant';
@@ -327,7 +328,7 @@ export function TeamFlyout({
                 )}
                 <Badge variant="outline" className="border-slate-600 text-slate-300">
                   <Target className="w-3 h-3 mr-1" />
-                  近20场 {model?.wins ?? 0}-{model?.losses ?? 0}
+                  近3个月 {model?.wins ?? 0}-{model?.losses ?? 0}
                 </Badge>
                 <Badge variant="outline" className="border-slate-600 text-slate-300">
                   胜率 {model?.winRate ?? 0}%
@@ -385,7 +386,7 @@ export function TeamFlyout({
               <section>
                 <div className="flex items-center gap-2 mb-3 text-white">
                   <Trophy className="w-4 h-4 text-amber-400" />
-                  <h4 className="font-semibold">最近 20 场</h4>
+                  <h4 className="font-semibold">过去 3 个月比赛</h4>
                 </div>
                 <div className="space-y-2">
                   {(model?.recentRows || []).map((row) => {
