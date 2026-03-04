@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Clock, TrendingUp, FileText } from 'lucide-react';
+import { Users, Clock, TrendingUp, FileText, Backpack } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +71,11 @@ interface Player {
   backpack_0?: number;
   backpack_1?: number;
   backpack_2?: number;
+  aghanims_scepter?: boolean | number;
+  aghanims_shard?: boolean | number;
+  has_scepter?: boolean | number;
+  has_shard?: boolean | number;
+  permanent_buffs?: Array<{ permanent_buff: number; stack_count?: number }>;
 }
 
 interface PicksBans {
@@ -222,6 +227,25 @@ function getNeutralItemId(player: Player): number {
 function getNetWorth(player: Player): number {
   if (typeof player.net_worth === 'number') return player.net_worth;
   return player.gold || 0;
+}
+
+function hasUpgrade(value: boolean | number | undefined): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value > 0;
+  return false;
+}
+
+function hasPermanentBuff(player: Player, buffId: number): boolean {
+  if (!Array.isArray(player.permanent_buffs)) return false;
+  return player.permanent_buffs.some((buff) => buff.permanent_buff === buffId && (buff.stack_count || 1) > 0);
+}
+
+function hasAghanimScepter(player: Player): boolean {
+  return hasUpgrade(player.aghanims_scepter) || hasUpgrade(player.has_scepter) || hasPermanentBuff(player, 2);
+}
+
+function hasAghanimShard(player: Player): boolean {
+  return hasUpgrade(player.aghanims_shard) || hasUpgrade(player.has_shard) || hasPermanentBuff(player, 12);
 }
 
 interface MatchDetailModalProps {
@@ -502,7 +526,14 @@ function TeamSummaryTable({
                     {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
                   </td>
                   <td className="px-3 py-2">
-                    <ItemStrip mainItems={mainItems} backpackItems={backpackItems} neutralItem={neutral} itemsMap={itemsMap} />
+                    <ItemStrip
+                      mainItems={mainItems}
+                      backpackItems={backpackItems}
+                      neutralItem={neutral}
+                      hasScepter={hasAghanimScepter(player)}
+                      hasShard={hasAghanimShard(player)}
+                      itemsMap={itemsMap}
+                    />
                   </td>
                 </tr>
               );
@@ -536,19 +567,27 @@ function ItemStrip({
   mainItems,
   backpackItems,
   neutralItem,
+  hasScepter,
+  hasShard,
   itemsMap,
 }: {
   mainItems: number[];
   backpackItems: number[];
   neutralItem: number;
+  hasScepter: boolean;
+  hasShard: boolean;
   itemsMap: Record<number, ItemInfo>;
 }) {
-  const renderItem = (itemId: number, muted = false) => {
+  const renderItem = (itemId: number, options?: { compact?: boolean; muted?: boolean }) => {
+    const compact = options?.compact || false;
+    const muted = options?.muted || false;
     const item = itemId > 0 ? itemsMap[itemId] : undefined;
     return (
       <div
-        key={`${itemId}-${muted ? 'bp' : 'main'}`}
-        className={`w-9 h-7 rounded overflow-hidden border ${muted ? 'opacity-60 border-slate-700' : 'border-slate-600'} bg-slate-800 flex-shrink-0`}
+        key={`${itemId}-${compact ? 'compact' : 'main'}-${muted ? 'muted' : 'full'}`}
+        className={`rounded overflow-hidden border bg-slate-800 flex-shrink-0 ${
+          compact ? 'w-7 h-5' : 'w-10 h-7'
+        } ${muted ? 'opacity-65 border-slate-700' : 'border-slate-600'}`}
         title={item?.name || ''}
       >
         {item?.img ? (
@@ -563,22 +602,45 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1">
-        {mainItems.map((id, idx) => (
-          <div key={`main-${idx}`}>{renderItem(id)}</div>
-        ))}
+    <div className="flex items-start justify-between gap-3 min-w-[420px]">
+      <div className="min-w-0 space-y-1.5">
+        <div className="flex items-center gap-1">
+          {mainItems.map((id, idx) => (
+            <div key={`main-${idx}`}>{renderItem(id)}</div>
+          ))}
+          <div
+            className="w-10 h-7 rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0"
+            title={neutral?.name || '中立物品'}
+          >
+            {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-slate-400">
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded border border-slate-700 bg-slate-900/70"
+            title="背包栏"
+            aria-label="背包栏"
+          >
+            <Backpack className="w-3 h-3" />
+          </span>
+          {backpackItems.map((id, idx) => (
+            <div key={`backpack-${idx}`}>{renderItem(id, { compact: true, muted: true })}</div>
+          ))}
+        </div>
       </div>
-      <div className="flex items-center gap-1">
-        {backpackItems.map((id, idx) => (
-          <div key={`backpack-${idx}`}>{renderItem(id, true)}</div>
-        ))}
-      </div>
-      <div
-        className="w-9 h-7 rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0"
-        title={neutral?.name || ''}
-      >
-        {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+      <div className="flex items-center gap-1.5 pt-0.5">
+        <img
+          src={`/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
+          alt="Aghanim's Scepter"
+          className="w-7 h-7 rounded border border-slate-700 bg-slate-900/80 p-0.5 object-contain"
+          title={hasScepter ? 'A杖: 已拥有' : 'A杖: 未拥有'}
+        />
+        <img
+          src={`/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`}
+          alt="Aghanim's Shard"
+          className="w-7 h-7 rounded border border-slate-700 bg-slate-900/80 p-0.5 object-contain"
+          title={hasShard ? '魔晶: 已拥有' : '魔晶: 未拥有'}
+        />
       </div>
     </div>
   );
