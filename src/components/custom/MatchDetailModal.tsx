@@ -251,9 +251,10 @@ interface MatchDetailModalProps {
   matchId: number | string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }
 
-export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailModalProps) {
+export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: MatchDetailModalProps) {
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -304,6 +305,20 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   const radiantTeamName = getTeamName(match, 'radiant');
   const direTeamName = getTeamName(match, 'dire');
+  const radiantTeamRef = match
+    ? {
+        team_id: match.radiant_team?.team_id ? String(match.radiant_team.team_id) : (match.radiant_team_id ? String(match.radiant_team_id) : null),
+        name: radiantTeamName,
+        logo_url: match.radiant_team?.logo_url || null,
+      }
+    : null;
+  const direTeamRef = match
+    ? {
+        team_id: match.dire_team?.team_id ? String(match.dire_team.team_id) : (match.dire_team_id ? String(match.dire_team_id) : null),
+        name: direTeamName,
+        logo_url: match.dire_team?.logo_url || null,
+      }
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -324,11 +339,15 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
           <>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-800 gap-2 sm:gap-4">
               <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
-                <div
-                  className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none`}
+                <button
+                  type="button"
+                  className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none hover:underline underline-offset-4`}
+                  onClick={() => {
+                    if (radiantTeamRef?.name) onTeamClick?.(radiantTeamRef);
+                  }}
                 >
                   {radiantTeamName}
-                </div>
+                </button>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <span
                     className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}
@@ -342,11 +361,15 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     {match.dire_score}
                   </span>
                 </div>
-                <div
-                  className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none`}
+                <button
+                  type="button"
+                  className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none hover:underline underline-offset-4`}
+                  onClick={() => {
+                    if (direTeamRef?.name) onTeamClick?.(direTeamRef);
+                  }}
                 >
                   {direTeamName}
-                </div>
+                </button>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
                 <div className="flex items-center justify-center md:justify-end">
@@ -399,19 +422,23 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 <div className="space-y-6">
                   <TeamSummaryTable
                     teamName={radiantTeamName}
+                    teamRef={radiantTeamRef}
                     players={radiantPlayers}
                     isRadiant={true}
                     isWinner={match.radiant_win}
                     picksBans={match.picks_bans || []}
                     itemsMap={itemsMap}
+                    onTeamClick={onTeamClick}
                   />
                   <TeamSummaryTable
                     teamName={direTeamName}
+                    teamRef={direTeamRef}
                     players={direPlayers}
                     isRadiant={false}
                     isWinner={!match.radiant_win}
                     picksBans={match.picks_bans || []}
                     itemsMap={itemsMap}
+                    onTeamClick={onTeamClick}
                   />
                 </div>
               </TabsContent>
@@ -437,18 +464,22 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
 function TeamSummaryTable({
   teamName,
+  teamRef,
   players,
   isRadiant,
   isWinner,
   picksBans,
   itemsMap,
+  onTeamClick,
 }: {
   teamName: string;
+  teamRef?: { team_id?: string | null; name?: string | null; logo_url?: string | null } | null;
   players: Player[];
   isRadiant: boolean;
   isWinner: boolean;
   picksBans: PicksBans[];
   itemsMap: Record<number, ItemInfo>;
+  onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }) {
   const teamCode = isRadiant ? 0 : 1;
 
@@ -475,7 +506,15 @@ function TeamSummaryTable({
   return (
     <div className="rounded-lg border border-slate-800 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-slate-800/40 border-b border-slate-800">
-        <span className="text-sm sm:text-base font-semibold text-slate-100">{teamName} - 摘要</span>
+        <button
+          type="button"
+          className="text-sm sm:text-base font-semibold text-slate-100 hover:underline underline-offset-4"
+          onClick={() => {
+            if (teamRef?.name) onTeamClick?.(teamRef);
+          }}
+        >
+          {teamName} - 摘要
+        </button>
         {isWinner && <span className="text-xs sm:text-sm text-green-400 font-semibold">胜者</span>}
       </div>
 
