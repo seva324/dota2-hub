@@ -260,7 +260,7 @@ export function TeamFlyout({
       await Promise.all(
         missing.map(async (row) => {
           try {
-            const res = await fetch(`https://api.opendota.com/api/matches/${row.matchId}`);
+            const res = await fetch(`/api/match-details?match_id=${row.matchId}`);
             const data = await res.json();
             const players = Array.isArray(data?.players) ? data.players : [];
             const heroIds = players

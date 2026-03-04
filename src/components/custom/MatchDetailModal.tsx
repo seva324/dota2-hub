@@ -274,7 +274,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
 
       const matchIdNum = typeof matchId === 'string' ? parseInt(matchId, 10) : matchId;
 
-      fetch(`https://api.opendota.com/api/matches/${matchIdNum}`)
+      fetch(`/api/match-details?match_id=${matchIdNum}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
