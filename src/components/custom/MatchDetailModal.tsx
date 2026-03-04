@@ -113,6 +113,35 @@ function getLaneName(lane: number | undefined, isRadiant: boolean): string {
   return '';
 }
 
+const TEAM_NAME_ABBR: Record<string, string> = {
+  'Xtreme Gaming': 'XG',
+  'Yakult Brothers': 'YB',
+  'Team Spirit': 'Spirit',
+  'Natus Vincere': 'NaVi',
+  'Tundra Esports': 'Tundra',
+  'Team Liquid': 'Liquid',
+  'Team Falcons': 'Falcons',
+  'GamerLegion': 'GL',
+  'PARIVISION': 'PARI',
+  'BetBoom Team': 'BB',
+  'paiN Gaming': 'paiN',
+  'Aurora Gaming': 'Aurora',
+  'Execration': 'XctN',
+  'Vici Gaming': 'VG',
+  'PSG.LGD': 'LGD',
+  'Team Yandex': 'Yandex',
+  'Nigma Galaxy': 'Nigma',
+  'Virtus.pro': 'VP',
+  'Gaimin Gladiators': 'GG',
+};
+
+function getTeamDisplayName(teamName: string, mobile = false): string {
+  if (!mobile) return teamName;
+  if (TEAM_NAME_ABBR[teamName]) return TEAM_NAME_ABBR[teamName];
+  const compact = teamName.replace(/\s+/g, '');
+  return compact.length > 8 ? compact.slice(0, 8) : compact;
+}
+
 function HeroIcon({ heroId, size = 'md' }: { heroId: number; size?: 'sm' | 'md' | 'lg' }) {
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -204,7 +233,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
+      <DialogContent className="w-[96vw] sm:w-[94vw] lg:w-[92vw] xl:w-[90vw] max-w-[1500px] max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
@@ -221,9 +250,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
           <>
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-800 gap-2 sm:gap-4">
-              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
-                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
-                  {radiantTeamName}
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 w-full justify-center md:justify-start">
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>
+                  <span className="md:hidden">{getTeamDisplayName(radiantTeamName, true)}</span>
+                  <span className="hidden md:inline">{radiantTeamName}</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <span className={`text-xl sm:text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>
@@ -234,8 +264,9 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                     {match.dire_score}
                   </span>
                 </div>
-                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[80px] sm:max-w-[120px] md:max-w-none`}>
-                  {direTeamName}
+                <div className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} whitespace-nowrap`}>
+                  <span className="md:hidden">{getTeamDisplayName(direTeamName, true)}</span>
+                  <span className="hidden md:inline">{direTeamName}</span>
                 </div>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
@@ -281,7 +312,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
 
               {/* Players Tab */}
               <TabsContent value="players">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
                   {/* Radiant */}
                   <div className="space-y-2">
                     <div className="text-center font-bold text-green-400 mb-3">{radiantTeamName}</div>
@@ -331,15 +362,16 @@ function PlayerCard({ player, isWinner, isRadiant }: { player: Player; isWinner:
   // Get pro player name - prioritize player.name (English pro name), then proPlayersMap, then account_id
   const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
   const displayName = (player.name && player.name !== 'Unknown') ? player.name : (proInfo?.name || (player.account_id ? `${player.account_id}` : 'Unknown'));
+  const accountId = player.account_id ? `${player.account_id}` : null;
   
   // Get lane name
   const laneName = getLaneName(player.lane, isRadiant);
 
   return (
     <div className={`p-2 sm:p-3 rounded-lg border ${isWinner ? 'bg-green-900/20 border-green-600/30' : 'bg-slate-800/30 border-slate-800'}`}>
-      <div className="flex items-center justify-between mb-1 sm:mb-2">
+      <div className="flex items-center justify-between mb-1 sm:mb-2 gap-2">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-          <span className="text-sm sm:text-base font-medium text-white truncate">{displayName}</span>
+          <span className="text-sm sm:text-base font-medium text-white truncate md:whitespace-normal md:overflow-visible">{displayName}</span>
           {laneName && (
             <Badge className="text-[10px] px-1 py-0 bg-blue-600/20 text-blue-400 border border-blue-600/30">
               {laneName}
@@ -358,6 +390,9 @@ function PlayerCard({ player, isWinner, isRadiant }: { player: Player; isWinner:
             {player.kills} / {player.deaths} / {player.assists}
           </span>
         </div>
+      </div>
+      <div className="mt-1 text-[10px] sm:text-xs text-slate-500 tabular-nums whitespace-nowrap overflow-x-auto">
+        {accountId ? `ID: ${accountId}` : 'ID: -'}
       </div>
       <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-slate-400 flex flex-wrap justify-between gap-x-2">
         <span>GPM: {player.gold_per_min}</span>
