@@ -186,6 +186,8 @@ export default async function handler(req, res) {
           const matchDireTeam = m.dire_team_id ? teamMap.get(m.dire_team_id) : null;
           return {
             match_id: String(m.match_id),
+            radiant_team_id: m.radiant_team_id ? String(m.radiant_team_id) : null,
+            dire_team_id: m.dire_team_id ? String(m.dire_team_id) : null,
             radiant_team_name: matchRadiantTeam?.name || radiantTeam?.name || null,
             dire_team_name: matchDireTeam?.name || direTeam?.name || null,
             radiant_team_logo: normalizeLogo(matchRadiantTeam?.logo_url || radiantTeam?.logo_url),
@@ -201,6 +203,8 @@ export default async function handler(req, res) {
       seriesByTournament[info.id].push({
         series_id: String(s.series_id),
         series_type: convertSeriesType(s.series_type),
+        radiant_team_id: s.radiant_team_id ? String(s.radiant_team_id) : null,
+        dire_team_id: s.dire_team_id ? String(s.dire_team_id) : null,
         radiant_team_name: radiantTeam?.name || null,
         dire_team_name: direTeam?.name || null,
         radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),

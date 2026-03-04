@@ -310,6 +310,28 @@ function isBettingNews(item = {}) {
   return patterns.some((p) => haystack.includes(p));
 }
 
+function isHawkCs2News(item = {}) {
+  const haystack = `${item.title || ''}\n${item.summary || ''}\n${item.content || ''}\n${item.url || ''}`.toLowerCase();
+  const cs2Patterns = [
+    'cs2',
+    'counter-strike',
+    'counter strike',
+    'cs:go',
+    'csgo',
+  ];
+  const hasCs2Signal = cs2Patterns.some((p) => haystack.includes(p));
+  if (!hasCs2Signal) return false;
+
+  const hasDotaSignal = /\bdota\b|dota2|dota 2/i.test(haystack);
+  return !hasDotaSignal;
+}
+
+function hasHawkCs2Tag(detailHtml = '') {
+  const html = String(detailHtml || '').toLowerCase();
+  if (!html) return false;
+  return /\/tags\/cs2(?:-news|-players|-teams)?\b/.test(html);
+}
+
 function cutBo3ContentBeforeComments(text = '') {
   if (!text) return text;
   let content = String(text);
@@ -320,6 +342,9 @@ function cutBo3ContentBeforeComments(text = '') {
     /\nRelated News\b/i,
     /\nNext article\b/i,
     /\nRead more\b/i,
+    /\nSource\b/i,
+    /\nTAGS?\b/i,
+    /\nAdditional content available\b/i,
     /\nYou can follow the tournament schedule and results at this\b/i,
     /\nDreamLeague Season \d+ runs from\b/i,
     /\n!\[Image 2:/i,
@@ -346,17 +371,87 @@ function cutBo3ContentBeforeComments(text = '') {
 function sanitizeBo3JinaContent(text = '') {
   const raw = cutBo3ContentBeforeComments(cleanJinaBoilerplate(text));
   const lines = String(raw).split('\n');
-  const noisyLine = /^(Sign In|Home|Matches|Schedule and Live|Finished|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games|eng|ua|ru|pt|de|pl|fr|es|tr|vn|id|kr|jp|ph|my|Like \d+)$/i;
+  const noisyLine = /^(Sign In|Home|Matches|Schedule and Live|Finished|Tournaments|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games|eng|ua|ru|pt|de|pl|fr|es|tr|vn|id|kr|jp|ph|my|Like \d+|CS2|Valorant|R6S|LoL|MLBB)$/i;
   const keep = [];
   for (const line of lines) {
     const t = line.trim();
+    const normalized = t
+      .replace(/^[*•-]\s+/, '')
+      .replace(/^\d+\.\s+/, '')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+      .trim();
+    const alphaKey = normalized.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     if (!t) continue;
     if (/^•\s*$/.test(t)) continue;
-    if (noisyLine.test(t)) continue;
+    if (/^\[\]\([^)]*\)$/.test(t)) continue;
+    if (/^={3,}$/.test(t)) continue;
+    if (/^[*•-]\s*(deffy|transfers?)$/i.test(t)) continue;
+    if (/^[*•-]\s*\d{1,2}:\d{2}\s*,\s*\d{2}\.\d{2}\.\d{4}$/i.test(t)) continue;
+    if (/^[*•-]\s*like\s*\d+/i.test(t)) continue;
+    if (noisyLine.test(t) || noisyLine.test(normalized)) continue;
     if (/^•\s*(Sign In|Home|Matches|Schedule and Live|Finished|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games)\b/i.test(t)) continue;
+    if (/^[*•-]\s*(Sign In|Home|Matches|Schedule and Live|Finished|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games|CS2|Valorant|R6S|LoL|MLBB)\b/i.test(t)) continue;
+    if (/^(https?:\/\/|www\.)/i.test(normalized)) continue;
     keep.push(line);
   }
-  return keep.join('\n').trim();
+
+  const compact = keep.map((x) => x.trim()).filter(Boolean);
+  const firstParagraphIndex = compact.findIndex((line) => line.length >= 100 && /[.!?]"?$/.test(line));
+  if (firstParagraphIndex > 0) {
+    let titleIndex = -1;
+    for (let i = firstParagraphIndex - 1; i >= 0; i -= 1) {
+      const line = compact[i];
+      if (/^[*•-]/.test(line)) continue;
+      if (/^(Source|TAGS?)$/i.test(line)) continue;
+      if (line.length >= 20 && line.length <= 160) {
+        titleIndex = i;
+        break;
+      }
+    }
+
+    const start = titleIndex >= 0 ? titleIndex : firstParagraphIndex;
+    const head = compact.slice(start, firstParagraphIndex);
+    const body = compact.slice(firstParagraphIndex);
+    const cleanedHead = head.filter((line, idx) => {
+      if (idx === 0) return true;
+      if (/^[*•-]\s*(\d{1,2}:\d{2}\s*,\s*\d{2}\.\d{2}\.\d{4}|like\s*\d+|\d+)$/i.test(line)) return false;
+      if (/^[*•-]\s*[\w-]{1,24}$/i.test(line)) return false;
+      return line.length > 24;
+    });
+    return [...cleanedHead, ...body].join('\n').trim();
+  }
+
+  return compact.join('\n').trim();
+}
+
+function normalizeBo3ContentMarkdown(markdown = '') {
+  const raw = cutBo3ContentBeforeComments(String(markdown || ''));
+  const lines = raw.split('\n');
+  const noisyLine = /^(Sign In|Home|Matches|Schedule and Live|Finished|Tournaments|Upcoming and Ongoing|Players|Teams|News|Articles|Predictions|Heroes|Dota2|Dota 2|Games|eng|ua|ru|pt|de|pl|fr|es|tr|vn|id|kr|jp|ph|my|CS2|Valorant|R6S|LoL|MLBB)$/i;
+
+  const filtered = [];
+  for (const line of lines) {
+    const t = line.trim();
+    const normalized = t
+      .replace(/^[*•-]\s+/, '')
+      .replace(/^\d+\.\s+/, '')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+      .trim();
+    const alphaKey = normalized.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!t) continue;
+    if (/^\[\]\([^)]*\)$/.test(t)) continue;
+    if (/^={3,}$/.test(t)) continue;
+    if (noisyLine.test(t) || noisyLine.test(normalized)) continue;
+    if (/^[*•-]\s*(deffy|transfers?)$/i.test(t)) continue;
+    if (alphaKey === 'deffy' || alphaKey === 'transfers') continue;
+    if (/^[*•-]\s*\d{1,2}:\d{2}\s*,\s*\d{2}\.\d{2}\.\d{4}$/i.test(t)) continue;
+    if (/^[*•-]\s*like\s*\d+/i.test(t)) continue;
+    if (/^[*•-]\s*\d+\s*$/i.test(t)) continue;
+    if (/^(https?:\/\/|www\.)/i.test(normalized)) continue;
+    filtered.push(line);
+  }
+
+  return filtered.join('\n').trim();
 }
 
 function extractBo3ImagesFromHtml(html = '') {
@@ -703,6 +798,7 @@ async function scrapeHawkLive() {
       if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
 
       const detailHtml = await detailResponse.text();
+      if (hasHawkCs2Tag(detailHtml)) return null;
       const detailLd = parseJsonLdBlocks(detailHtml);
       const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
 
@@ -722,8 +818,7 @@ async function scrapeHawkLive() {
 
       const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
       const content = extractArticleContent(detailHtml, article);
-
-      return {
+      const candidate = {
         id: generateId(url, source),
         title,
         summary: summary || undefined,
@@ -734,6 +829,8 @@ async function scrapeHawkLive() {
         publishedAt,
         category: 'tournament',
       };
+      if (isHawkCs2News(candidate)) return null;
+      return candidate;
     });
 
     const settled = await Promise.allSettled(detailTasks);
@@ -889,7 +986,7 @@ async function scrapeBO3(options = {}) {
         const rawClean = cleanJinaBoilerplate(textContent);
         const cleaned = sanitizeBo3JinaContent(textContent);
         const images = Array.from(new Set([...extractMarkdownImageUrls(rawClean), ...extractAnyImageUrls(rawClean)]));
-        const contentMarkdown = truncateText(cleaned);
+        const contentMarkdown = truncateText(normalizeBo3ContentMarkdown(cleaned));
         const content = truncateText(markdownToText(contentMarkdown));
         const fallbackTitle = titleFromSlug(url);
         const fallbackPublishedAt =
@@ -962,7 +1059,7 @@ async function scrapeBO3(options = {}) {
         }
       }
 
-      contentMarkdown = sanitizeStoredMarkdown(cutBo3ContentBeforeComments(contentMarkdown || ''));
+      contentMarkdown = sanitizeStoredMarkdown(normalizeBo3ContentMarkdown(contentMarkdown || ''));
       const content = truncateText(markdownToText(contentMarkdown || ''));
       const fallbackImage = imageUrl && !imageUrl.includes('/img/logo-og') ? imageUrl : undefined;
       const preferredImage = htmlImages[0] || jinaImageUrl || fallbackImage || imageUrl;
@@ -1088,6 +1185,16 @@ function normalizeAndSortNews(items) {
 
 function looksChinese(text = '') {
   return /[\u4e00-\u9fff]/.test(text);
+}
+
+function hasBo3NavNoise(text = '') {
+  const t = String(text || '');
+  if (!t) return false;
+  return (
+    /CS2[\s\S]{0,160}Valorant[\s\S]{0,160}R6S[\s\S]{0,160}Dota 2/i.test(t) ||
+    /Home[\s\S]{0,120}Matches[\s\S]{0,160}Schedule and Live/i.test(t) ||
+    /\[\]\(\)\s*[\s\S]{0,80}\*\s*CS2/i.test(t)
+  );
 }
 
 function normalizeTitleForDedupe(title = '') {
@@ -1380,18 +1487,24 @@ async function getStoredNews(db, limit = 20) {
     LIMIT ${limit}
   `;
 
-  return rows.map((row) => ({
-    id: row.id,
-    source: row.source,
-    url: row.url,
-    category: row.category || 'tournament',
-    image_url: row.image_url,
-    published_at: Number(row.published_at),
-    title: row.title_zh || row.title_en,
-    summary: row.summary_zh || row.summary_en,
-    content: row.content_zh || row.content_en,
-    content_markdown: row.content_markdown_zh || row.content_markdown_en,
-  })).filter((x) => !isBettingNews(x));
+  return rows.map((row) => {
+    const noisyZh = hasBo3NavNoise(row.content_markdown_zh || row.summary_zh || '');
+
+    return {
+      id: row.id,
+      source: row.source,
+      url: row.url,
+      category: row.category || 'tournament',
+      image_url: row.image_url,
+      published_at: Number(row.published_at),
+      title: row.title_zh || row.title_en,
+      summary: noisyZh ? (row.summary_en || row.summary_zh) : (row.summary_zh || row.summary_en),
+      content: noisyZh ? (row.content_en || row.content_zh) : (row.content_zh || row.content_en),
+      content_markdown: noisyZh
+        ? (row.content_markdown_en || row.content_markdown_zh)
+        : (row.content_markdown_zh || row.content_markdown_en),
+    };
+  }).filter((x) => !isBettingNews(x));
 }
 
 export async function syncNewsToDb(options = {}) {
@@ -1467,6 +1580,11 @@ export async function syncNewsToDb(options = {}) {
     FROM news_articles
     WHERE published_at >= ${cutoffSeconds - (7 * 24 * 60 * 60)}
   `;
+  const incomingUrls = news.map((x) => x.url);
+  const existingUrlRows = incomingUrls.length > 0
+    ? await db`SELECT url FROM news_articles WHERE url = ANY(${incomingUrls})`
+    : [];
+  const existingUrlSet = new Set(existingUrlRows.map((row) => row.url));
   const existingTitleKeys = new Set(
     existingTitleRows
       .map((row) => normalizeTitleForDedupe(row.title_en || ''))
@@ -1475,6 +1593,9 @@ export async function syncNewsToDb(options = {}) {
   const seenBatchTitleKeys = new Set();
   const beforeTitleDedupeCount = news.length;
   news = news.filter((item) => {
+    // Existing URLs should always pass so content can be refreshed.
+    if (existingUrlSet.has(item.url)) return true;
+
     const key = normalizeTitleForDedupe(item.title);
     if (!key) return true;
     if (existingTitleKeys.has(key)) return false;
@@ -1509,6 +1630,13 @@ export async function syncNewsToDb(options = {}) {
   const pendingTranslateItems = [];
   for (const item of news) {
     const existing = existingMap.get(item.url);
+    const isFallbackPlaceholder =
+      String(item.summary || '').includes('抓取失败') ||
+      String(item.content || '').includes('正文暂不可读');
+    if (existing && isFallbackPlaceholder && String(existing.content_markdown_en || '').length > 200) {
+      continue;
+    }
+
     const enChanged =
       !existing ||
       existing.title_en !== item.title ||

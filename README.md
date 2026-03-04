@@ -37,7 +37,6 @@
 
 `vercel.json` 中配置了定时任务：
 - `/api/sync-opendota`：`0 8 * * *`
-- `/api/aggregate-tournaments`：`0 8 * * *`
 - `/api/sync-liquipedia`：`0 14 * * *`
 - `/api/sync-news`：`30 9 * * *`
 

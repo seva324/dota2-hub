@@ -21,10 +21,13 @@ const LEAGUE_TO_TOURNAMENT: Record<number, string> = {
 // Team data type
 interface TeamData {
   id: string;
+  team_id?: string;
   name: string;
   name_cn: string;
   tag: string;
   logo_url: string;
+  region?: string;
+  is_cn_team?: number | boolean;
 }
 
 // Hero data type
@@ -158,12 +161,16 @@ function groupMatchesIntoSeries(matches: any[]): Record<string, any[]> {
     const series = {
       series_id: `series_${key}`,
       series_type: seriesType,
+      radiant_team_id: seriesMatches[0].radiant_team_id ? String(seriesMatches[0].radiant_team_id) : null,
+      dire_team_id: seriesMatches[0].dire_team_id ? String(seriesMatches[0].dire_team_id) : null,
       radiant_team_name: seriesMatches[0].radiant_team_name,
       dire_team_name: seriesMatches[0].dire_team_name,
       radiant_team_logo: findTeamLogo(seriesMatches[0].radiant_team_name),
       dire_team_logo: findTeamLogo(seriesMatches[0].dire_team_name),
       games: seriesMatches.map(m => ({
         match_id: m.match_id,
+        radiant_team_id: m.radiant_team_id ? String(m.radiant_team_id) : null,
+        dire_team_id: m.dire_team_id ? String(m.dire_team_id) : null,
         radiant_team_name: m.radiant_team_name,
         dire_team_name: m.dire_team_name,
         radiant_score: m.radiant_score,
@@ -323,6 +330,8 @@ function App() {
         // 格式化数据
         const homeData = {
           upcoming,
+          allMatches: matches || [],
+          teams: teamsData || [],
           cnMatches: cnMatches.slice(0, 50),
           tournaments: formattedTournaments,
           seriesByTournament: seriesWithLogos,
@@ -333,6 +342,7 @@ function App() {
 
         console.log('Data loaded:', {
           matches: cnMatches.length,
+          allMatches: matches.length,
           upcoming: upcoming.length,
           tournaments: formattedTournaments.length,
           seriesByTournament: Object.keys(seriesByTournament).length
@@ -382,8 +392,14 @@ function App() {
       <Navbar />
       <main>
         <HeroSection upcoming={data.upcoming} />
-        <TournamentSection tournaments={data.tournaments} seriesByTournament={data.seriesByTournament} />
-        <UpcomingSection upcoming={data.upcoming} />
+        <TournamentSection
+          tournaments={data.tournaments}
+          seriesByTournament={data.seriesByTournament}
+          allMatches={data.allMatches}
+          upcoming={data.upcoming}
+          teams={data.teams}
+        />
+        <UpcomingSection upcoming={data.upcoming} allMatches={data.allMatches} teams={data.teams} />
         <NewsSection news={data.news} />
         <CommunitySection posts={data.community} />
       </main>

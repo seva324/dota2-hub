@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { isChineseTeam } from '@/lib/teams';
 
 
@@ -9,6 +10,8 @@ import { isChineseTeam } from '@/lib/teams';
 interface Match {
   id: number;
   match_id: number;
+  radiant_team_id?: string;
+  dire_team_id?: string;
   radiant_team_name: string;
   radiant_team_name_cn?: string;
   radiant_team_logo?: string;
@@ -17,12 +20,39 @@ interface Match {
   dire_team_logo?: string;
   start_time: number;
   series_type: string;
+  league_id?: number;
+  status?: string;
   tournament_name: string;
   tournament_name_cn?: string;
 }
 
 interface UpcomingSectionProps {
   upcoming: Match[];
+  allMatches?: Array<{
+    match_id: string | number;
+    start_time: number;
+    series_type?: string | null;
+    status?: string | null;
+    league_id?: number | null;
+    radiant_team_id?: string | null;
+    dire_team_id?: string | null;
+    radiant_team_name?: string | null;
+    dire_team_name?: string | null;
+    radiant_score?: number | null;
+    dire_score?: number | null;
+    radiant_win?: number | boolean | null;
+    tournament_name?: string | null;
+  }>;
+  teams?: Array<{
+    team_id?: string | null;
+    id?: string | null;
+    name?: string | null;
+    name_cn?: string | null;
+    tag?: string | null;
+    logo_url?: string | null;
+    region?: string | null;
+    is_cn_team?: number | boolean;
+  }>;
 }
 
 // 战队Logo fallback 映射
@@ -137,8 +167,10 @@ function getMatchPeriod(timestamp: number): string {
   return '晚上';
 }
 
-export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
+export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: UpcomingSectionProps) {
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
+  const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
   // viewMode removed
 
   const now = Math.floor(Date.now() / 1000);
@@ -170,6 +202,16 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
   );
 
   const displayMatches = filter === 'cn' ? cnMatches : filteredMatches;
+
+  const openTeamFlyout = (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => {
+    if (!team?.name) return;
+    setFlyoutTeam({
+      team_id: team.team_id ? String(team.team_id) : null,
+      name: team.name,
+      logo_url: team.logo_url || null
+    });
+    setFlyoutOpen(true);
+  };
 
   return (
     <section id="upcoming" className="py-12 sm:py-16 bg-slate-950 relative overflow-hidden">
@@ -325,7 +367,15 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                             {/* 对阵展示 */}
                             <div className="flex items-center justify-between gap-4">
                               {/* Radiant 队 */}
-                              <div className={`flex-1 flex items-center gap-3 ${radiantIsCN ? 'group/team-a' : ''}`}>
+                              <button
+                                type="button"
+                                className={`flex-1 flex items-center gap-3 text-left ${radiantIsCN ? 'group/team-a' : ''}`}
+                                onClick={() => openTeamFlyout({
+                                  team_id: match.radiant_team_id ? String(match.radiant_team_id) : null,
+                                  name: match.radiant_team_name,
+                                  logo_url: match.radiant_team_logo
+                                })}
+                              >
                                 <div className={`
                                   w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300
                                   ${radiantIsCN
@@ -347,7 +397,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                     <div className="text-xs text-slate-500 truncate hidden sm:block">{match.radiant_team_name_cn}</div>
                                   )}
                                 </div>
-                              </div>
+                              </button>
 
                               {/* VS */}
                               <div className="flex items-center justify-center">
@@ -357,7 +407,15 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                               </div>
 
                               {/* Dire 队 */}
-                              <div className={`flex-1 flex items-center gap-3 justify-end ${direIsCN ? 'group/team-b' : ''}`}>
+                              <button
+                                type="button"
+                                className={`flex-1 flex items-center gap-3 justify-end text-right ${direIsCN ? 'group/team-b' : ''}`}
+                                onClick={() => openTeamFlyout({
+                                  team_id: match.dire_team_id ? String(match.dire_team_id) : null,
+                                  name: match.dire_team_name,
+                                  logo_url: match.dire_team_logo
+                                })}
+                              >
                                 <div className="flex-1 min-w-0 text-right">
                                   <div className={`text-sm font-bold truncate ${direIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
                                     {renderTeamName(match.dire_team_name)}
@@ -379,7 +437,7 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
                                   )}
                                 </div>
-                              </div>
+                              </button>
                             </div>
 
                             {/* 悬浮指示 */}
@@ -410,6 +468,16 @@ export function UpcomingSection({ upcoming }: UpcomingSectionProps) {
           </Card>
         )}
       </div>
+
+      <TeamFlyout
+        open={flyoutOpen}
+        onOpenChange={setFlyoutOpen}
+        selectedTeam={flyoutTeam}
+        teams={teams}
+        matches={allMatches}
+        upcoming={upcoming}
+        onTeamSelect={(team) => openTeamFlyout(team)}
+      />
     </section>
   );
 }

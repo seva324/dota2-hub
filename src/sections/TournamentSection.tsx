@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'lucide-react';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
+import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { isChineseTeam } from '@/lib/teams';
@@ -67,6 +68,8 @@ interface Tournament {
 interface Series {
   series_id: string;
   series_type: string;
+  radiant_team_id?: string | null;
+  dire_team_id?: string | null;
   radiant_team_name: string;
   dire_team_name: string;
   radiant_team_logo?: string;
@@ -80,6 +83,8 @@ interface Series {
 
 interface Game {
   match_id: string;
+  radiant_team_id?: string | null;
+  dire_team_id?: string | null;
   radiant_team_name: string;
   dire_team_name: string;
   radiant_score: number;
@@ -155,6 +160,42 @@ function renderTeamName(teamName: string, className?: string): React.JSX.Element
 interface TournamentSectionProps {
   tournaments: Tournament[];
   seriesByTournament?: Record<string, Series[]>;
+  allMatches?: Array<{
+    match_id: string | number;
+    start_time: number;
+    series_type?: string | null;
+    status?: string | null;
+    league_id?: number | null;
+    radiant_team_id?: string | null;
+    dire_team_id?: string | null;
+    radiant_team_name?: string | null;
+    dire_team_name?: string | null;
+    radiant_score?: number | null;
+    dire_score?: number | null;
+    radiant_win?: number | boolean | null;
+    tournament_name?: string | null;
+  }>;
+  upcoming?: Array<{
+    id: string | number;
+    start_time: number;
+    series_type?: string | null;
+    league_id?: number | null;
+    radiant_team_id?: string | null;
+    dire_team_id?: string | null;
+    radiant_team_name?: string | null;
+    dire_team_name?: string | null;
+    tournament_name?: string | null;
+  }>;
+  teams?: Array<{
+    team_id?: string | null;
+    id?: string | null;
+    name?: string | null;
+    name_cn?: string | null;
+    tag?: string | null;
+    logo_url?: string | null;
+    region?: string | null;
+    is_cn_team?: number | boolean;
+  }>;
 }
 
 const statusMap: Record<string, { label: string; color: string; gradient: string }> = {
@@ -253,12 +294,20 @@ function getSeriesStartTime(series: Series): number {
   return series.games?.[0]?.start_time || 0;
 }
 
-export function TournamentSection({ tournaments, seriesByTournament }: TournamentSectionProps) {
+export function TournamentSection({
+  tournaments,
+  seriesByTournament,
+  allMatches = [],
+  upcoming = [],
+  teams = []
+}: TournamentSectionProps) {
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
   const [stageFilter, setStageFilter] = useState<StageFilterKey>('all');
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
+  const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
 
   const sortedTournaments = useMemo(() => {
     return [...(tournaments || [])].sort((a, b) => {
@@ -307,6 +356,16 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
       newExpanded.add(seriesId);
     }
     setExpandedSeries(newExpanded);
+  };
+
+  const openTeamFlyout = (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => {
+    if (!team?.name) return;
+    setFlyoutTeam({
+      team_id: team.team_id ? String(team.team_id) : null,
+      name: team.name,
+      logo_url: team.logo_url || null
+    });
+    setFlyoutOpen(true);
   };
 
   const currentSeries = selectedTournament ? (seriesByTournament?.[selectedTournament.id] || []) : [];
@@ -577,7 +636,18 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                             {/* 对阵展示 - Logo | Team A | Score | Team B | Logo */}
                             <div className="flex items-center justify-center gap-2 sm:gap-4">
                               {/* Team A Logo - Left */}
-                              <div className="flex-shrink-0">
+                              <button
+                                type="button"
+                                className="flex-shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTeamFlyout({
+                                    team_id: series.radiant_team_id,
+                                    name: series.radiant_team_name,
+                                    logo_url: series.radiant_team_logo
+                                  });
+                                }}
+                              >
                                 {series.radiant_team_logo ? (
                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamAIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
                                     <img 
@@ -602,12 +672,23 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                     {getTeamAbbrev(series.radiant_team_name)}
                                   </div>
                                 )}
-                              </div>
+                              </button>
 
                               {/* Team A Name */}
-                              <span className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.radiant_score > series.dire_score ? 'text-green-400' : teamAIsCN ? 'text-red-400' : 'text-white'}`}>
+                              <button
+                                type="button"
+                                className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.radiant_score > series.dire_score ? 'text-green-400' : teamAIsCN ? 'text-red-400' : 'text-white'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTeamFlyout({
+                                    team_id: series.radiant_team_id,
+                                    name: series.radiant_team_name,
+                                    logo_url: series.radiant_team_logo
+                                  });
+                                }}
+                              >
                                 {renderTeamName(series.radiant_team_name)}
-                              </span>
+                              </button>
 
                               {/* Score - Center */}
                               <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-slate-800/80 rounded-lg border border-white/10">
@@ -621,12 +702,34 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                               </div>
 
                               {/* Team B Name */}
-                              <span className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.dire_score > series.radiant_score ? 'text-green-400' : teamBIsCN ? 'text-red-400' : 'text-white'}`}>
+                              <button
+                                type="button"
+                                className={`text-sm sm:text-base font-bold min-w-[40px] text-center ${series.dire_score > series.radiant_score ? 'text-green-400' : teamBIsCN ? 'text-red-400' : 'text-white'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTeamFlyout({
+                                    team_id: series.dire_team_id,
+                                    name: series.dire_team_name,
+                                    logo_url: series.dire_team_logo
+                                  });
+                                }}
+                              >
                                 {renderTeamName(series.dire_team_name)}
-                              </span>
+                              </button>
 
                               {/* Team B Logo - Right */}
-                              <div className="flex-shrink-0">
+                              <button
+                                type="button"
+                                className="flex-shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTeamFlyout({
+                                    team_id: series.dire_team_id,
+                                    name: series.dire_team_name,
+                                    logo_url: series.dire_team_logo
+                                  });
+                                }}
+                              >
                                 {series.dire_team_logo ? (
                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamBIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
                                     <img 
@@ -651,7 +754,7 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
                                     {getTeamAbbrev(series.dire_team_name)}
                                   </div>
                                 )}
-                              </div>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -777,12 +880,23 @@ export function TournamentSection({ tournaments, seriesByTournament }: Tournamen
         )}
       </div>
 
+      <TeamFlyout
+        open={flyoutOpen}
+        onOpenChange={setFlyoutOpen}
+        selectedTeam={flyoutTeam}
+        teams={teams}
+        matches={allMatches}
+        upcoming={upcoming}
+        onTeamSelect={(team) => openTeamFlyout(team)}
+      />
+
       <MatchDetailModal 
         matchId={selectedMatchId} 
         open={selectedMatchId !== null} 
         onOpenChange={(open) => {
           if (!open) setSelectedMatchId(null);
-        }} 
+        }}
+        onTeamClick={(team) => openTeamFlyout(team)}
       />
     </section>
   );
