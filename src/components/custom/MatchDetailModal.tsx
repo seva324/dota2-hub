@@ -349,20 +349,27 @@ export function MatchDetailModal({ matchId, open, onOpenChange }: MatchDetailMod
                 </div>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
-                <div className="flex items-center gap-1 sm:gap-2 justify-center md:justify-end">
-                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-                  {formatDuration(match.duration)}
+                <div className="flex items-center justify-center md:justify-end">
+                  <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1">
+                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+                    <span className="text-sm sm:text-base font-semibold tracking-wide text-amber-200">
+                      比赛时长 {formatDuration(match.duration)}
+                    </span>
+                  </div>
                 </div>
-                <div className="hidden xs:block">{formatDate(match.start_time)}</div>
-                <div className="mt-1 flex items-center justify-center md:justify-end text-[11px]">
+                <div className="mt-1.5 flex items-center justify-center md:justify-end text-[11px]">
                   <div className="inline-flex items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300 whitespace-nowrap overflow-x-auto max-w-full">
-                    <span>{match.league_name || 'Professional Match'}</span>
+                    <span>Professional Match</span>
                     <span className="text-slate-500">·</span>
                     <span>赛制 {getSeriesTypeLabel(match.series_type)}</span>
                     <span className="text-slate-500">·</span>
                     <span>系列赛 ID {match.series_id || '-'}</span>
                     <span className="text-slate-500">·</span>
                     <span>Match ID {match.match_id}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>开始 {formatDate(match.start_time)}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>{match.league_name || 'Unknown League'}</span>
                   </div>
                 </div>
               </div>
@@ -598,7 +605,7 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   return (
-    <div className="flex items-start justify-between gap-2 min-w-[410px]">
+    <div className="flex items-start justify-between gap-0.5 min-w-[402px]">
       <div className="min-w-0 space-y-1.5">
         <div className="flex items-center gap-1">
           {mainItems.map((id, idx) => (
