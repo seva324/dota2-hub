@@ -28,7 +28,7 @@ const heroesData: Record<number, HeroData> = {};
 
 async function loadHeroesData() {
   try {
-    const res = await fetch('/data/heroes.json');
+    const res = await fetch('/api/heroes');
     const heroesJson = await res.json();
     Object.entries(heroesJson).forEach(([key, value]) => {
       heroesData[parseInt(key)] = value as HeroData;

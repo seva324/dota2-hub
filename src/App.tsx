@@ -34,7 +34,7 @@ const heroesData: Record<number, HeroData> = {};
 // Fetch heroes data
 async function loadHeroesData() {
   try {
-    const heroesRes = await fetch('/data/heroes.json');
+    const heroesRes = await fetch('/api/heroes');
     const heroesJson = await heroesRes.json();
     // Convert string keys to numbers
     Object.entries(heroesJson).forEach(([key, value]) => {

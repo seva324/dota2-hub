@@ -11,14 +11,14 @@ let proPlayersMap: Record<number, { name: string; team_name: string; realname: s
 let heroesData: Record<number, HeroInfo> = {};
 let cachedItemsMap: Record<number, ItemInfo> = {};
 
-fetch('/data/pro_players.json')
+fetch('/api/pro-players')
   .then((res) => res.json())
   .then((data) => {
     proPlayersMap = data;
   })
   .catch(() => {});
 
-fetch('/data/heroes.json')
+fetch('/api/heroes')
   .then((res) => res.json())
   .then((data) => {
     heroesData = data;

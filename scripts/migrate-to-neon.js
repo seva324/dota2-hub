@@ -82,11 +82,9 @@ async function migrateTournaments() {
   }
 
   const data = JSON.parse(tournamentsData);
-  const { tournaments, seriesByTournament } = data;
+  const { tournaments } = data;
 
   let tournamentCount = 0;
-  let seriesCount = 0;
-
   // Migrate tournaments
   for (const t of tournaments || []) {
     try {
@@ -105,34 +103,8 @@ async function migrateTournaments() {
     }
   }
 
-  // Migrate series
-  for (const [tournamentId, series] of Object.entries(seriesByTournament || {})) {
-    for (const s of series) {
-      try {
-        await sql`
-          INSERT INTO tournament_series (
-            series_id, tournament_id, radiant_team_name, dire_team_name,
-            radiant_team_logo, dire_team_logo, radiant_wins, dire_wins,
-            series_type, updated_at
-          ) VALUES (
-            ${s.series_id}, ${tournamentId}, ${s.radiant_team_name},
-            ${s.dire_team_name}, ${s.radiant_team_logo}, ${s.dire_team_logo},
-            ${s.radiant_wins}, ${s.dire_wins}, ${s.series_type}, NOW()
-          )
-          ON CONFLICT (tournament_id, series_id) DO UPDATE SET
-            radiant_wins = EXCLUDED.radiant_wins,
-            dire_wins = EXCLUDED.dire_wins,
-            updated_at = NOW()
-        `;
-        seriesCount++;
-      } catch (e) {
-        console.error(`Failed to migrate series ${s.series_id}:`, e.message);
-      }
-    }
-  }
-
-  console.log(`Migrated ${tournamentCount} tournaments and ${seriesCount} series`);
-  return { tournamentCount, seriesCount };
+  console.log(`Migrated ${tournamentCount} tournaments`);
+  return { tournamentCount };
 }
 
 async function migrateUpcoming() {
@@ -190,13 +162,12 @@ async function main() {
 
     // Run migrations
     const matchesCount = await migrateMatches();
-    const { tournamentCount, seriesCount } = await migrateTournaments();
+    const { tournamentCount } = await migrateTournaments();
     const upcomingCount = await migrateUpcoming();
 
     console.log('\n=== Migration Complete ===');
     console.log(`Matches: ${matchesCount}`);
     console.log(`Tournaments: ${tournamentCount}`);
-    console.log(`Series: ${seriesCount}`);
     console.log(`Upcoming: ${upcomingCount}`);
 
   } catch (error) {

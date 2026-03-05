@@ -28,7 +28,7 @@ interface MatchData {
 }
 
 interface HeroesData {
-  [key: number]: { name: string; img: string };
+  [key: number]: { name?: string; name_cn?: string; img: string };
 }
 
 interface LaningAnalysisProps {
@@ -57,18 +57,8 @@ type LaneData = {
   winner: 'radiant' | 'dire' | 'even';
 };
 
-const heroesCnData: Record<number, string> = {};
-fetch('/data/hero_cn_names.json')
-  .then((res) => res.json())
-  .then((data) => {
-    for (const [key, value] of Object.entries(data)) {
-      heroesCnData[parseInt(key, 10)] = String(value);
-    }
-  })
-  .catch(() => {});
-
-function getHeroName(id: number): string {
-  return heroesCnData[id] || `Hero ${id}`;
+function getHeroName(id: number, heroesData: HeroesData): string {
+  return heroesData[id]?.name_cn || heroesData[id]?.name || `Hero ${id}`;
 }
 
 function getHeroImg(id: number, heroesData: HeroesData): string {
@@ -76,8 +66,8 @@ function getHeroImg(id: number, heroesData: HeroesData): string {
   return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
 }
 
-function getPlayerName(player: Player): string {
-  return player.name || player.personaname || getHeroName(player.hero_id);
+function getPlayerName(player: Player, heroesData: HeroesData): string {
+  return player.name || player.personaname || getHeroName(player.hero_id, heroesData);
 }
 
 function getValueAt(arr: number[] | undefined, minute: number): number {
@@ -336,13 +326,13 @@ function PlayerLaneRow({ row, heroesData, tone }: { row: LaneSideRow; heroesData
       <div className="flex items-center gap-2">
         <img
           src={getHeroImg(row.player.hero_id, heroesData)}
-          alt={getHeroName(row.player.hero_id)}
+          alt={getHeroName(row.player.hero_id, heroesData)}
           className="h-8 w-12 rounded object-cover"
           loading="lazy"
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-xs font-medium text-slate-100">{getPlayerName(row.player)}</div>
-          <div className="truncate text-[10px] text-slate-400">{getHeroName(row.player.hero_id)}</div>
+          <div className="truncate text-xs font-medium text-slate-100">{getPlayerName(row.player, heroesData)}</div>
+          <div className="truncate text-[10px] text-slate-400">{getHeroName(row.player.hero_id, heroesData)}</div>
         </div>
         <div className="text-right text-[10px] text-slate-300 leading-tight">
           <div>LH/DN {row.lhAt10}/{row.dnAt10}</div>

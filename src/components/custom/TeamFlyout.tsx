@@ -137,7 +137,7 @@ export function TeamFlyout({
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/data/heroes.json')
+    fetch('/api/heroes')
       .then((res) => res.json())
       .then((data) => {
         setHeroMap(data || {});
