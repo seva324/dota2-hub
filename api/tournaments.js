@@ -7,15 +7,6 @@ import { neon } from '@neondatabase/serverless';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-// League ID to Tournament ID mapping
-const LEAGUE_ID_MAP = {
-  18865: { id: 'epl-world-series-sea-s13', name: 'EPL World Series: Southeast Asia Season 13', name_cn: 'EPL 世界系列赛：东南亚 S13', tier: 'A' },
-  19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
-  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
-};
-
 let sql = null;
 
 function getDb() {
@@ -143,17 +134,16 @@ export default async function handler(req, res) {
       LIMIT 500
     `;
 
-    // Build series by tournament
+    // Build series by tournament (based on tournaments table only)
     const seriesByTournament = {};
     const leagueStageWindows = {};
+    const tournamentKeyByLeague = new Map();
 
     for (const t of tournaments) {
+      const tournamentKey = String(t.id || t.league_id);
+      tournamentKeyByLeague.set(Number(t.league_id), tournamentKey);
+      seriesByTournament[tournamentKey] = [];
       leagueStageWindows[t.league_id] = normalizeStageWindows(t.stage_windows);
-    }
-
-    // Initialize all target tournaments
-    for (const [leagueId, info] of Object.entries(LEAGUE_ID_MAP)) {
-      seriesByTournament[info.id] = [];
     }
 
     // Group matches by series
@@ -168,8 +158,8 @@ export default async function handler(req, res) {
 
     // Build series with games
     for (const s of seriesData) {
-      const info = LEAGUE_ID_MAP[s.league_id];
-      if (!info) continue;
+      const tournamentKey = tournamentKeyByLeague.get(Number(s.league_id));
+      if (!tournamentKey) continue;
 
       const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
       const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
@@ -201,7 +191,7 @@ export default async function handler(req, res) {
           };
         });
 
-      seriesByTournament[info.id].push({
+      seriesByTournament[tournamentKey].push({
         series_id: String(s.series_id),
         series_type: convertSeriesType(s.series_type),
         radiant_team_id: s.radiant_team_id ? String(s.radiant_team_id) : null,
@@ -222,13 +212,12 @@ export default async function handler(req, res) {
 
     // Format tournaments
     const formattedTournaments = tournaments.map(t => {
-      const info = LEAGUE_ID_MAP[t.league_id];
       return {
-        id: info?.id || String(t.league_id),
+        id: String(t.id || t.league_id),
         league_id: t.league_id,
-        name: info?.name || t.name,
-        name_cn: info?.name_cn || t.name_cn,
-        tier: info?.tier || t.tier,
+        name: t.name,
+        name_cn: t.name_cn,
+        tier: t.tier,
         location: t.location,
         status: t.status,
         start_time: t.start_time ?? null,

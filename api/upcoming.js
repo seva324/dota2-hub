@@ -7,15 +7,6 @@ import { neon } from '@neondatabase/serverless';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-// League ID to Tournament mapping
-const LEAGUE_ID_MAP = {
-  18865: { id: 'epl-world-series-sea-s13', name: 'EPL World Series: Southeast Asia Season 13', name_cn: 'EPL 世界系列赛：东南亚 S13', tier: 'A' },
-  19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
-  19130: { id: 'esl-challenger-china', name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
-};
-
 let sql = null;
 
 function getDb() {
@@ -75,7 +66,7 @@ export default async function handler(req, res) {
     const now = Math.floor(Date.now() / 1000);
 
     const upcoming = await db`
-      SELECT s.*, t.name as tournament_name, t.name_cn as tournament_name_cn
+      SELECT s.*, t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
       FROM upcoming_series s
       LEFT JOIN tournaments t ON s.league_id = t.league_id
       WHERE s.start_time > ${now}
@@ -91,7 +82,6 @@ export default async function handler(req, res) {
     }
 
     const result = upcoming.map(s => {
-      const info = LEAGUE_ID_MAP[s.league_id];
       const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
       const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
 
@@ -106,9 +96,9 @@ export default async function handler(req, res) {
         dire_team_logo: normalizeLogo(direTeam?.logo_url),
         start_time: s.start_time,
         series_type: convertSeriesType(s.series_type),
-        tournament_name: info?.name || s.tournament_name || null,
-        tournament_name_cn: info?.name_cn || s.tournament_name_cn || null,
-        tier: info?.tier || 'S',
+        tournament_name: s.tournament_name || null,
+        tournament_name_cn: s.tournament_name_cn || null,
+        tier: s.tournament_tier || 'S',
         status: s.status
       };
     });

@@ -7,18 +7,6 @@ import { NewsSection } from '@/sections/NewsSection';
 import { CommunitySection } from '@/sections/CommunitySection';
 import { Footer } from '@/sections/Footer';
 
-// Target league IDs for tournament matches
-const TARGET_LEAGUE_IDS = [18865, 19269, 18988, 19099, 19130];
-
-// League ID to tournament ID mapping
-const LEAGUE_TO_TOURNAMENT: Record<number, string> = {
-  18865: 'epl-world-series-sea-s13',
-  19269: 'dreamleague-s28',
-  18988: 'dreamleague-s27',
-  19099: 'blast-slam-vi',
-  19130: 'esl-challenger-china'
-};
-
 // Team data type
 interface TeamData {
   id?: string | null;
@@ -114,12 +102,12 @@ function addTeamLogosToSeries(seriesByTournament: Record<string, any[]>): Record
 }
 
 // Helper function to group matches into series by team pairing
-function groupMatchesIntoSeries(matches: any[]): Record<string, any[]> {
+function groupMatchesIntoSeries(matches: any[], leagueToTournament: Record<number, string>): Record<string, any[]> {
   const seriesByKey: Record<string, any[]> = {};
   
   matches.forEach(match => {
     const leagueId = match.league_id;
-    const tournamentId = LEAGUE_TO_TOURNAMENT[leagueId];
+    const tournamentId = leagueToTournament[Number(leagueId)];
     if (!tournamentId) return;
     
     // Create a unique key for this team pairing: team1 vs team2 (sorted)
@@ -279,16 +267,23 @@ function App() {
           league_id: t.league_id
         }));
 
+        const leagueToTournament = formattedTournaments.reduce((acc: Record<number, string>, t: any) => {
+          if (t.league_id !== null && t.league_id !== undefined) {
+            acc[Number(t.league_id)] = String(t.id);
+          }
+          return acc;
+        }, {});
+
         // 首先尝试从 matches 中动态生成 series
-        // 过滤目标 league_id 的比赛
+        // 过滤 tournaments 表中存在的 league_id 的比赛
         const targetLeagueMatches = matches.filter((m: any) =>
-          m.league_id && TARGET_LEAGUE_IDS.includes(Number(m.league_id))
+          m.league_id && leagueToTournament[Number(m.league_id)]
         );
         
         console.log('Target league matches:', targetLeagueMatches.length);
         
         // 从匹配的比赛动态生成 series
-        const dynamicSeriesByTournament = groupMatchesIntoSeries(targetLeagueMatches);
+        const dynamicSeriesByTournament = groupMatchesIntoSeries(targetLeagueMatches, leagueToTournament);
         console.log('Dynamic series by tournament:', Object.keys(dynamicSeriesByTournament).map(k => `${k}: ${dynamicSeriesByTournament[k]?.length || 0} series`));
 
         // 合并静态和动态的 seriesByTournament（API 优先，动态兜底）
