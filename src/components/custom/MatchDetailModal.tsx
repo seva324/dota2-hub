@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, Clock, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatchGraphs } from './MatchGraphs';
 import { LaningAnalysis } from './LaningAnalysis';
@@ -139,8 +140,6 @@ function formatDate(timestamp: number): string {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
@@ -259,6 +258,15 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [itemsMap, setItemsMap] = useState<Record<number, ItemInfo>>(cachedItemsMap);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
+  }, []);
 
   useEffect(() => {
     if (!open || Object.keys(itemsMap).length > 0) return;
@@ -320,9 +328,8 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
       }
     : null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-x-hidden overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5">
+  const detailBody = (
+    <>
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -381,38 +388,34 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
                   </div>
                 </div>
                 <div className="mt-1.5 flex items-center justify-center md:justify-end text-[11px]">
-                  <div className="inline-flex items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300 whitespace-nowrap overflow-x-auto max-w-full">
-                    <span>Professional Match</span>
-                    <span className="text-slate-500">·</span>
+                  <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300">
                     <span>赛制 {getSeriesTypeLabel(match.series_type)}</span>
                     <span className="text-slate-500">·</span>
                     <span>系列赛 ID {match.series_id || '-'}</span>
                     <span className="text-slate-500">·</span>
                     <span>Match ID {match.match_id}</span>
                     <span className="text-slate-500">·</span>
-                    <span>开始 {formatDate(match.start_time)}</span>
-                    <span className="text-slate-500">·</span>
-                    <span>{match.league_name || 'Unknown League'}</span>
+                    <span>{formatDate(match.start_time)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4 flex w-full overflow-x-auto">
-                <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
+              <TabsList className="bg-slate-800/50 mb-4 flex w-full flex-wrap gap-1 p-1 sm:flex-nowrap">
+                <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span>KDA</span>
                 </TabsTrigger>
-                <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
+                <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span>经济</span>
                 </TabsTrigger>
-                <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
+                <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span>对线</span>
                 </TabsTrigger>
-                <TabsTrigger value="aireport" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
+                <TabsTrigger value="aireport" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                   <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span>AI战报</span>
                 </TabsTrigger>
@@ -463,6 +466,25 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
             </Tabs>
           </>
         )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="left" className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain">
+          <div className="h-full overflow-x-hidden overflow-y-auto p-2 sm:p-5">
+            {detailBody}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-x-hidden overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5">
+        {detailBody}
       </DialogContent>
     </Dialog>
   );
