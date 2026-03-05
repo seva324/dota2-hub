@@ -40,6 +40,105 @@ async function ensureTable(db) {
   await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_month INTEGER`);
 }
 
+async function sourceTablesExist(db) {
+  const rows = await db.query(`
+    SELECT
+      to_regclass('public.matches') AS matches_table,
+      to_regclass('public.match_details') AS match_details_table
+  `);
+  const row = rows[0] || {};
+  return Boolean(row.matches_table && row.match_details_table);
+}
+
+async function syncProPlayersFromMatches(db) {
+  const sourceReady = await sourceTablesExist(db);
+  if (!sourceReady) {
+    return { skipped: true, reason: 'source_tables_missing', discovered_count: 0, upserted_count: 0 };
+  }
+
+  const rows = await db.query(`
+    WITH extracted AS (
+      SELECT
+        NULLIF(BTRIM(p->>'account_id'), '') AS account_id_text,
+        NULLIF(BTRIM(COALESCE(p->>'name', p->>'personaname')), '') AS player_name,
+        CASE
+          WHEN (p->>'player_slot') ~ '^[0-9]+$' THEN (p->>'player_slot')::INT
+          ELSE NULL
+        END AS player_slot,
+        m.radiant_team_id::TEXT AS radiant_team_id_raw,
+        m.dire_team_id::TEXT AS dire_team_id_raw,
+        rt.name::TEXT AS radiant_team_name_raw,
+        dt.name::TEXT AS dire_team_name_raw,
+        m.start_time
+      FROM match_details md
+      JOIN matches m ON m.match_id = md.match_id
+      LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
+      LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
+      CROSS JOIN LATERAL jsonb_array_elements(
+        CASE
+          WHEN jsonb_typeof(md.payload->'players') = 'array' THEN md.payload->'players'
+          ELSE '[]'::jsonb
+        END
+      ) AS p
+    ),
+    normalized AS (
+      SELECT
+        account_id_text::BIGINT AS account_id,
+        player_name AS name,
+        CASE
+          WHEN player_slot IS NULL THEN NULL
+          WHEN player_slot < 128 AND radiant_team_id_raw ~ '^[0-9]+$' THEN radiant_team_id_raw::BIGINT
+          WHEN player_slot >= 128 AND dire_team_id_raw ~ '^[0-9]+$' THEN dire_team_id_raw::BIGINT
+          ELSE NULL
+        END AS team_id,
+        CASE
+          WHEN player_slot IS NULL THEN NULL
+          WHEN player_slot < 128 THEN NULLIF(BTRIM(radiant_team_name_raw), '')
+          ELSE NULLIF(BTRIM(dire_team_name_raw), '')
+        END AS team_name,
+        start_time
+      FROM extracted
+      WHERE account_id_text ~ '^[0-9]+$'
+        AND account_id_text::BIGINT > 0
+    ),
+    latest AS (
+      SELECT DISTINCT ON (account_id)
+        account_id,
+        name,
+        team_id,
+        team_name
+      FROM normalized
+      ORDER BY account_id, COALESCE(start_time, 0) DESC
+    ),
+    upserted AS (
+      INSERT INTO pro_players (account_id, name, team_id, team_name, updated_at)
+      SELECT account_id, name, team_id, team_name, NOW()
+      FROM latest
+      ON CONFLICT (account_id) DO UPDATE SET
+        name = COALESCE(NULLIF(EXCLUDED.name, ''), pro_players.name),
+        team_id = COALESCE(EXCLUDED.team_id, pro_players.team_id),
+        team_name = COALESCE(NULLIF(EXCLUDED.team_name, ''), pro_players.team_name),
+        updated_at = NOW()
+      WHERE
+        COALESCE(NULLIF(EXCLUDED.name, ''), pro_players.name) IS DISTINCT FROM pro_players.name
+        OR COALESCE(EXCLUDED.team_id, pro_players.team_id) IS DISTINCT FROM pro_players.team_id
+        OR COALESCE(NULLIF(EXCLUDED.team_name, ''), pro_players.team_name) IS DISTINCT FROM pro_players.team_name
+      RETURNING account_id
+    )
+    SELECT
+      (SELECT COUNT(*)::INT FROM latest) AS discovered_count,
+      COUNT(*)::INT AS upserted_count
+    FROM upserted
+  `);
+
+  const summary = rows[0] || {};
+  return {
+    skipped: false,
+    discovered_count: Number(summary.discovered_count || 0),
+    upserted_count: Number(summary.upserted_count || 0)
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -47,6 +146,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const db = getDb();
@@ -56,6 +158,15 @@ export default async function handler(req, res) {
 
   try {
     await ensureTable(db);
+    const syncStats = await syncProPlayersFromMatches(db);
+    if (syncStats.skipped) {
+      console.log(`[ProPlayers API] Skip match-derived sync: ${syncStats.reason}`);
+    } else {
+      console.log(
+        `[ProPlayers API] Match-derived sync discovered=${syncStats.discovered_count}, upserted=${syncStats.upserted_count}`
+      );
+    }
+
     const rows = await db.query(`
       SELECT account_id, name, name_cn, team_id, team_name, country_code, avatar_url, realname, birth_date, birth_year, birth_month
       FROM pro_players

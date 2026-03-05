@@ -155,33 +155,45 @@ export default async function handler(req, res) {
           SELECT
             m.match_id,
             m.start_time,
-            m.series_type,
+            COALESCE(NULLIF(to_jsonb(m)->>'series_type', ''), 'BO3') AS series_type,
             m.radiant_team_id,
             m.dire_team_id,
-            m.radiant_team_name,
-            m.dire_team_name,
-            m.radiant_team_logo,
-            m.dire_team_logo,
+            rt.name AS radiant_team_name,
+            dt.name AS dire_team_name,
+            rt.logo_url AS radiant_team_logo,
+            dt.logo_url AS dire_team_logo,
             m.radiant_score,
             m.dire_score,
             m.radiant_win,
-            m.league_id,
+            CASE
+              WHEN NULLIF(to_jsonb(m)->>'league_id', '') ~ '^[0-9]+$' THEN (to_jsonb(m)->>'league_id')::BIGINT
+              ELSE NULL
+            END AS league_id,
             t.name AS tournament_name,
             md.payload
           FROM matches m
           JOIN match_details md ON md.match_id = m.match_id
-          LEFT JOIN tournaments t ON t.league_id = m.league_id
-          WHERE m.start_time >= $1
-            AND EXISTS (
+          LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
+          LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
+          LEFT JOIN tournaments t ON t.league_id::TEXT = NULLIF(to_jsonb(m)->>'league_id', '')
+          WHERE EXISTS (
               SELECT 1
-              FROM jsonb_array_elements(md.payload->'players') p
-              WHERE NULLIF(p->>'account_id', '') IS NOT NULL
-                AND (p->>'account_id')::BIGINT = $2
+              FROM jsonb_array_elements(
+                CASE
+                  WHEN jsonb_typeof(md.payload->'players') = 'array' THEN md.payload->'players'
+                  ELSE '[]'::jsonb
+                END
+              ) p
+              CROSS JOIN LATERAL (
+                SELECT NULLIF(BTRIM(COALESCE(p->>'account_id', p->>'accountId', p->>'accountid')), '') AS account_id_text
+              ) account_ref
+              WHERE account_ref.account_id_text ~ '^[0-9]+$'
+                AND account_ref.account_id_text::BIGINT = $1
             )
-          ORDER BY m.start_time DESC
-          LIMIT 120
+          ORDER BY m.start_time DESC NULLS LAST
+          LIMIT 240
         `,
-        [Math.floor(Date.now() / 1000) - 180 * 24 * 60 * 60, accountId]
+        [accountId]
       ),
       fetchHeroMap(db).catch((err) => {
         console.warn('[PlayerProfile API] Failed to load hero map:', err?.message || err);
