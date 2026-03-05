@@ -360,11 +360,6 @@ fs.writeFileSync(path.join(outputDir, 'tournaments.json'), JSON.stringify({
 }, null, 2));
 console.log(`Exported series data for ${Object.keys(seriesByTournament).length} tournaments`);
 
-// 导出战队数据
-const teams = runQuery('SELECT * FROM teams');
-fs.writeFileSync(path.join(outputDir, 'teams.json'), JSON.stringify(teams, null, 2));
-console.log(`Exported ${teams.length} teams`);
-
 // 导出新闻数据
 const news = runQuery('SELECT * FROM news ORDER BY published_at DESC');
 fs.writeFileSync(path.join(outputDir, 'news.json'), JSON.stringify(news, null, 2));

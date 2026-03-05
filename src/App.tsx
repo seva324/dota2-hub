@@ -20,13 +20,13 @@ const LEAGUE_TO_TOURNAMENT: Record<number, string> = {
 
 // Team data type
 interface TeamData {
-  id: string;
-  team_id?: string;
-  name: string;
-  name_cn: string;
-  tag: string;
-  logo_url: string;
-  region?: string;
+  id?: string | null;
+  team_id?: string | null;
+  name?: string | null;
+  name_cn?: string | null;
+  tag?: string | null;
+  logo_url?: string | null;
+  region?: string | null;
   is_cn_team?: number | boolean;
 }
 
@@ -42,15 +42,9 @@ interface HeroData {
 let teamsData: TeamData[] = [];
 const heroesData: Record<number, HeroData> = {};
 
-// Fetch teams and heroes data
-async function loadStaticData() {
+// Fetch heroes data
+async function loadHeroesData() {
   try {
-    // Load teams
-    const teamsRes = await fetch('/data/teams.json');
-    teamsData = await teamsRes.json();
-    console.log('Teams loaded:', teamsData.length);
-
-    // Load heroes
     const heroesRes = await fetch('/data/heroes.json');
     const heroesJson = await heroesRes.json();
     // Convert string keys to numbers
@@ -69,31 +63,32 @@ function findTeamLogo(teamName: string): string | undefined {
     console.log('findTeamLogo: no teamName or teamsData', { teamName, teamsDataLength: teamsData.length });
     return undefined;
   }
-  
-  const normalizedName = teamName.toLowerCase().trim();
+
+  const normalize = (value?: string | null) => String(value || '').toLowerCase().trim();
+  const normalizedName = normalize(teamName);
   console.log('findTeamLogo searching for:', teamName, '-> normalized:', normalizedName);
   
   // Try exact match first (check tag first as it's most common in match data)
   let team = teamsData.find(t => 
-    t.tag.toLowerCase() === normalizedName || 
-    t.name.toLowerCase() === normalizedName || 
-    t.name_cn.toLowerCase() === normalizedName
+    normalize(t.tag) === normalizedName ||
+    normalize(t.name) === normalizedName ||
+    normalize(t.name_cn) === normalizedName
   );
   
   // Try partial match - check if team name contains the search term or vice versa
   if (!team) {
     team = teamsData.find(t => 
-      t.name.toLowerCase().includes(normalizedName) ||
-      normalizedName.includes(t.name.toLowerCase()) ||
-      t.tag.toLowerCase().includes(normalizedName) ||
-      normalizedName.includes(t.tag.toLowerCase()) ||
-      t.name_cn.toLowerCase().includes(normalizedName) ||
-      normalizedName.includes(t.name_cn.toLowerCase())
+      normalize(t.name).includes(normalizedName) ||
+      normalizedName.includes(normalize(t.name)) ||
+      normalize(t.tag).includes(normalizedName) ||
+      normalizedName.includes(normalize(t.tag)) ||
+      normalize(t.name_cn).includes(normalizedName) ||
+      normalizedName.includes(normalize(t.name_cn))
     );
   }
   
   console.log('findTeamLogo result:', team?.name, team?.logo_url);
-  return team?.logo_url;
+  return team?.logo_url || undefined;
 }
 
 // Helper function to add team logos to all series
@@ -209,8 +204,18 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Load static data first (teams, heroes)
-        await loadStaticData();
+        // Load static data first (heroes)
+        await loadHeroesData();
+
+        // Load teams from API (Neon/Redis fallback)
+        try {
+          const teamsRes = await fetch('/api/teams');
+          teamsData = await teamsRes.json();
+        } catch (e) {
+          console.error('Failed to load teams from API:', e);
+          teamsData = [];
+        }
+        console.log('Teams loaded:', teamsData.length);
         
         // 加载 tournaments 数据 from API (Neon/Redis fallback)
         let tournamentsData;

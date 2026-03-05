@@ -4,7 +4,7 @@ import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { isChineseTeam } from '@/lib/teams';
+import { isTeamInRegion } from '@/lib/teams';
 
 // Hero data type
 interface HeroData {
@@ -96,59 +96,35 @@ interface Game {
 }
 
 // Team data type for team abbreviations
-interface TeamData {
-  id: string;
-  name: string;
-  name_cn: string;
-  tag: string;
-  logo_url: string;
+const FALLBACK_TEAM_ABBR: Record<string, string> = {
+  'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
+  'Team Spirit': 'Spirit', 'Natus Vincere': "Na'Vi",
+  'Tundra Esports': 'Tundra', 'Team Liquid': 'Liquid',
+  'Team Falcons': 'Falcons', 'OG': 'OG',
+  'GamerLegion': 'GL', 'PARIVISION': 'PARI',
+  'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
+  'Aurora Gaming': 'Aurora', 'Execration': 'XctN',
+  'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
+  'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
+  'Team Nemesis': 'Nemesis', '1w Team': '1w',
+  'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
+  'Gaimin Gladiators': 'GG', 'HEROIC': 'HEROIC',
+};
+
+function normalizeTeamAlias(name?: string | null): string {
+  return String(name || '').trim().toLowerCase();
 }
 
-// Load teams data for team abbreviations
-const teamsData: Record<string, TeamData> = {};
-
-async function loadTeamsData() {
-  try {
-    const res = await fetch('/data/teams.json');
-    const teamsJson = await res.json();
-    // Create lookup by name (case insensitive)
-    teamsJson.forEach((team: TeamData) => {
-      teamsData[team.name.toLowerCase()] = team;
-      if (team.name_cn) {
-        teamsData[team.name_cn.toLowerCase()] = team;
-      }
-      if (team.tag) {
-        teamsData[team.tag.toLowerCase()] = team;
-      }
-    });
-    console.log('Teams loaded in TournamentSection:', Object.keys(teamsData).length);
-  } catch (err) {
-    console.error('Error loading teams:', err);
-  }
-}
-
-function getTeamAbbrev(teamName: string | null | undefined): string {
+function getTeamAbbrev(teamName: string | null | undefined, aliasToTag: Map<string, string>): string {
   if (!teamName) return 'TBD';
-  const abbr: Record<string, string> = {
-    'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
-    'Team Spirit': 'Spirit', 'Natus Vincere': "Na'Vi",
-    'Tundra Esports': 'Tundra', 'Team Liquid': 'Liquid',
-    'Team Falcons': 'Falcons', 'OG': 'OG',
-    'GamerLegion': 'GL', 'PARIVISION': 'PARI',
-    'BetBoom Team': 'BB', 'paiN Gaming': 'paiN',
-    'Aurora Gaming': 'Aurora', 'Execration': 'XctN',
-    'MOUZ': 'MOUZ', 'Vici Gaming': 'VG', 'PSG.LGD': 'LGD',
-    'Team Yandex': 'Yandex', 'Tidebound': 'Tidebound',
-    'Team Nemesis': 'Nemesis', '1w Team': '1w',
-    'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
-    'Gaimin Gladiators': 'GG', 'HEROIC': 'HEROIC',
-  };
-  return abbr[teamName] || teamName.substring(0, 3).toUpperCase();
+  const fromTeamsTable = aliasToTag.get(normalizeTeamAlias(teamName));
+  if (fromTeamsTable) return fromTeamsTable;
+  return FALLBACK_TEAM_ABBR[teamName] || teamName.substring(0, 3).toUpperCase();
 }
 
 // Render team name with responsive display: abbrev on mobile, full name on desktop
-function renderTeamName(teamName: string, className?: string): React.JSX.Element {
-  const abbrev = getTeamAbbrev(teamName);
+function renderTeamName(teamName: string, aliasToTag: Map<string, string>, className?: string): React.JSX.Element {
+  const abbrev = getTeamAbbrev(teamName, aliasToTag);
   return (
     <span className={className}>
       <span className="sm:hidden">{abbrev}</span>
@@ -308,6 +284,22 @@ export function TournamentSection({
   const [stageFilter, setStageFilter] = useState<StageFilterKey>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
+  const isChineseTeam = (name?: string | null) => isTeamInRegion(name, teams, ['China']);
+  const teamAliasToTag = useMemo(() => {
+    const aliasMap = new Map<string, string>();
+    for (const team of teams) {
+      const tag = String(team.tag || '').trim();
+      if (!tag) continue;
+      const aliases = [team.name, team.name_cn, team.tag];
+      for (const alias of aliases) {
+        const key = normalizeTeamAlias(alias);
+        if (key && !aliasMap.has(key)) {
+          aliasMap.set(key, tag);
+        }
+      }
+    }
+    return aliasMap;
+  }, [teams]);
 
   const sortedTournaments = useMemo(() => {
     return [...(tournaments || [])].sort((a, b) => {
@@ -340,10 +332,7 @@ export function TournamentSection({
 
   // Load heroes data on mount
   useEffect(() => {
-    Promise.all([
-      loadHeroesData(),
-      loadTeamsData()
-    ]).then(() => {
+    loadHeroesData().then(() => {
       setHeroesLoaded(true);
     });
   }, []);
@@ -662,7 +651,7 @@ export function TournamentSection({
                                         if (parent) {
                                           const fallback = document.createElement('span');
                                           fallback.className = 'text-xs sm:text-sm font-bold text-slate-400';
-                                          fallback.textContent = getTeamAbbrev(series.radiant_team_name);
+                                          fallback.textContent = getTeamAbbrev(series.radiant_team_name, teamAliasToTag);
                                           parent.appendChild(fallback);
                                         }
                                       }} 
@@ -670,7 +659,7 @@ export function TournamentSection({
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
-                                    {getTeamAbbrev(series.radiant_team_name)}
+                                    {getTeamAbbrev(series.radiant_team_name, teamAliasToTag)}
                                   </div>
                                 )}
                               </button>
@@ -688,7 +677,7 @@ export function TournamentSection({
                                   });
                                 }}
                               >
-                                {renderTeamName(series.radiant_team_name)}
+                                {renderTeamName(series.radiant_team_name, teamAliasToTag)}
                               </button>
 
                               {/* Score - Center */}
@@ -715,7 +704,7 @@ export function TournamentSection({
                                   });
                                 }}
                               >
-                                {renderTeamName(series.dire_team_name)}
+                                {renderTeamName(series.dire_team_name, teamAliasToTag)}
                               </button>
 
                               {/* Team B Logo - Right */}
@@ -744,7 +733,7 @@ export function TournamentSection({
                                         if (parent) {
                                           const fallback = document.createElement('span');
                                           fallback.className = 'text-xs sm:text-sm font-bold text-slate-400';
-                                          fallback.textContent = getTeamAbbrev(series.dire_team_name);
+                                          fallback.textContent = getTeamAbbrev(series.dire_team_name, teamAliasToTag);
                                           parent.appendChild(fallback);
                                         }
                                       }} 
@@ -752,7 +741,7 @@ export function TournamentSection({
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
-                                    {getTeamAbbrev(series.dire_team_name)}
+                                    {getTeamAbbrev(series.dire_team_name, teamAliasToTag)}
                                   </div>
                                 )}
                               </button>
@@ -805,7 +794,7 @@ export function TournamentSection({
                                       
                                       {/* 获胜者 */}
                                       <div className={`text-xs font-bold mb-2 ${winnerIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-slate-300'}`}>
-                                        {getTeamAbbrev(winnerName)}
+                                        {getTeamAbbrev(winnerName, teamAliasToTag)}
                                       </div>
                                       
                                       {/* Hero Picks Display */}
@@ -898,7 +887,6 @@ export function TournamentSection({
         onOpenChange={(open) => {
           if (!open) setSelectedMatchId(null);
         }}
-        onTeamClick={(team) => openTeamFlyout(team)}
       />
     </section>
   );
