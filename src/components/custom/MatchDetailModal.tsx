@@ -322,7 +322,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-7xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 p-3 sm:p-6">
+      <DialogContent className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5">
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -487,6 +487,7 @@ function TeamSummaryTable({
   itemsMap: Record<number, ItemInfo>;
   onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }) {
+  const [mobileView, setMobileView] = useState<'stats' | 'items'>('stats');
   const teamCode = isRadiant ? 0 : 1;
 
   const total = players.reduce(
@@ -523,89 +524,35 @@ function TeamSummaryTable({
         </button>
         {isWinner && <span className="text-xs sm:text-sm text-green-400 font-semibold">胜者</span>}
       </div>
-
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full min-w-[940px]">
-          <thead className="bg-slate-900/70">
-            <tr className="text-xs text-slate-400">
-              <th className="text-left px-3 py-2 w-[260px]">玩家</th>
-              <th className="text-center px-2 py-2 w-[56px]">等级</th>
-              <th className="text-right px-2 py-2 w-[52px] text-green-400">击杀</th>
-              <th className="text-right px-2 py-2 w-[52px] text-red-400">死亡</th>
-              <th className="text-right px-2 py-2 w-[52px] text-slate-300">助攻</th>
-              <th className="text-right px-2 py-2 w-[90px]">正补/反补</th>
-              <th className="text-right px-2 py-2 w-[80px] text-yellow-400">NET</th>
-              <th className="text-right px-2 py-2 w-[96px]">GPM/XPM</th>
-              <th className="text-left px-3 py-2">物品</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
-              const displayName = getPlayerDisplayName(player);
-              const laneName = getLaneName(player.lane, isRadiant);
-              const mainItems = getMainItemIds(player);
-              const backpackItems = getBackpackItemIds(player);
-              const neutral = getNeutralItemId(player);
-
-              return (
-                <tr key={`${player.player_slot}-${player.account_id}-${player.hero_id}`} className="border-t border-slate-800/70">
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-10 h-10 rounded overflow-hidden bg-slate-800 flex-shrink-0">
-                        <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-sm text-slate-100 truncate">{displayName}</div>
-                        <div className="text-xs text-slate-400 truncate">
-                          {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-2 py-2 text-center text-sm text-slate-200">{player.level}</td>
-                  <td className="px-2 py-2 text-right text-sm text-green-400">{player.kills}</td>
-                  <td className="px-2 py-2 text-right text-sm text-red-400">{player.deaths}</td>
-                  <td className="px-2 py-2 text-right text-sm text-slate-200">{player.assists}</td>
-                  <td className="px-2 py-2 text-right text-sm text-slate-300">
-                    {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
-                  </td>
-                  <td className="px-2 py-2 text-right text-sm text-yellow-400">{formatCompact(getNetWorth(player))}</td>
-                  <td className="px-2 py-2 text-right text-sm text-slate-300">
-                    {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <ItemStrip
-                      mainItems={mainItems}
-                      backpackItems={backpackItems}
-                      neutralItem={neutral}
-                      hasScepter={hasAghanimScepter(player)}
-                      hasShard={hasAghanimShard(player)}
-                      itemsMap={itemsMap}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-
-            <tr className="border-t border-slate-700 bg-slate-900/40 text-xs text-slate-300">
-              <td className="px-3 py-2" />
-              <td className="px-2 py-2 text-center">{total.level}</td>
-              <td className="px-2 py-2 text-right text-green-400">{total.kills}</td>
-              <td className="px-2 py-2 text-right text-red-400">{total.deaths}</td>
-              <td className="px-2 py-2 text-right">{total.assists}</td>
-              <td className="px-2 py-2 text-right">
-                {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
-              </td>
-              <td className="px-2 py-2 text-right text-yellow-400">{formatCompact(total.netWorth)}</td>
-              <td className="px-2 py-2 text-right">
-                {formatCompact(total.gpm)}/{formatCompact(total.xpm)}
-              </td>
-              <td className="px-3 py-2" />
-            </tr>
-          </tbody>
-        </table>
+      <div className="border-b border-slate-800 bg-slate-900/35 px-3 py-2 text-[11px] sm:text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">总击杀 <span className="text-green-400">{total.kills}</span></div>
+          <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">总死亡 <span className="text-red-400">{total.deaths}</span></div>
+          <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">总助攻 {total.assists}</div>
+          <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400">总经济 {formatCompact(total.netWorth)}</div>
+        </div>
       </div>
-      <div className="space-y-2 p-2 md:hidden">
+
+      <div className="md:hidden px-2 pt-2">
+        <div className="inline-flex rounded-md border border-slate-700 bg-slate-900/70 p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => setMobileView('stats')}
+            className={`rounded px-2 py-1 ${mobileView === 'stats' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'}`}
+          >
+            英雄数据
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView('items')}
+            className={`rounded px-2 py-1 ${mobileView === 'items' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'}`}
+          >
+            装备栏
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 p-2 md:grid-cols-2">
         {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
           const displayName = getPlayerDisplayName(player);
           const laneName = getLaneName(player.lane, isRadiant);
@@ -616,27 +563,27 @@ function TeamSummaryTable({
           return (
             <div
               key={`m-${player.player_slot}-${player.account_id}-${player.hero_id}`}
-              className="rounded-lg border border-slate-800 bg-slate-900/40 p-2.5"
+              className="rounded-lg border border-slate-800 bg-gradient-to-br from-slate-900/55 to-slate-950/70 p-2"
             >
-              <div className="flex items-start gap-2.5">
-                <div className="h-10 w-10 rounded overflow-hidden bg-slate-800 shrink-0">
+              <div className="flex items-start gap-2">
+                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded overflow-hidden bg-slate-800 shrink-0">
                   <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-slate-100">{displayName}</div>
-                  <div className="truncate text-xs text-slate-400">
+                  <div className="truncate text-xs sm:text-sm font-medium text-slate-100">{displayName}</div>
+                  <div className="truncate text-[11px] text-slate-400">
                     {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[11px] text-slate-500">K/D/A</div>
-                  <div className="text-sm font-semibold text-slate-100">
+                <div className="rounded-md border border-slate-700 bg-slate-950/50 px-1.5 py-1 text-right">
+                  <div className="text-[10px] text-slate-500 leading-none">KDA</div>
+                  <div className="text-xs sm:text-sm font-semibold text-slate-100 leading-tight mt-0.5">
                     <span className="text-green-400">{player.kills}</span>/<span className="text-red-400">{player.deaths}</span>/{player.assists}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
+              <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 gap-1 text-[10px] sm:text-[11px]">
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
                   <span className="text-slate-500">等级</span> {player.level}
                 </div>
@@ -646,12 +593,12 @@ function TeamSummaryTable({
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400">
                   <span className="text-slate-500">NET</span> {formatCompact(getNetWorth(player))}
                 </div>
-                <div className="col-span-3 rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
+                <div className="col-span-2 sm:col-span-3 rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
                   <span className="text-slate-500">GPM/XPM</span> {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
                 </div>
               </div>
 
-              <div className="mt-2">
+              <div className={`mt-1.5 ${mobileView === 'items' ? 'block' : 'hidden'} md:block`}>
                 <ItemStrip
                   mainItems={mainItems}
                   backpackItems={backpackItems}
@@ -659,7 +606,6 @@ function TeamSummaryTable({
                   hasScepter={hasAghanimScepter(player)}
                   hasShard={hasAghanimShard(player)}
                   itemsMap={itemsMap}
-                  collapsible
                 />
               </div>
             </div>

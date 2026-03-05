@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
-import { Shield, Swords, Skull, RotateCcw } from 'lucide-react';
+import { Shield, Swords, Skull, RotateCcw, Maximize2, Minimize2 } from 'lucide-react';
 
 const AEGIS_ICON_URL = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png';
 const FIRST_BLOOD_ICON_URL = '/images/first-blood.svg';
@@ -147,6 +147,8 @@ function getPlayerSide(player: MatchPlayer): 'radiant' | 'dire' {
 export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }: MatchGraphsProps) {
   const { radiant_gold_adv = [], radiant_xp_adv = [], duration, players = [], objectives = [], teamfights = [] } = match;
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
+  const [isLandscapeMode, setIsLandscapeMode] = useState(false);
+  const chartSectionRef = useRef<HTMLDivElement | null>(null);
   const axisCount = Math.max(radiant_gold_adv.length, radiant_xp_adv.length);
   const radiantWon = Boolean(match.radiant_win);
   const winnerSide: 'radiant' | 'dire' = radiantWon ? 'radiant' : 'dire';
@@ -470,6 +472,27 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
     [activeFightRows]
   );
 
+  const toggleLandscape = async () => {
+    try {
+      const orientationApi = (typeof screen !== 'undefined' ? (screen.orientation as any) : null);
+      if (!document.fullscreenElement) {
+        await chartSectionRef.current?.requestFullscreen?.();
+        if (orientationApi?.lock) {
+          await orientationApi.lock('landscape').catch(() => {});
+        }
+        setIsLandscapeMode(true);
+        return;
+      }
+      if (orientationApi?.unlock) {
+        orientationApi.unlock();
+      }
+      await document.exitFullscreen();
+      setIsLandscapeMode(false);
+    } catch {
+      setIsLandscapeMode(Boolean(document.fullscreenElement));
+    }
+  };
+
   return (
     <div className="space-y-4">
       <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
@@ -736,8 +759,19 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       </section>
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
-        <h4 className="mb-2 text-sm font-semibold text-slate-100">经济 / 经验优势曲线</h4>
-        <div className="relative pt-8 sm:pt-10">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold text-slate-100">经济 / 经验优势曲线</h4>
+          <button
+            type="button"
+            onClick={toggleLandscape}
+            className="inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-900/70 px-2 py-1 text-[11px] text-slate-200 hover:border-slate-500 sm:hidden"
+          >
+            {isLandscapeMode ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            {isLandscapeMode ? '退出横屏' : '横屏查看'}
+          </button>
+        </div>
+        <div className="mb-2 text-[11px] text-slate-500 sm:hidden">建议点击“横屏查看”获得完整曲线视图</div>
+        <div ref={chartSectionRef} className="relative pt-8 sm:pt-10">
           <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 hidden sm:block">
             {timelineEvents.map((event) => {
               const ratio = getEventAxisRatio(event.time);

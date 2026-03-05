@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Minus, Crown, Clock } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Clock3, Crown, Zap } from 'lucide-react';
 
 interface Player {
   player_slot: number;
@@ -7,23 +7,14 @@ interface Player {
   personaname?: string;
   name?: string;
   hero_id: number;
-  level: number;
-  kills: number;
-  deaths: number;
-  assists: number;
-  gold_per_min: number;
-  xp_per_min: number;
-  last_hits: number;
-  denies: number;
-  hero_damage: number;
-  tower_damage: number;
   lane?: number;
   lane_role?: number;
   gold_t?: number[];
   xp_t?: number[];
   lh_t?: number[];
   dn_t?: number[];
-  lane_kills?: number;
+  gold_per_min: number;
+  xp_per_min: number;
   lane_efficiency?: number;
 }
 
@@ -32,10 +23,7 @@ interface MatchData {
   radiant_team_name: string;
   dire_team_name: string;
   radiant_win: boolean;
-  radiant_score?: number;
-  dire_score?: number;
   duration?: number;
-  start_time?: number;
   players: Player[];
 }
 
@@ -50,13 +38,31 @@ interface LaningAnalysisProps {
   heroesData: HeroesData;
 }
 
-// Chinese hero names
+type LaneSideRow = {
+  player: Player;
+  goldAt10: number;
+  xpAt10: number;
+  lhAt10: number;
+  dnAt10: number;
+};
+
+type LaneData = {
+  laneName: string;
+  radiant: LaneSideRow[];
+  dire: LaneSideRow[];
+  radiantGoldAt10: number;
+  direGoldAt10: number;
+  radiantXpAt10: number;
+  direXpAt10: number;
+  winner: 'radiant' | 'dire' | 'even';
+};
+
 const heroesCnData: Record<number, string> = {};
 fetch('/data/hero_cn_names.json')
-  .then(res => res.json())
-  .then(data => {
+  .then((res) => res.json())
+  .then((data) => {
     for (const [key, value] of Object.entries(data)) {
-      heroesCnData[parseInt(key)] = value as string;
+      heroesCnData[parseInt(key, 10)] = String(value);
     }
   })
   .catch(() => {});
@@ -70,10 +76,14 @@ function getHeroImg(id: number, heroesData: HeroesData): string {
   return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
 }
 
-function getValueAtMinute(arr: number[] | undefined, minute: number): number {
-  if (!arr || arr.length === 0) return 0;
+function getPlayerName(player: Player): string {
+  return player.name || player.personaname || getHeroName(player.hero_id);
+}
+
+function getValueAt(arr: number[] | undefined, minute: number): number {
+  if (!arr?.length) return 0;
   const idx = Math.min(minute, arr.length - 1);
-  return arr[idx] || 0;
+  return Number(arr[idx] || 0);
 }
 
 function formatDuration(seconds: number): string {
@@ -82,79 +92,84 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Get team abbreviation
-function getTeamAbbr(name: string): string {
-  const abbrs: Record<string, string> = {
+function formatK(value: number): string {
+  if (!Number.isFinite(value)) return '-';
+  if (Math.abs(value) >= 1000) {
+    return `${(value / 1000).toFixed(1)}k`;
+  }
+  return String(Math.round(value));
+}
+
+function getTeamLabel(name: string): string {
+  const map: Record<string, string> = {
     'Team Spirit': 'Spirit',
     'Xtreme Gaming': 'XG',
     'Team Liquid': 'Liquid',
-    'Evil Geniuses': 'EG',
     'PSG.LGD': 'LGD',
-    'Team Secret': 'Secret',
-    'OG': 'OG',
-    'Nigma Galaxy': 'Nigma',
-    'Tundra Esports': 'Tundra',
     'Gaimin Gladiators': 'GG',
-    'betera': 'Betera',
-    'Aurora': 'Aurora',
   };
-  return abbrs[name] || name;
+  return map[name] || name;
 }
 
-// Circular Progress Ring
-function CircularProgress({ value, size = 40, color = '#22c55e' }: { value: number; size?: number; color?: string }) {
-  const radius = (size - 6) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (value / 100) * circumference;
-  
-  return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="3"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        className="transition-all duration-500"
-      />
-    </svg>
-  );
-}
+function buildLaneData(players: Player[]): LaneData[] {
+  const radiant = players.filter((p) => p.player_slot < 128);
+  const dire = players.filter((p) => p.player_slot >= 128);
 
-// Hero Icon with hover synergy
-function HeroIcon({ heroId, heroesData }: { heroId: number; heroesData: HeroesData }) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  
-  return (
-    <div 
-      className="relative group"
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
-    >
-      <img 
-        src={getHeroImg(heroId, heroesData)} 
-        alt={getHeroName(heroId)}
-        className="w-10 h-10 rounded-lg object-cover border border-white/10 hover:border-yellow-400/50 transition-all duration-200 hover:scale-110"
-      />
-      {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-xs text-yellow-400 rounded whitespace-nowrap border border-white/10 z-10">
-          配合度: {Math.floor(Math.random() * 30 + 70)}%
-        </div>
-      )}
-    </div>
-  );
+  const byLaneR: Record<number, Player[]> = { 1: [], 2: [], 3: [] };
+  const byLaneD: Record<number, Player[]> = { 1: [], 2: [], 3: [] };
+
+  radiant.forEach((p) => {
+    const lane = p.lane || 1;
+    if (byLaneR[lane]) byLaneR[lane].push(p);
+  });
+  dire.forEach((p) => {
+    const lane = p.lane || 1;
+    if (byLaneD[lane]) byLaneD[lane].push(p);
+  });
+
+  const defs = [
+    { lane: 1, laneName: 'TOP LANE' },
+    { lane: 2, laneName: 'MID LANE' },
+    { lane: 3, laneName: 'BOT LANE' },
+  ];
+
+  const minute = 10;
+  return defs.map(({ lane, laneName }) => {
+    const radiantRows: LaneSideRow[] = (byLaneR[lane] || []).map((p) => ({
+      player: p,
+      goldAt10: getValueAt(p.gold_t, minute),
+      xpAt10: getValueAt(p.xp_t, minute),
+      lhAt10: getValueAt(p.lh_t, minute),
+      dnAt10: getValueAt(p.dn_t, minute),
+    }));
+
+    const direRows: LaneSideRow[] = (byLaneD[lane] || []).map((p) => ({
+      player: p,
+      goldAt10: getValueAt(p.gold_t, minute),
+      xpAt10: getValueAt(p.xp_t, minute),
+      lhAt10: getValueAt(p.lh_t, minute),
+      dnAt10: getValueAt(p.dn_t, minute),
+    }));
+
+    const radiantGoldAt10 = radiantRows.reduce((sum, r) => sum + r.goldAt10, 0);
+    const direGoldAt10 = direRows.reduce((sum, r) => sum + r.goldAt10, 0);
+    const radiantXpAt10 = radiantRows.reduce((sum, r) => sum + r.xpAt10, 0);
+    const direXpAt10 = direRows.reduce((sum, r) => sum + r.xpAt10, 0);
+
+    const winner: 'radiant' | 'dire' | 'even' =
+      radiantGoldAt10 > direGoldAt10 ? 'radiant' : direGoldAt10 > radiantGoldAt10 ? 'dire' : 'even';
+
+    return {
+      laneName,
+      radiant: radiantRows,
+      dire: direRows,
+      radiantGoldAt10,
+      direGoldAt10,
+      radiantXpAt10,
+      direXpAt10,
+      winner,
+    };
+  });
 }
 
 export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesData }: LaningAnalysisProps) {
@@ -162,274 +177,150 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetch(`https://api.opendota.com/api/matches/${matchId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) {
-          setMatch(data);
-        }
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) setMatch(data);
       })
-      .catch(console.error)
+      .catch(() => setMatch(null))
       .finally(() => setLoading(false));
   }, [matchId]);
 
+  const laneData = useMemo(() => buildLaneData(match?.players || []), [match]);
+
+  const totalEfficiency = useMemo(() => {
+    const rows = match?.players || [];
+    const radiantRows = rows.filter((p) => p.player_slot < 128);
+    const direRows = rows.filter((p) => p.player_slot >= 128);
+
+    const radiant = radiantRows.reduce((sum, p) => sum + Number(p.lane_efficiency || 0), 0) / Math.max(1, radiantRows.length);
+    const dire = direRows.reduce((sum, p) => sum + Number(p.lane_efficiency || 0), 0) / Math.max(1, direRows.length);
+
+    return { radiant, dire };
+  }, [match]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center py-14">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
       </div>
     );
   }
 
   if (!match) {
-    return <div className="text-center py-8 text-slate-500">加载失败</div>;
+    return <div className="py-8 text-center text-sm text-slate-500">对线数据加载失败</div>;
   }
 
-  const radiantPlayers = match.players.filter(p => p.player_slot < 128);
-  const direPlayers = match.players.filter(p => p.player_slot >= 128);
-  const analysis = analyzeLanes(radiantPlayers, direPlayers);
-
   return (
-    <div className="space-y-4 font-sans">
-      {/* Header */}
-      <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          {/* Radiant Team */}
-          <div className="text-base sm:text-xl font-bold text-green-400 break-words text-center flex-1">{getTeamAbbr(radiantTeamName)}</div>
-          
-          {/* Match Info */}
-          <div className="flex items-center justify-center gap-2 text-slate-400 shrink-0">
-            <Clock className="w-4 h-4" />
-            <span className="text-sm">{formatDuration(match.duration || 0)}</span>
+    <div className="space-y-3 sm:space-y-4">
+      <section className="rounded-xl border border-slate-800 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.95))] px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="min-w-0 text-xs sm:text-sm font-semibold text-emerald-300 truncate">{getTeamLabel(radiantTeamName)}</div>
+          <div className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900/70 px-2 py-1 text-[11px] text-slate-300">
+            <Clock3 className="h-3 w-3" />
+            {formatDuration(match.duration || 0)}
           </div>
-          
-          {/* Dire Team */}
-          <div className="text-base sm:text-xl font-bold text-red-400 break-words text-center flex-1">{getTeamAbbr(direTeamName)}</div>
+          <div className="min-w-0 text-right text-xs sm:text-sm font-semibold text-rose-300 truncate">{getTeamLabel(direTeamName)}</div>
         </div>
-      </div>
+        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
+          <div className="rounded border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-emerald-100">
+            对线效率 {Math.max(0, totalEfficiency.radiant * 100).toFixed(1)}%
+          </div>
+          <div className="rounded border border-rose-500/25 bg-rose-500/10 px-2 py-1 text-rose-100 text-right">
+            对线效率 {Math.max(0, totalEfficiency.dire * 100).toFixed(1)}%
+          </div>
+        </div>
+      </section>
 
-      {/* Lane Cards - 3 Column Grid */}
-      <div className="grid grid-cols-1 gap-3">
-        {analysis.lanes.map((lane, idx) => (
-          <LaneCard key={idx} lane={lane} heroesData={heroesData} />
-        ))}
-      </div>
+      {laneData.map((lane) => {
+        const totalGold = lane.radiantGoldAt10 + lane.direGoldAt10;
+        const radiantGoldPct = totalGold > 0 ? (lane.radiantGoldAt10 / totalGold) * 100 : 50;
+        const goldDiff = lane.radiantGoldAt10 - lane.direGoldAt10;
 
-      {/* Efficiency Stats */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10 flex items-center justify-between">
-          <div>
-            <div className="text-sm text-slate-400 mb-1">{radiantTeamName}</div>
-            <div className="text-lg font-bold text-green-400">{(analysis.radiantEfficiency * 100).toFixed(1)}% 效率</div>
-          </div>
-          <CircularProgress value={analysis.radiantEfficiency * 100} color="#22c55e" />
-        </div>
-        <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10 flex items-center justify-between">
-          <div>
-            <div className="text-sm text-slate-400 mb-1">{direTeamName}</div>
-            <div className="text-lg font-bold text-red-400">{(analysis.direEfficiency * 100).toFixed(1)}% 效率</div>
-          </div>
-          <CircularProgress value={analysis.direEfficiency * 100} color="#ef4444" />
-        </div>
-      </div>
+        return (
+          <section key={lane.laneName} className="rounded-xl border border-slate-800 bg-slate-900/45 p-2.5 sm:p-3.5">
+            <header className="mb-2 flex items-center justify-between">
+              <div className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/70 px-2 py-0.5 text-[10px] sm:text-[11px] tracking-wide text-slate-300">
+                <Zap className="h-3 w-3 text-amber-300" />
+                {lane.laneName}
+              </div>
+              <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] ${
+                lane.winner === 'radiant'
+                  ? 'border border-emerald-500/35 bg-emerald-500/10 text-emerald-200'
+                  : lane.winner === 'dire'
+                    ? 'border border-rose-500/35 bg-rose-500/10 text-rose-200'
+                    : 'border border-slate-600 bg-slate-800/60 text-slate-300'
+              }`}>
+                {lane.winner !== 'even' && <Crown className="h-3 w-3" />}
+                {lane.winner === 'radiant' ? 'Radiant 优势' : lane.winner === 'dire' ? 'Dire 优势' : '均势'}
+              </div>
+            </header>
+
+            <div className="mb-2 rounded border border-slate-800 bg-slate-950/60 p-2">
+              <div className="mb-1 flex items-center justify-between text-[10px] text-slate-400">
+                <span>10:00 经济对比</span>
+                <span className={goldDiff >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
+                  {goldDiff >= 0 ? '+' : ''}{formatK(goldDiff)}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, Math.min(100, radiantGoldPct))}%` }} />
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[10px]">
+                <span className="text-emerald-300">{formatK(lane.radiantGoldAt10)}</span>
+                <span className="text-rose-300">{formatK(lane.direGoldAt10)}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+              <div className="space-y-1.5">
+                {lane.radiant.map((row) => (
+                  <PlayerLaneRow key={`r-${lane.laneName}-${row.player.account_id}-${row.player.hero_id}`} row={row} heroesData={heroesData} tone="radiant" />
+                ))}
+                {lane.radiant.length === 0 && <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-xs text-slate-500">暂无英雄</div>}
+              </div>
+
+              <div className="space-y-1.5">
+                {lane.dire.map((row) => (
+                  <PlayerLaneRow key={`d-${lane.laneName}-${row.player.account_id}-${row.player.hero_id}`} row={row} heroesData={heroesData} tone="dire" />
+                ))}
+                {lane.dire.length === 0 && <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-xs text-slate-500">暂无英雄</div>}
+              </div>
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
 
-interface LaneData {
-  name: string;
-  radiant: { player: Player; goldDiff: number; xpDiff: number; lh: number; dn: number }[];
-  dire: { player: Player; goldDiff: number; xpDiff: number; lh: number; dn: number }[];
-  advantage: 'radiant' | 'dire' | 'even';
-}
-
-interface LaneAnalysisResult {
-  lanes: LaneData[];
-  radiantLaneKills: number;
-  direLaneKills: number;
-  radiantEfficiency: number;
-  direEfficiency: number;
-}
-
-function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData }) {
-  const { name, radiant, dire, advantage } = lane;
-  
-  const radiantGold = radiant.reduce((sum, p) => sum + p.goldDiff, 0);
-  const direGold = dire.reduce((sum, p) => sum + p.goldDiff, 0);
-  const radiantXp = radiant.reduce((sum, p) => sum + p.xpDiff, 0);
-  const direXp = dire.reduce((sum, p) => sum + p.xpDiff, 0);
-  const radiantLh = radiant.reduce((sum, p) => sum + p.lh, 0);
-  const radiantDn = radiant.reduce((sum, p) => sum + p.dn, 0);
-  const direLh = dire.reduce((sum, p) => sum + p.lh, 0);
-  const direDn = dire.reduce((sum, p) => sum + p.dn, 0);
-  
-  const goldDiff = radiantGold - direGold;
-  const totalGold = radiantGold + Math.abs(direGold);
-  const goldPercent = totalGold > 0 ? (radiantGold / totalGold) * 100 : 50;
-  
-  const totalXp = radiantXp + Math.abs(direXp);
-  const xpPercent = totalXp > 0 ? (radiantXp / totalXp) * 100 : 50;
+function PlayerLaneRow({ row, heroesData, tone }: { row: LaneSideRow; heroesData: HeroesData; tone: 'radiant' | 'dire' }) {
+  const toneCls =
+    tone === 'radiant'
+      ? 'border-emerald-500/20 bg-emerald-500/5'
+      : 'border-rose-500/20 bg-rose-500/5';
 
   return (
-    <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10">
-      {/* Lane Header - crown on advantage side */}
-      <div className="flex items-center justify-center gap-2 mb-4">
-        {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400 animate-pulse flex-shrink-0" />}
-        {advantage === 'dire' && <span className="w-4 flex-shrink-0" />}
-        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500 flex-shrink-0" />}
-        <span className="text-sm font-medium text-slate-300">{name}</span>
-        {advantage === 'radiant' && <span className="w-4 flex-shrink-0" />}
-        {advantage === 'dire' && <Crown className="w-4 h-4 text-red-400 animate-pulse flex-shrink-0" />}
-        {advantage === 'even' && <Minus className="w-4 h-4 text-slate-500 flex-shrink-0" />}
-      </div>
-
-      {/* 3-Column Grid */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:items-center">
-        {/* Team A (Radiant) */}
-        <div className="flex flex-wrap gap-1 justify-start sm:justify-start">
-          {radiant.map((p, i) => (
-            <HeroIcon key={i} heroId={p.player.hero_id} heroesData={heroesData} />
-          ))}
-          {radiant.length === 0 && <span className="text-slate-500 text-sm">空</span>}
+    <div className={`rounded-lg border px-2 py-1.5 ${toneCls}`}>
+      <div className="flex items-center gap-2">
+        <img
+          src={getHeroImg(row.player.hero_id, heroesData)}
+          alt={getHeroName(row.player.hero_id)}
+          className="h-8 w-12 rounded object-cover"
+          loading="lazy"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-medium text-slate-100">{getPlayerName(row.player)}</div>
+          <div className="truncate text-[10px] text-slate-400">{getHeroName(row.player.hero_id)}</div>
         </div>
-
-        {/* VS Stats */}
-        <div className="flex flex-col items-center gap-1 sm:min-w-[100px]">
-          <div className="text-xs text-slate-400">
-            {radiantLh}/{radiantDn} vs {direLh}/{direDn}
-          </div>
-          <div className={`text-sm font-bold ${goldDiff > 0 ? 'text-green-400' : goldDiff < 0 ? 'text-red-400' : 'text-slate-400'}`}>
-            {goldDiff > 0 ? '+' : ''}{goldDiff.toLocaleString()}
-          </div>
-        </div>
-
-        {/* Team B (Dire) */}
-        <div className="flex flex-wrap gap-1 justify-start sm:justify-end">
-          {dire.map((p, i) => (
-            <HeroIcon key={i} heroId={p.player.hero_id} heroesData={heroesData} />
-          ))}
-          {dire.length === 0 && <span className="text-slate-500 text-sm">空</span>}
-        </div>
-      </div>
-
-      {/* Dual Progress Bars */}
-      <div className="mt-4 space-y-2">
-        {/* Net Worth Bar */}
-        <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] text-white/70 font-medium">经济</span>
-          </div>
-          {/* Left side (Radiant) - green when winning, gray when losing */}
-          <div 
-            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-green-500 animate-pulse shadow-lg shadow-green-500/50' : 'bg-slate-500/50'}`}
-            style={{ width: `${goldPercent}%` }}
-          />
-          {/* Right side (Dire) - red when winning, gray when losing */}
-          <div 
-            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50' : advantage === 'radiant' ? 'bg-slate-500/50' : 'bg-red-500/70'}`}
-            style={{ width: `${100 - goldPercent}%` }}
-          />
-        </div>
-        
-        {/* Experience Bar */}
-        <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] text-white/70 font-medium">经验</span>
-          </div>
-          {/* Left side (Radiant) - blue when winning, gray when losing */}
-          <div 
-            className={`absolute inset-y-0 left-0 transition-all duration-500 ${advantage === 'radiant' ? 'bg-blue-500 animate-pulse shadow-lg shadow-blue-500/50' : 'bg-slate-500/50'}`}
-            style={{ width: `${xpPercent}%` }}
-          />
-          {/* Right side (Dire) - purple when winning, gray when losing */}
-          <div 
-            className={`absolute inset-y-0 right-0 transition-all duration-500 ${advantage === 'dire' ? 'bg-purple-500 animate-pulse shadow-lg shadow-purple-500/50' : advantage === 'radiant' ? 'bg-slate-500/50' : 'bg-purple-500/70'}`}
-            style={{ width: `${100 - xpPercent}%` }}
-          />
+        <div className="text-right text-[10px] text-slate-300 leading-tight">
+          <div>LH/DN {row.lhAt10}/{row.dnAt10}</div>
+          <div className={tone === 'radiant' ? 'text-emerald-300' : 'text-rose-300'}>10分金 {formatK(row.goldAt10)}</div>
         </div>
       </div>
     </div>
   );
-}
-
-function analyzeLanes(radiantPlayers: Player[], direPlayers: Player[]): LaneAnalysisResult {
-  const result: LaneAnalysisResult = {
-    lanes: [],
-    radiantLaneKills: 0,
-    direLaneKills: 0,
-    radiantEfficiency: 0,
-    direEfficiency: 0,
-  };
-
-  const minute = 10;
-  const radiantByLane: Record<number, Player[]> = { 1: [], 2: [], 3: [] };
-  const direByLane: Record<number, Player[]> = { 1: [], 2: [], 3: [] };
-
-  radiantPlayers.forEach(p => {
-    const lane = p.lane || 1;
-    if (radiantByLane[lane]) radiantByLane[lane].push(p);
-  });
-
-  direPlayers.forEach(p => {
-    const lane = p.lane || 1;
-    if (direByLane[lane]) direByLane[lane].push(p);
-  });
-
-  // lane: 1=上路, 2=中路, 3=下路 (地图位置)
-  // 直接按地图位置匹配：上路vs上路，中路vs中路，下路vs下路
-  const matchups = [
-    { rLane: 1, dLane: 1, name: '上路 (Top)' },
-    { rLane: 2, dLane: 2, name: '中路 (Mid)' },
-    { rLane: 3, dLane: 3, name: '下路 (Bot)' },
-  ];
-
-  for (const matchup of matchups) {
-    const rPlayers = radiantByLane[matchup.rLane] || [];
-    const dPlayers = direByLane[matchup.dLane] || [];
-    
-    if (rPlayers.length > 0 && dPlayers.length > 0) {
-      const radiantData = rPlayers.map(p => ({
-        player: p,
-        goldDiff: getValueAtMinute(p.gold_t, minute),
-        xpDiff: getValueAtMinute(p.xp_t, minute),
-        lh: getValueAtMinute(p.lh_t, minute),
-        dn: getValueAtMinute(p.dn_t, minute),
-      }));
-      
-      const direData = dPlayers.map(p => ({
-        player: p,
-        goldDiff: getValueAtMinute(p.gold_t, minute),
-        xpDiff: getValueAtMinute(p.xp_t, minute),
-        lh: getValueAtMinute(p.lh_t, minute),
-        dn: getValueAtMinute(p.dn_t, minute),
-      }));
-      
-      const rTotalGold = radiantData.reduce((s, p) => s + p.goldDiff, 0);
-      const dTotalGold = direData.reduce((s, p) => s + p.goldDiff, 0);
-      
-      result.lanes.push({
-        name: matchup.name,
-        radiant: radiantData,
-        dire: direData,
-        advantage: rTotalGold > dTotalGold ? 'radiant' : dTotalGold > rTotalGold ? 'dire' : 'even',
-      });
-    }
-  }
-
-  radiantPlayers.forEach(p => {
-    result.radiantLaneKills += p.lane_kills || 0;
-    result.radiantEfficiency += p.lane_efficiency || 0;
-  });
-  
-  direPlayers.forEach(p => {
-    result.direLaneKills += p.lane_kills || 0;
-    result.direEfficiency += p.lane_efficiency || 0;
-  });
-  
-  result.radiantEfficiency /= radiantPlayers.length || 1;
-  result.direEfficiency /= direPlayers.length || 1;
-
-  return result;
 }
 
 export default LaningAnalysis;
