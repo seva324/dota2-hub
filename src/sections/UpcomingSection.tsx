@@ -171,7 +171,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
-  const isChineseTeam = (name?: string | null) => isTeamInRegion(name, teams, ['China']);
+  const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
+    isTeamInRegion(team || null, teams, ['China']);
   // viewMode removed
 
   const now = Math.floor(Date.now() / 1000);
@@ -199,8 +200,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
 
   // 过滤中国战队比赛
   const cnMatches = filteredMatches.filter(m => 
-    isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }, teams) ||
-    isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name }, teams)
+    isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }) ||
+    isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name })
   );
 
   const displayMatches = filter === 'cn' ? cnMatches : filteredMatches;
@@ -288,8 +289,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
               const dateMatches = matchesByDate[date];
               const filteredDateMatches = filter === 'cn' 
                 ? dateMatches.filter((m) =>
-                    isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }, teams) ||
-                    isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name }, teams)
+                    isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }) ||
+                    isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name })
                   )
                 : dateMatches;
 
@@ -310,8 +311,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                   {/* 比赛卡片网格 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredDateMatches.map((match) => {
-                      const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name }, teams);
-                      const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name }, teams);
+                      const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name });
+                      const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name });
                       const hasCN = radiantIsCN || direIsCN;
                       const countdown = formatCountdown(match.start_time);
                       const period = getMatchPeriod(match.start_time);

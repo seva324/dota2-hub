@@ -284,7 +284,8 @@ export function TournamentSection({
   const [stageFilter, setStageFilter] = useState<StageFilterKey>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
-  const isChineseTeam = (name?: string | null) => isTeamInRegion(name, teams, ['China']);
+  const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
+    isTeamInRegion(team || null, teams, ['China']);
   const teamAliasToTag = useMemo(() => {
     const aliasMap = new Map<string, string>();
     for (const team of teams) {
@@ -428,8 +429,8 @@ export function TournamentSection({
 
   // 统计中国战队参与的比赛
   const cnSeriesCount = currentSeries.filter(s => 
-    isChineseTeam({ teamId: s.radiant_team_id, name: s.radiant_team_name }, teams) ||
-    isChineseTeam({ teamId: s.dire_team_id, name: s.dire_team_name }, teams)
+    isChineseTeam({ teamId: s.radiant_team_id, name: s.radiant_team_name }) ||
+    isChineseTeam({ teamId: s.dire_team_id, name: s.dire_team_name })
   ).length;
 
   return (
@@ -572,8 +573,8 @@ export function TournamentSection({
               {filteredSeries.length > 0 ? (
                 <div className="space-y-3">
                   {filteredSeries.map((series) => {
-                    const teamAIsCN = isChineseTeam({ teamId: series.radiant_team_id, name: series.radiant_team_name }, teams);
-                    const teamBIsCN = isChineseTeam({ teamId: series.dire_team_id, name: series.dire_team_name }, teams);
+                    const teamAIsCN = isChineseTeam({ teamId: series.radiant_team_id, name: series.radiant_team_name });
+                    const teamBIsCN = isChineseTeam({ teamId: series.dire_team_id, name: series.dire_team_name });
                     const hasCN = teamAIsCN || teamBIsCN;
                     const isExpanded = expandedSeries.has(series.series_id);
                     
@@ -757,7 +758,7 @@ export function TournamentSection({
                                 {series.games.map((game, idx) => {
                                   const winnerName = game.radiant_win ? game.radiant_team_name : game.dire_team_name;
                                   const winnerTeamId = game.radiant_win ? game.radiant_team_id : game.dire_team_id;
-                                  const winnerIsCN = isChineseTeam({ teamId: winnerTeamId, name: winnerName }, teams);
+                                  const winnerIsCN = isChineseTeam({ teamId: winnerTeamId, name: winnerName });
                                   
                                   // Get hero picks for this game
                                   const picks = game.picks_bans || [];

@@ -24,16 +24,6 @@ interface Match {
   tournament_name_cn?: string;
 }
 
-interface TeamLike {
-  team_id?: string | null;
-  id?: string | null;
-  name?: string | null;
-  name_cn?: string | null;
-  tag?: string | null;
-  region?: string | null;
-  is_cn_team?: number | boolean;
-}
-
 // 战队Logo fallback 映射（当 API 没有返回 logo 时使用）
 const teamLogoFallbackMap: Record<string, string> = {
   'xg': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
@@ -119,7 +109,8 @@ function getMatchSection(match: Match): string {
 
 export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams?: TeamLike[] }) {
   const [showCountdown, setShowCountdown] = useState(true);
-  const isChineseTeam = (name?: string | null) => isTeamInRegion(name, teams, ['China']);
+  const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
+    isTeamInRegion(team || null, teams, ['China']);
 
   const scrollToTournaments = () => {
     document.querySelector('#tournaments')?.scrollIntoView({ behavior: 'smooth' });
@@ -130,15 +121,15 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
   
   const cnMatches = upcoming
     .filter(m => m.start_time >= now && m.start_time <= tomorrow && (
-      isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }, teams) ||
-      isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name }, teams)
+      isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }) ||
+      isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name })
     ))
     .sort((a, b) => a.start_time - b.start_time)
     .slice(0, 4);
 
   const getMatchLayout = (match: Match) => {
-    const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name }, teams);
-    const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name }, teams);
+    const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name });
+    const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name });
     if (radiantIsCN && !direIsCN) return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: true };
     if (direIsCN && !radiantIsCN) return { top: match.dire_team_name, bottom: match.radiant_team_name, topIsCN: true };
     return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: radiantIsCN };
