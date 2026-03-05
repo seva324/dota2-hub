@@ -74,10 +74,21 @@ jobs:
       - name: Copy data to dist
         run: |
           mkdir -p dist/data dist/images
-          ls -la public/data/
-          cp -r public/data/* dist/data/
-          ls -la public/images/
-          cp -r public/images/* dist/images/
+
+          if [ -d public/data ] && [ "$(ls -A public/data 2>/dev/null)" ]; then
+            ls -la public/data/
+            cp -r public/data/. dist/data/
+          else
+            echo "public/data is missing or empty, skip copy."
+          fi
+
+          if [ -d public/images ] && [ "$(ls -A public/images 2>/dev/null)" ]; then
+            ls -la public/images/
+            cp -r public/images/. dist/images/
+          else
+            echo "public/images is missing or empty, skip copy."
+          fi
+
           ls -la dist/images/
 
       - name: Upload artifact
