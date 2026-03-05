@@ -322,7 +322,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5">
+      <DialogContent className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-x-hidden overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5">
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -606,7 +606,7 @@ function TeamSummaryTable({
         </table>
       </div>
 
-      <div className="space-y-2 p-2 md:hidden">
+      <div className="space-y-1.5 p-1.5 md:hidden">
         {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
           const displayName = getPlayerDisplayName(player);
           const laneName = getLaneName(player.lane, isRadiant);
@@ -617,42 +617,42 @@ function TeamSummaryTable({
           return (
             <div
               key={`m-${player.player_slot}-${player.account_id}-${player.hero_id}`}
-              className="rounded-lg border border-slate-800 bg-slate-900/40 p-2.5"
+              className="rounded-lg border border-slate-800 bg-slate-900/40 p-1.5"
             >
-              <div className="flex items-start gap-2.5">
-                <div className="h-10 w-10 rounded overflow-hidden bg-slate-800 shrink-0">
+              <div className="flex items-start gap-1.5">
+                <div className="h-8 w-8 rounded overflow-hidden bg-slate-800 shrink-0">
                   <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-slate-100">{displayName}</div>
-                  <div className="truncate text-xs text-slate-400">
+                  <div className="text-xs font-medium text-slate-100 leading-tight break-all">{displayName}</div>
+                  <div className="text-[10px] text-slate-400 leading-tight break-all">
                     {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-slate-500">K/D/A</div>
-                  <div className="text-sm font-semibold text-slate-100">
+                  <div className="text-[10px] text-slate-500 leading-none">KDA</div>
+                  <div className="text-xs font-semibold text-slate-100">
                     <span className="text-green-400">{player.kills}</span>/<span className="text-red-400">{player.deaths}</span>/{player.assists}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
+              <div className="mt-1 grid grid-cols-2 gap-1 text-[10px]">
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
                   <span className="text-slate-500">等级</span> {player.level}
                 </div>
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
                   <span className="text-slate-500">补刀</span> {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
                 </div>
-                <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400">
+                <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400 col-span-2">
                   <span className="text-slate-500">NET</span> {formatCompact(getNetWorth(player))}
                 </div>
-                <div className="col-span-3 rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
+                <div className="col-span-2 rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300 break-all">
                   <span className="text-slate-500">GPM/XPM</span> {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
                 </div>
               </div>
 
-              <div className="mt-2">
+              <div className="mt-1">
                 <ItemStrip
                   mainItems={mainItems}
                   backpackItems={backpackItems}
@@ -661,6 +661,7 @@ function TeamSummaryTable({
                   hasShard={hasAghanimShard(player)}
                   itemsMap={itemsMap}
                   collapsible
+                  compactMobile
                 />
               </div>
             </div>
@@ -681,6 +682,7 @@ function ItemStrip({
   hasShard,
   itemsMap,
   collapsible = false,
+  compactMobile = false,
 }: {
   mainItems: number[];
   backpackItems: number[];
@@ -689,6 +691,7 @@ function ItemStrip({
   hasShard: boolean;
   itemsMap: Record<number, ItemInfo>;
   collapsible?: boolean;
+  compactMobile?: boolean;
 }) {
   const renderItem = (itemId: number, options?: { compact?: boolean; muted?: boolean }) => {
     const compact = options?.compact || false;
@@ -698,7 +701,7 @@ function ItemStrip({
       <div
         key={`${itemId}-${compact ? 'compact' : 'main'}-${muted ? 'muted' : 'full'}`}
         className={`rounded overflow-hidden border bg-slate-800 flex-shrink-0 ${
-          compact ? 'w-7 h-5' : 'w-10 h-7'
+          compact ? 'w-6 h-4.5 sm:w-7 sm:h-5' : compactMobile ? 'w-8 h-6 sm:w-10 sm:h-7' : 'w-10 h-7'
         } ${muted ? 'opacity-65 border-slate-700' : 'border-slate-600'}`}
         title={item?.name || ''}
       >
@@ -721,7 +724,7 @@ function ItemStrip({
             <div key={`main-${idx}`}>{renderItem(id)}</div>
           ))}
           <div
-            className="w-10 h-7 rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0"
+            className={`${compactMobile ? 'w-8 h-6 sm:w-10 sm:h-7' : 'w-10 h-7'} rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0`}
             title={neutral?.name || '中立物品'}
           >
             {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
@@ -740,11 +743,11 @@ function ItemStrip({
           ))}
         </div>
       </div>
-      <div className="relative w-9 h-8 mt-0.5 flex-shrink-0">
+      <div className={`${compactMobile ? 'w-7 h-7 mt-0' : 'w-9 h-8 mt-0.5'} relative flex-shrink-0`}>
         <img
           src={`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
           alt="Aghanim's Scepter"
-          className="absolute right-0 top-0 w-6 h-6 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain rotate-[7deg] z-10"
+          className={`${compactMobile ? 'w-5 h-5' : 'w-6 h-6'} absolute right-0 top-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain rotate-[7deg] z-10`}
           title={hasScepter ? 'A杖: 已拥有' : 'A杖: 未拥有'}
           loading="lazy"
           referrerPolicy="no-referrer"
@@ -752,7 +755,7 @@ function ItemStrip({
         <img
           src={`https://www.opendota.com/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`}
           alt="Aghanim's Shard"
-          className="absolute left-0 bottom-0 w-6 h-6 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain -rotate-[7deg]"
+          className={`${compactMobile ? 'w-5 h-5' : 'w-6 h-6'} absolute left-0 bottom-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain -rotate-[7deg]`}
           title={hasShard ? '魔晶: 已拥有' : '魔晶: 未拥有'}
           loading="lazy"
           referrerPolicy="no-referrer"
