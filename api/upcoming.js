@@ -103,7 +103,18 @@ export default async function handler(req, res) {
       };
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+      upcoming: result,
+      teams: teams.map(t => ({
+        team_id: t.team_id,
+        name: t.name,
+        name_cn: t.name_cn,
+        tag: t.tag,
+        logo_url: normalizeLogo(t.logo_url),
+        region: t.region,
+        is_cn_team: t.is_cn_team
+      }))
+    });
   } catch (e) {
     console.error('[Upcoming API] Error:', e.message);
     return res.status(500).json({ error: e.message });

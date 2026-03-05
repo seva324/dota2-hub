@@ -37,6 +37,7 @@ export function AIReportSection({ match }: AIReportSectionProps) {
   const [report, setReport] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [manualHint, setManualHint] = useState<string>('');
 
   useEffect(() => {
     generateReport();
@@ -45,13 +46,19 @@ export function AIReportSection({ match }: AIReportSectionProps) {
   const generateReport = async () => {
     setLoading(true);
     setError('');
+    setManualHint('');
 
     try {
-      const res = await fetch('https://dota2-hub.vercel.app/api/generate-report', {
+      const res = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId: match.match_id })
       });
+
+      if (res.status === 404) {
+        setManualHint(`node scripts/manual-api/generate-report.js --match-id ${match.match_id}`);
+        throw new Error('AI战报已切换为手动脚本模式');
+      }
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status}`);
@@ -88,6 +95,11 @@ export function AIReportSection({ match }: AIReportSectionProps) {
       <div className="flex flex-col items-center justify-center p-8">
         <div className="text-red-400 mb-4">⚠️ 生成失败</div>
         <p className="text-slate-400 text-sm">{error}</p>
+        {manualHint && (
+          <div className="mt-3 rounded border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs text-slate-300">
+            手动生成命令: <code>{manualHint}</code>
+          </div>
+        )}
         <button 
           onClick={generateReport}
           className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"

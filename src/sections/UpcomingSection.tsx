@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
+import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
+import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { isTeamInRegion } from '@/lib/teams';
 
 
@@ -171,6 +174,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
+  const [playerFlyoutOpen, setPlayerFlyoutOpen] = useState(false);
+  const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
     isTeamInRegion(team || null, teams, ['China']);
   // viewMode removed
@@ -214,6 +219,18 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
       logo_url: team.logo_url || null
     });
     setFlyoutOpen(true);
+  };
+
+  const openPlayerFlyout = async (accountId: number) => {
+    if (!Number.isFinite(accountId) || accountId <= 0) return;
+    try {
+      const model = await fetchPlayerProfileFlyoutModel(accountId);
+      if (!model) return;
+      setPlayerFlyoutModel(model);
+      setPlayerFlyoutOpen(true);
+    } catch (error) {
+      console.error('[UpcomingSection] Failed to load player profile:', error);
+    }
   };
 
   return (
@@ -483,6 +500,13 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
         matches={allMatches}
         upcoming={upcoming}
         onTeamSelect={(team) => openTeamFlyout(team)}
+        onPlayerClick={openPlayerFlyout}
+      />
+
+      <PlayerProfileFlyout
+        open={playerFlyoutOpen}
+        onOpenChange={setPlayerFlyoutOpen}
+        player={playerFlyoutModel}
       />
     </section>
   );

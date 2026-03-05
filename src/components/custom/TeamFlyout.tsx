@@ -121,6 +121,7 @@ export interface TeamFlyoutProps {
   matches?: MatchLike[];
   upcoming?: MatchLike[];
   onTeamSelect?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
+  onPlayerClick?: (accountId: number) => void;
 }
 
 export function TeamFlyout({
@@ -130,7 +131,8 @@ export function TeamFlyout({
   teams = [],
   matches = [],
   upcoming = [],
-  onTeamSelect
+  onTeamSelect,
+  onPlayerClick
 }: TeamFlyoutProps) {
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
   const [teamHeroesByMatch, setTeamHeroesByMatch] = useState<Record<string, number[]>>({});
@@ -498,6 +500,7 @@ export function TeamFlyout({
             onTeamSelect?.(team);
           }
         }}
+        onPlayerClick={onPlayerClick}
       />
     </>
   );
