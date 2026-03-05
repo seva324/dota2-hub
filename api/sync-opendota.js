@@ -50,7 +50,7 @@ async function saveTeam(db, team) {
         name = EXCLUDED.name,
         tag = EXCLUDED.tag,
         logo_url = EXCLUDED.logo_url,
-        region = EXCLUDED.region,
+        region = COALESCE(NULLIF(EXCLUDED.region, ''), teams.region),
         updated_at = NOW()
     `;
   } catch (e) {

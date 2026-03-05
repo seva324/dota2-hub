@@ -3,7 +3,7 @@ import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
-import { isChineseTeam } from '@/lib/teams';
+import { isTeamInRegion } from '@/lib/teams';
 
 
 
@@ -171,6 +171,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
+  const isChineseTeam = (name?: string | null) => isTeamInRegion(name, teams, ['China']);
   // viewMode removed
 
   const now = Math.floor(Date.now() / 1000);

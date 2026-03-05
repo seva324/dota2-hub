@@ -47,12 +47,7 @@ async function saveTeamFromOpenDota(db, teamName) {
       await db`
         INSERT INTO teams (team_id, name, tag, logo_url, region, created_at, updated_at)
         VALUES (${String(team.team_id)}, ${team.name}, ${team.tag || null}, ${team.logo_url || null}, ${team.region || null}, NOW(), NOW())
-        ON CONFLICT (team_id) DO UPDATE SET
-          name = EXCLUDED.name,
-          tag = EXCLUDED.tag,
-          logo_url = EXCLUDED.logo_url,
-          region = COALESCE(EXCLUDED.region, teams.region),
-          updated_at = NOW()
+        ON CONFLICT (team_id) DO UPDATE SET name = EXCLUDED.name, tag = EXCLUDED.tag, logo_url = EXCLUDED.logo_url, updated_at = NOW()
       `;
       return String(team.team_id);
     }
@@ -66,7 +61,7 @@ async function saveTeamFromOpenDota(db, teamName) {
  * Save upcoming series to database
  */
 async function saveUpcomingSeries(db, series) {
-  if (!db || !series?.id) return;
+  if (!db || !series?.id) return false;
 
   try {
     await db`
@@ -80,41 +75,98 @@ async function saveUpcomingSeries(db, series) {
         status = EXCLUDED.status,
         updated_at = NOW()
     `;
+    return true;
   } catch (e) {
     console.log(`[Liquipedia] Failed to save ${series.id}: ${e.message}`);
+    return false;
   }
 }
 
-function normalizeTeamName(value) {
-  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+function normalizeName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/&amp;/g, '&')
+    .replace(/[._-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function buildTeamLookupFromDb(targetTeams) {
-  const lookup = new Map();
-  for (const team of targetTeams || []) {
-    const aliases = [team.name, team.tag];
-    for (const alias of aliases) {
-      const normalized = normalizeTeamName(alias);
-      if (!normalized) continue;
-      lookup.set(normalized, team);
+function hashTournamentName(name) {
+  const input = String(name || '').toLowerCase().trim();
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0; // 32-bit
+  }
+  return hash || 1;
+}
+
+async function resolveLeagueId(db, tournamentName) {
+  const name = String(tournamentName || '').trim();
+  const lower = normalizeName(name);
+  let resolvedLeagueId = null;
+
+  // 1) First use existing tournaments table by name.
+  const exact = await db`SELECT league_id FROM tournaments WHERE LOWER(name) = ${lower} LIMIT 1`;
+  if (exact.length > 0) {
+    resolvedLeagueId = exact[0].league_id;
+  }
+
+  // 2) Heuristic reuse: prefer existing PGL Wallachia season rows if name variants differ.
+  if (!resolvedLeagueId && lower.includes('pgl') && lower.includes('wallachia')) {
+    const wallachia = await db.query(
+      `SELECT league_id
+       FROM tournaments
+       WHERE LOWER(name) LIKE '%pgl%'
+         AND LOWER(name) LIKE '%wallachia%'
+       ORDER BY
+         CASE
+           WHEN LOWER(name) LIKE '%season 7%' OR LOWER(name) LIKE '%s7%' THEN 0
+           ELSE 1
+         END,
+         start_time DESC NULLS LAST,
+         league_id ASC
+       LIMIT 1`
+    );
+    if (wallachia.length > 0) resolvedLeagueId = wallachia[0].league_id;
+  }
+
+  // 3) Known mappings as fallback.
+  if (!resolvedLeagueId && lower.includes('dreamleague') && (lower.includes('28') || lower.includes('season 28'))) resolvedLeagueId = 19269;
+  if (!resolvedLeagueId && lower.includes('dreamleague') && (lower.includes('27') || lower.includes('season 27'))) resolvedLeagueId = 18988;
+  if (!resolvedLeagueId && lower.includes('blast') && lower.includes('slam') && lower.includes('vi')) resolvedLeagueId = 19099;
+  if (!resolvedLeagueId && lower.includes('esl') && lower.includes('challenger') && lower.includes('china')) resolvedLeagueId = 19130;
+
+  // 4) Last resort: synthetic id + insert tournaments row for FK consistency.
+  if (!resolvedLeagueId) {
+    resolvedLeagueId = 1000000000 + (Math.abs(hashTournamentName(name)) % 1000000000);
+    for (let i = 0; i < 10; i++) {
+      const existing = await db`SELECT league_id, name FROM tournaments WHERE league_id = ${resolvedLeagueId} LIMIT 1`;
+      if (existing.length === 0 || String(existing[0].name || '').toLowerCase() === lower) break;
+      resolvedLeagueId++;
     }
+    console.log(`[Liquipedia] Unknown tournament mapped to synthetic league_id=${resolvedLeagueId}: ${name}`);
   }
-  return lookup;
-}
 
-/**
- * Match a Liquipedia team name against teams.region-backed target teams.
- */
-function matchTargetTeam(teamName, teamLookup) {
-  const normalized = normalizeTeamName(teamName);
-  if (!normalized) return null;
-  return teamLookup.get(normalized) || null;
+  await db`
+    INSERT INTO tournaments (league_id, name, tier, status, updated_at)
+    VALUES (${resolvedLeagueId}, ${name || 'Unknown Tournament'}, 'S', 'upcoming', NOW())
+    ON CONFLICT (league_id) DO UPDATE
+    SET
+      name = CASE
+        WHEN tournaments.name IS NULL OR tournaments.name = '' THEN EXCLUDED.name
+        ELSE tournaments.name
+      END,
+      updated_at = NOW()
+  `;
+
+  return resolvedLeagueId;
 }
 
 /**
  * Fetch upcoming matches from Liquipedia:Matches
  */
-async function fetchLiquipediaUpcoming(targetTeams) {
+async function fetchLiquipediaUpcoming() {
   const url = 'https://liquipedia.net/dota2/api.php?action=parse&page=Liquipedia:Matches&format=json&prop=text';
 
   const res = await fetch(url, {
@@ -148,7 +200,6 @@ async function fetchLiquipediaUpcoming(targetTeams) {
   const weekLater = now + 7 * 24 * 60 * 60;
 
   const upcoming = [];
-  const teamLookup = buildTeamLookupFromDb(targetTeams);
 
   // Split HTML by match blocks - check for different patterns
   let matchBlocks = html.split(/<div class="match-info">/);
@@ -202,31 +253,8 @@ async function fetchLiquipediaUpcoming(targetTeams) {
       debug.sampleTeams.push(teamNames.slice(0, 4));
     }
 
-    // Check if any of our target teams are in this match
-    // teamNames[0] = left team (radiant), teamNames[1] = right team (dire)
-    let matchedTeam = null;
-    let isOurTeamRadiant = false;
-
-    // First check if our target team is on the left (radiant position)
-    for (let i = 0; i < teamNames.length; i++) {
-      const name = teamNames[i];
-
-      const team = matchTargetTeam(name, teamLookup);
-      if (team) {
-        matchedTeam = { team_id: String(team.team_id), name: team.name, region: team.region };
-        isOurTeamRadiant = (i === 0);  // true if left team, false if right team
-        break;
-      }
-      if (matchedTeam) break;
-    }
-
-    if (!matchedTeam) continue; // Not one of our target teams
-
-    // Determine opponent based on our team's position
-    const opponentName = isOurTeamRadiant ? teamNames[1] : teamNames[0];
-
-    // Debug: log all extracted teams
-    console.log(`[Liquipedia] Debug teams: teamNames=[${teamNames.join(', ')}], matched=${matchedTeam.name}, opp=${opponentName}`);
+    const radiantName = teamNames[0];
+    const direName = teamNames[1];
 
     // Extract tournament
     const tournMatch = block.match(/class="match-info-tournament"[^]*?title="([^"]+)"/);
@@ -244,24 +272,21 @@ async function fetchLiquipediaUpcoming(targetTeams) {
     );
     if (!isTargetLeague) continue;
 
-    // Skip if opponent is the same as our team (BYE match)
-    if (opponentName.toLowerCase() === matchedTeam.name.toLowerCase()) {
-      console.log(`[Liquipedia] Skipping BYE match: ${matchedTeam.name} vs ${opponentName}`);
+    // Skip BYE/self matches
+    if (normalizeName(radiantName) === normalizeName(direName)) {
+      console.log(`[Liquipedia] Skipping BYE match: ${radiantName} vs ${direName}`);
       continue;
     }
 
-    // Debug: log extracted team names
-    console.log(`[Liquipedia] Match: [${teamNames[0]}] vs [${teamNames[1]}] -> our=${matchedTeam.name}(${isOurTeamRadiant ? 'radiant' : 'dire'}) opp=${opponentName}`);
+    console.log(`[Liquipedia] Match candidate: [${radiantName}] vs [${direName}] @ ${tournament}`);
 
     // Extract best-of
     const boMatch = block.match(/\(Bo(\d+)\)/i);
     const bestOf = boMatch ? `BO${boMatch[1]}` : 'BO3';
 
     upcoming.push({
-      ourTeamId: matchedTeam.team_id,
-      ourTeamName: matchedTeam.name,
-      opponentName,
-      isOurTeamRadiant,
+      radiantName,
+      direName,
       tournament,
       bestOf,
       timestamp
@@ -271,10 +296,10 @@ async function fetchLiquipediaUpcoming(targetTeams) {
   // Sort by timestamp
   upcoming.sort((a, b) => a.timestamp - b.timestamp);
 
-  console.log(`[Liquipedia] Found ${upcoming.length} upcoming matches for our teams`);
+  console.log(`[Liquipedia] Found ${upcoming.length} upcoming match candidates`);
 
   // Debug: return team names extracted
-  console.log(`[Liquipedia] DEBUG: ${JSON.stringify(upcoming.map(u => ({ teams: [u.ourTeamName, u.opponentName], isRadiant: u.isOurTeamRadiant })))}`);
+  console.log(`[Liquipedia] DEBUG: ${JSON.stringify(upcoming.map(u => ({ teams: [u.radiantName, u.direName], tournament: u.tournament })))}`);
 
   return { upcoming, debug };
 }
@@ -314,86 +339,63 @@ export default async function handler(req, res) {
     `;
     console.log('[Sync Liquipedia] Cleaned up series that already have matches');
 
-    // Step 3: Load teams from database and use region mapping from teams table.
-    console.log('[Sync Liquipedia] Loading teams from database...');
-    const allTeams = await db`SELECT team_id, name, tag, region FROM teams`;
-    const teamNameToId = new Map();
-
-    for (const t of allTeams) {
-      teamNameToId.set(t.name.toLowerCase(), t.team_id);
-      if (t.tag) {
-        teamNameToId.set(t.tag.toLowerCase(), t.team_id);
-      }
-    }
-    console.log(`[Sync Liquipedia] Loaded ${allTeams.length} teams from database`);
-
-    const targetTeams = allTeams.filter((t) => {
-      const region = String(t.region || '').trim().toLowerCase();
-      return region && region !== 'unknown';
-    });
-    console.log(`[Sync Liquipedia] Loaded ${targetTeams.length} target teams from teams.region`);
-
-    // Step 4: Fetch from Liquipedia
+    // Step 3: Fetch from Liquipedia
     console.log('[Sync Liquipedia] Fetching from Liquipedia...');
     let liquipediaUpcoming = [];
 
     try {
-      const result = await fetchLiquipediaUpcoming(targetTeams);
+      const result = await fetchLiquipediaUpcoming();
       liquipediaUpcoming = result.upcoming;
     } catch (e) {
       console.log(`[Sync Liquipedia] Liquipedia fetch failed: ${e.message}`);
     }
 
+    // Step 4: Get teams from database
+    console.log('[Sync Liquipedia] Loading teams from database...');
+    const allTeams = await db`SELECT team_id, name, tag FROM teams`;
+    const teamNameToId = new Map();
+
+    for (const t of allTeams) {
+      teamNameToId.set(normalizeName(t.name), t.team_id);
+      if (t.tag) {
+        teamNameToId.set(normalizeName(t.tag), t.team_id);
+      }
+    }
+    console.log(`[Sync Liquipedia] Loaded ${allTeams.length} teams from database`);
+
     // Step 5: Save new upcoming series
     let saved = 0;
 
     for (const m of liquipediaUpcoming) {
-      const ourNameLower = String(m.ourTeamName || '').toLowerCase();
-      const opponentLower = m.opponentName.toLowerCase();
+      const radiantNameNorm = normalizeName(m.radiantName);
+      const direNameNorm = normalizeName(m.direName);
 
-      // Find team IDs from database
-      const existingOurTeamId = m.ourTeamId ? String(m.ourTeamId) : null;
-      let ourTeamId = existingOurTeamId || teamNameToId.get(ourNameLower);
-      let opponentTeamId = teamNameToId.get(opponentLower);
+      // Only keep matches where at least one team already exists in teams table.
+      let radiantTeamId = teamNameToId.get(radiantNameNorm);
+      let direTeamId = teamNameToId.get(direNameNorm);
+      if (!radiantTeamId && !direTeamId) continue;
 
       // If not found, fetch from OpenDota
-      if (!ourTeamId) {
-        ourTeamId = await saveTeamFromOpenDota(db, m.ourTeamName);
+      if (!radiantTeamId) {
+        radiantTeamId = await saveTeamFromOpenDota(db, m.radiantName);
+        if (radiantTeamId) teamNameToId.set(radiantNameNorm, radiantTeamId);
       }
-      if (!opponentTeamId) {
-        opponentTeamId = await saveTeamFromOpenDota(db, m.opponentName);
+      if (!direTeamId) {
+        direTeamId = await saveTeamFromOpenDota(db, m.direName);
+        if (direTeamId) teamNameToId.set(direNameNorm, direTeamId);
       }
 
-      if (!ourTeamId || !opponentTeamId) {
-        console.log(`[Liquipedia] Could not find team IDs: ${m.ourTeamName} -> ${ourTeamId}, ${m.opponentName} -> ${opponentTeamId}`);
+      if (!radiantTeamId && !direTeamId) {
+        console.log(`[Liquipedia] Could not resolve both team IDs: ${m.radiantName} -> ${radiantTeamId}, ${m.direName} -> ${direTeamId}`);
         continue;
       }
 
-      const radiantTeamId = m.isOurTeamRadiant ? ourTeamId : opponentTeamId;
-      const direTeamId = m.isOurTeamRadiant ? opponentTeamId : ourTeamId;
+      const leagueId = await resolveLeagueId(db, m.tournament);
 
-      // Determine league_id from tournament name
-      let leagueId = null;
-      const tourneyLower = m.tournament.toLowerCase();
-      if (tourneyLower.includes('dreamleague') && (tourneyLower.includes('28') || tourneyLower.includes('season 28'))) {
-        leagueId = 19269;
-      } else if (tourneyLower.includes('dreamleague') && (tourneyLower.includes('27') || tourneyLower.includes('season 27'))) {
-        leagueId = 18988;
-      } else if (tourneyLower.includes('blast') && tourneyLower.includes('slam') && tourneyLower.includes('vi')) {
-        leagueId = 19099;
-      } else if (tourneyLower.includes('esl') && tourneyLower.includes('challenger') && tourneyLower.includes('china')) {
-        leagueId = 19130;
-      }
+      const seriesId = `${leagueId}_${m.radiantName}_vs_${m.direName}`.toLowerCase().replace(/\s+/g, '_');
+      const id = `${leagueId}_${m.timestamp}_${m.radiantName}_vs_${m.direName}`.toLowerCase().replace(/\s+/g, '_');
 
-      if (!leagueId) {
-        console.log(`[Liquipedia] Skipping unknown tournament: ${m.tournament}`);
-        continue;
-      }
-
-      const seriesId = `${leagueId}_${m.ourTeamName}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
-      const id = `${leagueId}_${m.timestamp}_${m.ourTeamName}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
-
-      await saveUpcomingSeries(db, {
+      const ok = await saveUpcomingSeries(db, {
         id,
         series_id: seriesId,
         league_id: leagueId,
@@ -403,7 +405,7 @@ export default async function handler(req, res) {
         series_type: m.bestOf,
         status: 'upcoming'
       });
-      saved++;
+      if (ok) saved++;
     }
 
     console.log(`[Sync Liquipedia] Saved ${saved} upcoming series`);

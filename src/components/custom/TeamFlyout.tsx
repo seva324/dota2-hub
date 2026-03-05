@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Flag, Shield, Target, Trophy } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { isChineseTeam } from '@/lib/teams';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
+import { isChineseTeam } from '@/lib/teams';
 
 type TeamLike = {
   team_id?: string | null;
@@ -320,12 +320,14 @@ export function TeamFlyout({
 
               <div className="flex flex-wrap gap-2 mt-4">
                 {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
-                {(model?.meta?.region || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams)) && (
+                {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams) ? (
                   <Badge variant="outline" className="border-red-500/40 text-red-300">
                     <Flag className="w-3 h-3 mr-1" />
-                    {model?.meta?.region || (isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams) ? 'China' : 'Unknown')}
+                    {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown')
+                      ? model.meta.region
+                      : 'China'}
                   </Badge>
-                )}
+                ) : null}
                 <Badge variant="outline" className="border-slate-600 text-slate-300">
                   <Target className="w-3 h-3 mr-1" />
                   近3个月 {model?.wins ?? 0}-{model?.losses ?? 0}

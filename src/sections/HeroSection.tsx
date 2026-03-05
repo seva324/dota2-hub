@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { isChineseTeam } from '@/lib/teams';
+import { isTeamInRegion } from '@/lib/teams';
+import type { TeamLike } from '@/lib/teams';
 
 interface Match {
   id: number;
@@ -118,6 +119,7 @@ function getMatchSection(match: Match): string {
 
 export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams?: TeamLike[] }) {
   const [showCountdown, setShowCountdown] = useState(true);
+  const isChineseTeam = (name?: string | null) => isTeamInRegion(name, teams, ['China']);
 
   const scrollToTournaments = () => {
     document.querySelector('#tournaments')?.scrollIntoView({ behavior: 'smooth' });
