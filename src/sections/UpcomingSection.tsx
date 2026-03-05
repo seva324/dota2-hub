@@ -226,21 +226,21 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.4)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.4)]">
               <Calendar className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-white">赛事预告</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">赛事预告</h2>
               <p className="text-slate-400 text-sm">Upcoming Matches</p>
             </div>
           </div>
 
           {/* 快速统计和筛选 */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* 中国战队数量 */}
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-xl border border-white/10">
               <Flame className="w-4 h-4 text-red-400" />
               <span className="text-sm text-slate-300">中国战队</span>
               <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
@@ -249,7 +249,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
             </div>
 
             {/* 总场次 */}
-            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 bg-slate-800/60 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-xl border border-white/10">
               <Calendar className="w-4 h-4 text-blue-400" />
               <span className="text-sm text-slate-300">本周场次</span>
               <span className="text-sm sm:text-base font-bold text-white">{filteredMatches.length}</span>
@@ -259,7 +259,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
             <div className="flex bg-slate-800/60 backdrop-blur-sm rounded-xl border border-white/10 p-1">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   filter === 'all'
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white'
@@ -269,7 +269,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
               </button>
               <button
                 onClick={() => setFilter('cn')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   filter === 'cn'
                     ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-lg'
                     : 'text-slate-400 hover:text-white'
@@ -309,7 +309,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                   </div>
 
                   {/* 比赛卡片网格 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {filteredDateMatches.map((match) => {
                       const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name });
                       const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name });
@@ -334,15 +334,15 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                             <div className="absolute inset-0 bg-gradient-to-br from-red-600/5 to-orange-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                           )}
 
-                          <CardContent className="p-5 relative">
+                          <CardContent className="p-3 sm:p-5 relative">
                             {/* 赛事信息头部 */}
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasCN ? 'bg-gradient-to-br from-red-600/30 to-orange-600/30' : 'bg-slate-800/60'} border ${hasCN ? 'border-red-500/30' : 'border-slate-700'}`}>
                                   <Trophy className={`w-4 h-4 ${hasCN ? 'text-red-400' : 'text-blue-400'}`} />
                                 </div>
-                                <div>
-                                  <div className="text-sm font-medium text-slate-200">{match.tournament_name}</div>
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium text-slate-200 truncate">{match.tournament_name}</div>
                                   <div className="text-xs text-slate-500">{match.series_type}</div>
                                 </div>
                               </div>
@@ -357,7 +357,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                             </div>
 
                             {/* 时间信息 */}
-                            <div className="flex items-center justify-between mb-4 p-3 bg-slate-800/40 rounded-xl border border-white/5">
+                            <div className="flex items-center justify-between mb-3 sm:mb-4 p-2.5 sm:p-3 bg-slate-800/40 rounded-xl border border-white/5">
                               <div className="flex items-center gap-2">
                                 <Clock className={`w-4 h-4 ${countdown === 'Live' ? 'text-green-400 animate-pulse' : 'text-slate-400'}`} />
                                 <span className={`text-sm font-bold ${countdown === 'Live' ? 'text-green-400' : 'text-white'}`}>
@@ -371,11 +371,11 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                             </div>
 
                             {/* 对阵展示 */}
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4">
                               {/* Radiant 队 */}
                               <button
                                 type="button"
-                                className={`flex-1 flex items-center gap-3 text-left ${radiantIsCN ? 'group/team-a' : ''}`}
+                                className={`flex-1 flex items-center gap-2 sm:gap-3 text-left ${radiantIsCN ? 'group/team-a' : ''}`}
                                 onClick={() => openTeamFlyout({
                                   team_id: match.radiant_team_id ? String(match.radiant_team_id) : null,
                                   name: match.radiant_team_name,
@@ -383,14 +383,14 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                                 })}
                               >
                                 <div className={`
-                                  w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300
+                                  w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border transition-all duration-300
                                   ${radiantIsCN
                                     ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)] group-hover/team-a:scale-110'
                                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                   }
                                 `}>
                                   {getTeamLogo(match.radiant_team_logo, match.radiant_team_name) ? (
-                                    <img src={getTeamLogo(match.radiant_team_logo, match.radiant_team_name)} alt="" className="w-10 h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    <img src={getTeamLogo(match.radiant_team_logo, match.radiant_team_name)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
                                   )}
@@ -406,7 +406,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                               </button>
 
                               {/* VS */}
-                              <div className="flex items-center justify-center">
+                              <div className="hidden sm:flex items-center justify-center">
                                 <div className="px-3 py-1 bg-slate-800/60 rounded-full border border-white/10">
                                   <span className="text-xs font-bold text-slate-400">VS</span>
                                 </div>
@@ -415,7 +415,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                               {/* Dire 队 */}
                               <button
                                 type="button"
-                                className={`flex-1 flex items-center gap-3 justify-end text-right ${direIsCN ? 'group/team-b' : ''}`}
+                                className={`flex-1 flex items-center gap-2 sm:gap-3 justify-end text-right ${direIsCN ? 'group/team-b' : ''}`}
                                 onClick={() => openTeamFlyout({
                                   team_id: match.dire_team_id ? String(match.dire_team_id) : null,
                                   name: match.dire_team_name,
@@ -431,14 +431,14 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                                   )}
                                 </div>
                                 <div className={`
-                                  w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300
+                                  w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border transition-all duration-300
                                   ${direIsCN
                                     ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)] group-hover/team-b:scale-110'
                                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                   }
                                 `}>
                                   {getTeamLogo(match.dire_team_logo, match.dire_team_name) ? (
-                                    <img src={getTeamLogo(match.dire_team_logo, match.dire_team_name)} alt="" className="w-10 h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    <img src={getTeamLogo(match.dire_team_logo, match.dire_team_name)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
                                   )}

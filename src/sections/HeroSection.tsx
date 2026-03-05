@@ -136,7 +136,7 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[88vh] sm:min-h-screen flex items-center justify-center overflow-hidden">
       {/* Cyberpunk Background */}
       <div className="absolute inset-0 bg-slate-950">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-900/30 via-slate-950 to-slate-950" />
@@ -144,7 +144,7 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-16 text-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
         {/* Neon Badge */}
         <div className="flex flex-wrap justify-center gap-2 mb-4">
           <Badge className="px-3 py-1.5 bg-gradient-to-r from-red-600/20 to-orange-500/20 text-red-400 border border-red-500/30 text-xs font-bold shadow-[0_0_20px_rgba(239,68,68,0.3)]">
@@ -156,12 +156,12 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
         </div>
 
         {/* Gradient Title with Glow */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4">
           <span className="text-white">DOTA2 </span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]">Pro Hub</span>
         </h1>
 
-        <p className="text-sm text-slate-300 mb-8 px-4 max-w-xl mx-auto">专业的DOTA2战报与赛事预测平台</p>
+        <p className="text-xs sm:text-sm text-slate-300 mb-6 sm:mb-8 px-2 sm:px-4 max-w-xl mx-auto">专业的DOTA2战报与赛事预测平台</p>
 
         {/* Glass CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
@@ -174,16 +174,16 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
         </div>
 
         {/* Glass Stats Cards */}
-        <div className="grid grid-cols-4 gap-3 max-w-lg mx-auto mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-lg mx-auto mb-6 sm:mb-8">
           {[
             { value: '3', label: '中国战队', color: 'from-red-500 to-orange-500' },
             { value: '13+', label: 'T1赛事', color: 'from-purple-500 to-pink-500' },
             { value: '$13M', label: '奖金池', color: 'from-yellow-500 to-amber-500' },
             { value: '实时', label: '更新', color: 'from-green-500 to-emerald-500' },
           ].map((stat, i) => (
-            <div key={i} className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-3 hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all">
-              <div className={`text-xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>{stat.value}</div>
-              <div className="text-[10px] text-slate-400">{stat.label}</div>
+            <div key={i} className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-2.5 sm:p-3 hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all">
+              <div className={`text-lg sm:text-xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>{stat.value}</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -202,7 +202,7 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
             </div>
 
             {/* Match Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {cnMatches.map((match) => {
                 const layout = getMatchLayout(match);
                 return (
@@ -224,11 +224,11 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
                         <div className={`flex items-center gap-2 py-1.5 border-b border-white/5 ${layout.topIsCN ? 'text-red-400' : ''}`}>
                           {getTeamLogo(layout.topIsCN ? match.radiant_team_logo : match.dire_team_logo, layout.top) ? <img src={getTeamLogo(layout.topIsCN ? match.radiant_team_logo : match.dire_team_logo, layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
 
-                          <span className="text-sm font-bold">{renderTeamName(layout.top)}</span>
+                          <span className="text-sm font-bold truncate">{renderTeamName(layout.top)}</span>
                         </div>
                         <div className="flex items-center gap-2 py-1.5">
                           {getTeamLogo(layout.topIsCN ? match.dire_team_logo : match.radiant_team_logo, layout.bottom) ? <img src={getTeamLogo(layout.topIsCN ? match.dire_team_logo : match.radiant_team_logo, layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
-                          <span className="text-sm font-bold text-white">{renderTeamName(layout.bottom)}</span>
+                          <span className="text-sm font-bold text-white truncate">{renderTeamName(layout.bottom)}</span>
                         </div>
                       </div>
                     </CardContent>

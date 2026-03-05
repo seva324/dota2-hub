@@ -322,7 +322,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-7xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800">
+      <DialogContent className="w-[96vw] sm:max-w-7xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 p-3 sm:p-6">
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -399,22 +399,22 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
             </div>
 
             <Tabs defaultValue="players" className="w-full">
-              <TabsList className="bg-slate-800/50 mb-4 grid grid-cols-4">
-                <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+              <TabsList className="bg-slate-800/50 mb-4 flex w-full overflow-x-auto">
+                <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">KDA 概要</span>
+                  <span>KDA</span>
                 </TabsTrigger>
-                <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">经济</span>
+                  <span>经济</span>
                 </TabsTrigger>
-                <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
                   <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">对线</span>
+                  <span>对线</span>
                 </TabsTrigger>
-                <TabsTrigger value="aireport" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm">
+                <TabsTrigger value="aireport" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[92px] flex-1 sm:flex-none">
                   <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="hidden xs:inline">AI战报</span>
+                  <span>AI战报</span>
                 </TabsTrigger>
               </TabsList>
 
