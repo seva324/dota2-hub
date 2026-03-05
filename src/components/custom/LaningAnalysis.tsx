@@ -212,22 +212,29 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
     return <div className="py-8 text-center text-sm text-slate-500">对线数据加载失败</div>;
   }
 
+  const winnerSide: 'radiant' | 'dire' = match.radiant_win ? 'radiant' : 'dire';
+  const sideTextClass = (side: 'radiant' | 'dire') => (side === winnerSide ? 'text-emerald-300' : 'text-rose-300');
+  const sideBoxClass = (side: 'radiant' | 'dire') =>
+    side === winnerSide
+      ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-100'
+      : 'border-rose-500/25 bg-rose-500/10 text-rose-100';
+
   return (
     <div className="space-y-3 sm:space-y-4">
       <section className="rounded-xl border border-slate-800 bg-[linear-gradient(145deg,rgba(15,23,42,0.88),rgba(2,6,23,0.95))] px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <div className="min-w-0 text-xs sm:text-sm font-semibold text-emerald-300 truncate">{getTeamLabel(radiantTeamName)}</div>
+          <div className={`min-w-0 text-xs sm:text-sm font-semibold truncate ${sideTextClass('radiant')}`}>{getTeamLabel(radiantTeamName)}</div>
           <div className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900/70 px-2 py-1 text-[11px] text-slate-300">
             <Clock3 className="h-3 w-3" />
             {formatDuration(match.duration || 0)}
           </div>
-          <div className="min-w-0 text-right text-xs sm:text-sm font-semibold text-rose-300 truncate">{getTeamLabel(direTeamName)}</div>
+          <div className={`min-w-0 text-right text-xs sm:text-sm font-semibold truncate ${sideTextClass('dire')}`}>{getTeamLabel(direTeamName)}</div>
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
-          <div className="rounded border border-emerald-500/25 bg-emerald-500/10 px-2 py-1 text-emerald-100">
+          <div className={`rounded border px-2 py-1 ${sideBoxClass('radiant')}`}>
             对线效率 {Math.max(0, totalEfficiency.radiant * 100).toFixed(1)}%
           </div>
-          <div className="rounded border border-rose-500/25 bg-rose-500/10 px-2 py-1 text-rose-100 text-right">
+          <div className={`rounded border px-2 py-1 text-right ${sideBoxClass('dire')}`}>
             对线效率 {Math.max(0, totalEfficiency.dire * 100).toFixed(1)}%
           </div>
         </div>
@@ -264,26 +271,43 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
                   {goldDiff >= 0 ? '+' : ''}{formatK(goldDiff)}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, Math.min(100, radiantGoldPct))}%` }} />
+              <div className="h-2 overflow-hidden rounded-full bg-slate-800 relative">
+                <div
+                  className={`h-full absolute left-0 top-0 ${lane.winner === 'radiant' ? (winnerSide === 'radiant' ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-slate-600/70'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, radiantGoldPct))}%` }}
+                />
+                <div
+                  className={`h-full absolute right-0 top-0 ${lane.winner === 'dire' ? (winnerSide === 'dire' ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-slate-600/70'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, 100 - radiantGoldPct))}%` }}
+                />
               </div>
               <div className="mt-1 flex items-center justify-between text-[10px]">
-                <span className="text-emerald-300">{formatK(lane.radiantGoldAt10)}</span>
-                <span className="text-rose-300">{formatK(lane.direGoldAt10)}</span>
+                <span className={sideTextClass('radiant')}>{formatK(lane.radiantGoldAt10)}</span>
+                <span className={sideTextClass('dire')}>{formatK(lane.direGoldAt10)}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
               <div className="space-y-1.5">
                 {lane.radiant.map((row) => (
-                  <PlayerLaneRow key={`r-${lane.laneName}-${row.player.account_id}-${row.player.hero_id}`} row={row} heroesData={heroesData} tone="radiant" />
+                  <PlayerLaneRow
+                    key={`r-${lane.laneName}-${row.player.account_id}-${row.player.hero_id}`}
+                    row={row}
+                    heroesData={heroesData}
+                    tone={winnerSide === 'radiant' ? 'winner' : 'loser'}
+                  />
                 ))}
                 {lane.radiant.length === 0 && <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-xs text-slate-500">暂无英雄</div>}
               </div>
 
               <div className="space-y-1.5">
                 {lane.dire.map((row) => (
-                  <PlayerLaneRow key={`d-${lane.laneName}-${row.player.account_id}-${row.player.hero_id}`} row={row} heroesData={heroesData} tone="dire" />
+                  <PlayerLaneRow
+                    key={`d-${lane.laneName}-${row.player.account_id}-${row.player.hero_id}`}
+                    row={row}
+                    heroesData={heroesData}
+                    tone={winnerSide === 'dire' ? 'winner' : 'loser'}
+                  />
                 ))}
                 {lane.dire.length === 0 && <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-xs text-slate-500">暂无英雄</div>}
               </div>
@@ -295,9 +319,9 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
   );
 }
 
-function PlayerLaneRow({ row, heroesData, tone }: { row: LaneSideRow; heroesData: HeroesData; tone: 'radiant' | 'dire' }) {
+function PlayerLaneRow({ row, heroesData, tone }: { row: LaneSideRow; heroesData: HeroesData; tone: 'winner' | 'loser' }) {
   const toneCls =
-    tone === 'radiant'
+    tone === 'winner'
       ? 'border-emerald-500/20 bg-emerald-500/5'
       : 'border-rose-500/20 bg-rose-500/5';
 
@@ -316,7 +340,7 @@ function PlayerLaneRow({ row, heroesData, tone }: { row: LaneSideRow; heroesData
         </div>
         <div className="text-right text-[10px] text-slate-300 leading-tight">
           <div>LH/DN {row.lhAt10}/{row.dnAt10}</div>
-          <div className={tone === 'radiant' ? 'text-emerald-300' : 'text-rose-300'}>10分金 {formatK(row.goldAt10)}</div>
+          <div className={tone === 'winner' ? 'text-emerald-300' : 'text-rose-300'}>10分金 {formatK(row.goldAt10)}</div>
         </div>
       </div>
     </div>
