@@ -5,7 +5,7 @@ import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
+import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { isTeamInRegion } from '@/lib/teams';
 
@@ -375,11 +375,13 @@ export function TournamentSection({
 
   const openPlayerFlyout = async (accountId: number) => {
     if (!Number.isFinite(accountId) || accountId <= 0) return;
+    setPlayerFlyoutModel(createMinimalPlayerFlyoutModel(accountId));
+    setPlayerFlyoutOpen(true);
     try {
       const model = await fetchPlayerProfileFlyoutModel(accountId);
-      if (!model) return;
-      setPlayerFlyoutModel(model);
-      setPlayerFlyoutOpen(true);
+      if (model) {
+        setPlayerFlyoutModel(model);
+      }
     } catch (error) {
       console.error('[TournamentSection] Failed to load player profile:', error);
     }

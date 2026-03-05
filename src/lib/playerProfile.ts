@@ -87,6 +87,17 @@ export interface PlayerFlyoutModel {
   recentMatches?: PlayerFlyoutRecentMatch[];
 }
 
+type ProPlayersSnapshotRow = {
+  name?: string | null;
+  name_cn?: string | null;
+  team_name?: string | null;
+  country_code?: string | null;
+  avatar_url?: string | null;
+  realname?: string | null;
+  birth_year?: number | null;
+  birth_month?: number | null;
+};
+
 export function toBirthMonthYear(month?: number | null, year?: number | null): string {
   if (!month || !year) return '未知';
   const normalizedMonth = Math.min(Math.max(Math.trunc(month), 1), 12);
@@ -229,12 +240,73 @@ export function mapPlayerProfileApiToFlyoutModel(data: any): PlayerFlyoutModel |
   };
 }
 
+export function createMinimalPlayerFlyoutModel(accountId: number): PlayerFlyoutModel {
+  return {
+    accountId,
+    playerName: String(accountId),
+    realName: null,
+    chineseName: null,
+    nationality: null,
+    teamName: null,
+    teamLogoUrl: null,
+    avatarUrl: null,
+    birthMonth: null,
+    birthYear: null,
+    age: null,
+    winRate: null,
+    signatureHero: null,
+    mostPlayedHeroes: [],
+    nextMatch: null,
+    recentMatches: [],
+  };
+}
+
+function buildFallbackFlyoutModel(accountId: number, row: ProPlayersSnapshotRow | null): PlayerFlyoutModel {
+  const fallback = createMinimalPlayerFlyoutModel(accountId);
+  const nationality = row?.country_code ? String(row.country_code).toUpperCase() : null;
+
+  return {
+    ...fallback,
+    playerName: row?.name || fallback.playerName,
+    realName: row?.realname || null,
+    chineseName: nationality === 'CN' ? (row?.name_cn || null) : null,
+    nationality,
+    teamName: row?.team_name || null,
+    avatarUrl: row?.avatar_url || null,
+    birthMonth: toNumber(row?.birth_month),
+    birthYear: toNumber(row?.birth_year),
+  };
+}
+
+async function fetchProPlayersSnapshot(accountId: number): Promise<ProPlayersSnapshotRow | null> {
+  try {
+    const res = await fetch('/api/pro-players');
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || typeof data !== 'object') return null;
+    const row = data[String(accountId)];
+    if (!row || typeof row !== 'object') return null;
+    return row as ProPlayersSnapshotRow;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPlayerProfileFlyoutModel(accountId: number): Promise<PlayerFlyoutModel | null> {
   const id = Number(accountId);
   if (!Number.isFinite(id) || id <= 0) return null;
 
-  const res = await fetch(`/api/player-profile?account_id=${id}`);
-  if (!res.ok) return null;
-  const data = await res.json();
-  return mapPlayerProfileApiToFlyoutModel(data);
+  try {
+    const res = await fetch(`/api/player-profile?account_id=${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      const mapped = mapPlayerProfileApiToFlyoutModel(data);
+      if (mapped) return mapped;
+    }
+  } catch {
+    // fall through to fallback snapshot
+  }
+
+  const snapshot = await fetchProPlayersSnapshot(id);
+  return buildFallbackFlyoutModel(id, snapshot);
 }
