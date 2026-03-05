@@ -939,7 +939,6 @@ export function TournamentSection({
           if (!open) setSelectedMatchId(null);
         }}
         onTeamClick={(team) => {
-          setSelectedMatchId(null);
           openTeamFlyout(team);
         }}
       />

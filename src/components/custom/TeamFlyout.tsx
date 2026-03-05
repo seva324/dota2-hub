@@ -495,7 +495,6 @@ export function TeamFlyout({
         }}
         onTeamClick={(team) => {
           if (team?.name) {
-            setSelectedMatchId(null);
             onTeamSelect?.(team);
           }
         }}

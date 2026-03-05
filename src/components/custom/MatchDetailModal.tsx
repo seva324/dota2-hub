@@ -472,7 +472,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="left" className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain">
+        <SheetContent side="left" showCloseButton={false} className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain">
           <div className="h-full overflow-x-hidden overflow-y-auto p-2 sm:p-5">
             {detailBody}
           </div>
@@ -483,7 +483,10 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-x-hidden overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5">
+      <DialogContent
+        showCloseButton={false}
+        className="w-[82vw] sm:max-w-6xl max-h-[90vh] overflow-x-hidden overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5"
+      >
         {detailBody}
       </DialogContent>
     </Dialog>
@@ -530,6 +533,7 @@ function TeamSummaryTable({
   const teamPicksBans = picksBans
     .filter((entry) => entry.team === teamCode)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const sortedPlayers = [...players].sort((a, b) => getNetWorth(b) - getNetWorth(a));
 
   return (
     <div className="rounded-lg border border-slate-800 overflow-hidden">
@@ -547,22 +551,17 @@ function TeamSummaryTable({
       </div>
 
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full min-w-[940px]">
-          <thead className="bg-slate-900/70">
-            <tr className="text-xs text-slate-400">
-              <th className="text-left px-3 py-2 w-[260px]">玩家</th>
-              <th className="text-center px-2 py-2 w-[56px]">等级</th>
-              <th className="text-right px-2 py-2 w-[52px] text-green-400">击杀</th>
-              <th className="text-right px-2 py-2 w-[52px] text-red-400">死亡</th>
-              <th className="text-right px-2 py-2 w-[52px] text-slate-300">助攻</th>
-              <th className="text-right px-2 py-2 w-[90px]">正补/反补</th>
-              <th className="text-right px-2 py-2 w-[80px] text-yellow-400">NET</th>
-              <th className="text-right px-2 py-2 w-[96px]">GPM/XPM</th>
-              <th className="text-left px-3 py-2">物品</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
+        <div className="min-w-[980px]">
+          <header className="grid grid-cols-[minmax(250px,1.6fr)_minmax(120px,0.75fr)_minmax(180px,0.95fr)_minmax(120px,0.75fr)_minmax(280px,1.7fr)] divide-x divide-slate-800 bg-slate-900/70 text-[11px] uppercase tracking-wide text-slate-400">
+            <div className="px-3 py-2">玩家</div>
+            <div className="px-3 py-2 text-center">KDA</div>
+            <div className="px-3 py-2 text-center">经济</div>
+            <div className="px-3 py-2 text-center">GPM / XPM</div>
+            <div className="px-3 py-2 text-center">物品栏</div>
+          </header>
+
+          <div className="divide-y divide-slate-800/80 bg-slate-900/10">
+            {sortedPlayers.map((player) => {
               const displayName = getPlayerDisplayName(player);
               const laneName = getLaneName(player.lane, isRadiant);
               const mainItems = getMainItemIds(player);
@@ -570,32 +569,55 @@ function TeamSummaryTable({
               const neutral = getNeutralItemId(player);
 
               return (
-                <tr key={`${player.player_slot}-${player.account_id}-${player.hero_id}`} className="border-t border-slate-800/70">
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-10 h-10 rounded overflow-hidden bg-slate-800 flex-shrink-0">
-                        <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="w-full h-full object-cover" />
+                <div
+                  key={`${player.player_slot}-${player.account_id}-${player.hero_id}`}
+                  className="grid grid-cols-[minmax(250px,1.6fr)_minmax(120px,0.75fr)_minmax(180px,0.95fr)_minmax(120px,0.75fr)_minmax(280px,1.7fr)] divide-x divide-slate-800/80 transition-colors hover:bg-slate-800/35"
+                >
+                  <div className="px-3 py-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-10 w-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
+                        <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm text-slate-100 truncate">{displayName}</div>
-                        <div className="text-xs text-slate-400 truncate">
-                          {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
+                        <div className="text-sm font-semibold text-slate-100 truncate">{displayName}</div>
+                        <div className="mt-0.5 text-xs text-slate-400 truncate">
+                          {getHeroName(player.hero_id)}
                         </div>
+                        {laneName && <div className="text-[11px] text-slate-500">{laneName}</div>}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-2 py-2 text-center text-sm text-slate-200">{player.level}</td>
-                  <td className="px-2 py-2 text-right text-sm text-green-400">{player.kills}</td>
-                  <td className="px-2 py-2 text-right text-sm text-red-400">{player.deaths}</td>
-                  <td className="px-2 py-2 text-right text-sm text-slate-200">{player.assists}</td>
-                  <td className="px-2 py-2 text-right text-sm text-slate-300">
-                    {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
-                  </td>
-                  <td className="px-2 py-2 text-right text-sm text-yellow-400">{formatCompact(getNetWorth(player))}</td>
-                  <td className="px-2 py-2 text-right text-sm text-slate-300">
-                    {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
-                  </td>
-                  <td className="px-3 py-2">
+                  </div>
+
+                  <div className="px-3 py-2.5 flex flex-col items-center justify-center text-sm">
+                    <div className="font-semibold text-slate-200">
+                      <span className="text-green-400">{player.kills}</span>
+                      <span className="text-slate-500"> / </span>
+                      <span className="text-red-400">{player.deaths}</span>
+                      <span className="text-slate-500"> / </span>
+                      <span className="text-slate-200">{player.assists}</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-slate-500">Lv.{player.level}</div>
+                  </div>
+
+                  <div className="px-3 py-2.5 flex flex-col justify-center gap-1.5 text-xs">
+                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-amber-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+                      NET <b className="text-amber-200">{formatCompact(getNetWorth(player))}</b>
+                    </div>
+                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-1 text-sky-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
+                      LH/DN <b>{formatCompact(player.last_hits)}/{formatCompact(player.denies)}</b>
+                    </div>
+                  </div>
+
+                  <div className="px-3 py-2.5 flex flex-col items-center justify-center text-xs">
+                    <div className="font-semibold text-emerald-300">{formatCompact(player.gold_per_min)}</div>
+                    <div className="text-slate-500">GPM</div>
+                    <div className="mt-1 font-semibold text-cyan-300">{formatCompact(player.xp_per_min)}</div>
+                    <div className="text-slate-500">XPM</div>
+                  </div>
+
+                  <div className="px-3 py-2.5 flex items-center justify-center">
                     <ItemStrip
                       mainItems={mainItems}
                       backpackItems={backpackItems}
@@ -603,33 +625,38 @@ function TeamSummaryTable({
                       hasScepter={hasAghanimScepter(player)}
                       hasShard={hasAghanimShard(player)}
                       itemsMap={itemsMap}
+                      centered
                     />
-                  </td>
-                </tr>
+                  </div>
+                </div>
               );
             })}
 
-            <tr className="border-t border-slate-700 bg-slate-900/40 text-xs text-slate-300">
-              <td className="px-3 py-2" />
-              <td className="px-2 py-2 text-center">{total.level}</td>
-              <td className="px-2 py-2 text-right text-green-400">{total.kills}</td>
-              <td className="px-2 py-2 text-right text-red-400">{total.deaths}</td>
-              <td className="px-2 py-2 text-right">{total.assists}</td>
-              <td className="px-2 py-2 text-right">
-                {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
-              </td>
-              <td className="px-2 py-2 text-right text-yellow-400">{formatCompact(total.netWorth)}</td>
-              <td className="px-2 py-2 text-right">
+            <div className="grid grid-cols-[minmax(250px,1.6fr)_minmax(120px,0.75fr)_minmax(180px,0.95fr)_minmax(120px,0.75fr)_minmax(280px,1.7fr)] divide-x divide-slate-800/80 bg-slate-900/50 text-xs text-slate-300">
+              <div className="px-3 py-2.5 text-slate-400">团队合计</div>
+              <div className="px-3 py-2.5 text-center">
+                <span className="text-green-400 font-semibold">{total.kills}</span>
+                <span className="text-slate-500"> / </span>
+                <span className="text-red-400 font-semibold">{total.deaths}</span>
+                <span className="text-slate-500"> / </span>
+                <span className="font-semibold">{total.assists}</span>
+              </div>
+              <div className="px-3 py-2.5 text-center text-slate-200">
+                LH/DN {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
+                <span className="mx-1.5 text-slate-600">|</span>
+                <span className="text-amber-300 font-semibold">NET {formatCompact(total.netWorth)}</span>
+              </div>
+              <div className="px-3 py-2.5 text-center text-slate-200">
                 {formatCompact(total.gpm)}/{formatCompact(total.xpm)}
-              </td>
-              <td className="px-3 py-2" />
-            </tr>
-          </tbody>
-        </table>
+              </div>
+              <div className="px-3 py-2.5 text-center text-slate-500">-</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-1.5 p-1.5 md:hidden">
-        {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
+        {sortedPlayers.map((player) => {
           const displayName = getPlayerDisplayName(player);
           const laneName = getLaneName(player.lane, isRadiant);
           const mainItems = getMainItemIds(player);
@@ -705,6 +732,7 @@ function ItemStrip({
   itemsMap,
   collapsible = false,
   compactMobile = false,
+  centered = false,
 }: {
   mainItems: number[];
   backpackItems: number[];
@@ -714,6 +742,7 @@ function ItemStrip({
   itemsMap: Record<number, ItemInfo>;
   collapsible?: boolean;
   compactMobile?: boolean;
+  centered?: boolean;
 }) {
   const renderItem = (itemId: number, options?: { compact?: boolean; muted?: boolean }) => {
     const compact = options?.compact || false;
@@ -722,13 +751,13 @@ function ItemStrip({
     return (
       <div
         key={`${itemId}-${compact ? 'compact' : 'main'}-${muted ? 'muted' : 'full'}`}
-        className={`rounded overflow-hidden border bg-slate-800 flex-shrink-0 ${
+        className={`rounded overflow-hidden border bg-slate-800 flex items-center justify-center flex-shrink-0 ${
           compact ? 'w-6 h-4.5 sm:w-7 sm:h-5' : compactMobile ? 'w-8 h-6 sm:w-10 sm:h-7' : 'w-10 h-7'
         } ${muted ? 'opacity-65 border-slate-700' : 'border-slate-600'}`}
         title={item?.name || ''}
       >
         {item?.img ? (
-          <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+          <img src={item.img} alt={item.name} className="w-full h-full object-contain" />
         ) : (
           <div className="w-full h-full" />
         )}
@@ -739,7 +768,7 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   const content = (
-    <div className="flex items-start justify-start gap-1.5">
+    <div className={`flex items-start gap-1.5 ${centered ? 'justify-center' : 'justify-start'}`}>
       <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-1">
           {mainItems.map((id, idx) => (
@@ -749,7 +778,7 @@ function ItemStrip({
             className={`${compactMobile ? 'w-8 h-6 sm:w-10 sm:h-7' : 'w-10 h-7'} rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0`}
             title={neutral?.name || '中立物品'}
           >
-            {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+            {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-contain" /> : <div className="w-full h-full" />}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1 text-slate-400">
@@ -808,15 +837,15 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
   return (
     <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
       <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
-      <div className="flex flex-wrap items-center gap-2 pb-1">
+      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1.5 pb-1">
         {picksBans.map((entry) => {
           const label = entry.is_pick ? '选择' : '禁止';
           const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
           const heroName = getHeroName(entry.hero_id);
 
           return (
-            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="flex-shrink-0">
-              <div className="w-11 h-11 rounded overflow-hidden bg-slate-800 border border-slate-700 relative">
+            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded overflow-hidden bg-slate-800 border border-slate-700 relative mx-auto">
                 <img
                   src={getHeroImg(entry.hero_id)}
                   alt={heroName}
@@ -825,7 +854,7 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
                 />
                 {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
               </div>
-              <aside className="mt-1 text-[11px] text-slate-400 text-center whitespace-nowrap">
+              <aside className="mt-0.5 text-[10px] text-slate-400 text-center whitespace-nowrap">
                 {label} <b className="text-slate-200">{orderText}</b>
               </aside>
             </section>
