@@ -25,7 +25,8 @@
 
 - `GET /api/news`：读取新闻列表（中文优先）
 - `GET/POST /api/sync-news`：手动触发新闻同步与增量翻译
-- `POST /api/translate-news-content`：正文翻译接口（按需使用）
+
+> 说明：`translate-news-content` 与 `backfill-match-details` 已移至 `scripts/manual-api/`，不再作为 Vercel Serverless Function 部署（用于控制 Hobby 计划函数数量）。
 
 `/api/sync-news` 常用参数：
 - `onlySource=bo3|hawk`：仅同步指定来源
