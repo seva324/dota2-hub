@@ -230,9 +230,16 @@ function App() {
 
         // 加载 upcoming 数据 from API (Neon/Redis fallback)
         let upcomingData;
+        let upcomingTeamsData: any[] = [];
         try {
           const upcomingRes = await fetch('/api/upcoming');
-          upcomingData = await upcomingRes.json();
+          const upcomingPayload = await upcomingRes.json();
+          if (Array.isArray(upcomingPayload)) {
+            upcomingData = upcomingPayload;
+          } else {
+            upcomingData = Array.isArray(upcomingPayload?.upcoming) ? upcomingPayload.upcoming : [];
+            upcomingTeamsData = Array.isArray(upcomingPayload?.teams) ? upcomingPayload.teams : [];
+          }
         } catch (e) {
           console.error('Failed to load upcoming from API:', e);
           upcomingData = [];
@@ -333,7 +340,7 @@ function App() {
         const homeData = {
           upcoming,
           allMatches: matches || [],
-          teams: teamsData || [],
+          teams: (teamsData && teamsData.length > 0) ? teamsData : upcomingTeamsData,
           cnMatches: cnMatches.slice(0, 50),
           tournaments: formattedTournaments,
           seriesByTournament: seriesWithLogos,

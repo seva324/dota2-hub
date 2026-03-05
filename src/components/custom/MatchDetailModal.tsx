@@ -251,9 +251,10 @@ interface MatchDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
+  onPlayerClick?: (accountId: number) => void;
 }
 
-export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: MatchDetailModalProps) {
+export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onPlayerClick }: MatchDetailModalProps) {
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -432,6 +433,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
                     picksBans={match.picks_bans || []}
                     itemsMap={itemsMap}
                     onTeamClick={onTeamClick}
+                    onPlayerClick={onPlayerClick}
                   />
                   <TeamSummaryTable
                     teamName={direTeamName}
@@ -442,6 +444,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
                     picksBans={match.picks_bans || []}
                     itemsMap={itemsMap}
                     onTeamClick={onTeamClick}
+                    onPlayerClick={onPlayerClick}
                   />
                 </div>
               </TabsContent>
@@ -502,6 +505,7 @@ function TeamSummaryTable({
   picksBans,
   itemsMap,
   onTeamClick,
+  onPlayerClick,
 }: {
   teamName: string;
   teamRef?: { team_id?: string | null; name?: string | null; logo_url?: string | null } | null;
@@ -511,6 +515,7 @@ function TeamSummaryTable({
   picksBans: PicksBans[];
   itemsMap: Record<number, ItemInfo>;
   onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
+  onPlayerClick?: (accountId: number) => void;
 }) {
   const teamCode = isRadiant ? 0 : 1;
 
@@ -579,7 +584,17 @@ function TeamSummaryTable({
                         <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-100 truncate">{displayName}</div>
+                        {player.account_id ? (
+                          <button
+                            type="button"
+                            className="text-sm font-semibold text-slate-100 truncate hover:underline underline-offset-2 text-left"
+                            onClick={() => onPlayerClick?.(Number(player.account_id))}
+                          >
+                            {displayName}
+                          </button>
+                        ) : (
+                          <div className="text-sm font-semibold text-slate-100 truncate">{displayName}</div>
+                        )}
                         <div className="mt-0.5 text-xs text-slate-400 truncate">
                           {getHeroName(player.hero_id)}
                         </div>
@@ -673,7 +688,17 @@ function TeamSummaryTable({
                   <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-medium text-slate-100 leading-tight break-all">{displayName}</div>
+                  {player.account_id ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-slate-100 leading-tight break-all hover:underline underline-offset-2 text-left"
+                      onClick={() => onPlayerClick?.(Number(player.account_id))}
+                    >
+                      {displayName}
+                    </button>
+                  ) : (
+                    <div className="text-xs font-medium text-slate-100 leading-tight break-all">{displayName}</div>
+                  )}
                   <div className="text-[10px] text-slate-400 leading-tight break-all">
                     {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
                   </div>

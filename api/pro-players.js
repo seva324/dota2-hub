@@ -21,11 +21,20 @@ async function ensureTable(db) {
     CREATE TABLE IF NOT EXISTS pro_players (
       account_id BIGINT PRIMARY KEY,
       name VARCHAR(255),
+      name_cn VARCHAR(255),
+      team_id BIGINT,
       team_name VARCHAR(255),
+      country_code VARCHAR(8),
+      avatar_url TEXT,
       realname VARCHAR(255),
       updated_at TIMESTAMP DEFAULT NOW()
     )
   `);
+
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS name_cn VARCHAR(255)`);
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS team_id BIGINT`);
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS country_code VARCHAR(8)`);
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
 }
 
 export default async function handler(req, res) {
@@ -45,7 +54,7 @@ export default async function handler(req, res) {
   try {
     await ensureTable(db);
     const rows = await db.query(`
-      SELECT account_id, name, team_name, realname
+      SELECT account_id, name, name_cn, team_id, team_name, country_code, avatar_url, realname
       FROM pro_players
       ORDER BY updated_at DESC NULLS LAST, account_id ASC
     `);
@@ -54,7 +63,11 @@ export default async function handler(req, res) {
     for (const row of rows) {
       payload[String(row.account_id)] = {
         name: row.name || null,
+        name_cn: row.name_cn || null,
+        team_id: row.team_id !== null && row.team_id !== undefined ? String(row.team_id) : null,
         team_name: row.team_name || null,
+        country_code: row.country_code || null,
+        avatar_url: row.avatar_url || null,
         realname: row.realname || null
       };
     }

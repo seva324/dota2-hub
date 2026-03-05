@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'lucide-react';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
+import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
+import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { isTeamInRegion } from '@/lib/teams';
 
 // Hero data type
@@ -286,6 +289,8 @@ export function TournamentSection({
   const [stageFilter, setStageFilter] = useState<StageFilterKey>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
+  const [playerFlyoutOpen, setPlayerFlyoutOpen] = useState(false);
+  const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
     isTeamInRegion(team || null, teams, ['China']);
   const teamAliasToTag = useMemo(() => {
@@ -366,6 +371,18 @@ export function TournamentSection({
       logo_url: team.logo_url || null
     });
     setFlyoutOpen(true);
+  };
+
+  const openPlayerFlyout = async (accountId: number) => {
+    if (!Number.isFinite(accountId) || accountId <= 0) return;
+    try {
+      const model = await fetchPlayerProfileFlyoutModel(accountId);
+      if (!model) return;
+      setPlayerFlyoutModel(model);
+      setPlayerFlyoutOpen(true);
+    } catch (error) {
+      console.error('[TournamentSection] Failed to load player profile:', error);
+    }
   };
 
   const currentSeries = selectedTournament ? (seriesByTournament?.[selectedTournament.id] || []) : [];
@@ -930,6 +947,7 @@ export function TournamentSection({
         matches={allMatches}
         upcoming={upcoming}
         onTeamSelect={(team) => openTeamFlyout(team)}
+        onPlayerClick={openPlayerFlyout}
       />
 
       <MatchDetailModal 
@@ -941,6 +959,13 @@ export function TournamentSection({
         onTeamClick={(team) => {
           openTeamFlyout(team);
         }}
+        onPlayerClick={openPlayerFlyout}
+      />
+
+      <PlayerProfileFlyout
+        open={playerFlyoutOpen}
+        onOpenChange={setPlayerFlyoutOpen}
+        player={playerFlyoutModel}
       />
     </section>
   );
