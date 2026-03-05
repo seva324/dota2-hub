@@ -9,6 +9,8 @@ import { isChineseTeam } from '@/lib/teams';
 interface Match {
   id: number;
   match_id: number;
+  radiant_team_id?: string | null;
+  dire_team_id?: string | null;
   radiant_team_name: string;
   radiant_team_name_cn?: string;
   radiant_team_logo?: string;
@@ -19,6 +21,16 @@ interface Match {
   series_type: string;
   tournament_name: string;
   tournament_name_cn?: string;
+}
+
+interface TeamLike {
+  team_id?: string | null;
+  id?: string | null;
+  name?: string | null;
+  name_cn?: string | null;
+  tag?: string | null;
+  region?: string | null;
+  is_cn_team?: number | boolean;
 }
 
 // 战队Logo fallback 映射（当 API 没有返回 logo 时使用）
@@ -104,7 +116,7 @@ function getMatchSection(match: Match): string {
   return `${date.toLocaleString('en-US', { month: 'short' })} ${date.getUTCDate()}`;
 }
 
-export function HeroSection({ upcoming }: { upcoming: Match[] }) {
+export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams?: TeamLike[] }) {
   const [showCountdown, setShowCountdown] = useState(true);
 
   const scrollToTournaments = () => {
@@ -115,13 +127,16 @@ export function HeroSection({ upcoming }: { upcoming: Match[] }) {
   const tomorrow = now + 24 * 3600;
   
   const cnMatches = upcoming
-    .filter(m => m.start_time >= now && m.start_time <= tomorrow && (isChineseTeam(m.radiant_team_name) || isChineseTeam(m.dire_team_name)))
+    .filter(m => m.start_time >= now && m.start_time <= tomorrow && (
+      isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }, teams) ||
+      isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name }, teams)
+    ))
     .sort((a, b) => a.start_time - b.start_time)
     .slice(0, 4);
 
   const getMatchLayout = (match: Match) => {
-    const radiantIsCN = isChineseTeam(match.radiant_team_name);
-    const direIsCN = isChineseTeam(match.dire_team_name);
+    const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name }, teams);
+    const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name }, teams);
     if (radiantIsCN && !direIsCN) return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: true };
     if (direIsCN && !radiantIsCN) return { top: match.dire_team_name, bottom: match.radiant_team_name, topIsCN: true };
     return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: radiantIsCN };

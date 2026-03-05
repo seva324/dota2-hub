@@ -21,49 +21,6 @@ let sql = null;
 
 const OPENDOTA = 'https://api.opendota.com/api';
 
-// Our target teams - key is unique identifier, name is display name
-// Use region to identify Chinese teams: where region = 'China'
-const TARGET_TEAMS = {
-  // China
-  'xg': { id: '8261500', name: 'Xtreme Gaming', tag: 'XG', region: 'China' },
-  'yb': { id: '9351740', name: 'Yakult Brothers', tag: 'YB', region: 'China' },
-  'ybtt': { id: '9579337', name: 'YB.Tearlaments', tag: 'YB.TT', region: 'China' },
-  'roar': { id: '9885310', name: 'Roar Gaming', tag: 'Roar', region: 'China' },
-  'vg': { id: '726228', name: 'Vici Gaming', tag: 'VG', region: 'China' },
-  'gm': { id: '10008067', name: 'Game Master', tag: 'GM', region: 'China' },
-  'refusing': { id: '10007878', name: 'Team Refuser', tag: 'Refuser', region: 'China' },
-  'thriving': { id: '9885928', name: 'Thriving', tag: 'THR', region: 'China' },
-  'lgd': { id: '15', name: 'PSG.LGD', tag: 'LGD', region: 'China' },
-  'azure': { id: '8574561', name: 'Azure Ray', tag: 'AR', region: 'China' },
-  // CIS
-  'spirit': { id: '7119388', name: 'Team Spirit', tag: 'Spirit', region: 'CIS' },
-  'aurora': { id: '9467224', name: 'Aurora Gaming', tag: 'Aurora', region: 'CIS' },
-  'parivision': { id: '9572001', name: 'PARIVISION', tag: 'PARI', region: 'CIS' },
-  'yandex': { id: '9823272', name: 'Team Yandex', tag: 'Yandex', region: 'CIS' },
-  'betboom': { id: '8255888', name: 'BetBoom Team', tag: 'BetBoom', region: 'CIS' },
-  '1w': { id: '9255039', name: '1w Team', tag: '1w', region: 'CIS' },
-  // Europe
-  'liquid': { id: '2163', name: 'Team Liquid', tag: 'Liquid', region: 'Europe' },
-  'tundra': { id: '8291895', name: 'Tundra Esports', tag: 'Tundra', region: 'Europe' },
-  'falcons': { id: '9247354', name: 'Team Falcons', tag: 'Falcons', region: 'Europe' },
-  'mouz': { id: '9338413', name: 'MOUZ', tag: 'MOUZ', region: 'Europe' },
-  'navi': { id: '36', name: 'Natus Vincere', tag: 'Natus Vincere', region: 'Europe' },
-  'nigma': { id: '7554697', name: 'Nigma Galaxy', tag: 'Nigma', region: 'Europe' },
-  'zero': { id: '9600141', name: 'Zero Tenacity', tag: 'Zero', region: 'Europe' },
-  // SEA
-  'og': { id: '2586976', name: 'OG', tag: 'OG', region: 'SEA' },
-  'rekonix': { id: '9828897', name: 'REKONIX', tag: 'REK', region: 'SEA' },
-  // South America
-  'heroic': { id: '9303484', name: 'HEROIC', tag: 'Heroic', region: 'South America' },
-  // North America
-  'gamerlegion': { id: '9964962', name: 'GamerLegion', tag: 'GL', region: 'North America' },
-};
-
-// Helper: Get all Chinese team keys
-const CHINA_TEAMS = Object.entries(TARGET_TEAMS)
-  .filter(([_, t]) => t.region === 'China')
-  .map(([key, _]) => key);
-
 // Target leagues - empty means get all
 const TARGET_LEAGUE_KEYWORDS = [];
 
@@ -90,7 +47,12 @@ async function saveTeamFromOpenDota(db, teamName) {
       await db`
         INSERT INTO teams (team_id, name, tag, logo_url, region, created_at, updated_at)
         VALUES (${String(team.team_id)}, ${team.name}, ${team.tag || null}, ${team.logo_url || null}, ${team.region || null}, NOW(), NOW())
-        ON CONFLICT (team_id) DO UPDATE SET name = EXCLUDED.name, tag = EXCLUDED.tag, logo_url = EXCLUDED.logo_url, updated_at = NOW()
+        ON CONFLICT (team_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          tag = EXCLUDED.tag,
+          logo_url = EXCLUDED.logo_url,
+          region = COALESCE(EXCLUDED.region, teams.region),
+          updated_at = NOW()
       `;
       return String(team.team_id);
     }
@@ -123,61 +85,36 @@ async function saveUpcomingSeries(db, series) {
   }
 }
 
-/**
- * Build team lookup map for matching
- * Maps various forms of team names to their keys
- */
-function buildTeamLookup() {
-  const lookup = {};
+function normalizeTeamName(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
-  // Exact match only - don't use substrings
-  // Key: team key, Value: { variations: array of exact matches, requireWordBoundary: boolean }
-  const teamVariations = {
-    'xg': { variations: ['xtreme gaming', 'xg'], exact: true },
-    'yb': { variations: ['yakult brothers', 'yb', 'ar'], exact: true },
-    'vg': { variations: ['vici gaming', 'vg'], exact: true },
-    'spirit': { variations: ['team spirit', 'spirit'], exact: false },
-    'liquid': { variations: ['team liquid', 'liquid'], exact: false },
-    'tundra': { variations: ['tundra esports', 'tundra'], exact: false },
-    'falcons': { variations: ['team falcons', 'falcons'], exact: false },
-    'og': { variations: ['og'], exact: true },
-    'gaimin': { variations: ['gaimin gladiators', 'gaimin gladiators'], exact: true },
-  };
-
-  for (const [key, config] of Object.entries(teamVariations)) {
-    for (const v of config.variations) {
-      lookup[v] = { key, exact: config.exact };
+function buildTeamLookupFromDb(targetTeams) {
+  const lookup = new Map();
+  for (const team of targetTeams || []) {
+    const aliases = [team.name, team.tag];
+    for (const alias of aliases) {
+      const normalized = normalizeTeamName(alias);
+      if (!normalized) continue;
+      lookup.set(normalized, team);
     }
   }
-
   return lookup;
 }
 
 /**
- * Check if team name matches a pattern
+ * Match a Liquipedia team name against teams.region-backed target teams.
  */
-function matchesPattern(teamName, pattern, requireExact) {
-  const lower = teamName.toLowerCase();
-  const pat = pattern.toLowerCase();
-
-  if (requireExact) {
-    // Exact match only
-    return lower === pat;
-  } else {
-    // Word boundary match - use regex
-    const regex = new RegExp(`\\b${escapeRegex(pat)}\\b`, 'i');
-    return regex.test(lower);
-  }
-}
-
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function matchTargetTeam(teamName, teamLookup) {
+  const normalized = normalizeTeamName(teamName);
+  if (!normalized) return null;
+  return teamLookup.get(normalized) || null;
 }
 
 /**
  * Fetch upcoming matches from Liquipedia:Matches
  */
-async function fetchLiquipediaUpcoming() {
+async function fetchLiquipediaUpcoming(targetTeams) {
   const url = 'https://liquipedia.net/dota2/api.php?action=parse&page=Liquipedia:Matches&format=json&prop=text';
 
   const res = await fetch(url, {
@@ -211,7 +148,7 @@ async function fetchLiquipediaUpcoming() {
   const weekLater = now + 7 * 24 * 60 * 60;
 
   const upcoming = [];
-  const teamLookup = buildTeamLookup();
+  const teamLookup = buildTeamLookupFromDb(targetTeams);
 
   // Split HTML by match blocks - check for different patterns
   let matchBlocks = html.split(/<div class="match-info">/);
@@ -274,12 +211,11 @@ async function fetchLiquipediaUpcoming() {
     for (let i = 0; i < teamNames.length; i++) {
       const name = teamNames[i];
 
-      for (const [pattern, config] of Object.entries(teamLookup)) {
-        if (matchesPattern(name, pattern, config.exact)) {
-          matchedTeam = { key: config.key, name: name };
-          isOurTeamRadiant = (i === 0);  // true if left team, false if right team
-          break;
-        }
+      const team = matchTargetTeam(name, teamLookup);
+      if (team) {
+        matchedTeam = { team_id: String(team.team_id), name: team.name, region: team.region };
+        isOurTeamRadiant = (i === 0);  // true if left team, false if right team
+        break;
       }
       if (matchedTeam) break;
     }
@@ -322,7 +258,7 @@ async function fetchLiquipediaUpcoming() {
     const bestOf = boMatch ? `BO${boMatch[1]}` : 'BO3';
 
     upcoming.push({
-      ourTeamKey: matchedTeam.key,
+      ourTeamId: matchedTeam.team_id,
       ourTeamName: matchedTeam.name,
       opponentName,
       isOurTeamRadiant,
@@ -378,20 +314,9 @@ export default async function handler(req, res) {
     `;
     console.log('[Sync Liquipedia] Cleaned up series that already have matches');
 
-    // Step 3: Fetch from Liquipedia
-    console.log('[Sync Liquipedia] Fetching from Liquipedia...');
-    let liquipediaUpcoming = [];
-
-    try {
-      const result = await fetchLiquipediaUpcoming();
-      liquipediaUpcoming = result.upcoming;
-    } catch (e) {
-      console.log(`[Sync Liquipedia] Liquipedia fetch failed: ${e.message}`);
-    }
-
-    // Step 4: Get teams from database
+    // Step 3: Load teams from database and use region mapping from teams table.
     console.log('[Sync Liquipedia] Loading teams from database...');
-    const allTeams = await db`SELECT team_id, name, tag FROM teams`;
+    const allTeams = await db`SELECT team_id, name, tag, region FROM teams`;
     const teamNameToId = new Map();
 
     for (const t of allTeams) {
@@ -402,30 +327,50 @@ export default async function handler(req, res) {
     }
     console.log(`[Sync Liquipedia] Loaded ${allTeams.length} teams from database`);
 
+    const targetTeams = allTeams.filter((t) => {
+      const region = String(t.region || '').trim().toLowerCase();
+      return region && region !== 'unknown';
+    });
+    console.log(`[Sync Liquipedia] Loaded ${targetTeams.length} target teams from teams.region`);
+
+    // Step 4: Fetch from Liquipedia
+    console.log('[Sync Liquipedia] Fetching from Liquipedia...');
+    let liquipediaUpcoming = [];
+
+    try {
+      const result = await fetchLiquipediaUpcoming(targetTeams);
+      liquipediaUpcoming = result.upcoming;
+    } catch (e) {
+      console.log(`[Sync Liquipedia] Liquipedia fetch failed: ${e.message}`);
+    }
+
     // Step 5: Save new upcoming series
     let saved = 0;
 
     for (const m of liquipediaUpcoming) {
-      const ourTeam = TARGET_TEAMS[m.ourTeamKey];
-      const ourNameLower = ourTeam.name.toLowerCase();
+      const ourNameLower = String(m.ourTeamName || '').toLowerCase();
       const opponentLower = m.opponentName.toLowerCase();
 
       // Find team IDs from database
-      let radiantTeamId = teamNameToId.get(ourNameLower);
-      let direTeamId = teamNameToId.get(opponentLower);
+      const existingOurTeamId = m.ourTeamId ? String(m.ourTeamId) : null;
+      let ourTeamId = existingOurTeamId || teamNameToId.get(ourNameLower);
+      let opponentTeamId = teamNameToId.get(opponentLower);
 
       // If not found, fetch from OpenDota
-      if (!radiantTeamId) {
-        radiantTeamId = await saveTeamFromOpenDota(db, ourTeam.name);
+      if (!ourTeamId) {
+        ourTeamId = await saveTeamFromOpenDota(db, m.ourTeamName);
       }
-      if (!direTeamId) {
-        direTeamId = await saveTeamFromOpenDota(db, m.opponentName);
+      if (!opponentTeamId) {
+        opponentTeamId = await saveTeamFromOpenDota(db, m.opponentName);
       }
 
-      if (!radiantTeamId || !direTeamId) {
-        console.log(`[Liquipedia] Could not find team IDs: ${ourTeam.name} -> ${radiantTeamId}, ${m.opponentName} -> ${direTeamId}`);
+      if (!ourTeamId || !opponentTeamId) {
+        console.log(`[Liquipedia] Could not find team IDs: ${m.ourTeamName} -> ${ourTeamId}, ${m.opponentName} -> ${opponentTeamId}`);
         continue;
       }
+
+      const radiantTeamId = m.isOurTeamRadiant ? ourTeamId : opponentTeamId;
+      const direTeamId = m.isOurTeamRadiant ? opponentTeamId : ourTeamId;
 
       // Determine league_id from tournament name
       let leagueId = null;
@@ -445,8 +390,8 @@ export default async function handler(req, res) {
         continue;
       }
 
-      const seriesId = `${leagueId}_${ourTeam.name}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
-      const id = `${leagueId}_${m.timestamp}_${ourTeam.name}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
+      const seriesId = `${leagueId}_${m.ourTeamName}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
+      const id = `${leagueId}_${m.timestamp}_${m.ourTeamName}_vs_${m.opponentName}`.toLowerCase().replace(/\s+/g, '_');
 
       await saveUpcomingSeries(db, {
         id,

@@ -391,7 +391,7 @@ function App() {
     <div className="min-h-screen bg-slate-950">
       <Navbar />
       <main>
-        <HeroSection upcoming={data.upcoming} />
+        <HeroSection upcoming={data.upcoming} teams={data.teams} />
         <TournamentSection
           tournaments={data.tournaments}
           seriesByTournament={data.seriesByTournament}

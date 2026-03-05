@@ -439,7 +439,8 @@ export function TournamentSection({
 
   // 统计中国战队参与的比赛
   const cnSeriesCount = currentSeries.filter(s => 
-    isChineseTeam(s.radiant_team_name) || isChineseTeam(s.dire_team_name)
+    isChineseTeam({ teamId: s.radiant_team_id, name: s.radiant_team_name }, teams) ||
+    isChineseTeam({ teamId: s.dire_team_id, name: s.dire_team_name }, teams)
   ).length;
 
   return (
@@ -582,8 +583,8 @@ export function TournamentSection({
               {filteredSeries.length > 0 ? (
                 <div className="space-y-3">
                   {filteredSeries.map((series) => {
-                    const teamAIsCN = isChineseTeam(series.radiant_team_name);
-                    const teamBIsCN = isChineseTeam(series.dire_team_name);
+                    const teamAIsCN = isChineseTeam({ teamId: series.radiant_team_id, name: series.radiant_team_name }, teams);
+                    const teamBIsCN = isChineseTeam({ teamId: series.dire_team_id, name: series.dire_team_name }, teams);
                     const hasCN = teamAIsCN || teamBIsCN;
                     const isExpanded = expandedSeries.has(series.series_id);
                     
@@ -766,7 +767,8 @@ export function TournamentSection({
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {series.games.map((game, idx) => {
                                   const winnerName = game.radiant_win ? game.radiant_team_name : game.dire_team_name;
-                                  const winnerIsCN = isChineseTeam(winnerName);
+                                  const winnerTeamId = game.radiant_win ? game.radiant_team_id : game.dire_team_id;
+                                  const winnerIsCN = isChineseTeam({ teamId: winnerTeamId, name: winnerName }, teams);
                                   
                                   // Get hero picks for this game
                                   const picks = game.picks_bans || [];

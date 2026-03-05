@@ -198,7 +198,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
 
   // 过滤中国战队比赛
   const cnMatches = filteredMatches.filter(m => 
-    isChineseTeam(m.radiant_team_name) || isChineseTeam(m.dire_team_name)
+    isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }, teams) ||
+    isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name }, teams)
   );
 
   const displayMatches = filter === 'cn' ? cnMatches : filteredMatches;
@@ -285,7 +286,10 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
             {sortedDates.map((date) => {
               const dateMatches = matchesByDate[date];
               const filteredDateMatches = filter === 'cn' 
-                ? dateMatches.filter(m => isChineseTeam(m.radiant_team_name) || isChineseTeam(m.dire_team_name))
+                ? dateMatches.filter((m) =>
+                    isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }, teams) ||
+                    isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name }, teams)
+                  )
                 : dateMatches;
 
               if (filteredDateMatches.length === 0) return null;
@@ -305,8 +309,8 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
                   {/* 比赛卡片网格 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredDateMatches.map((match) => {
-                      const radiantIsCN = isChineseTeam(match.radiant_team_name);
-                      const direIsCN = isChineseTeam(match.dire_team_name);
+                      const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name }, teams);
+                      const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name }, teams);
                       const hasCN = radiantIsCN || direIsCN;
                       const countdown = formatCountdown(match.start_time);
                       const period = getMatchPeriod(match.start_time);

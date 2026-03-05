@@ -320,10 +320,10 @@ export function TeamFlyout({
 
               <div className="flex flex-wrap gap-2 mt-4">
                 {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
-                {(model?.meta?.region || isChineseTeam(selectedTeam?.name)) && (
+                {(model?.meta?.region || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams)) && (
                   <Badge variant="outline" className="border-red-500/40 text-red-300">
                     <Flag className="w-3 h-3 mr-1" />
-                    {model?.meta?.region || (isChineseTeam(selectedTeam?.name) ? 'China' : 'Unknown')}
+                    {model?.meta?.region || (isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams) ? 'China' : 'Unknown')}
                   </Badge>
                 )}
                 <Badge variant="outline" className="border-slate-600 text-slate-300">
