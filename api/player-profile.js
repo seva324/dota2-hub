@@ -183,7 +183,10 @@ export default async function handler(req, res) {
         `,
         [Math.floor(Date.now() / 1000) - 180 * 24 * 60 * 60, accountId]
       ),
-      fetchHeroMap(db),
+      fetchHeroMap(db).catch((err) => {
+        console.warn('[PlayerProfile API] Failed to load hero map:', err?.message || err);
+        return {};
+      }),
     ]);
 
     const player = playerRows[0] || null;
@@ -196,7 +199,10 @@ export default async function handler(req, res) {
     const detectedTeamId = player?.team_id
       ? String(player.team_id)
       : summary.recentMatches[0]?.selected_team?.team_id || null;
-    const nextMatch = await fetchNextMatch(db, detectedTeamId);
+    const nextMatch = await fetchNextMatch(db, detectedTeamId).catch((err) => {
+      console.warn('[PlayerProfile API] Failed to load next match:', err?.message || err);
+      return null;
+    });
 
     const age = calculateDynamicAge({
       birthDate: player?.birth_date || null,
