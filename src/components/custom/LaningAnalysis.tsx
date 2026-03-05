@@ -192,19 +192,19 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
   return (
     <div className="space-y-4 font-sans">
       {/* Header */}
-      <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10">
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           {/* Radiant Team */}
-          <div className="text-xl font-bold text-green-400 break-words text-center flex-1">{getTeamAbbr(radiantTeamName)}</div>
+          <div className="text-base sm:text-xl font-bold text-green-400 break-words text-center flex-1">{getTeamAbbr(radiantTeamName)}</div>
           
           {/* Match Info */}
-          <div className="flex items-center gap-2 text-slate-400 shrink-0">
+          <div className="flex items-center justify-center gap-2 text-slate-400 shrink-0">
             <Clock className="w-4 h-4" />
             <span className="text-sm">{formatDuration(match.duration || 0)}</span>
           </div>
           
           {/* Dire Team */}
-          <div className="text-xl font-bold text-red-400 break-words text-center flex-1">{getTeamAbbr(direTeamName)}</div>
+          <div className="text-base sm:text-xl font-bold text-red-400 break-words text-center flex-1">{getTeamAbbr(direTeamName)}</div>
         </div>
       </div>
 
@@ -216,15 +216,15 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
       </div>
 
       {/* Efficiency Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10 flex items-center justify-between">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10 flex items-center justify-between">
           <div>
             <div className="text-sm text-slate-400 mb-1">{radiantTeamName}</div>
             <div className="text-lg font-bold text-green-400">{(analysis.radiantEfficiency * 100).toFixed(1)}% 效率</div>
           </div>
           <CircularProgress value={analysis.radiantEfficiency * 100} color="#22c55e" />
         </div>
-        <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10 flex items-center justify-between">
+        <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10 flex items-center justify-between">
           <div>
             <div className="text-sm text-slate-400 mb-1">{direTeamName}</div>
             <div className="text-lg font-bold text-red-400">{(analysis.direEfficiency * 100).toFixed(1)}% 效率</div>
@@ -271,7 +271,7 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
   const xpPercent = totalXp > 0 ? (radiantXp / totalXp) * 100 : 50;
 
   return (
-    <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10">
+    <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-white/10">
       {/* Lane Header - crown on advantage side */}
       <div className="flex items-center justify-center gap-2 mb-4">
         {advantage === 'radiant' && <Crown className="w-4 h-4 text-green-400 animate-pulse flex-shrink-0" />}
@@ -284,9 +284,9 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
       </div>
 
       {/* 3-Column Grid */}
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:items-center">
         {/* Team A (Radiant) */}
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 justify-start sm:justify-start">
           {radiant.map((p, i) => (
             <HeroIcon key={i} heroId={p.player.hero_id} heroesData={heroesData} />
           ))}
@@ -294,7 +294,7 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
         </div>
 
         {/* VS Stats */}
-        <div className="flex flex-col items-center gap-1 min-w-[100px]">
+        <div className="flex flex-col items-center gap-1 sm:min-w-[100px]">
           <div className="text-xs text-slate-400">
             {radiantLh}/{radiantDn} vs {direLh}/{direDn}
           </div>
@@ -304,7 +304,7 @@ function LaneCard({ lane, heroesData }: { lane: LaneData; heroesData: HeroesData
         </div>
 
         {/* Team B (Dire) */}
-        <div className="flex flex-wrap gap-1 justify-end">
+        <div className="flex flex-wrap gap-1 justify-start sm:justify-end">
           {dire.map((p, i) => (
             <HeroIcon key={i} heroId={p.player.hero_id} heroesData={heroesData} />
           ))}

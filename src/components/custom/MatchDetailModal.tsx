@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Clock, TrendingUp, FileText, Backpack } from 'lucide-react';
+import { Users, Clock, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatchGraphs } from './MatchGraphs';
@@ -444,15 +444,21 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick }: M
               </TabsContent>
 
               <TabsContent value="economy">
-                <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
+                <div className="max-w-full overflow-hidden">
+                  <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
+                </div>
               </TabsContent>
 
               <TabsContent value="laning">
-                <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
+                <div className="max-w-full overflow-hidden">
+                  <LaningAnalysis matchId={match.match_id} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} />
+                </div>
               </TabsContent>
 
               <TabsContent value="aireport">
-                <AIReportSection match={match} />
+                <div className="max-w-full overflow-hidden">
+                  <AIReportSection match={match} />
+                </div>
               </TabsContent>
             </Tabs>
           </>
@@ -518,7 +524,7 @@ function TeamSummaryTable({
         {isWinner && <span className="text-xs sm:text-sm text-green-400 font-semibold">胜者</span>}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full min-w-[940px]">
           <thead className="bg-slate-900/70">
             <tr className="text-xs text-slate-400">
@@ -599,6 +605,67 @@ function TeamSummaryTable({
           </tbody>
         </table>
       </div>
+      <div className="space-y-2 p-2 md:hidden">
+        {[...players].sort((a, b) => getNetWorth(b) - getNetWorth(a)).map((player) => {
+          const displayName = getPlayerDisplayName(player);
+          const laneName = getLaneName(player.lane, isRadiant);
+          const mainItems = getMainItemIds(player);
+          const backpackItems = getBackpackItemIds(player);
+          const neutral = getNeutralItemId(player);
+
+          return (
+            <div
+              key={`m-${player.player_slot}-${player.account_id}-${player.hero_id}`}
+              className="rounded-lg border border-slate-800 bg-slate-900/40 p-2.5"
+            >
+              <div className="flex items-start gap-2.5">
+                <div className="h-10 w-10 rounded overflow-hidden bg-slate-800 shrink-0">
+                  <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-slate-100">{displayName}</div>
+                  <div className="truncate text-xs text-slate-400">
+                    {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] text-slate-500">K/D/A</div>
+                  <div className="text-sm font-semibold text-slate-100">
+                    <span className="text-green-400">{player.kills}</span>/<span className="text-red-400">{player.deaths}</span>/{player.assists}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
+                <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
+                  <span className="text-slate-500">等级</span> {player.level}
+                </div>
+                <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
+                  <span className="text-slate-500">补刀</span> {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
+                </div>
+                <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400">
+                  <span className="text-slate-500">NET</span> {formatCompact(getNetWorth(player))}
+                </div>
+                <div className="col-span-3 rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
+                  <span className="text-slate-500">GPM/XPM</span> {formatCompact(player.gold_per_min)}/{formatCompact(player.xp_per_min)}
+                </div>
+              </div>
+
+              <div className="mt-2">
+                <ItemStrip
+                  mainItems={mainItems}
+                  backpackItems={backpackItems}
+                  neutralItem={neutral}
+                  hasScepter={hasAghanimScepter(player)}
+                  hasShard={hasAghanimShard(player)}
+                  itemsMap={itemsMap}
+                  collapsible
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       <PicksBansInline picksBans={teamPicksBans} />
     </div>
@@ -612,6 +679,7 @@ function ItemStrip({
   hasScepter,
   hasShard,
   itemsMap,
+  collapsible = false,
 }: {
   mainItems: number[];
   backpackItems: number[];
@@ -619,6 +687,7 @@ function ItemStrip({
   hasScepter: boolean;
   hasShard: boolean;
   itemsMap: Record<number, ItemInfo>;
+  collapsible?: boolean;
 }) {
   const renderItem = (itemId: number, options?: { compact?: boolean; muted?: boolean }) => {
     const compact = options?.compact || false;
@@ -643,10 +712,10 @@ function ItemStrip({
 
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
-  return (
+  const content = (
     <div className="flex items-start justify-start gap-1.5">
       <div className="min-w-0 space-y-1.5">
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {mainItems.map((id, idx) => (
             <div key={`main-${idx}`}>{renderItem(id)}</div>
           ))}
@@ -657,7 +726,7 @@ function ItemStrip({
             {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
           </div>
         </div>
-        <div className="flex items-center gap-1 text-slate-400">
+        <div className="flex flex-wrap items-center gap-1 text-slate-400">
           <span
             className="inline-flex h-5 w-5 items-center justify-center rounded border border-slate-700 bg-slate-900/70"
             title="背包栏"
@@ -690,6 +759,21 @@ function ItemStrip({
       </div>
     </div>
   );
+
+  if (!collapsible) return content;
+
+  return (
+    <details className="group rounded-md border border-slate-800 bg-slate-950/30">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-2 py-1.5 text-xs text-slate-300 marker:content-['']">
+        <span className="inline-flex items-center gap-1">
+          <Backpack className="h-3.5 w-3.5 text-slate-400" />
+          物品栏
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 text-slate-500 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-slate-800 px-2 py-2">{content}</div>
+    </details>
+  );
 }
 
 function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
@@ -698,7 +782,7 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
   return (
     <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
       <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-2 pb-1">
         {picksBans.map((entry) => {
           const label = entry.is_pick ? '选择' : '禁止';
           const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';

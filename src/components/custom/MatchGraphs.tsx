@@ -482,7 +482,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
           <div className="rounded border border-slate-800 bg-slate-950/50 px-3 py-2 text-xs text-slate-500">暂无可解析事件</div>
         ) : (
           <>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="flex flex-wrap gap-2 pb-2 md:flex-nowrap md:overflow-x-auto">
               {timelineEvents.map((event) => {
                 const isActive = activeEvent?.id === event.id;
                 const tone = getEventTone(getEventSide(event));
@@ -737,8 +737,8 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
         <h4 className="mb-2 text-sm font-semibold text-slate-100">经济 / 经验优势曲线</h4>
-        <div className="relative pt-10">
-          <div className="absolute inset-x-0 top-0 bottom-0 pointer-events-none">
+        <div className="relative pt-8 sm:pt-10">
+          <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 hidden sm:block">
             {timelineEvents.map((event) => {
               const ratio = getEventAxisRatio(event.time);
               const tone = getEventTone(getEventSide(event));
@@ -778,10 +778,10 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
               );
             })}
           </div>
-          <div className="h-60">
+          <div className="h-52 sm:h-60">
             <ReactECharts option={advantageChartOption} style={{ height: '100%' }} />
           </div>
-          <div className="mt-4 h-72">
+          <div className="mt-3 h-64 sm:mt-4 sm:h-72">
             <ReactECharts option={netWorthChartOption} style={{ height: '100%' }} />
           </div>
         </div>

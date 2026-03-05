@@ -399,19 +399,19 @@ export function TeamFlyout({
                         : 'border-slate-600 text-slate-200';
                     return (
                       <div key={row.key} className="rounded-lg border border-slate-700 bg-slate-800/40 p-3">
-                        <div className="grid grid-cols-[minmax(0,1fr)_7.5rem_minmax(0,1fr)] items-center gap-2 sm:gap-3">
+                        <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_7.5rem_minmax(0,1fr)] sm:gap-2 md:gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <button
                             type="button"
                             aria-label={`查看战队 ${row.selectedName}`}
-                            className="w-8 h-8 rounded bg-slate-700/60 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                            className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-slate-700/60 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
                             onClick={() => onTeamSelect?.({ team_id: row.selectedTeamId || null, name: row.selectedName, logo_url: row.selectedLogo || null })}
                           >
-                            {row.selectedLogo ? <img src={row.selectedLogo} alt={row.selectedName} width={28} height={28} className="w-7 h-7 object-contain" /> : <span className="text-[10px]">TEAM</span>}
+                            {row.selectedLogo ? <img src={row.selectedLogo} alt={row.selectedName} width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" /> : <span className="text-[10px]">TEAM</span>}
                           </button>
                           <button
                             type="button"
-                            className="text-sm text-slate-100 truncate hover:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
+                            className="text-xs sm:text-sm text-slate-100 truncate hover:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
                             onClick={() => onTeamSelect?.({ team_id: row.selectedTeamId || null, name: row.selectedName, logo_url: row.selectedLogo || null })}
                           >
                             {row.selectedName}
@@ -424,7 +424,7 @@ export function TeamFlyout({
                             onClick={() => {
                               if (row.matchId !== null) setSelectedMatchId(row.matchId);
                             }}
-                            className={`justify-self-center w-[7.5rem] text-center rounded-full border px-3 py-1 text-sm font-semibold leading-5 ${resultCls} ${row.matchId === null ? 'opacity-60 cursor-not-allowed' : 'hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400'}`}
+                            className={`justify-self-center w-[4.75rem] sm:w-[6rem] md:w-[7.5rem] text-center rounded-full border px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold leading-5 ${resultCls} ${row.matchId === null ? 'opacity-60 cursor-not-allowed' : 'hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400'}`}
                             title={row.matchId !== null ? '点击查看KDA和详细数据' : '暂无可用 match_id'}
                           >
                             {row.selectedScore ?? '-'}:{row.opponentScore ?? '-'}
@@ -433,7 +433,7 @@ export function TeamFlyout({
                           <div className="flex items-center justify-end gap-2 min-w-0">
                             <button
                               type="button"
-                              className="text-sm text-slate-100 truncate hover:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
+                              className="text-xs sm:text-sm text-slate-100 truncate hover:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
                               onClick={() => onTeamSelect?.({ team_id: row.opponentTeamId || null, name: row.opponentName, logo_url: row.opponentLogo || null })}
                             >
                               {row.opponentName}
@@ -441,10 +441,10 @@ export function TeamFlyout({
                             <button
                               type="button"
                               aria-label={`查看战队 ${row.opponentName}`}
-                              className="w-8 h-8 rounded bg-slate-700/60 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                              className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-slate-700/60 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
                               onClick={() => onTeamSelect?.({ team_id: row.opponentTeamId || null, name: row.opponentName, logo_url: row.opponentLogo || null })}
                             >
-                              {row.opponentLogo ? <img src={row.opponentLogo} alt={row.opponentName} width={28} height={28} className="w-7 h-7 object-contain" /> : <span className="text-[10px]">OPP</span>}
+                              {row.opponentLogo ? <img src={row.opponentLogo} alt={row.opponentName} width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" /> : <span className="text-[10px]">OPP</span>}
                             </button>
                           </div>
                         </div>

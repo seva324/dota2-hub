@@ -99,9 +99,9 @@ export function AIReportSection({ match }: AIReportSectionProps) {
   }
 
   return (
-    <div className="prose prose-invert max-w-none">
-      <div className="bg-slate-900/50 rounded-lg p-4 text-sm overflow-auto max-h-[600px]">
-        <div className="whitespace-pre-wrap text-slate-200 text-sm leading-relaxed space-y-2">
+    <div className="prose prose-invert max-w-none overflow-hidden">
+      <div className="bg-slate-900/50 rounded-lg p-3 sm:p-4 text-sm overflow-y-auto overflow-x-hidden max-h-[70vh] sm:max-h-[600px]">
+        <div className="whitespace-pre-wrap break-words text-slate-200 text-sm leading-relaxed space-y-2">
           {report.split('\n').map((line, i) => {
             if (line.startsWith('# ')) {
               return <h1 key={i} className="text-xl font-bold text-yellow-400 mt-4 mb-2">{line.replace('# ', '')}</h1>;
