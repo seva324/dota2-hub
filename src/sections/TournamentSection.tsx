@@ -888,6 +888,10 @@ export function TournamentSection({
         onOpenChange={(open) => {
           if (!open) setSelectedMatchId(null);
         }}
+        onTeamClick={(team) => {
+          setSelectedMatchId(null);
+          openTeamFlyout(team);
+        }}
       />
     </section>
   );

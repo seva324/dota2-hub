@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
-import { Shield, Swords, Droplets, Skull, RotateCcw } from 'lucide-react';
+import { Shield, Swords, Skull, RotateCcw } from 'lucide-react';
+
+const AEGIS_ICON_URL = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png';
+const FIRST_BLOOD_ICON_URL = '/images/first-blood.svg';
 
 interface MatchObjective {
   time: number;
@@ -65,6 +68,7 @@ interface MatchGraphsProps {
   match: {
     radiant_gold_adv?: number[];
     radiant_xp_adv?: number[];
+    radiant_win?: boolean;
     duration: number;
     players: MatchPlayer[];
     objectives?: MatchObjective[];
@@ -144,6 +148,8 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
   const { radiant_gold_adv = [], radiant_xp_adv = [], duration, players = [], objectives = [], teamfights = [] } = match;
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const axisCount = Math.max(radiant_gold_adv.length, radiant_xp_adv.length);
+  const radiantWon = Boolean(match.radiant_win);
+  const winnerSide: 'radiant' | 'dire' = radiantWon ? 'radiant' : 'dire';
 
   const timeLabels = useMemo(
     () => generateTimeLabels(duration, axisCount),
@@ -252,22 +258,31 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
   };
 
   const getEventTone = (side: EventSide) => {
+    const isWinnerSide = side !== 'neutral' && side === winnerSide;
     if (side === 'radiant') {
       return {
-        active: 'border-red-400/85 bg-red-500/25 text-red-100 ring-1 ring-red-300/70',
-        idle: 'border-red-400/70 bg-red-500/20 text-red-100 hover:border-red-300',
-        badge: 'bg-red-500/15 text-red-200',
-        panel: 'border-red-500/30 bg-red-500/5',
-        line: 'border-red-400/40',
+        active: isWinnerSide
+          ? 'border-green-400/85 bg-green-500/25 text-green-100 ring-1 ring-green-300/70'
+          : 'border-red-400/85 bg-red-500/25 text-red-100 ring-1 ring-red-300/70',
+        idle: isWinnerSide
+          ? 'border-green-400/70 bg-green-500/20 text-green-100 hover:border-green-300'
+          : 'border-red-400/70 bg-red-500/20 text-red-100 hover:border-red-300',
+        badge: isWinnerSide ? 'bg-green-500/15 text-green-200' : 'bg-red-500/15 text-red-200',
+        panel: isWinnerSide ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5',
+        line: isWinnerSide ? 'border-green-400/40' : 'border-red-400/40',
       };
     }
     if (side === 'dire') {
       return {
-        active: 'border-green-400/85 bg-green-500/25 text-green-100 ring-1 ring-green-300/70',
-        idle: 'border-green-400/70 bg-green-500/20 text-green-100 hover:border-green-300',
-        badge: 'bg-green-500/15 text-green-200',
-        panel: 'border-green-500/30 bg-green-500/5',
-        line: 'border-green-400/40',
+        active: isWinnerSide
+          ? 'border-green-400/85 bg-green-500/25 text-green-100 ring-1 ring-green-300/70'
+          : 'border-red-400/85 bg-red-500/25 text-red-100 ring-1 ring-red-300/70',
+        idle: isWinnerSide
+          ? 'border-green-400/70 bg-green-500/20 text-green-100 hover:border-green-300'
+          : 'border-red-400/70 bg-red-500/20 text-red-100 hover:border-red-300',
+        badge: isWinnerSide ? 'bg-green-500/15 text-green-200' : 'bg-red-500/15 text-red-200',
+        panel: isWinnerSide ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5',
+        line: isWinnerSide ? 'border-green-400/40' : 'border-red-400/40',
       };
     }
     return {
@@ -352,22 +367,24 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
           type: 'text',
           left: 66,
           top: 48,
-          style: { text: radiantTeamName || 'Radiant', fill: '#f87171', fontSize: 11, fontWeight: 600 },
+          style: { text: radiantTeamName || 'Radiant', fill: winnerSide === 'radiant' ? '#4ade80' : '#f87171', fontSize: 11, fontWeight: 600 },
         },
         {
           type: 'text',
           left: 66,
           bottom: 38,
-          style: { text: direTeamName || 'Dire', fill: '#4ade80', fontSize: 11, fontWeight: 600 },
+          style: { text: direTeamName || 'Dire', fill: winnerSide === 'dire' ? '#4ade80' : '#f87171', fontSize: 11, fontWeight: 600 },
         },
       ],
     }),
-    [direTeamName, radiantTeamName, radiant_gold_adv, radiant_xp_adv, timeLabels]
+    [direTeamName, radiantTeamName, radiant_gold_adv, radiant_xp_adv, timeLabels, winnerSide]
   );
 
   const netWorthChartOption: EChartsOption = useMemo(() => {
-    const radiantPalette = ['#34d399', '#22c55e', '#10b981', '#15803d', '#166534'];
-    const direPalette = ['#fb7185', '#f43f5e', '#ef4444', '#dc2626', '#991b1b'];
+    const winnerPalette = ['#34d399', '#22c55e', '#10b981', '#15803d', '#166534'];
+    const loserPalette = ['#fb7185', '#f43f5e', '#ef4444', '#dc2626', '#991b1b'];
+    const radiantPalette = winnerSide === 'radiant' ? winnerPalette : loserPalette;
+    const direPalette = winnerSide === 'dire' ? winnerPalette : loserPalette;
     const radiantPlayers = players.filter((p) => p.player_slot < 128);
     const direPlayers = players.filter((p) => p.player_slot >= 128);
 
@@ -429,7 +446,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
       },
       series,
     };
-  }, [heroesData, players, timeLabels]);
+  }, [heroesData, players, timeLabels, winnerSide]);
 
   const activeFightRows = useMemo(() => {
     if (!activeEvent || activeEvent.type !== 'teamfight') return [];
@@ -478,7 +495,13 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                         isActive ? tone.active : tone.idle
                       }`}
                     >
-                      <Droplets className="h-3.5 w-3.5" />
+                      <img
+                        src={FIRST_BLOOD_ICON_URL}
+                        alt="First Blood"
+                        className="h-3.5 w-3.5 rounded-sm object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
                       <span>{getAxisTimeLabel(getAlignedTime(event.time))}</span>
                     </button>
                   );
@@ -494,7 +517,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                       }`}
                     >
                       <img
-                        src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png"
+                        src={AEGIS_ICON_URL}
                         alt="Aegis"
                         className="h-3.5 w-3.5 rounded-sm object-cover"
                         loading="lazy"
@@ -525,7 +548,13 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                 {activeEvent.type === 'firstblood' && (
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
                     <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 ${getEventTone(getEventSide(activeEvent)).badge}`}>
-                      <Droplets className="h-3 w-3" />
+                      <img
+                        src={FIRST_BLOOD_ICON_URL}
+                        alt="First Blood"
+                        className="h-3 w-3 rounded-sm object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
                       {getAxisTimeLabel(getAlignedTime(activeEvent.time))} First Blood
                     </span>
                     <div className="flex items-center gap-1.5 text-slate-200">
@@ -560,7 +589,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                     </span>
                     <div className="flex items-center gap-1.5">
                       <img
-                        src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png"
+                        src={AEGIS_ICON_URL}
                         alt="Aegis"
                         className="h-4 w-4 rounded-sm object-cover"
                         loading="lazy"
@@ -588,13 +617,13 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                     </div>
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                       <div className="space-y-1.5">
-                        <div className="text-[11px] font-semibold text-red-300">Radiant</div>
+                        <div className={`text-[11px] font-semibold ${winnerSide === 'radiant' ? 'text-green-300' : 'text-red-300'}`}>Radiant</div>
                         {activeFightRadiantRows.map(({ player, fightPlayer }) => {
                         const side = getPlayerSide(player);
                         const sideCls =
-                          side === 'radiant'
-                            ? 'border-red-500/25 bg-red-500/8'
-                            : 'border-green-500/25 bg-green-500/8';
+                          side === winnerSide
+                            ? 'border-green-500/25 bg-green-500/8'
+                            : 'border-red-500/25 bg-red-500/8';
                         return (
                           <div key={`${player.player_slot}-${player.hero_id}`} className={`rounded border px-2 py-1 ${sideCls}`}>
                             <div className="flex items-center gap-2">
@@ -643,13 +672,13 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                       })}
                       </div>
                       <div className="space-y-1.5">
-                        <div className="text-[11px] font-semibold text-green-300 text-right">Dire</div>
+                        <div className={`text-[11px] font-semibold text-right ${winnerSide === 'dire' ? 'text-green-300' : 'text-red-300'}`}>Dire</div>
                         {activeFightDireRows.map(({ player, fightPlayer }) => {
                         const side = getPlayerSide(player);
                         const sideCls =
-                          side === 'radiant'
-                            ? 'border-red-500/25 bg-red-500/8'
-                            : 'border-green-500/25 bg-green-500/8';
+                          side === winnerSide
+                            ? 'border-green-500/25 bg-green-500/8'
+                            : 'border-red-500/25 bg-red-500/8';
                         return (
                           <div key={`${player.player_slot}-${player.hero_id}`} className={`rounded border px-2 py-1 ${sideCls}`}>
                             <div className="flex items-center gap-2">
@@ -724,10 +753,16 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
                     title={`${getAxisTimeLabel(getAlignedTime(event.time))}`}
                   >
                     {event.type === 'firstblood' ? (
-                      <Droplets className="h-3 w-3" />
+                      <img
+                        src={FIRST_BLOOD_ICON_URL}
+                        alt="First Blood"
+                        className="h-3 w-3 rounded-sm object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
                     ) : event.type === 'roshan' ? (
                       <img
-                        src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png"
+                        src={AEGIS_ICON_URL}
                         alt="Aegis"
                         className="h-3 w-3 rounded-sm object-cover"
                         loading="lazy"

@@ -493,6 +493,12 @@ export function TeamFlyout({
         onOpenChange={(next) => {
           if (!next) setSelectedMatchId(null);
         }}
+        onTeamClick={(team) => {
+          if (team?.name) {
+            setSelectedMatchId(null);
+            onTeamSelect?.(team);
+          }
+        }}
       />
     </>
   );
