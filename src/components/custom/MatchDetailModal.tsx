@@ -542,27 +542,27 @@ function TeamSummaryTable({
 
   return (
     <div className="rounded-lg border border-slate-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-800/40 border-b border-slate-800">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-800/40 border-b border-slate-800">
         <button
           type="button"
-          className="text-sm sm:text-base font-semibold text-slate-100 hover:underline underline-offset-4"
+          className="text-sm font-semibold text-slate-100 hover:underline underline-offset-4"
           onClick={() => {
             if (teamRef?.name) onTeamClick?.(teamRef);
           }}
         >
           {teamName} - 摘要
         </button>
-        {isWinner && <span className="text-xs sm:text-sm text-green-400 font-semibold">胜者</span>}
+        {isWinner && <span className="text-xs text-green-400 font-semibold">胜者</span>}
       </div>
 
       <div className="hidden md:block overflow-x-auto">
-        <div className="min-w-[980px]">
-          <header className="grid grid-cols-[minmax(250px,1.6fr)_minmax(120px,0.75fr)_minmax(180px,0.95fr)_minmax(120px,0.75fr)_minmax(280px,1.7fr)] divide-x divide-slate-800 bg-slate-900/70 text-[11px] uppercase tracking-wide text-slate-400">
-            <div className="px-3 py-2">玩家</div>
-            <div className="px-3 py-2 text-center">KDA</div>
-            <div className="px-3 py-2 text-center">经济</div>
-            <div className="px-3 py-2 text-center">GPM / XPM</div>
-            <div className="px-3 py-2 text-center">物品栏</div>
+        <div className="min-w-[940px]">
+          <header className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800 bg-slate-900/70 text-[10px] uppercase tracking-wide text-slate-400">
+            <div className="px-2.5 py-1.5">玩家</div>
+            <div className="px-2 py-1.5 text-center">KDA</div>
+            <div className="px-2 py-1.5 text-center">经济</div>
+            <div className="px-2 py-1.5 text-center">GPM / XPM</div>
+            <div className="px-2.5 py-1.5 text-center">物品栏</div>
           </header>
 
           <div className="divide-y divide-slate-800/80 bg-slate-900/10">
@@ -576,10 +576,10 @@ function TeamSummaryTable({
               return (
                 <div
                   key={`${player.player_slot}-${player.account_id}-${player.hero_id}`}
-                  className="grid grid-cols-[minmax(250px,1.6fr)_minmax(120px,0.75fr)_minmax(180px,0.95fr)_minmax(120px,0.75fr)_minmax(280px,1.7fr)] divide-x divide-slate-800/80 transition-colors hover:bg-slate-800/35"
+                  className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800/80 transition-colors hover:bg-slate-800/35"
                 >
-                  <div className="px-3 py-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="px-2.5 py-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="h-10 w-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
                         <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                       </div>
@@ -587,52 +587,52 @@ function TeamSummaryTable({
                         {player.account_id ? (
                           <button
                             type="button"
-                            className="text-sm font-semibold text-slate-100 truncate hover:underline underline-offset-2 text-left"
+                            className="text-[15px] font-semibold leading-tight text-slate-100 truncate hover:underline underline-offset-2 text-left"
                             onClick={() => onPlayerClick?.(Number(player.account_id))}
                           >
                             {displayName}
                           </button>
                         ) : (
-                          <div className="text-sm font-semibold text-slate-100 truncate">{displayName}</div>
+                          <div className="text-[15px] font-semibold leading-tight text-slate-100 truncate">{displayName}</div>
                         )}
-                        <div className="mt-0.5 text-xs text-slate-400 truncate">
+                        <div className="mt-0.5 text-sm leading-tight text-slate-300 truncate">
                           {getHeroName(player.hero_id)}
                         </div>
-                        {laneName && <div className="text-[11px] text-slate-500">{laneName}</div>}
+                        {laneName && <div className="text-[10px] text-slate-500">{laneName}</div>}
                       </div>
                     </div>
                   </div>
 
-                  <div className="px-3 py-2.5 flex flex-col items-center justify-center text-sm">
-                    <div className="font-semibold text-slate-200">
+                  <div className="px-2 py-1.5 flex flex-col items-center justify-center text-sm">
+                    <div className="text-base font-semibold leading-tight text-slate-200">
                       <span className="text-green-400">{player.kills}</span>
                       <span className="text-slate-500"> / </span>
                       <span className="text-red-400">{player.deaths}</span>
                       <span className="text-slate-500"> / </span>
                       <span className="text-slate-200">{player.assists}</span>
                     </div>
-                    <div className="mt-1 text-[11px] text-slate-500">Lv.{player.level}</div>
+                    <div className="mt-0.5 text-[10px] text-slate-500">Lv.{player.level}</div>
                   </div>
 
-                  <div className="px-3 py-2.5 flex flex-col justify-center gap-1.5 text-xs">
-                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-amber-300">
+                  <div className="px-2 py-1.5 flex flex-col justify-center gap-1 text-[11px]">
+                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-amber-300">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
                       NET <b className="text-amber-200">{formatCompact(getNetWorth(player))}</b>
                     </div>
-                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-1 text-sky-200">
+                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-sky-200">
                       <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
                       LH/DN <b>{formatCompact(player.last_hits)}/{formatCompact(player.denies)}</b>
                     </div>
                   </div>
 
-                  <div className="px-3 py-2.5 flex flex-col items-center justify-center text-xs">
-                    <div className="font-semibold text-emerald-300">{formatCompact(player.gold_per_min)}</div>
+                  <div className="px-2 py-1.5 flex flex-col items-center justify-center text-[11px]">
+                    <div className="text-sm font-semibold leading-tight text-emerald-300">{formatCompact(player.gold_per_min)}</div>
                     <div className="text-slate-500">GPM</div>
-                    <div className="mt-1 font-semibold text-cyan-300">{formatCompact(player.xp_per_min)}</div>
+                    <div className="mt-0.5 text-sm font-semibold leading-tight text-cyan-300">{formatCompact(player.xp_per_min)}</div>
                     <div className="text-slate-500">XPM</div>
                   </div>
 
-                  <div className="px-3 py-2.5 flex items-center justify-center">
+                  <div className="px-2.5 py-1.5 flex items-center justify-center">
                     <ItemStrip
                       mainItems={mainItems}
                       backpackItems={backpackItems}
@@ -647,24 +647,24 @@ function TeamSummaryTable({
               );
             })}
 
-            <div className="grid grid-cols-[minmax(250px,1.6fr)_minmax(120px,0.75fr)_minmax(180px,0.95fr)_minmax(120px,0.75fr)_minmax(280px,1.7fr)] divide-x divide-slate-800/80 bg-slate-900/50 text-xs text-slate-300">
-              <div className="px-3 py-2.5 text-slate-400">团队合计</div>
-              <div className="px-3 py-2.5 text-center">
+            <div className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800/80 bg-slate-900/50 text-[11px] text-slate-300">
+              <div className="px-2.5 py-1.5 text-slate-400">团队合计</div>
+              <div className="px-2 py-1.5 text-center">
                 <span className="text-green-400 font-semibold">{total.kills}</span>
                 <span className="text-slate-500"> / </span>
                 <span className="text-red-400 font-semibold">{total.deaths}</span>
                 <span className="text-slate-500"> / </span>
                 <span className="font-semibold">{total.assists}</span>
               </div>
-              <div className="px-3 py-2.5 text-center text-slate-200">
+              <div className="px-2 py-1.5 text-center text-slate-200">
                 LH/DN {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
                 <span className="mx-1.5 text-slate-600">|</span>
                 <span className="text-amber-300 font-semibold">NET {formatCompact(total.netWorth)}</span>
               </div>
-              <div className="px-3 py-2.5 text-center text-slate-200">
+              <div className="px-2 py-1.5 text-center text-slate-200">
                 {formatCompact(total.gpm)}/{formatCompact(total.xpm)}
               </div>
-              <div className="px-3 py-2.5 text-center text-slate-500">-</div>
+              <div className="px-2.5 py-1.5 text-center text-slate-500">-</div>
             </div>
           </div>
         </div>
@@ -777,7 +777,7 @@ function ItemStrip({
       <div
         key={`${itemId}-${compact ? 'compact' : 'main'}-${muted ? 'muted' : 'full'}`}
         className={`rounded overflow-hidden border bg-slate-800 flex items-center justify-center flex-shrink-0 ${
-          compact ? 'w-6 h-4.5 sm:w-7 sm:h-5' : compactMobile ? 'w-8 h-6 sm:w-10 sm:h-7' : 'w-10 h-7'
+          compact ? 'w-8 h-8 sm:w-9 sm:h-9' : compactMobile ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-10 h-10'
         } ${muted ? 'opacity-65 border-slate-700' : 'border-slate-600'}`}
         title={item?.name || ''}
       >
@@ -793,37 +793,37 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   const content = (
-    <div className={`flex items-start gap-1.5 ${centered ? 'justify-center' : 'justify-start'}`}>
-      <div className="min-w-0 space-y-1.5">
-        <div className="flex flex-wrap items-center gap-1">
+    <div className={`flex items-start gap-1 ${centered ? 'justify-center' : 'justify-start'}`}>
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-0.5">
           {mainItems.map((id, idx) => (
             <div key={`main-${idx}`}>{renderItem(id)}</div>
           ))}
           <div
-            className={`${compactMobile ? 'w-8 h-6 sm:w-10 sm:h-7' : 'w-10 h-7'} rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0`}
+            className={`${compactMobile ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-10 h-10'} rounded overflow-hidden border border-amber-600/60 bg-slate-800 flex-shrink-0`}
             title={neutral?.name || '中立物品'}
           >
             {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-contain" /> : <div className="w-full h-full" />}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1 text-slate-400">
+        <div className="flex flex-wrap items-center gap-0.5 text-slate-400">
           <span
-            className="inline-flex h-5 w-5 items-center justify-center rounded border border-slate-700 bg-slate-900/70"
+            className="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-700 bg-slate-900/70"
             title="背包栏"
             aria-label="背包栏"
           >
-            <Backpack className="w-3 h-3" />
+            <Backpack className="w-3.5 h-3.5" />
           </span>
           {backpackItems.map((id, idx) => (
             <div key={`backpack-${idx}`}>{renderItem(id, { compact: true, muted: true })}</div>
           ))}
         </div>
       </div>
-      <div className={`${compactMobile ? 'w-7 h-7 mt-0' : 'w-9 h-8 mt-0.5'} relative flex-shrink-0`}>
+      <div className={`${compactMobile ? 'w-8 h-8 mt-0' : 'w-10 h-10 mt-0'} relative flex-shrink-0`}>
         <img
           src={`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
           alt="Aghanim's Scepter"
-          className={`${compactMobile ? 'w-5 h-5' : 'w-6 h-6'} absolute right-0 top-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain rotate-[7deg] z-10`}
+          className={`${compactMobile ? 'w-5 h-5' : 'w-7 h-7'} absolute right-0 top-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain rotate-[7deg] z-10`}
           title={hasScepter ? 'A杖: 已拥有' : 'A杖: 未拥有'}
           loading="lazy"
           referrerPolicy="no-referrer"
@@ -831,7 +831,7 @@ function ItemStrip({
         <img
           src={`https://www.opendota.com/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`}
           alt="Aghanim's Shard"
-          className={`${compactMobile ? 'w-5 h-5' : 'w-6 h-6'} absolute left-0 bottom-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain -rotate-[7deg]`}
+          className={`${compactMobile ? 'w-5 h-5' : 'w-7 h-7'} absolute left-0 bottom-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain -rotate-[7deg]`}
           title={hasShard ? '魔晶: 已拥有' : '魔晶: 未拥有'}
           loading="lazy"
           referrerPolicy="no-referrer"
@@ -860,17 +860,18 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
   if (picksBans.length === 0) return null;
 
   return (
-    <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
-      <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
-      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1.5 pb-1">
+    <div className="border-t border-slate-800 px-3 py-2 bg-slate-900/30">
+      <div className="text-[11px] text-slate-400 mb-1">Picks / Bans</div>
+      <div className="overflow-x-auto pb-0.5">
+        <div className="flex min-w-full w-max items-start gap-1.5 flex-nowrap">
         {picksBans.map((entry) => {
           const label = entry.is_pick ? '选择' : '禁止';
           const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
           const heroName = getHeroName(entry.hero_id);
 
           return (
-            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="min-w-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded overflow-hidden bg-slate-800 border border-slate-700 relative mx-auto">
+            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="min-w-0 shrink-0">
+              <div className="w-10 h-10 rounded overflow-hidden bg-slate-800 border border-slate-700 relative mx-auto">
                 <img
                   src={getHeroImg(entry.hero_id)}
                   alt={heroName}
@@ -879,12 +880,13 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
                 />
                 {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
               </div>
-              <aside className="mt-0.5 text-[10px] text-slate-400 text-center whitespace-nowrap">
+              <aside className="mt-0.5 text-[10px] text-slate-400 text-center whitespace-nowrap leading-none">
                 {label} <b className="text-slate-200">{orderText}</b>
               </aside>
             </section>
           );
         })}
+        </div>
       </div>
     </div>
   );
