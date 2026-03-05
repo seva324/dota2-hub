@@ -1,7 +1,7 @@
 /**
  * OpenDota Data Sync API
  *
- * Syncs: teams, tournaments, series, matches
+ * Syncs: teams, series, matches, match_details
  * Storage: Neon PostgreSQL only
  *
  * Usage: POST /api/sync-opendota
@@ -22,13 +22,6 @@ let sql = null;
 
 const OPENDOTA = 'https://api.opendota.com/api';
 
-// Target leagues
-const TARGET_LEAGUES = [
-  { league_id: 19269, name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
-  { league_id: 18988, name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
-  { league_id: 19099, name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
-  { league_id: 19130, name: 'ESL Challenger China', name_cn: 'ESL 挑战者杯 中国', tier: 'S' }
-];
 
 async function fetchJSON(url) {
   const res = await fetch(url);
@@ -55,28 +48,6 @@ async function saveTeam(db, team) {
     `;
   } catch (e) {
     console.log(`[Teams] Failed to save ${team.name}: ${e.message}`);
-  }
-}
-
-/**
- * Save tournament to database
- */
-async function saveTournament(db, tournament) {
-  if (!db || !tournament?.league_id) return;
-
-  try {
-    await db`
-      INSERT INTO tournaments (league_id, name, name_cn, tier, location, status, start_time, end_time, created_at, updated_at)
-      VALUES (${tournament.league_id}, ${tournament.name}, ${tournament.name_cn}, ${tournament.tier}, ${tournament.location || 'Online'}, ${tournament.status || 'completed'}, ${tournament.start_time || null}, ${tournament.end_time || null}, NOW(), NOW())
-      ON CONFLICT (league_id) DO UPDATE SET
-        name = EXCLUDED.name,
-        name_cn = EXCLUDED.name_cn,
-        tier = EXCLUDED.tier,
-        status = EXCLUDED.status,
-        updated_at = NOW()
-    `;
-  } catch (e) {
-    console.log(`[Tournaments] Failed to save ${tournament.name}: ${e.message}`);
   }
 }
 
@@ -126,6 +97,25 @@ async function saveMatch(db, match) {
     `;
   } catch (e) {
     console.log(`[Matches] Failed to save ${match.match_id}: ${e.message}`);
+  }
+}
+
+/**
+ * Save match detail payload (same write pattern as backfill-match-details API)
+ */
+async function saveMatchDetail(db, matchId, detail) {
+  if (!db || !matchId || !detail) return;
+
+  try {
+    await db`
+      INSERT INTO match_details (match_id, payload, updated_at)
+      VALUES (${Math.trunc(Number(matchId))}, ${JSON.stringify(detail)}::jsonb, NOW())
+      ON CONFLICT (match_id) DO UPDATE SET
+        payload = EXCLUDED.payload,
+        updated_at = NOW()
+    `;
+  } catch (e) {
+    console.log(`[MatchDetails] Failed to save ${matchId}: ${e.message}`);
   }
 }
 
@@ -190,101 +180,81 @@ export default async function handler(req, res) {
   console.log('[Sync] Starting sync...');
 
   try {
-    // Time window: sync all matches for target leagues (no filter on initial sync)
-    // For regular sync, you could add: const twoDaysAgo = now - 2 * 24 * 60 * 60;
-    // const relevant = leagueMatches.filter(m => m.start_time > twoDaysAgo);
+    const now = Math.floor(Date.now() / 1000);
+    const cutoff48h = now - (48 * 60 * 60);
 
-    // Step 1: Save target tournaments
-    console.log('[Sync] Saving tournaments...');
-    for (const league of TARGET_LEAGUES) {
-      await saveTournament(db, {
-        league_id: league.league_id,
-        name: league.name,
-        name_cn: league.name_cn,
-        tier: league.tier,
-        location: 'Online',
-        status: 'completed',
-        start_time: null,
-        end_time: null
-      });
-    }
-    console.log('[Sync] Saved tournaments');
+    // Step 1: Tournament sync disabled (manually maintained)
+    // console.log('[Sync] Saving tournaments...');
+    // ... disabled by design
+    // console.log('[Sync] Saved tournaments');
 
-    // Step 2: Fetch and process matches
+    // Step 2: Fetch and process pro matches from last 48h
     const allMatches = [];
     const seriesMap = new Map();
     const teamsToFetch = new Set();
     const teamIds = new Set();
+    const seenMatchIds = new Set();
 
-    for (const league of TARGET_LEAGUES) {
-      console.log(`[Sync] Fetching league ${league.league_id}...`);
-      try {
-        const leagueMatches = await fetchJSON(`${OPENDOTA}/leagues/${league.league_id}/matches`);
+    let proMatches = [];
+    try {
+      proMatches = await fetchJSON(`${OPENDOTA}/proMatches`);
+    } catch (e) {
+      console.error('[Sync] Failed to fetch proMatches:', e.message);
+      proMatches = [];
+    }
 
-        // Filter to relevant matches
-        // No date filter - sync all matches for these leagues
-        const relevant = leagueMatches;
-        console.log(`[Sync] League ${league.league_id}: ${leagueMatches.length} total, ${relevant.length} relevant`);
+    const relevant = (Array.isArray(proMatches) ? proMatches : [])
+      .filter((m) => Number(m?.start_time) >= cutoff48h && Number(m?.start_time) <= now);
+    console.log(`[Sync] proMatches: ${proMatches.length || 0} total, ${relevant.length} in last 48h`);
 
-        for (const m of relevant) {
-          const match = convertMatch(m);
-          match.league_id = league.league_id;
-          allMatches.push(match);
+    for (const m of relevant) {
+      const match = convertMatch(m);
+      const leagueId = Number(m.leagueid || match.league_id || 0);
+      match.league_id = Number.isFinite(leagueId) && leagueId > 0 ? leagueId : null;
 
-          // Track team IDs
-          if (match.radiant_team_id) teamIds.add(match.radiant_team_id);
-          if (match.dire_team_id) teamIds.add(match.dire_team_id);
+      if (seenMatchIds.has(match.match_id)) continue;
+      seenMatchIds.add(match.match_id);
+      allMatches.push(match);
 
-          // Group by series
-          if (match.series_id) {
-            if (!seriesMap.has(match.series_id)) {
-              // First match in series - determine the two teams
-              seriesMap.set(match.series_id, {
-                series_id: match.series_id,
-                league_id: league.league_id,
-                // Store team IDs from first match - these represent the two teams in the series
-                radiant_team_id: match.radiant_team_id,
-                dire_team_id: match.dire_team_id,
-                radiant_wins: 0,
-                dire_wins: 0,
-                // match.series_type is already normalized in convertMatch()
-                series_type: match.series_type || 'BO3',
-                status: match.status,
-                start_time: match.start_time,
-                matches: []
-              });
-            }
-            const series = seriesMap.get(match.series_id);
-            series.matches.push(match.match_id);
+      if (match.radiant_team_id) teamIds.add(match.radiant_team_id);
+      if (match.dire_team_id) teamIds.add(match.dire_team_id);
 
-            // Update wins - use CURRENT match's team IDs
-            // radiant_win = 1: radiant side won
-            // radiant_win = 0: dire side won
-            // Track wins by matching the winner to series' original teams
-            if (match.radiant_win) {
-              // Current match's radiant team won - but we track wins for series' original teams
-              // Check which of the two series teams is the winner
-              if (match.radiant_team_id === series.radiant_team_id) {
-                series.radiant_wins++;
-              } else if (match.radiant_team_id === series.dire_team_id) {
-                series.dire_wins++;
-              }
-            } else {
-              // Current match's dire team won
-              if (match.dire_team_id === series.radiant_team_id) {
-                series.radiant_wins++;
-              } else if (match.dire_team_id === series.dire_team_id) {
-                series.dire_wins++;
-              }
-            }
+      if (match.series_id) {
+        if (!seriesMap.has(match.series_id)) {
+          seriesMap.set(match.series_id, {
+            series_id: match.series_id,
+            league_id: match.league_id,
+            radiant_team_id: match.radiant_team_id,
+            dire_team_id: match.dire_team_id,
+            radiant_wins: 0,
+            dire_wins: 0,
+            series_type: match.series_type || 'BO3',
+            status: match.status,
+            start_time: match.start_time,
+            matches: []
+          });
+        }
+
+        const series = seriesMap.get(match.series_id);
+        series.matches.push(match.match_id);
+
+        if (match.radiant_win) {
+          if (match.radiant_team_id === series.radiant_team_id) {
+            series.radiant_wins++;
+          } else if (match.radiant_team_id === series.dire_team_id) {
+            series.dire_wins++;
+          }
+        } else {
+          if (match.dire_team_id === series.radiant_team_id) {
+            series.radiant_wins++;
+          } else if (match.dire_team_id === series.dire_team_id) {
+            series.dire_wins++;
           }
         }
-      } catch (e) {
-        console.error(`[Sync] Failed to fetch league ${league.league_id}:`, e.message);
       }
     }
 
-    // Step 3: Fix null team names by fetching match details
+    // Step 3: Fix null team IDs by fetching one match detail from each affected series
     console.log('[Sync] Fetching match details for null team names...');
     const seriesWithNullTeams = [];
     for (const [seriesId, series] of seriesMap) {
@@ -297,6 +267,7 @@ export default async function handler(req, res) {
       if (series.matches?.length > 0) {
         try {
           const details = await fetchJSON(`${OPENDOTA}/matches/${series.matches[0]}`);
+          await saveMatchDetail(db, series.matches[0], details);
           if (details.radiant_team_id) series.radiant_team_id = String(details.radiant_team_id);
           if (details.dire_team_id) series.dire_team_id = String(details.dire_team_id);
           if (details.radiant_name) {
@@ -345,10 +316,16 @@ export default async function handler(req, res) {
       await saveSeries(db, series);
     }
 
-    // Step 6: Save matches
+    // Step 6: Save matches and match_details
     console.log('[Sync] Saving matches...');
     for (const match of allMatches) {
       await saveMatch(db, match);
+      try {
+        const details = await fetchJSON(`${OPENDOTA}/matches/${match.match_id}`);
+        await saveMatchDetail(db, match.match_id, details);
+      } catch (e) {
+        console.log(`[MatchDetails] Fetch failed ${match.match_id}: ${e.message}`);
+      }
     }
 
     console.log('[Sync] Complete!');
@@ -356,7 +333,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       stats: {
-        tournaments: TARGET_LEAGUES.length,
+        tournaments: 0,
         series: seriesMap.size,
         matches: allMatches.length,
         teams: teamIds.size
