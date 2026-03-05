@@ -35,6 +35,9 @@ async function ensureTable(db) {
   await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS team_id BIGINT`);
   await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS country_code VARCHAR(8)`);
   await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_date DATE`);
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_year INTEGER`);
+  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_month INTEGER`);
 }
 
 export default async function handler(req, res) {
@@ -54,7 +57,7 @@ export default async function handler(req, res) {
   try {
     await ensureTable(db);
     const rows = await db.query(`
-      SELECT account_id, name, name_cn, team_id, team_name, country_code, avatar_url, realname
+      SELECT account_id, name, name_cn, team_id, team_name, country_code, avatar_url, realname, birth_date, birth_year, birth_month
       FROM pro_players
       ORDER BY updated_at DESC NULLS LAST, account_id ASC
     `);
@@ -68,7 +71,10 @@ export default async function handler(req, res) {
         team_name: row.team_name || null,
         country_code: row.country_code || null,
         avatar_url: row.avatar_url || null,
-        realname: row.realname || null
+        realname: row.realname || null,
+        birth_date: row.birth_date || null,
+        birth_year: row.birth_year ?? null,
+        birth_month: row.birth_month ?? null
       };
     }
 
