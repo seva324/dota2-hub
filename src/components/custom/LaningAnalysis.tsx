@@ -244,6 +244,18 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
         const totalGold = lane.radiantGoldAt10 + lane.direGoldAt10;
         const radiantGoldPct = totalGold > 0 ? (lane.radiantGoldAt10 / totalGold) * 100 : 50;
         const goldDiff = lane.radiantGoldAt10 - lane.direGoldAt10;
+        const laneLeader = lane.winner === 'even' ? null : lane.winner;
+        const laneLeaderClass = laneLeader
+          ? laneLeader === winnerSide
+            ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-200'
+            : 'border-rose-500/35 bg-rose-500/10 text-rose-200'
+          : 'border border-slate-600 bg-slate-800/60 text-slate-300';
+        const diffClass =
+          laneLeader === null
+            ? 'text-slate-300'
+            : laneLeader === winnerSide
+              ? 'text-emerald-300'
+              : 'text-rose-300';
 
         return (
           <section key={lane.laneName} className="rounded-xl border border-slate-800 bg-slate-900/45 p-2.5 sm:p-3.5">
@@ -252,13 +264,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
                 <Zap className="h-3 w-3 text-amber-300" />
                 {lane.laneName}
               </div>
-              <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] ${
-                lane.winner === 'radiant'
-                  ? 'border border-emerald-500/35 bg-emerald-500/10 text-emerald-200'
-                  : lane.winner === 'dire'
-                    ? 'border border-rose-500/35 bg-rose-500/10 text-rose-200'
-                    : 'border border-slate-600 bg-slate-800/60 text-slate-300'
-              }`}>
+              <div className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] sm:text-[11px] ${laneLeaderClass}`}>
                 {lane.winner !== 'even' && <Crown className="h-3 w-3" />}
                 {lane.winner === 'radiant' ? 'Radiant 优势' : lane.winner === 'dire' ? 'Dire 优势' : '均势'}
               </div>
@@ -267,7 +273,7 @@ export function LaningAnalysis({ matchId, radiantTeamName, direTeamName, heroesD
             <div className="mb-2 rounded border border-slate-800 bg-slate-950/60 p-2">
               <div className="mb-1 flex items-center justify-between text-[10px] text-slate-400">
                 <span>10:00 经济对比</span>
-                <span className={goldDiff >= 0 ? 'text-emerald-300' : 'text-rose-300'}>
+                <span className={diffClass}>
                   {goldDiff >= 0 ? '+' : ''}{formatK(goldDiff)}
                 </span>
               </div>
