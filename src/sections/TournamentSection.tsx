@@ -54,6 +54,7 @@ interface Tournament {
   id: string;
   name: string;
   name_cn?: string;
+  tier?: string | null;
   prize_pool?: string;
   prize_pool_usd?: number;
   location?: string;
@@ -277,6 +278,7 @@ export function TournamentSection({
   upcoming = [],
   teams = []
 }: TournamentSectionProps) {
+  const [showT1Only, setShowT1Only] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
@@ -302,7 +304,7 @@ export function TournamentSection({
     return aliasMap;
   }, [teams]);
 
-  const sortedTournaments = useMemo(() => {
+  const allSortedTournaments = useMemo(() => {
     return [...(tournaments || [])].sort((a, b) => {
       const aStart = a.start_time ?? 0;
       const bStart = b.start_time ?? 0;
@@ -312,6 +314,14 @@ export function TournamentSection({
       return bEnd - aEnd;
     });
   }, [tournaments]);
+
+  const sortedTournaments = useMemo(() => {
+    return allSortedTournaments.filter((t) => {
+      const tier = String(t.tier || '').toUpperCase();
+      if (showT1Only) return tier === 'S';
+      return tier !== 'S';
+    });
+  }, [allSortedTournaments, showT1Only]);
 
   // Set initial tournament when tournaments are loaded
   useEffect(() => {
@@ -400,6 +410,26 @@ export function TournamentSection({
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl"></div>
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
+          <div className="mb-4 inline-flex items-center rounded-xl border border-white/10 bg-slate-900/70 p-1">
+            <button
+              type="button"
+              onClick={() => setShowT1Only(true)}
+              className={`rounded-lg px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                showT1Only ? 'bg-red-600/20 text-red-300 border border-red-500/30' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              T1 赛事
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowT1Only(false)}
+              className={`rounded-lg px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                !showT1Only ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              小型比赛
+            </button>
+          </div>
           <div className="flex items-center gap-4 mb-8">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)]">
               <Trophy className="w-7 h-7 text-white" />
@@ -413,7 +443,7 @@ export function TournamentSection({
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-800/50 mb-4">
               <Trophy className="w-10 h-10 text-slate-600" />
             </div>
-            <p className="text-slate-500 text-lg">暂无赛事数据</p>
+            <p className="text-slate-500 text-lg">{showT1Only ? '暂无 T1 赛事数据' : '暂无小型赛事数据'}</p>
           </div>
         </div>
       </section>
@@ -454,6 +484,26 @@ export function TournamentSection({
           
           {/* 快速统计 */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <div className="inline-flex items-center rounded-xl border border-white/10 bg-slate-900/70 p-1">
+              <button
+                type="button"
+                onClick={() => setShowT1Only(true)}
+                className={`rounded-lg px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                  showT1Only ? 'bg-red-600/20 text-red-300 border border-red-500/30' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                T1 赛事
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowT1Only(false)}
+                className={`rounded-lg px-3 py-1.5 text-xs sm:text-sm transition-colors ${
+                  !showT1Only ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                小型比赛
+              </button>
+            </div>
             <div className="flex items-center gap-2 min-w-0 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
               <Flame className="w-4 h-4 text-red-400" />
               <span className="text-sm text-slate-300">中国战队</span>

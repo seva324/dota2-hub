@@ -255,6 +255,7 @@ function App() {
           id: t.id,
           name: t.name || t.name_cn || 'Unknown Tournament',
           name_cn: t.name_cn,
+          tier: t.tier || null,
           prize_pool: t.prize_pool || t.prize,
           prize_pool_usd: t.prize_pool_usd,
           location: t.location,
