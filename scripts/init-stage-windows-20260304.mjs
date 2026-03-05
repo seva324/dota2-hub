@@ -11,6 +11,28 @@ function dayEnd(dateStr) {
 }
 
 const stageWindowsByLeague = {
+  // EPL World Series: Southeast Asia Season 13 (Liquipedia format)
+  18865: [
+    {
+      key: 'group_stage',
+      label: 'Group Stage',
+      label_cn: '小组赛',
+      kind: 'group',
+      start: dayStart('2026-03-04'),
+      end: dayEnd('2026-03-22'),
+      priority: 10
+    },
+    {
+      key: 'playoffs',
+      label: 'Playoffs',
+      label_cn: '淘汰赛',
+      kind: 'playoff',
+      start: dayStart('2026-03-23'),
+      end: dayEnd('2026-03-26'),
+      priority: 20
+    }
+  ],
+
   // BLAST Slam VI (Liquipedia format-based manual initialization)
   19099: [
     {
@@ -209,7 +231,7 @@ try {
   const verify = await sql.query(`
     SELECT league_id, name, jsonb_array_length(stage_windows) AS stage_count
     FROM tournaments
-    WHERE league_id IN (18988,19099,19130,19269)
+    WHERE league_id IN (18865,18988,19099,19130,19269)
     ORDER BY league_id
   `);
 

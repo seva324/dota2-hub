@@ -9,6 +9,7 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 // League ID to Tournament ID mapping
 const LEAGUE_ID_MAP = {
+  18865: { id: 'epl-world-series-sea-s13', name: 'EPL World Series: Southeast Asia Season 13', name_cn: 'EPL 世界系列赛：东南亚 S13', tier: 'A' },
   19269: { id: 'dreamleague-s28', name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
   18988: { id: 'dreamleague-s27', name: 'DreamLeague Season 27', name_cn: '梦联赛 S27', tier: 'S' },
   19099: { id: 'blast-slam-vi', name: 'BLAST Slam VI', name_cn: 'BLAST 锦标赛 VI', tier: 'S' },
@@ -224,6 +225,7 @@ export default async function handler(req, res) {
       const info = LEAGUE_ID_MAP[t.league_id];
       return {
         id: info?.id || String(t.league_id),
+        league_id: t.league_id,
         name: info?.name || t.name,
         name_cn: info?.name_cn || t.name_cn,
         tier: info?.tier || t.tier,

@@ -8,10 +8,11 @@ import { CommunitySection } from '@/sections/CommunitySection';
 import { Footer } from '@/sections/Footer';
 
 // Target league IDs for tournament matches
-const TARGET_LEAGUE_IDS = [19269, 18988, 19099, 19130];
+const TARGET_LEAGUE_IDS = [18865, 19269, 18988, 19099, 19130];
 
 // League ID to tournament ID mapping
 const LEAGUE_TO_TOURNAMENT: Record<number, string> = {
+  18865: 'epl-world-series-sea-s13',
   19269: 'dreamleague-s28',
   18988: 'dreamleague-s27',
   19099: 'blast-slam-vi',
