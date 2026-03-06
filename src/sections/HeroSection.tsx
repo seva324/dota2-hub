@@ -130,9 +130,31 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
   const getMatchLayout = (match: Match) => {
     const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name });
     const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name });
-    if (radiantIsCN && !direIsCN) return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: true };
-    if (direIsCN && !radiantIsCN) return { top: match.dire_team_name, bottom: match.radiant_team_name, topIsCN: true };
-    return { top: match.radiant_team_name, bottom: match.dire_team_name, topIsCN: radiantIsCN };
+    if (radiantIsCN && !direIsCN) {
+      return {
+        top: match.radiant_team_name,
+        bottom: match.dire_team_name,
+        topLogo: match.radiant_team_logo,
+        bottomLogo: match.dire_team_logo,
+        topIsCN: true,
+      };
+    }
+    if (direIsCN && !radiantIsCN) {
+      return {
+        top: match.dire_team_name,
+        bottom: match.radiant_team_name,
+        topLogo: match.dire_team_logo,
+        bottomLogo: match.radiant_team_logo,
+        topIsCN: true,
+      };
+    }
+    return {
+      top: match.radiant_team_name,
+      bottom: match.dire_team_name,
+      topLogo: match.radiant_team_logo,
+      bottomLogo: match.dire_team_logo,
+      topIsCN: radiantIsCN,
+    };
   };
 
   return (
@@ -222,12 +244,12 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
                       {/* Teams */}
                       <div className="px-3 py-2">
                         <div className={`flex items-center gap-2 py-1.5 border-b border-white/5 ${layout.topIsCN ? 'text-red-400' : ''}`}>
-                          {getTeamLogo(layout.topIsCN ? match.radiant_team_logo : match.dire_team_logo, layout.top) ? <img src={getTeamLogo(layout.topIsCN ? match.radiant_team_logo : match.dire_team_logo, layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+                          {getTeamLogo(layout.topLogo, layout.top) ? <img src={getTeamLogo(layout.topLogo, layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
 
                           <span className="text-sm font-bold truncate">{renderTeamName(layout.top)}</span>
                         </div>
                         <div className="flex items-center gap-2 py-1.5">
-                          {getTeamLogo(layout.topIsCN ? match.dire_team_logo : match.radiant_team_logo, layout.bottom) ? <img src={getTeamLogo(layout.topIsCN ? match.dire_team_logo : match.radiant_team_logo, layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+                          {getTeamLogo(layout.bottomLogo, layout.bottom) ? <img src={getTeamLogo(layout.bottomLogo, layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
                           <span className="text-sm font-bold text-white truncate">{renderTeamName(layout.bottom)}</span>
                         </div>
                       </div>
