@@ -4,8 +4,16 @@
   ],
   "crons": [
     {
-      "path": "/api/cron",
-      "schedule": "0 0 * * *"
+      "path": "/api/sync-opendota",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/sync-news",
+      "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/sync-liquipedia",
+      "schedule": "0 14 * * *"
     }
   ]
 }
