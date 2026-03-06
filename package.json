@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "manual:generate-report": "node scripts/manual-api/generate-report.js",
     "manual:enrich-proplayers": "node scripts/manual-api/enrich-pro-players.js",
+    "manual:backfill-hot-player-history": "node scripts/manual-api/backfill-hot-player-history.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
