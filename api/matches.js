@@ -69,14 +69,57 @@ export default async function handler(req, res) {
       teamMap.set(t.team_id, t);
     }
 
-    // Get matches
-    const matches = await db`
-      SELECT m.*, s.league_id
-      FROM matches m
-      LEFT JOIN series s ON m.series_id = s.series_id
-      ORDER BY m.start_time DESC
-      LIMIT 500
-    `;
+    const normalize = (value) => String(value || '').trim().toLowerCase();
+    const requestedTeamId = req.query.team_id ? String(req.query.team_id).trim() : '';
+    const requestedTeamName = req.query.team_name ? String(req.query.team_name).trim() : '';
+    const requestedLimit = Math.max(
+      1,
+      Math.min(
+        5000,
+        Number(req.query.limit) || (requestedTeamId || requestedTeamName ? 120 : 500)
+      )
+    );
+
+    let teamIds = [];
+    if (requestedTeamId) {
+      teamIds = [requestedTeamId];
+    } else if (requestedTeamName) {
+      const needle = normalize(requestedTeamName);
+      teamIds = teams
+        .filter((t) => {
+          const aliases = [t.team_id, t.name, t.name_cn, t.tag];
+          return aliases.some((alias) => normalize(alias) === needle);
+        })
+        .map((t) => String(t.team_id))
+        .filter(Boolean);
+    }
+
+    let matches;
+    if (teamIds.length > 0) {
+      matches = await db.query(
+        `
+          SELECT m.*, s.league_id
+          FROM matches m
+          LEFT JOIN series s ON m.series_id = s.series_id
+          WHERE CAST(m.radiant_team_id AS TEXT) = ANY($1::text[])
+             OR CAST(m.dire_team_id AS TEXT) = ANY($1::text[])
+          ORDER BY m.start_time DESC
+          LIMIT $2
+        `,
+        [teamIds, requestedLimit]
+      );
+    } else {
+      matches = await db.query(
+        `
+          SELECT m.*, s.league_id
+          FROM matches m
+          LEFT JOIN series s ON m.series_id = s.series_id
+          ORDER BY m.start_time DESC
+          LIMIT $1
+        `,
+        [requestedLimit]
+      );
+    }
 
     const formatted = matches.map(m => {
       const radiantTeam = m.radiant_team_id ? teamMap.get(m.radiant_team_id) : null;

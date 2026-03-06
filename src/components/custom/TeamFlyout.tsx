@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Flag, Shield, Target, Trophy } from 'lucide-react';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { isChineseTeam } from '@/lib/teams';
@@ -39,6 +39,14 @@ type HeroMeta = {
   name?: string;
   name_cn?: string;
   img?: string;
+};
+
+type SquadPlayer = {
+  accountId: number | null;
+  name: string;
+  realName: string | null;
+  avatarUrl: string | null;
+  countryCode: string | null;
 };
 
 type RecentRow = {
@@ -109,6 +117,12 @@ function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   return '';
 }
 
+function getFlagImageUrl(countryCode?: string | null): string | null {
+  const code = String(countryCode || '').trim().toLowerCase();
+  if (!/^[a-z]{2}$/.test(code)) return null;
+  return `https://flagcdn.com/24x18/${code}.png`;
+}
+
 export interface TeamFlyoutProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -137,6 +151,8 @@ export function TeamFlyout({
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
   const [teamHeroesByMatch, setTeamHeroesByMatch] = useState<Record<string, number[]>>({});
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+  const [teamMatches, setTeamMatches] = useState<MatchLike[]>([]);
+  const [activeSquad, setActiveSquad] = useState<SquadPlayer[]>([]);
 
   useEffect(() => {
     fetch('/api/heroes')
@@ -147,12 +163,41 @@ export function TeamFlyout({
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!open || !selectedTeam?.name) return;
+
+    let cancelled = false;
+    setTeamMatches([]);
+    setTeamHeroesByMatch({});
+    setActiveSquad([]);
+    const params = new URLSearchParams();
+    if (selectedTeam.team_id) params.set('team_id', String(selectedTeam.team_id));
+    else params.set('team_name', selectedTeam.name);
+    params.set('limit', '120');
+
+    fetch(`/api/matches?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) {
+          setTeamMatches(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTeamMatches([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedTeam?.name, selectedTeam?.team_id]);
+
   const model = useMemo(() => {
     if (!selectedTeam?.name) return null;
 
     const selectedName = normalize(selectedTeam.name);
     const selectedTeamId = selectedTeam.team_id ? String(selectedTeam.team_id) : null;
     const now = Math.floor(Date.now() / 1000);
+    const sourceMatches = teamMatches;
 
     const resolveMeta = () => teams.find((team) => {
       const teamId = team.team_id ? String(team.team_id) : null;
@@ -189,7 +234,7 @@ export function TeamFlyout({
     };
 
     const threeMonthsAgo = now - 90 * 24 * 60 * 60;
-    const recentRows: RecentRow[] = matches
+    const recentRows: RecentRow[] = sourceMatches
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) <= now)
       .filter((m) => Number(m.start_time) >= threeMonthsAgo)
@@ -227,6 +272,12 @@ export function TeamFlyout({
         };
       });
 
+    const latestPlayedMatch = sourceMatches
+      .filter(isTeamMatch)
+      .filter((m) => Number(m.start_time) <= now)
+      .sort((a, b) => Number(b.start_time || 0) - Number(a.start_time || 0))
+      [0] || null;
+
     const nextMatch = upcoming
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) > now)
@@ -242,12 +293,72 @@ export function TeamFlyout({
       selectedName,
       meta: selectedMeta,
       recentRows,
+      latestPlayedMatch,
+      resolveTeamSide,
       nextMatch,
       wins,
       losses,
       winRate
     };
-  }, [selectedTeam, teams, matches, upcoming]);
+  }, [selectedTeam, teams, matches, teamMatches, upcoming]);
+
+  useEffect(() => {
+    if (!open || !model?.latestPlayedMatch) {
+      setActiveSquad([]);
+      return;
+    }
+
+    const latestMatchId = toMatchId(model.latestPlayedMatch);
+    const latestSide = model.resolveTeamSide(model.latestPlayedMatch);
+    if (!latestMatchId || !latestSide) {
+      setActiveSquad([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const detailRes = await fetch(`/api/match-details?match_id=${latestMatchId}`);
+        const detail = await detailRes.json();
+        const players = Array.isArray(detail?.players) ? detail.players : [];
+        const sidePlayers = players
+          .filter((p: any) => latestSide === 'radiant' ? Number(p.player_slot) < 128 : Number(p.player_slot) >= 128)
+          .sort((a: any, b: any) => Number(a.player_slot || 0) - Number(b.player_slot || 0))
+          .slice(0, 5);
+
+        const squad = await Promise.all(sidePlayers.map(async (player: any) => {
+          const accountId = Number(player.account_id);
+          let profile: any = null;
+          if (Number.isFinite(accountId) && accountId > 0) {
+            try {
+              const profileRes = await fetch(`/api/pro-players?account_id=${accountId}`);
+              profile = await profileRes.json();
+            } catch {
+              profile = null;
+            }
+          }
+
+          return {
+            accountId: Number.isFinite(accountId) ? accountId : null,
+            name: String(profile?.name || player.personaname || player.name || `Player ${player.player_slot}`),
+            realName: profile?.realname || null,
+            avatarUrl: profile?.avatar_url || null,
+            countryCode: profile?.country_code || null
+          } satisfies SquadPlayer;
+        }));
+
+        if (!cancelled) {
+          setActiveSquad(squad);
+        }
+      } catch {
+        if (!cancelled) setActiveSquad([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, model?.latestPlayedMatch, model?.resolveTeamSide]);
 
   useEffect(() => {
     if (!open || !model?.recentRows?.length) return;
@@ -304,20 +415,15 @@ export function TeamFlyout({
         <SheetContent side="right" className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain">
           <div className="h-full overflow-y-auto">
             <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30 p-6 pr-12">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+              <div className="flex flex-col items-center justify-center gap-4 text-center">
+                <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
                   {selectedTeam?.logo_url ? (
-                    <img src={selectedTeam.logo_url} alt={selectedTeam.name} width={48} height={48} className="w-12 h-12 object-contain" />
+                    <img src={selectedTeam.logo_url} alt={selectedTeam.name} width={64} height={64} className="w-16 h-16 object-contain" />
                   ) : (
-                    <Shield className="w-6 h-6 text-slate-400" />
+                    <Shield className="w-8 h-8 text-slate-400" />
                   )}
                 </div>
-                <div className="min-w-0">
-                  <SheetTitle className="text-lg text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
-                  <SheetDescription className="text-slate-400">
-                    Team Flyout
-                  </SheetDescription>
-                </div>
+                <SheetTitle className="text-2xl text-white">{selectedTeam?.name || 'Team'}</SheetTitle>
               </div>
 
               <div className="flex flex-wrap gap-2 mt-4">
@@ -341,6 +447,49 @@ export function TeamFlyout({
             </SheetHeader>
 
             <div className="p-6 space-y-6">
+              <section>
+                <div className="flex items-center gap-2 mb-3 text-white">
+                  <Shield className="w-4 h-4 text-sky-400" />
+                  <h4 className="font-semibold">当前阵容</h4>
+                </div>
+                {activeSquad.length ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                    {activeSquad.map((player, index) => {
+                      const flagUrl = getFlagImageUrl(player.countryCode);
+                      return (
+                        <button
+                          key={`${player.accountId ?? player.name}-${index}`}
+                          type="button"
+                          className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-left hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                          onClick={() => {
+                            if (player.accountId) onPlayerClick?.(player.accountId);
+                          }}
+                        >
+                          <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-xl border border-slate-700 bg-slate-700/60">
+                            {player.avatarUrl ? (
+                              <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">PLAYER</div>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-center gap-1 text-sm font-semibold text-white">
+                            {flagUrl ? <img src={flagUrl} alt={player.countryCode || ''} className="h-[14px] w-[18px] rounded-[2px] object-cover" /> : null}
+                            <span className="truncate">{player.name}</span>
+                          </div>
+                          <div className="mt-1 text-center text-xs text-slate-400 truncate">
+                            {player.realName || '—'}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
+                    暂无当前阵容数据
+                  </div>
+                )}
+              </section>
+
               <section>
                 <div className="flex items-center gap-2 mb-3 text-white">
                   <Calendar className="w-4 h-4 text-blue-400" />
