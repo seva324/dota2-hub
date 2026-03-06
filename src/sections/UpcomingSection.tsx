@@ -509,6 +509,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
         open={playerFlyoutOpen}
         onOpenChange={setPlayerFlyoutOpen}
         player={playerFlyoutModel}
+        onTeamSelect={(team) => openTeamFlyout(team)}
       />
     </section>
   );

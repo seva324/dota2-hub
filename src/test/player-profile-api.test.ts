@@ -92,6 +92,13 @@ describe('/api/player-profile account_id filter regression', () => {
             { account_id: '8', player_slot: '131', hero_id: '8' },
             { account_id: '9', player_slot: '132', hero_id: '9' },
           ],
+          picks_bans: [
+            { hero_id: '4', team: 'radiant', is_pick: true, order: 7 },
+            { hero_id: '1', team: 'radiant', is_pick: true, order: 1 },
+            { hero_id: '3', team: 'radiant', is_pick: true, order: 5 },
+            { hero_id: '12', team: 'radiant', is_pick: true, order: 3 },
+            { hero_id: '2', team: 'radiant', is_pick: true, order: 9 },
+          ],
         },
       },
     ]);
@@ -105,6 +112,8 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(res.statusCode).toBe(200);
     expect((res.payload as any)?.recent_matches?.length).toBe(1);
     expect((res.payload as any)?.signature_hero?.hero_id).toBe(12);
+    expect((res.payload as any)?.recent_matches?.[0]?.team_hero_ids).toEqual([1, 12, 3, 4, 2]);
+    expect((res.payload as any)?.stats?.win_rate).toBe(100);
 
     const matchRowsCall = queryMock.mock.calls.find((call) => String(call[0]).includes('FROM matches m'));
     expect(matchRowsCall).toBeDefined();

@@ -29,6 +29,13 @@ describe('player profile regression coverage', () => {
           ],
           radiant_team: { team_id: '10', name: 'Team A' },
           dire_team: { team_id: '20', name: 'Team B' },
+          picks_bans: [
+            { hero_id: '5', team: 'radiant', is_pick: true, order: 4 },
+            { hero_id: '99', team: 'radiant', is_pick: true, order: 0 },
+            { hero_id: '3', team: 'radiant', is_pick: true, order: 2 },
+            { hero_id: '2', team: 'radiant', is_pick: true, order: 1 },
+            { hero_id: '4', team: 'radiant', is_pick: true, order: 3 },
+          ],
         },
       },
       {
@@ -94,9 +101,11 @@ describe('player profile regression coverage', () => {
     });
 
     expect(summary.recentMatches).toHaveLength(3);
+    expect(summary.recentMatches[0].team_hero_ids).toEqual([99, 2, 3, 4, 5]);
     expect(summary.mostPlayedHeroes).toHaveLength(1);
     expect(summary.mostPlayedHeroes[0]).toMatchObject({ hero_id: 99, matches: 2, wins: 1, win_rate: 50 });
     expect(summary.signatureHero).toMatchObject({ hero_id: 99 });
+    expect(summary.winRate).toBe(50);
   });
 
   it('keeps recent matches even when player hero_id is missing', () => {
