@@ -1,9 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import {
-  calculateDynamicAge,
-  normalizeLogo,
-  summarizePlayerMatches,
-} from '../lib/player-profile.js';
+import { getPlayerProfilePayload } from '../lib/server/player-profile-cache.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -21,28 +17,6 @@ function getDb() {
   return sql;
 }
 
-async function ensureTables(db) {
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS pro_players (
-      account_id BIGINT PRIMARY KEY,
-      name VARCHAR(255),
-      name_cn VARCHAR(255),
-      team_id BIGINT,
-      team_name VARCHAR(255),
-      country_code VARCHAR(8),
-      avatar_url TEXT,
-      realname VARCHAR(255),
-      birth_date DATE,
-      birth_year INTEGER,
-      birth_month INTEGER,
-      updated_at TIMESTAMP DEFAULT NOW()
-    )
-  `);
-  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_date DATE`);
-  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_year INTEGER`);
-  await db.query(`ALTER TABLE pro_players ADD COLUMN IF NOT EXISTS birth_month INTEGER`);
-}
-
 function parseAccountId(rawAccountId) {
   const parsed = Number(rawAccountId);
   if (!Number.isFinite(parsed)) return null;
@@ -50,72 +24,12 @@ function parseAccountId(rawAccountId) {
   return normalized > 0 ? normalized : null;
 }
 
-async function fetchHeroMap(db) {
-  const rows = await db`
-    SELECT hero_id, name, name_cn, img
-    FROM heroes
-    ORDER BY hero_id ASC
-  `;
-  const heroMap = {};
-  for (const row of rows) {
-    heroMap[String(row.hero_id)] = {
-      hero_id: Number(row.hero_id),
-      name: row.name || null,
-      name_cn: row.name_cn || null,
-      img_url: row.img
-        ? `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${row.img}_lg.png`
-        : null,
-    };
+function toBool(value) {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
   }
-  return heroMap;
-}
-
-function enrichHeroStat(stat, heroMap) {
-  const hero = heroMap[String(stat.hero_id)] || null;
-  return {
-    ...stat,
-    hero_name: hero?.name || null,
-    hero_name_cn: hero?.name_cn || null,
-    hero_img: hero?.img_url || null,
-  };
-}
-
-async function fetchNextMatch(db, teamId) {
-  if (!teamId) return null;
-  const nowTs = Math.floor(Date.now() / 1000);
-  const rows = await db`
-    SELECT us.id, us.league_id, us.start_time, us.series_type, us.radiant_team_id, us.dire_team_id,
-           rt.name AS radiant_name, rt.logo_url AS radiant_logo,
-           dt.name AS dire_name, dt.logo_url AS dire_logo,
-           t.name AS tournament_name
-    FROM upcoming_series us
-    LEFT JOIN teams rt ON rt.team_id = us.radiant_team_id
-    LEFT JOIN teams dt ON dt.team_id = us.dire_team_id
-    LEFT JOIN tournaments t ON t.league_id = us.league_id
-    WHERE us.start_time >= ${nowTs}
-      AND (us.radiant_team_id = ${String(teamId)} OR us.dire_team_id = ${String(teamId)})
-    ORDER BY us.start_time ASC
-    LIMIT 1
-  `;
-  const row = rows[0];
-  if (!row) return null;
-  const onRadiant = String(row.radiant_team_id || '') === String(teamId);
-  return {
-    id: row.id ? String(row.id) : null,
-    start_time: Number(row.start_time || 0),
-    series_type: row.series_type || 'BO3',
-    tournament_name: row.tournament_name || null,
-    selected_team: {
-      team_id: onRadiant ? (row.radiant_team_id ? String(row.radiant_team_id) : null) : (row.dire_team_id ? String(row.dire_team_id) : null),
-      name: onRadiant ? row.radiant_name || null : row.dire_name || null,
-      logo_url: normalizeLogo(onRadiant ? row.radiant_logo : row.dire_logo),
-    },
-    opponent: {
-      team_id: onRadiant ? (row.dire_team_id ? String(row.dire_team_id) : null) : (row.radiant_team_id ? String(row.radiant_team_id) : null),
-      name: onRadiant ? row.dire_name || null : row.radiant_name || null,
-      logo_url: normalizeLogo(onRadiant ? row.dire_logo : row.radiant_logo),
-    },
-  };
+  return value === true || value === 1;
 }
 
 export default async function handler(req, res) {
@@ -135,122 +49,25 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database not available' });
   }
 
+  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+
   const accountId = parseAccountId(req.query.account_id ?? req.query.accountId);
   if (!accountId) {
     return res.status(400).json({ error: 'Invalid account_id' });
   }
 
   try {
-    await ensureTables(db);
-
-    const [playerRows, matchRows, heroMap] = await Promise.all([
-      db`
-        SELECT account_id, name, name_cn, team_id, team_name, country_code, avatar_url, realname, birth_date, birth_year, birth_month
-        FROM pro_players
-        WHERE account_id = ${accountId}
-        LIMIT 1
-      `,
-      db.query(
-        `
-          SELECT
-            m.match_id,
-            m.start_time,
-            COALESCE(NULLIF(to_jsonb(m)->>'series_type', ''), 'BO3') AS series_type,
-            m.radiant_team_id,
-            m.dire_team_id,
-            rt.name AS radiant_team_name,
-            dt.name AS dire_team_name,
-            rt.logo_url AS radiant_team_logo,
-            dt.logo_url AS dire_team_logo,
-            m.radiant_score,
-            m.dire_score,
-            m.radiant_win,
-            CASE
-              WHEN NULLIF(to_jsonb(m)->>'league_id', '') ~ '^[0-9]+$' THEN (to_jsonb(m)->>'league_id')::BIGINT
-              ELSE NULL
-            END AS league_id,
-            t.name AS tournament_name,
-            md.payload
-          FROM matches m
-          JOIN match_details md ON md.match_id = m.match_id
-          LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
-          LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
-          LEFT JOIN tournaments t ON t.league_id::TEXT = NULLIF(to_jsonb(m)->>'league_id', '')
-          WHERE EXISTS (
-              SELECT 1
-              FROM jsonb_array_elements(
-                CASE
-                  WHEN jsonb_typeof(md.payload->'players') = 'array' THEN md.payload->'players'
-                  ELSE '[]'::jsonb
-                END
-              ) p
-              CROSS JOIN LATERAL (
-                SELECT NULLIF(BTRIM(COALESCE(p->>'account_id', p->>'accountId', p->>'accountid')), '') AS account_id_text
-              ) account_ref
-              WHERE account_ref.account_id_text ~ '^[0-9]+$'
-                AND account_ref.account_id_text::BIGINT = $1
-            )
-          ORDER BY m.start_time DESC NULLS LAST
-          LIMIT 240
-        `,
-        [accountId]
-      ),
-      fetchHeroMap(db).catch((err) => {
-        console.warn('[PlayerProfile API] Failed to load hero map:', err?.message || err);
-        return {};
-      }),
-    ]);
-
-    const player = playerRows[0] || null;
-
-    const summary = summarizePlayerMatches(matchRows, accountId, {
-      windowDays: 90,
-      recentLimit: 15,
+    const result = await getPlayerProfilePayload(db, accountId, {
+      forceRefresh: toBool(req.query.refresh),
+      maxAgeHours: 24,
     });
 
-    const detectedTeamId = player?.team_id
-      ? String(player.team_id)
-      : summary.recentMatches[0]?.selected_team?.team_id || null;
-    const nextMatch = await fetchNextMatch(db, detectedTeamId).catch((err) => {
-      console.warn('[PlayerProfile API] Failed to load next match:', err?.message || err);
-      return null;
-    });
+    if (!result?.payload) {
+      return res.status(404).json({ error: 'Player profile not found' });
+    }
 
-    const age = calculateDynamicAge({
-      birthDate: player?.birth_date || null,
-      birthYear: player?.birth_year ?? null,
-      birthMonth: player?.birth_month ?? null,
-    });
-
-    return res.status(200).json({
-      account_id: String(accountId),
-      player: {
-        name: player?.name || null,
-        name_cn: player?.name_cn || null,
-        realname: player?.realname || null,
-        team_id: player?.team_id !== null && player?.team_id !== undefined ? String(player.team_id) : detectedTeamId,
-        team_name: player?.team_name || summary.recentMatches[0]?.selected_team?.name || null,
-        country_code: player?.country_code || null,
-        avatar_url: normalizeLogo(player?.avatar_url || null),
-        birth_date: player?.birth_date || null,
-        birth_year: player?.birth_year ?? null,
-        birth_month: player?.birth_month ?? null,
-        age,
-      },
-      stats: {
-        wins: summary.wins,
-        losses: summary.losses,
-        decided_matches: summary.decidedMatches,
-        win_rate: summary.winRate,
-      },
-      signature_hero: summary.signatureHero ? enrichHeroStat(summary.signatureHero, heroMap) : null,
-      most_played_heroes: summary.mostPlayedHeroes.map((hero) => enrichHeroStat(hero, heroMap)),
-      recent_matches: summary.recentMatches.map((match) => ({
-        ...match,
-        team_hero_ids: match.team_hero_ids || [],
-      })),
-      next_match: nextMatch,
-    });
+    res.setHeader('X-Player-Profile-Cache', result.source || 'unknown');
+    return res.status(200).json(result.payload);
   } catch (error) {
     console.error('[PlayerProfile API] Error:', error.message);
     return res.status(500).json({ error: error.message });

@@ -57,11 +57,11 @@ describe('/api/player-profile account_id filter regression', () => {
 
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
+      if (sql.includes('FROM player_profile_cache')) {
+        return [];
+      }
       if (sql.includes('FROM pro_players') && sql.includes('LIMIT 1')) {
         return [{ account_id: 9001, name: 'Player 9001', team_id: 10, team_name: 'Team A' }];
-      }
-      if (sql.includes('FROM heroes')) {
-        return [];
       }
       if (sql.includes('FROM upcoming_series')) {
         return [];
@@ -110,8 +110,10 @@ describe('/api/player-profile account_id filter regression', () => {
     await handler(req as never, res as never);
 
     expect(res.statusCode).toBe(200);
+    expect(res.headers['X-Player-Profile-Cache']).toBe('live');
     expect((res.payload as any)?.recent_matches?.length).toBe(1);
     expect((res.payload as any)?.signature_hero?.hero_id).toBe(12);
+    expect((res.payload as any)?.signature_heroes?.[0]?.hero_id).toBe(12);
     expect((res.payload as any)?.recent_matches?.[0]?.team_hero_ids).toEqual([1, 12, 3, 4, 2]);
     expect((res.payload as any)?.stats?.win_rate).toBe(100);
 
@@ -124,5 +126,30 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(sql).toContain(`to_jsonb(m)->>'league_id'`);
     expect(sql).not.toContain('m.start_time >=');
     expect(params).toEqual([9001]);
+  });
+
+  it('returns cached payload directly when cache is fresh', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM player_profile_cache')) {
+        return [{
+          account_id: 9001,
+          payload: { account_id: '9001', player: { name: 'Cached Player' } },
+          updated_at: new Date().toISOString(),
+        }];
+      }
+      return [];
+    });
+
+    const { default: handler } = await import('../../api/player-profile.js');
+    const req = { method: 'GET', query: { account_id: '9001' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['X-Player-Profile-Cache']).toBe('cache');
+    expect(res.payload).toEqual({ account_id: '9001', player: { name: 'Cached Player' } });
+    expect(queryMock.mock.calls.find((call) => String(call[0]).includes('FROM matches m'))).toBeUndefined();
   });
 });

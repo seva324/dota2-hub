@@ -558,7 +558,7 @@ function TeamSummaryTable({
                 >
                   <div className="px-2 py-1.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-10 w-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
+                      <div className="h-16 w-16 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
                         <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
                       </div>
                       <div className="min-w-0">
@@ -573,11 +573,10 @@ function TeamSummaryTable({
                         ) : (
                           <div className="text-base font-semibold text-slate-100 truncate">{displayName}</div>
                         )}
-                        <div className="text-sm text-slate-300 truncate">ID {player.account_id || '-'}</div>
                         <div className="text-sm text-slate-400 truncate">
                           {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
                         </div>
-                        <div className="text-[10px] text-slate-500 truncate">Lv.{player.level}{laneName ? ` · ${laneName}` : ''}</div>
+                        <div className="text-sm text-slate-400 truncate">Lv.{player.level}</div>
                       </div>
                     </div>
                   </div>
@@ -828,7 +827,7 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
 
             return (
               <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="flex-shrink-0">
-                <div className="h-14 w-14 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 relative md:h-16 md:w-16">
+                <div className="h-10 w-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700 relative md:h-10 md:w-10">
                   <img
                     src={getHeroImg(entry.hero_id)}
                     alt={heroName}
@@ -837,7 +836,7 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
                   />
                   {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
                 </div>
-                <aside className="mt-1.5 text-xs text-slate-400 text-center whitespace-nowrap">
+                <aside className="mt-1 text-[11px] text-slate-400 text-center whitespace-nowrap">
                   {label} <b className="text-slate-200">{orderText}</b>
                 </aside>
               </section>

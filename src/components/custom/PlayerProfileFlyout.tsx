@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import {
   buildRecentMatchDraftRows,
   formatBirthDisplay,
-  toFlagEmoji,
+  toFlagImageUrl,
 } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 
@@ -42,16 +42,30 @@ function TeamInline({
   name,
   logoUrl,
   align = 'left',
+  onNameClick,
 }: {
   name?: string | null;
   logoUrl?: string | null;
   align?: 'left' | 'right';
+  onNameClick?: (() => void) | undefined;
 }) {
+  const nameNode = onNameClick && name ? (
+    <button
+      type="button"
+      onClick={onNameClick}
+      className="truncate text-left transition hover:text-white hover:underline underline-offset-2"
+    >
+      {name}
+    </button>
+  ) : (
+    <span className="truncate">{name || 'TBD'}</span>
+  );
+
   return (
     <div className={`flex min-w-0 items-center gap-2 ${align === 'right' ? 'justify-end' : ''}`}>
       {align === 'right' ? (
         <>
-          <span className="truncate">{name || 'TBD'}</span>
+          {nameNode}
           <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
             {logoUrl ? (
               <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
@@ -69,11 +83,31 @@ function TeamInline({
               <span className="text-[10px] text-slate-500">队</span>
             )}
           </span>
-          <span className="truncate">{name || 'TBD'}</span>
+          {nameNode}
         </>
       )}
     </div>
   );
+}
+
+let heroMapCache: Record<number, HeroMeta> | null = null;
+let heroMapPromise: Promise<Record<number, HeroMeta>> | null = null;
+
+async function loadHeroMap(): Promise<Record<number, HeroMeta>> {
+  if (heroMapCache) return heroMapCache;
+  if (!heroMapPromise) {
+    heroMapPromise = fetch('/api/heroes')
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data) => {
+        heroMapCache = (data || {}) as Record<number, HeroMeta>;
+        return heroMapCache;
+      })
+      .catch(() => ({}))
+      .finally(() => {
+        heroMapPromise = null;
+      });
+  }
+  return heroMapPromise;
 }
 
 export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }: PlayerProfileFlyoutProps) {
@@ -81,18 +115,15 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
   useEffect(() => {
     if (!open) return;
-
-    fetch('/api/heroes')
-      .then((res) => res.json())
-      .then((data) => {
-        setHeroMap(data || {});
-      })
-      .catch(() => {});
+    loadHeroMap().then((data) => setHeroMap(data || {}));
   }, [open]);
 
   const recentRows = useMemo(() => buildRecentMatchDraftRows(player?.recentMatches || []), [player?.recentMatches]);
-  const flagEmoji = toFlagEmoji(player?.nationality);
+  const flagImageUrl = toFlagImageUrl(player?.nationality, 40);
   const birthDisplay = formatBirthDisplay(player?.birthDate, player?.birthMonth, player?.birthYear);
+  const signatureHeroes = player?.signatureHeroes?.length
+    ? player.signatureHeroes.slice(0, 3)
+    : (player?.signatureHero ? [player.signatureHero] : []);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -128,7 +159,21 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                         <span className="text-[10px] text-slate-500">队</span>
                       )}
                     </span>
-                    <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+                    {player?.teamName ? (
+                      <button
+                        type="button"
+                        className="truncate transition hover:text-white hover:underline underline-offset-2"
+                        onClick={() => onTeamSelect?.({
+                          team_id: player.teamId || null,
+                          name: player.teamName || null,
+                          logo_url: player.teamLogoUrl || null,
+                        })}
+                      >
+                        {player.teamName}
+                      </button>
+                    ) : (
+                      <span className="truncate">Free Agent</span>
+                    )}
                   </span>
                 </SheetDescription>
                 <div className="mt-2 text-xs text-slate-400">
@@ -142,25 +187,13 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
               <Badge variant="outline" className="border-slate-600 text-slate-200">
                 ID {player?.accountId ?? '-'}
               </Badge>
-              {player?.teamId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onTeamSelect?.({
-                      team_id: player.teamId || null,
-                      name: player.teamName || null,
-                      logo_url: player.teamLogoUrl || null,
-                    });
-                  }}
-                  className="inline-flex items-center rounded-full border border-sky-500/40 px-2 py-0.5 text-xs font-medium text-sky-200 transition hover:border-sky-400 hover:bg-sky-500/10"
-                >
-                  战队 ID {player.teamId}
-                </button>
-              )}
               {player?.nationality && (
                 <Badge variant="outline" className="border-slate-600 text-slate-200">
-                  <span className="text-sm leading-none">{flagEmoji || '🏳️'}</span>
+                  {flagImageUrl ? (
+                    <img src={flagImageUrl} alt={player.nationality} className="h-3.5 w-5 rounded-[2px] object-cover" />
+                  ) : (
+                    <span className="inline-block h-3.5 w-5 rounded-[2px] bg-slate-700" />
+                  )}
                   {player.nationality}
                 </Badge>
               )}
@@ -189,9 +222,26 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
               {player?.nextMatch ? (
                 <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm text-slate-200">
-                    <TeamInline name={player.teamName || player.playerName} logoUrl={player.nextMatch.selectedTeamLogoUrl || player.teamLogoUrl} />
+                    <TeamInline
+                      name={player.teamName || player.playerName}
+                      logoUrl={player.nextMatch.selectedTeamLogoUrl || player.teamLogoUrl}
+                      onNameClick={() => onTeamSelect?.({
+                        team_id: player.nextMatch?.selectedTeamId || player.teamId || null,
+                        name: player.teamName || null,
+                        logo_url: player.nextMatch?.selectedTeamLogoUrl || player.teamLogoUrl || null,
+                      })}
+                    />
                     <div className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-300">VS</div>
-                    <TeamInline name={player.nextMatch.opponentName || 'TBD'} logoUrl={player.nextMatch.opponentLogoUrl} align="right" />
+                    <TeamInline
+                      name={player.nextMatch.opponentName || 'TBD'}
+                      logoUrl={player.nextMatch.opponentLogoUrl}
+                      align="right"
+                      onNameClick={() => onTeamSelect?.({
+                        team_id: player.nextMatch?.opponentTeamId || null,
+                        name: player.nextMatch?.opponentName || null,
+                        logo_url: player.nextMatch?.opponentLogoUrl || null,
+                      })}
+                    />
                   </div>
                   <div className="mt-1 text-xs text-slate-400">
                     {player.nextMatch.tournament || 'Unknown Tournament'} · {player.nextMatch.seriesType || 'BO3'}
@@ -208,27 +258,28 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                 <Trophy className="h-4 w-4 text-amber-400" />
                 <h4 className="font-semibold">招牌英雄（最高胜率）</h4>
               </div>
-              {player?.signatureHero ? (
-                <div className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-800/50 p-3">
-                  {getHeroImg(player.signatureHero.heroId, heroMap) ? (
-                    <img
-                      src={getHeroImg(player.signatureHero.heroId, heroMap)}
-                      alt={String(heroMap[player.signatureHero.heroId]?.name_cn || heroMap[player.signatureHero.heroId]?.name || player.signatureHero.heroId)}
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 rounded-md object-cover"
-                    />
-                  ) : (
-                    <div className="h-11 w-11 rounded-md bg-slate-700" />
-                  )}
-                  <div>
-                    <div className="text-sm font-medium text-slate-100">
-                      {heroMap[player.signatureHero.heroId]?.name_cn || heroMap[player.signatureHero.heroId]?.name || `Hero ${player.signatureHero.heroId}`}
-                    </div>
-                    <div className="text-xs text-slate-300">
-                      胜率 {player.signatureHero.winRate.toFixed(1)}% · {player.signatureHero.wins}/{player.signatureHero.games}
-                    </div>
-                  </div>
+              {signatureHeroes.length ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {signatureHeroes.map((hero) => {
+                    const img = getHeroImg(hero.heroId, heroMap);
+                    const heroName = heroMap[hero.heroId]?.name_cn || heroMap[hero.heroId]?.name || `Hero ${hero.heroId}`;
+                    return (
+                      <div key={`sig-${hero.heroId}`} className="rounded-xl border border-slate-700 bg-slate-800/50 p-3">
+                        <div className="flex items-center gap-3">
+                          {img ? (
+                            <img src={img} alt={heroName} width={44} height={44} className="h-11 w-11 rounded-md object-cover" />
+                          ) : (
+                            <div className="h-11 w-11 rounded-md bg-slate-700" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium text-slate-100">{heroName}</div>
+                            <div className="text-xs text-slate-300">{hero.winRate.toFixed(1)}%</div>
+                            <div className="text-xs text-slate-500">{hero.wins}/{hero.games}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
@@ -242,7 +293,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                 <Shield className="h-4 w-4 text-cyan-400" />
                 <h4 className="font-semibold">过去 3 个月常用英雄</h4>
               </div>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {(player?.mostPlayedHeroes || []).map((hero) => {
                   const img = getHeroImg(hero.heroId, heroMap);
                   const heroName = heroMap[hero.heroId]?.name_cn || heroMap[hero.heroId]?.name || `Hero ${hero.heroId}`;
@@ -270,7 +321,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                   );
                 })}
                 {!player?.mostPlayedHeroes?.length && (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
+                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400 sm:col-span-2">
                     暂无近 3 个月英雄统计
                   </div>
                 )}
@@ -295,13 +346,30 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                     <div key={`${row.matchId}-${row.startTime}`} className="rounded-xl border border-slate-700 bg-slate-800/40 p-3">
                       <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-3">
                         <div className="min-w-0 text-sm text-slate-100">
-                          <TeamInline name={row.teamName} logoUrl={row.teamLogoUrl} />
+                          <TeamInline
+                            name={row.teamName}
+                            logoUrl={row.teamLogoUrl}
+                            onNameClick={() => onTeamSelect?.({
+                              team_id: row.teamId || null,
+                              name: row.teamName || null,
+                              logo_url: row.teamLogoUrl || null,
+                            })}
+                          />
                         </div>
                         <div className={`justify-self-center rounded-full border px-2 py-1 text-center text-xs font-medium ${resultCls}`}>
                           {row.won === true ? 'Win' : row.won === false ? 'Lose' : 'N/A'}
                         </div>
                         <div className="min-w-0 text-sm text-slate-200">
-                          <TeamInline name={row.opponentName} logoUrl={row.opponentLogoUrl} align="right" />
+                          <TeamInline
+                            name={row.opponentName}
+                            logoUrl={row.opponentLogoUrl}
+                            align="right"
+                            onNameClick={() => onTeamSelect?.({
+                              team_id: row.opponentTeamId || null,
+                              name: row.opponentName || null,
+                              logo_url: row.opponentLogoUrl || null,
+                            })}
+                          />
                         </div>
                       </div>
 
