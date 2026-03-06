@@ -350,11 +350,18 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
               <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-wrap w-full justify-center md:justify-start">
                 <button
                   type="button"
-                  className={`text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none hover:underline underline-offset-4`}
+                  className={`inline-flex items-center gap-2 text-base sm:text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[140px] sm:max-w-[200px] md:max-w-none hover:underline underline-offset-4`}
                   onClick={() => {
                     if (radiantTeamRef?.name) onTeamClick?.(radiantTeamRef);
                   }}
                 >
+                  {radiantTeamRef?.logo_url ? (
+                    <img
+                      src={radiantTeamRef.logo_url}
+                      alt={radiantTeamName}
+                      className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 object-contain shrink-0"
+                    />
+                  ) : null}
                   {radiantTeamName}
                 </button>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -372,12 +379,19 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
                 </div>
                 <button
                   type="button"
-                  className={`text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[110px] sm:max-w-[160px] md:max-w-none hover:underline underline-offset-4`}
+                  className={`inline-flex items-center gap-2 text-base sm:text-lg md:text-2xl font-bold ${!match.radiant_win ? 'text-green-400' : 'text-red-400'} break-words max-w-[140px] sm:max-w-[200px] md:max-w-none hover:underline underline-offset-4`}
                   onClick={() => {
                     if (direTeamRef?.name) onTeamClick?.(direTeamRef);
                   }}
                 >
                   {direTeamName}
+                  {direTeamRef?.logo_url ? (
+                    <img
+                      src={direTeamRef.logo_url}
+                      alt={direTeamName}
+                      className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 object-contain shrink-0"
+                    />
+                  ) : null}
                 </button>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
