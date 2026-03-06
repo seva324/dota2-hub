@@ -42,19 +42,6 @@ type HeroMeta = {
   img?: string;
 };
 
-type ProPlayerMeta = {
-  name?: string | null;
-  name_cn?: string | null;
-  team_id?: string | null;
-  team_name?: string | null;
-  country_code?: string | null;
-  avatar_url?: string | null;
-  realname?: string | null;
-  birth_date?: string | null;
-  birth_year?: number | null;
-  birth_month?: number | null;
-};
-
 type SquadPlayerCard = {
   accountId: number | null;
   name: string;
@@ -151,7 +138,6 @@ export function TeamFlyout({
   onOpenChange,
   selectedTeam,
   teams = [],
-  matches = [],
   upcoming = [],
   onTeamSelect,
   onPlayerClick
@@ -159,6 +145,7 @@ export function TeamFlyout({
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
   const [teamHeroesByMatch, setTeamHeroesByMatch] = useState<Record<string, number[]>>({});
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+  const [teamMatches, setTeamMatches] = useState<MatchLike[]>([]);
   const [activeSquad, setActiveSquad] = useState<SquadPlayerCard[]>([]);
 
   useEffect(() => {
@@ -170,12 +157,41 @@ export function TeamFlyout({
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!open || !selectedTeam?.name) return;
+
+    let cancelled = false;
+    setTeamMatches([]);
+    setTeamHeroesByMatch({});
+    setActiveSquad([]);
+    const params = new URLSearchParams();
+    if (selectedTeam.team_id) params.set('team_id', String(selectedTeam.team_id));
+    else params.set('team_name', selectedTeam.name);
+    params.set('limit', '120');
+
+    fetch(`/api/matches?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) {
+          setTeamMatches(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTeamMatches([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedTeam?.name, selectedTeam?.team_id]);
+
   const model = useMemo(() => {
     if (!selectedTeam?.name) return null;
 
     const selectedName = normalize(selectedTeam.name);
     const selectedTeamId = selectedTeam.team_id ? String(selectedTeam.team_id) : null;
     const now = Math.floor(Date.now() / 1000);
+    const sourceMatches = teamMatches;
 
     const resolveMeta = () => teams.find((team) => {
       const teamId = team.team_id ? String(team.team_id) : null;
@@ -212,7 +228,7 @@ export function TeamFlyout({
     };
 
     const threeMonthsAgo = now - 90 * 24 * 60 * 60;
-    const recentRows: RecentRow[] = matches
+    const recentRows: RecentRow[] = sourceMatches
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) <= now)
       .filter((m) => Number(m.start_time) >= threeMonthsAgo)
@@ -250,6 +266,12 @@ export function TeamFlyout({
         };
       });
 
+    const latestPlayedMatch = sourceMatches
+      .filter(isTeamMatch)
+      .filter((m) => Number(m.start_time) <= now)
+      .sort((a, b) => Number(b.start_time || 0) - Number(a.start_time || 0))
+      [0] || null;
+
     const nextMatch = upcoming
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) > now)
@@ -265,12 +287,74 @@ export function TeamFlyout({
       selectedName,
       meta: selectedMeta,
       recentRows,
+      latestPlayedMatch,
+      resolveTeamSide,
       nextMatch,
       wins,
       losses,
       winRate
     };
-  }, [selectedTeam, teams, matches, upcoming]);
+  }, [selectedTeam, teams, teamMatches, upcoming]);
+
+  useEffect(() => {
+    if (!open || !model?.latestPlayedMatch) {
+      setActiveSquad([]);
+      return;
+    }
+
+    const latestMatchId = toMatchId(model.latestPlayedMatch);
+    const latestSide = model.resolveTeamSide(model.latestPlayedMatch);
+    if (!latestMatchId || !latestSide) {
+      setActiveSquad([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const detailRes = await fetch(`/api/match-details?match_id=${latestMatchId}`);
+        const detail = await detailRes.json();
+        const players = Array.isArray(detail?.players) ? detail.players : [];
+        const sidePlayers = players
+          .filter((p: any) => latestSide === 'radiant' ? Number(p.player_slot) < 128 : Number(p.player_slot) >= 128)
+          .sort((a: any, b: any) => Number(a.player_slot || 0) - Number(b.player_slot || 0))
+          .slice(0, 5);
+
+        const squad = await Promise.all(sidePlayers.map(async (player: any) => {
+          const accountId = Number(player.account_id);
+          let profile: any = null;
+          if (Number.isFinite(accountId) && accountId > 0) {
+            try {
+              const profileRes = await fetch(`/api/pro-players?account_id=${accountId}`);
+              if (profileRes.ok) {
+                profile = await profileRes.json();
+              }
+            } catch {
+              profile = null;
+            }
+          }
+
+          return {
+            accountId: Number.isFinite(accountId) && accountId > 0 ? accountId : null,
+            name: String(profile?.name || player.personaname || player.name || `Player ${player.player_slot}`),
+            realname: profile?.realname || null,
+            avatarUrl: profile?.avatar_url || null,
+            countryCode: profile?.country_code ? String(profile.country_code).toUpperCase() : null
+          } satisfies SquadPlayerCard;
+        }));
+
+        if (!cancelled) {
+          setActiveSquad(squad);
+        }
+      } catch {
+        if (!cancelled) setActiveSquad([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, model?.latestPlayedMatch, model?.resolveTeamSide]);
 
   useEffect(() => {
     if (!open || !model?.recentRows?.length) return;
@@ -307,72 +391,6 @@ export function TeamFlyout({
       cancelled = true;
     };
   }, [open, model, teamHeroesByMatch]);
-
-  useEffect(() => {
-    if (!open || !model?.recentRows?.length) {
-      setActiveSquad([]);
-      return;
-    }
-
-    const latestRow = model.recentRows[0];
-    if (!latestRow?.matchId) {
-      setActiveSquad([]);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/match-details?match_id=${latestRow.matchId}`);
-        const data = await res.json();
-        const players = Array.isArray(data?.players) ? data.players : [];
-        const teamPlayers = players
-          .filter((p: any) => (latestRow.isSelectedRadiant ? p.player_slot < 128 : p.player_slot >= 128))
-          .sort((a: any, b: any) => Number(a.player_slot || 0) - Number(b.player_slot || 0))
-          .slice(0, 5);
-
-        const accountIds = teamPlayers
-          .map((p: any) => Number(p.account_id))
-          .filter((id: number) => Number.isFinite(id) && id > 0);
-
-        const metaEntries = await Promise.all(
-          accountIds.map(async (accountId: number) => {
-            try {
-              const metaRes = await fetch(`/api/pro-players?account_id=${accountId}`);
-              if (!metaRes.ok) return [accountId, null] as const;
-              const meta = await metaRes.json();
-              return [accountId, meta as ProPlayerMeta | null] as const;
-            } catch {
-              return [accountId, null] as const;
-            }
-          })
-        );
-
-        const metaMap = new Map<number, ProPlayerMeta | null>(metaEntries);
-        const squad = teamPlayers.map((player: any) => {
-          const accountId = Number(player.account_id);
-          const meta = Number.isFinite(accountId) ? metaMap.get(accountId) || null : null;
-          return {
-            accountId: Number.isFinite(accountId) && accountId > 0 ? accountId : null,
-            name: meta?.name || player.name || player.personaname || (Number.isFinite(accountId) ? String(accountId) : 'Unknown'),
-            realname: meta?.realname || null,
-            countryCode: meta?.country_code ? String(meta.country_code).toUpperCase() : null,
-            avatarUrl: meta?.avatar_url || null,
-          };
-        });
-
-        if (!cancelled) {
-          setActiveSquad(squad);
-        }
-      } catch {
-        if (!cancelled) setActiveSquad([]);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, model]);
 
   const topFiveHeroes = useMemo(() => {
     const counts = new Map<number, number>();

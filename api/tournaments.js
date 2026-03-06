@@ -125,14 +125,23 @@ export default async function handler(req, res) {
       teamMap.set(team.team_id, team);
     }
 
-    // Get matches for series
-    const matches = await db`
-      SELECT m.*, s.league_id
-      FROM matches m
-      LEFT JOIN series s ON m.series_id = s.series_id
-      ORDER BY m.start_time DESC
-      LIMIT 500
-    `;
+    // Get matches for tournament leagues so older tournaments can still expand correctly
+    const leagueIds = tournaments
+      .map((t) => Number(t.league_id))
+      .filter((id) => Number.isFinite(id));
+
+    const matches = leagueIds.length > 0
+      ? await db.query(
+          `
+            SELECT m.*, s.league_id
+            FROM matches m
+            JOIN series s ON m.series_id = s.series_id
+            WHERE s.league_id = ANY($1::int[])
+            ORDER BY m.start_time DESC
+          `,
+          [leagueIds]
+        )
+      : [];
 
     // Build series by tournament (based on tournaments table only)
     const seriesByTournament = {};
