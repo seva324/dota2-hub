@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { neon } from '@neondatabase/serverless';
+import { buildDbUrlWithAppName, ensureProPlayerAuditLog } from '../../lib/server/pro-player-audit.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 
@@ -524,7 +525,9 @@ async function main() {
     process.exit(1);
   }
 
-  const db = DATABASE_URL ? neon(DATABASE_URL) : null;
+  const db = DATABASE_URL
+    ? neon(buildDbUrlWithAppName(DATABASE_URL, 'scripts/manual-api/enrich-pro-players.js'))
+    : null;
   const targets = [];
 
   if (options.fromDb) {
@@ -532,6 +535,7 @@ async function main() {
       console.error('--from-db requires DATABASE_URL or POSTGRES_URL');
       process.exit(1);
     }
+    await ensureProPlayerAuditLog(db);
     const rows = await loadDbCandidates(db, options.limit);
     for (const row of rows) {
       const accountId = Number(row.account_id);
@@ -645,6 +649,7 @@ ON CONFLICT (account_id) DO UPDATE SET
     if (!db) {
       throw new Error('--apply requires DATABASE_URL or POSTGRES_URL');
     }
+    await ensureProPlayerAuditLog(db);
     applied = await applyUpserts(db, upsertRows);
   }
 
