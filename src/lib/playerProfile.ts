@@ -99,6 +99,7 @@ export interface PlayerFlyoutModel {
   birthYear?: number | null;
   age?: number | null;
   winRate?: number | null;
+  signatureHeroes?: PlayerFlyoutSignatureHero[];
   signatureHero?: PlayerFlyoutSignatureHero | null;
   mostPlayedHeroes?: PlayerFlyoutMostPlayedHero[];
   nextMatch?: PlayerFlyoutNextMatch | null;
@@ -130,6 +131,12 @@ export function toFlagEmoji(countryCode?: string | null): string {
   return Array.from(code)
     .map((char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
     .join('');
+}
+
+export function toFlagImageUrl(countryCode?: string | null, width = 40): string {
+  const code = String(countryCode || '').trim().toLowerCase();
+  if (!/^[a-z]{2}$/.test(code)) return '';
+  return `https://flagcdn.com/w${Math.max(16, Math.trunc(width))}/${code}.png`;
 }
 
 export function formatBirthDisplay(date?: string | null, month?: number | null, year?: number | null): string {
@@ -228,12 +235,24 @@ export function mapPlayerProfileApiToFlyoutModel(data: any): PlayerFlyoutModel |
 
   const player = data.player || {};
   const stats = data.stats || {};
-  const signature = data.signature_hero || null;
+  const signatureHeroesRaw = Array.isArray(data.signature_heroes)
+    ? data.signature_heroes
+    : (data.signature_hero ? [data.signature_hero] : []);
   const mostPlayed = Array.isArray(data.most_played_heroes) ? data.most_played_heroes : [];
   const recent = Array.isArray(data.recent_matches) ? data.recent_matches : [];
   const next = data.next_match || null;
   const nationality = player.country_code ? String(player.country_code).toUpperCase() : null;
   const chineseName = nationality === 'CN' ? (player.name_cn || null) : null;
+
+  const signatureHeroes = signatureHeroesRaw
+    .map((hero: any) => ({
+      heroId: toNumber(hero.hero_id) || 0,
+      games: toNumber(hero.matches) || 0,
+      wins: toNumber(hero.wins) || 0,
+      winRate: toWinRate(hero.win_rate) || 0,
+    }))
+    .filter((hero: PlayerFlyoutSignatureHero) => hero.heroId > 0 && hero.games > 0)
+    .slice(0, 3);
 
   return {
     accountId,
@@ -250,14 +269,8 @@ export function mapPlayerProfileApiToFlyoutModel(data: any): PlayerFlyoutModel |
     birthYear: toNumber(player.birth_year),
     age: toNumber(player.age),
     winRate: toWinRate(stats.win_rate),
-    signatureHero: signature
-      ? {
-          heroId: toNumber(signature.hero_id) || 0,
-          games: toNumber(signature.matches) || 0,
-          wins: toNumber(signature.wins) || 0,
-          winRate: toWinRate(signature.win_rate) || 0,
-        }
-      : null,
+    signatureHeroes,
+    signatureHero: signatureHeroes[0] || null,
     mostPlayedHeroes: mostPlayed
       .map((hero: any) => ({
         heroId: toNumber(hero.hero_id) || 0,
@@ -266,7 +279,7 @@ export function mapPlayerProfileApiToFlyoutModel(data: any): PlayerFlyoutModel |
         winRate: toWinRate(hero.win_rate) || 0,
       }))
       .filter((hero: PlayerFlyoutMostPlayedHero) => hero.heroId > 0 && hero.games > 0)
-      .slice(0, 3),
+      .slice(0, 6),
     nextMatch: next
       ? {
           opponentName: next.opponent?.name || null,
@@ -315,6 +328,7 @@ export function createMinimalPlayerFlyoutModel(accountId: number): PlayerFlyoutM
     birthYear: null,
     age: null,
     winRate: null,
+    signatureHeroes: [],
     signatureHero: null,
     mostPlayedHeroes: [],
     nextMatch: null,
@@ -342,13 +356,11 @@ function buildFallbackFlyoutModel(accountId: number, row: ProPlayersSnapshotRow 
 
 async function fetchProPlayersSnapshot(accountId: number): Promise<ProPlayersSnapshotRow | null> {
   try {
-    const res = await fetch('/api/pro-players');
+    const res = await fetch(`/api/pro-players?account_id=${accountId}`);
     if (!res.ok) return null;
     const data = await res.json();
     if (!data || typeof data !== 'object') return null;
-    const row = data[String(accountId)];
-    if (!row || typeof row !== 'object') return null;
-    return row as ProPlayersSnapshotRow;
+    return data as ProPlayersSnapshotRow;
   } catch {
     return null;
   }

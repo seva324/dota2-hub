@@ -1,7 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockQuery = vi.fn();
-const neonMock = vi.fn(() => ({ query: mockQuery }));
+type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
+  query: (sql: string, params?: unknown[]) => Promise<unknown[]>;
+};
+
+const queryMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
+const taggedMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
+
+const db = (Object.assign(
+  async (strings: TemplateStringsArray, ...values: unknown[]) => taggedMock(strings, ...values),
+  {
+    query: (sql: string, params?: unknown[]) => queryMock(sql, params),
+  }
+) as unknown) as TaggedFn;
+
+const neonMock = vi.fn(() => db);
 
 vi.mock('@neondatabase/serverless', () => ({
   neon: neonMock,
@@ -30,24 +43,23 @@ function createRes() {
   };
 }
 
+function renderSql(strings: TemplateStringsArray) {
+  return strings.join(' ').replace(/\s+/g, ' ').trim();
+}
+
 describe('/api/pro-players', () => {
   beforeEach(() => {
     vi.resetModules();
-    mockQuery.mockReset();
+    queryMock.mockReset();
+    taggedMock.mockReset();
     neonMock.mockClear();
     process.env.DATABASE_URL = 'postgres://example.test/db';
   });
 
-  it('syncs pro_players from match_details data before returning payload', async () => {
-    mockQuery.mockImplementation(async (sql: string) => {
-      const query = String(sql);
-      if (query.includes('to_regclass')) {
-        return [{ matches_table: 'matches', match_details_table: 'match_details' }];
-      }
-      if (query.includes('WITH extracted AS')) {
-        return [{ discovered_count: 2, upserted_count: 2 }];
-      }
-      if (query.includes('FROM pro_players')) {
+  it('returns a single player when account_id is provided', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE account_id =')) {
         return [
           {
             account_id: 1001,
@@ -55,12 +67,12 @@ describe('/api/pro-players', () => {
             name_cn: null,
             team_id: 2001,
             team_name: 'Team Alpha',
-            country_code: null,
+            country_code: 'CN',
             avatar_url: null,
-            realname: null,
+            realname: 'Real One',
             birth_date: null,
-            birth_year: null,
-            birth_month: null,
+            birth_year: 1999,
+            birth_month: 5,
           },
         ];
       }
@@ -68,16 +80,46 @@ describe('/api/pro-players', () => {
     });
 
     const { default: handler } = await import('../../api/pro-players.js');
-    const req = { method: 'GET' };
+    const req = { method: 'GET', query: { account_id: '1001' } };
     const res = createRes();
 
     await handler(req as any, res as any);
 
-    const sqls = mockQuery.mock.calls.map((call) => String(call[0]));
-    const syncSql = sqls.find((sql) => sql.includes('WITH extracted AS'));
-    expect(syncSql).toBeDefined();
-    expect(syncSql).toContain('LEFT JOIN teams rt');
-    expect(syncSql).toContain('LEFT JOIN teams dt');
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toEqual(
+      expect.objectContaining({
+        name: 'Player One',
+        team_id: '2001',
+        team_name: 'Team Alpha',
+        country_code: 'CN',
+      })
+    );
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it('returns the full map when no account_id is provided', async () => {
+    queryMock.mockResolvedValue([
+      {
+        account_id: 1001,
+        name: 'Player One',
+        name_cn: null,
+        team_id: 2001,
+        team_name: 'Team Alpha',
+        country_code: null,
+        avatar_url: null,
+        realname: null,
+        birth_date: null,
+        birth_year: null,
+        birth_month: null,
+      },
+    ]);
+
+    const { default: handler } = await import('../../api/pro-players.js');
+    const req = { method: 'GET', query: {} };
+    const res = createRes();
+
+    await handler(req as any, res as any);
+
     expect(res.statusCode).toBe(200);
     expect(res.payload).toEqual({
       '1001': expect.objectContaining({
@@ -86,29 +128,5 @@ describe('/api/pro-players', () => {
         team_name: 'Team Alpha',
       }),
     });
-  });
-
-  it('skips match-derived sync if source tables are unavailable', async () => {
-    mockQuery.mockImplementation(async (sql: string) => {
-      const query = String(sql);
-      if (query.includes('to_regclass')) {
-        return [{ matches_table: null, match_details_table: null }];
-      }
-      if (query.includes('FROM pro_players')) {
-        return [];
-      }
-      return [];
-    });
-
-    const { default: handler } = await import('../../api/pro-players.js');
-    const req = { method: 'GET' };
-    const res = createRes();
-
-    await handler(req as any, res as any);
-
-    const sqls = mockQuery.mock.calls.map((call) => String(call[0]));
-    expect(sqls.some((sql) => sql.includes('WITH extracted AS'))).toBe(false);
-    expect(res.statusCode).toBe(200);
-    expect(res.payload).toEqual({});
   });
 });

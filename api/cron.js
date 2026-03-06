@@ -1,6 +1,24 @@
 import { syncNewsToDb } from './news.js';
 import { runSyncOpenDota } from '../lib/server/sync-opendota.js';
 import { runSyncLiquipedia } from '../lib/server/sync-liquipedia.js';
+import { neon } from '@neondatabase/serverless';
+import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
+
+const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+let sql = null;
+
+function getDb() {
+  if (!sql && DATABASE_URL) {
+    try {
+      sql = neon(DATABASE_URL);
+    } catch (error) {
+      console.error('[cron] Failed to create db client:', error.message);
+      return null;
+    }
+  }
+  return sql;
+}
 
 function pickParam(value, fallback = '') {
   if (Array.isArray(value)) return String(value[0] || fallback);
@@ -9,6 +27,11 @@ function pickParam(value, fallback = '') {
 }
 
 async function runAction(action) {
+  if (action === 'refresh-player-profiles') {
+    const db = getDb();
+    if (!db) throw new Error('Database not available');
+    return { action, result: await warmPlayerProfileCache(db, { limit: 60 }) };
+  }
   if (action === 'sync-opendota') {
     return { action, result: await runSyncOpenDota() };
   }
@@ -22,12 +45,15 @@ async function runAction(action) {
     const opendota = await runSyncOpenDota();
     const liquipedia = await runSyncLiquipedia();
     const news = await syncNewsToDb();
+    const db = getDb();
+    const playerProfiles = db ? await warmPlayerProfileCache(db, { limit: 60 }) : { skipped: true, reason: 'db_unavailable' };
     return {
       action,
       result: {
         opendota,
         liquipedia,
         news,
+        playerProfiles,
       },
     };
   }
