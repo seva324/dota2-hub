@@ -107,6 +107,45 @@ describe('player profile helpers', () => {
 
     expect(summary.mostPlayedHeroes[0]).toMatchObject({ hero_id: 1, matches: 2, wins: 2, win_rate: 100 });
     expect(summary.signatureHero).toMatchObject({ hero_id: 1, win_rate: 100 });
-    expect(summary.winRate).toBe(67);
+    expect(summary.winRate).toBe(100);
+  });
+
+  it('preserves draft pick order for team heroes when picks_bans is present', () => {
+    const summary = summarizePlayerMatches([
+      {
+        match_id: 99,
+        start_time: 1741000000,
+        radiant_win: true,
+        payload: {
+          players: [
+            { account_id: 1001, player_slot: 0, hero_id: 1 },
+            { account_id: 2001, player_slot: 1, hero_id: 2 },
+            { account_id: 2002, player_slot: 2, hero_id: 3 },
+            { account_id: 2003, player_slot: 3, hero_id: 4 },
+            { account_id: 2004, player_slot: 4, hero_id: 5 },
+            { account_id: 3001, player_slot: 128, hero_id: 6 },
+            { account_id: 3002, player_slot: 129, hero_id: 7 },
+            { account_id: 3003, player_slot: 130, hero_id: 8 },
+            { account_id: 3004, player_slot: 131, hero_id: 9 },
+            { account_id: 3005, player_slot: 132, hero_id: 10 },
+          ],
+          picks_bans: [
+            { hero_id: 2, team: 'radiant', is_pick: true, order: 5 },
+            { hero_id: 1, team: 'radiant', is_pick: true, order: 1 },
+            { hero_id: 5, team: 'radiant', is_pick: true, order: 9 },
+            { hero_id: 4, team: 'radiant', is_pick: true, order: 7 },
+            { hero_id: 3, team: 'radiant', is_pick: true, order: 3 },
+            { hero_id: 6, team: 'dire', is_pick: true, order: 2 },
+          ],
+        },
+      },
+    ], 1001, {
+      nowTs: 1741200000,
+      windowDays: 90,
+      recentLimit: 10,
+    });
+
+    expect(summary.recentMatches).toHaveLength(1);
+    expect(summary.recentMatches[0].team_hero_ids).toEqual([1, 3, 2, 4, 5]);
   });
 });

@@ -968,6 +968,7 @@ export function TournamentSection({
         open={playerFlyoutOpen}
         onOpenChange={setPlayerFlyoutOpen}
         player={playerFlyoutModel}
+        onTeamSelect={(team) => openTeamFlyout(team)}
       />
     </section>
   );
