@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Clock, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
+import { Users, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -380,17 +380,11 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
                 </button>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
-                <div className="flex items-center justify-center md:justify-end">
-                  <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1">
-                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
-                    <span className="text-sm sm:text-base font-semibold tracking-wide text-amber-200">
-                      比赛时长 {formatDuration(match.duration)}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-1.5 flex items-center justify-center md:justify-end text-[11px]">
+                <div className="flex items-center justify-center md:justify-end text-[11px]">
                   <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300">
                     <span>赛制 {getSeriesTypeLabel(match.series_type)}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>时长 {formatDuration(match.duration)}</span>
                     <span className="text-slate-500">·</span>
                     <span>系列赛 ID {match.series_id || '-'}</span>
                     <span className="text-slate-500">·</span>
@@ -519,22 +513,6 @@ function TeamSummaryTable({
 }) {
   const teamCode = isRadiant ? 0 : 1;
 
-  const total = players.reduce(
-    (acc, p) => {
-      acc.level += p.level || 0;
-      acc.kills += p.kills || 0;
-      acc.deaths += p.deaths || 0;
-      acc.assists += p.assists || 0;
-      acc.lastHits += p.last_hits || 0;
-      acc.denies += p.denies || 0;
-      acc.netWorth += getNetWorth(p);
-      acc.gpm += p.gold_per_min || 0;
-      acc.xpm += p.xp_per_min || 0;
-      return acc;
-    },
-    { level: 0, kills: 0, deaths: 0, assists: 0, lastHits: 0, denies: 0, netWorth: 0, gpm: 0, xpm: 0 }
-  );
-
   const teamPicksBans = picksBans
     .filter((entry) => entry.team === teamCode)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -550,22 +528,27 @@ function TeamSummaryTable({
             if (teamRef?.name) onTeamClick?.(teamRef);
           }}
         >
-          {teamName} - 摘要
+          {teamName}
         </button>
         {isWinner && <span className="text-xs text-green-400 font-semibold">胜者</span>}
       </div>
 
       <div className="hidden md:block overflow-x-auto">
-        <div className="min-w-[940px]">
-          <header className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800 bg-slate-900/70 text-[10px] uppercase tracking-wide text-slate-400">
-            <div className="px-2.5 py-1.5">玩家</div>
-            <div className="px-2 py-1.5 text-center">KDA</div>
-            <div className="px-2 py-1.5 text-center">经济</div>
-            <div className="px-2 py-1.5 text-center">GPM / XPM</div>
-            <div className="px-2.5 py-1.5 text-center">物品栏</div>
-          </header>
-
-          <div className="divide-y divide-slate-800/80 bg-slate-900/10">
+        <table className="w-full min-w-[1080px]">
+          <thead className="bg-slate-900/70">
+            <tr className="text-xs text-slate-400">
+              <th className="text-left px-4 py-3 w-[340px]">玩家</th>
+              <th className="text-center px-3 py-3 w-[72px]">等级</th>
+              <th className="text-right px-3 py-3 w-[64px] text-green-400">击杀</th>
+              <th className="text-right px-3 py-3 w-[64px] text-red-400">死亡</th>
+              <th className="text-right px-3 py-3 w-[64px] text-slate-300">助攻</th>
+              <th className="text-right px-3 py-3 w-[120px]">正补/反补</th>
+              <th className="text-right px-3 py-3 w-[96px] text-yellow-400">NET</th>
+              <th className="text-right px-3 py-3 w-[124px]">GPM/XPM</th>
+              <th className="text-left px-3 py-3">物品</th>
+            </tr>
+          </thead>
+          <tbody>
             {sortedPlayers.map((player) => {
               const displayName = getPlayerDisplayName(player);
               const laneName = getLaneName(player.lane, isRadiant);
@@ -574,65 +557,43 @@ function TeamSummaryTable({
               const neutral = getNeutralItemId(player);
 
               return (
-                <div
-                  key={`${player.player_slot}-${player.account_id}-${player.hero_id}`}
-                  className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800/80 transition-colors hover:bg-slate-800/35"
-                >
-                  <div className="px-2.5 py-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-10 w-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
-                        <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
+                <tr key={`${player.player_slot}-${player.account_id}-${player.hero_id}`} className="border-t border-slate-800/70">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0 border border-slate-700">
+                        <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0">
                         {player.account_id ? (
                           <button
                             type="button"
-                            className="text-[15px] font-semibold leading-tight text-slate-100 truncate hover:underline underline-offset-2 text-left"
+                            className="text-base font-semibold text-slate-100 truncate hover:underline underline-offset-2 text-left"
                             onClick={() => onPlayerClick?.(Number(player.account_id))}
                           >
                             {displayName}
                           </button>
                         ) : (
-                          <div className="text-[15px] font-semibold leading-tight text-slate-100 truncate">{displayName}</div>
+                          <div className="text-base font-semibold text-slate-100 truncate">{displayName}</div>
                         )}
-                        <div className="mt-0.5 text-sm leading-tight text-slate-300 truncate">
-                          {getHeroName(player.hero_id)}
+                        <div className="text-sm text-slate-300 truncate">ID {player.account_id || '-'}</div>
+                        <div className="text-sm text-slate-400 truncate">
+                          {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
                         </div>
-                        {laneName && <div className="text-[10px] text-slate-500">{laneName}</div>}
                       </div>
                     </div>
-                  </div>
-
-                  <div className="px-2 py-1.5 flex flex-col items-center justify-center text-sm">
-                    <div className="text-base font-semibold leading-tight text-slate-200">
-                      <span className="text-green-400">{player.kills}</span>
-                      <span className="text-slate-500"> / </span>
-                      <span className="text-red-400">{player.deaths}</span>
-                      <span className="text-slate-500"> / </span>
-                      <span className="text-slate-200">{player.assists}</span>
-                    </div>
-                    <div className="mt-0.5 text-[10px] text-slate-500">Lv.{player.level}</div>
-                  </div>
-
-                  <div className="px-2 py-1.5 flex flex-col justify-center gap-1 text-[11px]">
-                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-amber-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
-                      NET <b className="text-amber-200">{formatCompact(getNetWorth(player))}</b>
-                    </div>
-                    <div className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-sky-200">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
-                      LH/DN <b>{formatCompact(player.last_hits)}/{formatCompact(player.denies)}</b>
-                    </div>
-                  </div>
-
-                  <div className="px-2 py-1.5 flex flex-col items-center justify-center text-[11px]">
-                    <div className="text-sm font-semibold leading-tight text-emerald-300">{formatCompact(player.gold_per_min)}</div>
-                    <div className="text-slate-500">GPM</div>
-                    <div className="mt-0.5 text-sm font-semibold leading-tight text-cyan-300">{formatCompact(player.xp_per_min)}</div>
-                    <div className="text-slate-500">XPM</div>
-                  </div>
-
-                  <div className="px-2.5 py-1.5 flex items-center justify-center">
+                  </td>
+                  <td className="px-3 py-3 text-center text-base font-semibold text-slate-200">{player.level}</td>
+                  <td className="px-3 py-3 text-right text-base font-semibold text-green-400">{player.kills}</td>
+                  <td className="px-3 py-3 text-right text-base font-semibold text-red-400">{player.deaths}</td>
+                  <td className="px-3 py-3 text-right text-base font-semibold text-slate-200">{player.assists}</td>
+                  <td className="px-3 py-3 text-right text-base font-semibold text-slate-300">
+                    {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
+                  </td>
+                  <td className="px-3 py-3 text-right text-lg font-bold text-yellow-400">{formatCompact(getNetWorth(player))}</td>
+                  <td className="px-3 py-3 text-right text-base font-semibold text-slate-200">
+                    <span className="text-emerald-300">{formatCompact(player.gold_per_min)}</span>/<span className="text-sky-300">{formatCompact(player.xp_per_min)}</span>
+                  </td>
+                  <td className="px-3 py-3">
                     <ItemStrip
                       mainItems={mainItems}
                       backpackItems={backpackItems}
@@ -642,32 +603,12 @@ function TeamSummaryTable({
                       itemsMap={itemsMap}
                       centered
                     />
-                  </div>
-                </div>
+                  </td>
+                </tr>
               );
             })}
-
-            <div className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800/80 bg-slate-900/50 text-[11px] text-slate-300">
-              <div className="px-2.5 py-1.5 text-slate-400">团队合计</div>
-              <div className="px-2 py-1.5 text-center">
-                <span className="text-green-400 font-semibold">{total.kills}</span>
-                <span className="text-slate-500"> / </span>
-                <span className="text-red-400 font-semibold">{total.deaths}</span>
-                <span className="text-slate-500"> / </span>
-                <span className="font-semibold">{total.assists}</span>
-              </div>
-              <div className="px-2 py-1.5 text-center text-slate-200">
-                LH/DN {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
-                <span className="mx-1.5 text-slate-600">|</span>
-                <span className="text-amber-300 font-semibold">NET {formatCompact(total.netWorth)}</span>
-              </div>
-              <div className="px-2 py-1.5 text-center text-slate-200">
-                {formatCompact(total.gpm)}/{formatCompact(total.xpm)}
-              </div>
-              <div className="px-2.5 py-1.5 text-center text-slate-500">-</div>
-            </div>
-          </div>
-        </div>
+          </tbody>
+        </table>
       </div>
 
       <div className="space-y-1.5 p-1.5 md:hidden">
@@ -716,7 +657,7 @@ function TeamSummaryTable({
                   <span className="text-slate-500">等级</span> {player.level}
                 </div>
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
-                  <span className="text-slate-500">补刀</span> {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
+                  <span className="text-slate-500">正补/反补</span> {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
                 </div>
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400 col-span-2">
                   <span className="text-slate-500">NET</span> {formatCompact(getNetWorth(player))}
@@ -793,9 +734,9 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   const content = (
-    <div className={`flex items-start gap-1 ${centered ? 'justify-center' : 'justify-start'}`}>
-      <div className="min-w-0 space-y-1">
-        <div className="flex flex-wrap items-center gap-0.5">
+    <div className={`flex items-center gap-2 ${centered ? 'justify-center' : 'justify-start'}`}>
+      <div className="min-w-0 space-y-1.5 flex-1">
+        <div className="flex flex-wrap items-center gap-1">
           {mainItems.map((id, idx) => (
             <div key={`main-${idx}`}>{renderItem(id)}</div>
           ))}
@@ -819,7 +760,7 @@ function ItemStrip({
           ))}
         </div>
       </div>
-      <div className={`${compactMobile ? 'w-8 h-8 mt-0' : 'w-10 h-10 mt-0'} relative flex-shrink-0`}>
+      <div className={`${compactMobile ? 'w-8 h-8' : 'w-10 h-10'} relative flex-shrink-0 self-center`}>
         <img
           src={`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
           alt="Aghanim's Scepter"
@@ -860,32 +801,32 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
   if (picksBans.length === 0) return null;
 
   return (
-    <div className="border-t border-slate-800 px-3 py-2 bg-slate-900/30">
-      <div className="text-[11px] text-slate-400 mb-1">Picks / Bans</div>
-      <div className="overflow-x-auto pb-0.5">
-        <div className="flex min-w-full w-max items-start gap-1.5 flex-nowrap">
-        {picksBans.map((entry) => {
-          const label = entry.is_pick ? '选择' : '禁止';
-          const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
-          const heroName = getHeroName(entry.hero_id);
+    <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
+      <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-max flex-nowrap items-start gap-2.5">
+          {picksBans.map((entry) => {
+            const label = entry.is_pick ? '选择' : '禁止';
+            const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
+            const heroName = getHeroName(entry.hero_id);
 
-          return (
-            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="min-w-0 shrink-0">
-              <div className="w-10 h-10 rounded overflow-hidden bg-slate-800 border border-slate-700 relative mx-auto">
-                <img
-                  src={getHeroImg(entry.hero_id)}
-                  alt={heroName}
-                  className={`w-full h-full object-cover ${entry.is_pick ? '' : 'grayscale brightness-75'}`}
-                  title={heroName}
-                />
-                {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
-              </div>
-              <aside className="mt-0.5 text-[10px] text-slate-400 text-center whitespace-nowrap leading-none">
-                {label} <b className="text-slate-200">{orderText}</b>
-              </aside>
-            </section>
-          );
-        })}
+            return (
+              <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="flex-shrink-0">
+                <div className="h-14 w-14 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 relative md:h-16 md:w-16">
+                  <img
+                    src={getHeroImg(entry.hero_id)}
+                    alt={heroName}
+                    className={`w-full h-full object-cover ${entry.is_pick ? '' : 'grayscale brightness-75'}`}
+                    title={heroName}
+                  />
+                  {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
+                </div>
+                <aside className="mt-1.5 text-xs text-slate-400 text-center whitespace-nowrap">
+                  {label} <b className="text-slate-200">{orderText}</b>
+                </aside>
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>
