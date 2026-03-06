@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Calendar, Flag, Shield, Target, Trophy } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Calendar, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { isChineseTeam } from '@/lib/teams';
+import { toFlagImageUrl } from '@/lib/playerProfile';
 
 type TeamLike = {
   team_id?: string | null;
@@ -41,12 +42,25 @@ type HeroMeta = {
   img?: string;
 };
 
-type SquadPlayer = {
+type ProPlayerMeta = {
+  name?: string | null;
+  name_cn?: string | null;
+  team_id?: string | null;
+  team_name?: string | null;
+  country_code?: string | null;
+  avatar_url?: string | null;
+  realname?: string | null;
+  birth_date?: string | null;
+  birth_year?: number | null;
+  birth_month?: number | null;
+};
+
+type SquadPlayerCard = {
   accountId: number | null;
   name: string;
-  realName: string | null;
-  avatarUrl: string | null;
+  realname: string | null;
   countryCode: string | null;
+  avatarUrl: string | null;
 };
 
 type RecentRow = {
@@ -117,12 +131,6 @@ function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   return '';
 }
 
-function getFlagImageUrl(countryCode?: string | null): string | null {
-  const code = String(countryCode || '').trim().toLowerCase();
-  if (!/^[a-z]{2}$/.test(code)) return null;
-  return `https://flagcdn.com/24x18/${code}.png`;
-}
-
 export interface TeamFlyoutProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -152,7 +160,7 @@ export function TeamFlyout({
   const [teamHeroesByMatch, setTeamHeroesByMatch] = useState<Record<string, number[]>>({});
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [teamMatches, setTeamMatches] = useState<MatchLike[]>([]);
-  const [activeSquad, setActiveSquad] = useState<SquadPlayer[]>([]);
+  const [activeSquad, setActiveSquad] = useState<SquadPlayerCard[]>([]);
 
   useEffect(() => {
     fetch('/api/heroes')
@@ -300,7 +308,7 @@ export function TeamFlyout({
       losses,
       winRate
     };
-  }, [selectedTeam, teams, matches, teamMatches, upcoming]);
+  }, [selectedTeam, teams, teamMatches, upcoming]);
 
   useEffect(() => {
     if (!open || !model?.latestPlayedMatch) {
@@ -332,19 +340,21 @@ export function TeamFlyout({
           if (Number.isFinite(accountId) && accountId > 0) {
             try {
               const profileRes = await fetch(`/api/pro-players?account_id=${accountId}`);
-              profile = await profileRes.json();
+              if (profileRes.ok) {
+                profile = await profileRes.json();
+              }
             } catch {
               profile = null;
             }
           }
 
           return {
-            accountId: Number.isFinite(accountId) ? accountId : null,
+            accountId: Number.isFinite(accountId) && accountId > 0 ? accountId : null,
             name: String(profile?.name || player.personaname || player.name || `Player ${player.player_slot}`),
-            realName: profile?.realname || null,
+            realname: profile?.realname || null,
             avatarUrl: profile?.avatar_url || null,
-            countryCode: profile?.country_code || null
-          } satisfies SquadPlayer;
+            countryCode: profile?.country_code ? String(profile.country_code).toUpperCase() : null
+          } satisfies SquadPlayerCard;
         }));
 
         if (!cancelled) {
@@ -418,15 +428,20 @@ export function TeamFlyout({
               <div className="flex flex-col items-center justify-center gap-4 text-center">
                 <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
                   {selectedTeam?.logo_url ? (
-                    <img src={selectedTeam.logo_url} alt={selectedTeam.name} width={64} height={64} className="w-16 h-16 object-contain" />
+                    <img src={selectedTeam.logo_url} alt={selectedTeam.name} width={72} height={72} className="w-18 h-18 object-contain" />
                   ) : (
-                    <Shield className="w-8 h-8 text-slate-400" />
+                    <Shield className="w-9 h-9 text-slate-400" />
                   )}
                 </div>
-                <SheetTitle className="text-2xl text-white">{selectedTeam?.name || 'Team'}</SheetTitle>
+                <div className="min-w-0">
+                  <SheetTitle className="text-2xl text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
+                  <SheetDescription className="sr-only">
+                    Team details
+                  </SheetDescription>
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 mt-4">
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
                 {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams) ? (
                   <Badge variant="outline" className="border-red-500/40 text-red-300">
@@ -449,45 +464,52 @@ export function TeamFlyout({
             <div className="p-6 space-y-6">
               <section>
                 <div className="flex items-center gap-2 mb-3 text-white">
-                  <Shield className="w-4 h-4 text-sky-400" />
+                  <Trophy className="w-4 h-4 text-amber-400" />
                   <h4 className="font-semibold">当前阵容</h4>
                 </div>
-                {activeSquad.length ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                    {activeSquad.map((player, index) => {
-                      const flagUrl = getFlagImageUrl(player.countryCode);
-                      return (
-                        <button
-                          key={`${player.accountId ?? player.name}-${index}`}
-                          type="button"
-                          className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-left hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-                          onClick={() => {
-                            if (player.accountId) onPlayerClick?.(player.accountId);
-                          }}
-                        >
-                          <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-xl border border-slate-700 bg-slate-700/60">
-                            {player.avatarUrl ? (
-                              <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">PLAYER</div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-center gap-1 text-sm font-semibold text-white">
-                            {flagUrl ? <img src={flagUrl} alt={player.countryCode || ''} className="h-[14px] w-[18px] rounded-[2px] object-cover" /> : null}
-                            <span className="truncate">{player.name}</span>
-                          </div>
-                          <div className="mt-1 text-center text-xs text-slate-400 truncate">
-                            {player.realName || '—'}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
-                    暂无当前阵容数据
-                  </div>
-                )}
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                  {activeSquad.map((player) => {
+                    const flagUrl = toFlagImageUrl(player.countryCode, 40);
+                    const body = (
+                      <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-center">
+                        <div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900/60">
+                          {player.avatarUrl ? (
+                            <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <UserRound className="h-10 w-10 text-slate-500" />
+                          )}
+                        </div>
+                        <div className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-100">
+                          {flagUrl ? (
+                            <img src={flagUrl} alt={player.countryCode || ''} className="h-3.5 w-5 rounded-[2px] object-cover" />
+                          ) : (
+                            <span className="inline-block h-3.5 w-5 rounded-[2px] bg-slate-700" />
+                          )}
+                          <span className="truncate">{player.name}</span>
+                        </div>
+                        <div className="mt-1 text-xs text-slate-400 truncate">{player.realname || '—'}</div>
+                      </div>
+                    );
+
+                    return player.accountId ? (
+                      <button
+                        key={`squad-${player.accountId}`}
+                        type="button"
+                        className="text-left"
+                        onClick={() => onPlayerClick?.(player.accountId!)}
+                      >
+                        {body}
+                      </button>
+                    ) : (
+                      <div key={`squad-${player.name}`}>{body}</div>
+                    );
+                  })}
+                  {!activeSquad.length && (
+                    <div className="col-span-full rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
+                      暂无最近一场比赛阵容
+                    </div>
+                  )}
+                </div>
               </section>
 
               <section>
