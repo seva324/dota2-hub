@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Users, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Users, TrendingUp, FileText, Backpack, ChevronDown, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -260,6 +260,7 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
   const [error, setError] = useState<string | null>(null);
   const [itemsMap, setItemsMap] = useState<Record<number, ItemInfo>>(cachedItemsMap);
   const [isMobile, setIsMobile] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
@@ -470,7 +471,31 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="left" showCloseButton={false} className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain">
-          <div className="h-full overflow-x-hidden overflow-y-auto p-2 sm:p-5">
+          <button
+            type="button"
+            aria-label="关闭"
+            className="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-200 shadow-lg backdrop-blur transition hover:bg-slate-800"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div
+            className="h-full overflow-x-hidden overflow-y-auto p-2 pt-14 sm:p-5"
+            onTouchStart={(event) => {
+              const touch = event.touches[0];
+              touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+            }}
+            onTouchEnd={(event) => {
+              if (!touchStartRef.current) return;
+              const touch = event.changedTouches[0];
+              const dx = touch.clientX - touchStartRef.current.x;
+              const dy = touch.clientY - touchStartRef.current.y;
+              touchStartRef.current = null;
+              if (Math.abs(dx) >= 80 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                onOpenChange(false);
+              }
+            }}
+          >
             {detailBody}
           </div>
         </SheetContent>
