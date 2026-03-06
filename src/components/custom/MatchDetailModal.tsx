@@ -519,22 +519,6 @@ function TeamSummaryTable({
 }) {
   const teamCode = isRadiant ? 0 : 1;
 
-  const total = players.reduce(
-    (acc, p) => {
-      acc.level += p.level || 0;
-      acc.kills += p.kills || 0;
-      acc.deaths += p.deaths || 0;
-      acc.assists += p.assists || 0;
-      acc.lastHits += p.last_hits || 0;
-      acc.denies += p.denies || 0;
-      acc.netWorth += getNetWorth(p);
-      acc.gpm += p.gold_per_min || 0;
-      acc.xpm += p.xp_per_min || 0;
-      return acc;
-    },
-    { level: 0, kills: 0, deaths: 0, assists: 0, lastHits: 0, denies: 0, netWorth: 0, gpm: 0, xpm: 0 }
-  );
-
   const teamPicksBans = picksBans
     .filter((entry) => entry.team === teamCode)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -550,19 +534,19 @@ function TeamSummaryTable({
             if (teamRef?.name) onTeamClick?.(teamRef);
           }}
         >
-          {teamName} - 摘要
+          {teamName}
         </button>
         {isWinner && <span className="text-xs text-green-400 font-semibold">胜者</span>}
       </div>
 
       <div className="hidden md:block overflow-x-auto">
-        <div className="min-w-[940px]">
-          <header className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800 bg-slate-900/70 text-[10px] uppercase tracking-wide text-slate-400">
-            <div className="px-2.5 py-1.5">玩家</div>
-            <div className="px-2 py-1.5 text-center">KDA</div>
+        <div className="min-w-[980px]">
+          <header className="grid grid-cols-[minmax(230px,1.3fr)_minmax(108px,0.58fr)_minmax(150px,0.72fr)_minmax(104px,0.56fr)_minmax(388px,2.1fr)] divide-x divide-slate-800 bg-slate-900/70 text-[10px] uppercase tracking-wide text-slate-400">
+            <div className="px-2 py-1.5">玩家</div>
+            <div className="px-2 py-1.5 text-center">K/D/A</div>
             <div className="px-2 py-1.5 text-center">经济</div>
-            <div className="px-2 py-1.5 text-center">GPM / XPM</div>
-            <div className="px-2.5 py-1.5 text-center">物品栏</div>
+            <div className="px-2 py-1.5 text-center">GPM/XPM</div>
+            <div className="px-2 py-1.5 text-center">物品栏</div>
           </header>
 
           <div className="divide-y divide-slate-800/80 bg-slate-900/10">
@@ -576,9 +560,9 @@ function TeamSummaryTable({
               return (
                 <div
                   key={`${player.player_slot}-${player.account_id}-${player.hero_id}`}
-                  className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800/80 transition-colors hover:bg-slate-800/35"
+                  className="grid grid-cols-[minmax(230px,1.3fr)_minmax(108px,0.58fr)_minmax(150px,0.72fr)_minmax(104px,0.56fr)_minmax(388px,2.1fr)] divide-x divide-slate-800/80 transition-colors hover:bg-slate-800/35"
                 >
-                  <div className="px-2.5 py-1.5">
+                  <div className="px-2 py-1.5">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="h-10 w-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
                         <img src={getHeroImg(player.hero_id)} alt={getHeroName(player.hero_id)} className="h-full w-full object-cover" />
@@ -598,7 +582,7 @@ function TeamSummaryTable({
                         <div className="mt-0.5 text-sm leading-tight text-slate-300 truncate">
                           {getHeroName(player.hero_id)}
                         </div>
-                        {laneName && <div className="text-[10px] text-slate-500">{laneName}</div>}
+                        <div className="text-[10px] text-slate-500 truncate">Lv.{player.level}{laneName ? ` · ${laneName}` : ''}</div>
                       </div>
                     </div>
                   </div>
@@ -611,7 +595,7 @@ function TeamSummaryTable({
                       <span className="text-slate-500"> / </span>
                       <span className="text-slate-200">{player.assists}</span>
                     </div>
-                    <div className="mt-0.5 text-[10px] text-slate-500">Lv.{player.level}</div>
+                    <div className="mt-0.5 text-[10px] text-slate-500">K/D/A</div>
                   </div>
 
                   <div className="px-2 py-1.5 flex flex-col justify-center gap-1 text-[11px]">
@@ -621,18 +605,16 @@ function TeamSummaryTable({
                     </div>
                     <div className="inline-flex w-fit items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-sky-200">
                       <span className="h-1.5 w-1.5 rounded-full bg-sky-300" />
-                      LH/DN <b>{formatCompact(player.last_hits)}/{formatCompact(player.denies)}</b>
+                      正补/反补 <b>{formatCompact(player.last_hits)}/{formatCompact(player.denies)}</b>
                     </div>
                   </div>
 
                   <div className="px-2 py-1.5 flex flex-col items-center justify-center text-[11px]">
-                    <div className="text-sm font-semibold leading-tight text-emerald-300">{formatCompact(player.gold_per_min)}</div>
-                    <div className="text-slate-500">GPM</div>
-                    <div className="mt-0.5 text-sm font-semibold leading-tight text-cyan-300">{formatCompact(player.xp_per_min)}</div>
-                    <div className="text-slate-500">XPM</div>
+                    <div className="text-sm font-semibold leading-tight text-emerald-300">GPM {formatCompact(player.gold_per_min)}</div>
+                    <div className="mt-0.5 text-sm font-semibold leading-tight text-cyan-300">XPM {formatCompact(player.xp_per_min)}</div>
                   </div>
 
-                  <div className="px-2.5 py-1.5 flex items-center justify-center">
+                  <div className="px-2 py-1.5 flex items-center justify-center overflow-x-auto">
                     <ItemStrip
                       mainItems={mainItems}
                       backpackItems={backpackItems}
@@ -646,26 +628,6 @@ function TeamSummaryTable({
                 </div>
               );
             })}
-
-            <div className="grid grid-cols-[minmax(240px,1.55fr)_minmax(102px,0.66fr)_minmax(150px,0.78fr)_minmax(102px,0.66fr)_minmax(300px,1.9fr)] divide-x divide-slate-800/80 bg-slate-900/50 text-[11px] text-slate-300">
-              <div className="px-2.5 py-1.5 text-slate-400">团队合计</div>
-              <div className="px-2 py-1.5 text-center">
-                <span className="text-green-400 font-semibold">{total.kills}</span>
-                <span className="text-slate-500"> / </span>
-                <span className="text-red-400 font-semibold">{total.deaths}</span>
-                <span className="text-slate-500"> / </span>
-                <span className="font-semibold">{total.assists}</span>
-              </div>
-              <div className="px-2 py-1.5 text-center text-slate-200">
-                LH/DN {formatCompact(total.lastHits)}/{formatCompact(total.denies)}
-                <span className="mx-1.5 text-slate-600">|</span>
-                <span className="text-amber-300 font-semibold">NET {formatCompact(total.netWorth)}</span>
-              </div>
-              <div className="px-2 py-1.5 text-center text-slate-200">
-                {formatCompact(total.gpm)}/{formatCompact(total.xpm)}
-              </div>
-              <div className="px-2.5 py-1.5 text-center text-slate-500">-</div>
-            </div>
           </div>
         </div>
       </div>
@@ -716,7 +678,7 @@ function TeamSummaryTable({
                   <span className="text-slate-500">等级</span> {player.level}
                 </div>
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-slate-300">
-                  <span className="text-slate-500">补刀</span> {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
+                  <span className="text-slate-500">正补/反补</span> {formatCompact(player.last_hits)}/{formatCompact(player.denies)}
                 </div>
                 <div className="rounded border border-slate-800 bg-slate-950/50 px-2 py-1 text-yellow-400 col-span-2">
                   <span className="text-slate-500">NET</span> {formatCompact(getNetWorth(player))}
@@ -793,9 +755,9 @@ function ItemStrip({
   const neutral = neutralItem > 0 ? itemsMap[neutralItem] : undefined;
 
   const content = (
-    <div className={`flex items-start gap-1 ${centered ? 'justify-center' : 'justify-start'}`}>
-      <div className="min-w-0 space-y-1">
-        <div className="flex flex-wrap items-center gap-0.5">
+    <div className={`flex items-center gap-1.5 ${centered ? 'justify-center' : 'justify-start'}`}>
+      <div className="min-w-0 space-y-1 flex-1">
+        <div className="flex flex-nowrap items-center gap-0.5">
           {mainItems.map((id, idx) => (
             <div key={`main-${idx}`}>{renderItem(id)}</div>
           ))}
@@ -806,7 +768,7 @@ function ItemStrip({
             {neutral?.img ? <img src={neutral.img} alt={neutral.name} className="w-full h-full object-contain" /> : <div className="w-full h-full" />}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-0.5 text-slate-400">
+        <div className="flex flex-nowrap items-center gap-0.5 text-slate-400 overflow-hidden">
           <span
             className="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-700 bg-slate-900/70"
             title="背包栏"
@@ -819,7 +781,7 @@ function ItemStrip({
           ))}
         </div>
       </div>
-      <div className={`${compactMobile ? 'w-8 h-8 mt-0' : 'w-10 h-10 mt-0'} relative flex-shrink-0`}>
+      <div className={`${compactMobile ? 'w-8 h-8 mt-0' : 'w-10 h-10 mt-0'} relative flex-shrink-0 self-center`}>
         <img
           src={`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
           alt="Aghanim's Scepter"
