@@ -42,19 +42,6 @@ type HeroMeta = {
   img?: string;
 };
 
-type ProPlayerMeta = {
-  name?: string | null;
-  name_cn?: string | null;
-  team_id?: string | null;
-  team_name?: string | null;
-  country_code?: string | null;
-  avatar_url?: string | null;
-  realname?: string | null;
-  birth_date?: string | null;
-  birth_year?: number | null;
-  birth_month?: number | null;
-};
-
 type SquadPlayerCard = {
   accountId: number | null;
   name: string;
@@ -151,7 +138,6 @@ export function TeamFlyout({
   onOpenChange,
   selectedTeam,
   teams = [],
-  matches = [],
   upcoming = [],
   onTeamSelect,
   onPlayerClick
