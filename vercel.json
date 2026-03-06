@@ -4,15 +4,7 @@
   ],
   "crons": [
     {
-      "path": "/api/sync-opendota",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/sync-liquipedia",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/sync-news",
+      "path": "/api/cron",
       "schedule": "0 0 * * *"
     }
   ]

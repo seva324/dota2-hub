@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Clock, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
+import { Users, TrendingUp, FileText, Backpack, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -380,17 +380,11 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
                 </button>
               </div>
               <div className="text-right text-xs sm:text-sm text-slate-400 w-full md:w-auto">
-                <div className="flex items-center justify-center md:justify-end">
-                  <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1">
-                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
-                    <span className="text-sm sm:text-base font-semibold tracking-wide text-amber-200">
-                      比赛时长 {formatDuration(match.duration)}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-1.5 flex items-center justify-center md:justify-end text-[11px]">
+                <div className="flex items-center justify-center md:justify-end text-[11px]">
                   <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300">
                     <span>赛制 {getSeriesTypeLabel(match.series_type)}</span>
+                    <span className="text-slate-500">·</span>
+                    <span>时长 {formatDuration(match.duration)}</span>
                     <span className="text-slate-500">·</span>
                     <span>系列赛 ID {match.series_id || '-'}</span>
                     <span className="text-slate-500">·</span>
@@ -571,16 +565,17 @@ function TeamSummaryTable({
                         {player.account_id ? (
                           <button
                             type="button"
-                            className="text-[15px] font-semibold leading-tight text-slate-100 truncate hover:underline underline-offset-2 text-left"
+                            className="text-base font-semibold text-slate-100 truncate hover:underline underline-offset-2 text-left"
                             onClick={() => onPlayerClick?.(Number(player.account_id))}
                           >
                             {displayName}
                           </button>
                         ) : (
-                          <div className="text-[15px] font-semibold leading-tight text-slate-100 truncate">{displayName}</div>
+                          <div className="text-base font-semibold text-slate-100 truncate">{displayName}</div>
                         )}
-                        <div className="mt-0.5 text-sm leading-tight text-slate-300 truncate">
-                          {getHeroName(player.hero_id)}
+                        <div className="text-sm text-slate-300 truncate">ID {player.account_id || '-'}</div>
+                        <div className="text-sm text-slate-400 truncate">
+                          {getHeroName(player.hero_id)}{laneName ? ` · ${laneName}` : ''}
                         </div>
                         <div className="text-[10px] text-slate-500 truncate">Lv.{player.level}{laneName ? ` · ${laneName}` : ''}</div>
                       </div>
@@ -822,32 +817,32 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
   if (picksBans.length === 0) return null;
 
   return (
-    <div className="border-t border-slate-800 px-3 py-2 bg-slate-900/30">
-      <div className="text-[11px] text-slate-400 mb-1">Picks / Bans</div>
-      <div className="overflow-x-auto pb-0.5">
-        <div className="flex min-w-full w-max items-start gap-1.5 flex-nowrap">
-        {picksBans.map((entry) => {
-          const label = entry.is_pick ? '选择' : '禁止';
-          const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
-          const heroName = getHeroName(entry.hero_id);
+    <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
+      <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-max flex-nowrap items-start gap-2.5">
+          {picksBans.map((entry) => {
+            const label = entry.is_pick ? '选择' : '禁止';
+            const orderText = typeof entry.order === 'number' ? entry.order + 1 : '-';
+            const heroName = getHeroName(entry.hero_id);
 
-          return (
-            <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="min-w-0 shrink-0">
-              <div className="w-10 h-10 rounded overflow-hidden bg-slate-800 border border-slate-700 relative mx-auto">
-                <img
-                  src={getHeroImg(entry.hero_id)}
-                  alt={heroName}
-                  className={`w-full h-full object-cover ${entry.is_pick ? '' : 'grayscale brightness-75'}`}
-                  title={heroName}
-                />
-                {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
-              </div>
-              <aside className="mt-0.5 text-[10px] text-slate-400 text-center whitespace-nowrap leading-none">
-                {label} <b className="text-slate-200">{orderText}</b>
-              </aside>
-            </section>
-          );
-        })}
+            return (
+              <section key={`${entry.team}-${entry.order}-${entry.hero_id}-${entry.is_pick ? 'p' : 'b'}`} className="flex-shrink-0">
+                <div className="h-14 w-14 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 relative md:h-16 md:w-16">
+                  <img
+                    src={getHeroImg(entry.hero_id)}
+                    alt={heroName}
+                    className={`w-full h-full object-cover ${entry.is_pick ? '' : 'grayscale brightness-75'}`}
+                    title={heroName}
+                  />
+                  {!entry.is_pick && <div className="absolute inset-0 border-2 border-slate-500/60" />}
+                </div>
+                <aside className="mt-1.5 text-xs text-slate-400 text-center whitespace-nowrap">
+                  {label} <b className="text-slate-200">{orderText}</b>
+                </aside>
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "manual:generate-report": "node scripts/manual-api/generate-report.js",
+    "manual:enrich-proplayers": "node scripts/manual-api/enrich-pro-players.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

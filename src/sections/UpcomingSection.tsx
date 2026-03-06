@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
-import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
+import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { isTeamInRegion } from '@/lib/teams';
 
@@ -223,11 +223,13 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
 
   const openPlayerFlyout = async (accountId: number) => {
     if (!Number.isFinite(accountId) || accountId <= 0) return;
+    setPlayerFlyoutModel(createMinimalPlayerFlyoutModel(accountId));
+    setPlayerFlyoutOpen(true);
     try {
       const model = await fetchPlayerProfileFlyoutModel(accountId);
-      if (!model) return;
-      setPlayerFlyoutModel(model);
-      setPlayerFlyoutOpen(true);
+      if (model) {
+        setPlayerFlyoutModel(model);
+      }
     } catch (error) {
       console.error('[UpcomingSection] Failed to load player profile:', error);
     }
@@ -507,6 +509,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
         open={playerFlyoutOpen}
         onOpenChange={setPlayerFlyoutOpen}
         player={playerFlyoutModel}
+        onTeamSelect={(team) => openTeamFlyout(team)}
       />
     </section>
   );

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Calendar, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
+import { Calendar, Shield, Target, Trophy, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   buildRecentMatchDraftRows,
-  toBirthMonthYear,
+  formatBirthDisplay,
+  toFlagEmoji,
 } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 
@@ -18,6 +19,7 @@ export interface PlayerProfileFlyoutProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   player: PlayerFlyoutModel | null;
+  onTeamSelect?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }
 
 function formatTs(ts?: number | null): string {
@@ -36,7 +38,45 @@ function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
 }
 
-export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfileFlyoutProps) {
+function TeamInline({
+  name,
+  logoUrl,
+  align = 'left',
+}: {
+  name?: string | null;
+  logoUrl?: string | null;
+  align?: 'left' | 'right';
+}) {
+  return (
+    <div className={`flex min-w-0 items-center gap-2 ${align === 'right' ? 'justify-end' : ''}`}>
+      {align === 'right' ? (
+        <>
+          <span className="truncate">{name || 'TBD'}</span>
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
+            {logoUrl ? (
+              <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[10px] text-slate-500">队</span>
+            )}
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
+            {logoUrl ? (
+              <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[10px] text-slate-500">队</span>
+            )}
+          </span>
+          <span className="truncate">{name || 'TBD'}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }: PlayerProfileFlyoutProps) {
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
 
   useEffect(() => {
@@ -51,6 +91,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfil
   }, [open]);
 
   const recentRows = useMemo(() => buildRecentMatchDraftRows(player?.recentMatches || []), [player?.recentMatches]);
+  const flagEmoji = toFlagEmoji(player?.nationality);
+  const birthDisplay = formatBirthDisplay(player?.birthDate, player?.birthMonth, player?.birthYear);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -61,26 +103,35 @@ export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfil
         <div className="h-full overflow-y-auto">
           <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/40 p-6 pl-12">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+              <div className="h-28 w-28 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shadow-lg shadow-slate-950/40">
                 {player?.avatarUrl ? (
                   <img
                     src={player.avatarUrl}
                     alt={player.playerName}
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 object-cover"
+                    width={112}
+                    height={112}
+                    className="h-28 w-28 object-cover"
                   />
                 ) : (
-                  <UserRound className="h-6 w-6 text-slate-400" />
+                  <UserRound className="h-10 w-10 text-slate-400" />
                 )}
               </div>
 
               <div className="min-w-0">
-                <SheetTitle className="text-lg text-white truncate">{player?.playerName || 'Player'}</SheetTitle>
-                <SheetDescription className="text-slate-400">
-                  {player?.teamName || 'Free Agent'}
+                <SheetTitle className="text-xl text-white truncate">{player?.playerName || 'Player'}</SheetTitle>
+                <SheetDescription className="mt-1 text-slate-300">
+                  <span className="inline-flex min-w-0 items-center gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
+                      {player?.teamLogoUrl ? (
+                        <img src={player.teamLogoUrl} alt={player.teamName || 'Team'} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] text-slate-500">队</span>
+                      )}
+                    </span>
+                    <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+                  </span>
                 </SheetDescription>
-                <div className="mt-1 text-xs text-slate-400">
+                <div className="mt-2 text-xs text-slate-400">
                   {player?.realName || 'Unknown Real Name'}
                   {player?.chineseName ? ` · ${player.chineseName}` : ''}
                 </div>
@@ -91,15 +142,31 @@ export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfil
               <Badge variant="outline" className="border-slate-600 text-slate-200">
                 ID {player?.accountId ?? '-'}
               </Badge>
+              {player?.teamId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onTeamSelect?.({
+                      team_id: player.teamId || null,
+                      name: player.teamName || null,
+                      logo_url: player.teamLogoUrl || null,
+                    });
+                  }}
+                  className="inline-flex items-center rounded-full border border-sky-500/40 px-2 py-0.5 text-xs font-medium text-sky-200 transition hover:border-sky-400 hover:bg-sky-500/10"
+                >
+                  战队 ID {player.teamId}
+                </button>
+              )}
               {player?.nationality && (
                 <Badge variant="outline" className="border-slate-600 text-slate-200">
-                  <Flag className="mr-1 h-3 w-3" />
+                  <span className="text-sm leading-none">{flagEmoji || '🏳️'}</span>
                   {player.nationality}
                 </Badge>
               )}
               <Badge variant="outline" className="border-slate-600 text-slate-200">
                 <Calendar className="mr-1 h-3 w-3" />
-                出生 {toBirthMonthYear(player?.birthMonth, player?.birthYear)}
+                {birthDisplay}
               </Badge>
               {typeof player?.age === 'number' && (
                 <Badge variant="outline" className="border-slate-600 text-slate-200">{player.age} 岁</Badge>
@@ -107,7 +174,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfil
               {typeof player?.winRate === 'number' && (
                 <Badge variant="outline" className="border-slate-600 text-slate-200">
                   <Target className="mr-1 h-3 w-3" />
-                  生涯胜率 {player.winRate.toFixed(1)}%
+                  近三个月胜率 {player.winRate.toFixed(1)}%
                 </Badge>
               )}
             </div>
@@ -121,8 +188,10 @@ export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfil
               </div>
               {player?.nextMatch ? (
                 <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                  <div className="text-sm text-slate-200">
-                    {player.teamName || player.playerName} vs {player.nextMatch.opponentName || 'TBD'}
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm text-slate-200">
+                    <TeamInline name={player.teamName || player.playerName} logoUrl={player.nextMatch.selectedTeamLogoUrl || player.teamLogoUrl} />
+                    <div className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-300">VS</div>
+                    <TeamInline name={player.nextMatch.opponentName || 'TBD'} logoUrl={player.nextMatch.opponentLogoUrl} align="right" />
                   </div>
                   <div className="mt-1 text-xs text-slate-400">
                     {player.nextMatch.tournament || 'Unknown Tournament'} · {player.nextMatch.seriesType || 'BO3'}
@@ -224,12 +293,16 @@ export function PlayerProfileFlyout({ open, onOpenChange, player }: PlayerProfil
 
                   return (
                     <div key={`${row.matchId}-${row.startTime}`} className="rounded-xl border border-slate-700 bg-slate-800/40 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0 text-sm text-slate-100 truncate">{row.teamName}</div>
-                        <div className={`rounded-full border px-2 py-0.5 text-xs ${resultCls}`}>
+                      <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-3">
+                        <div className="min-w-0 text-sm text-slate-100">
+                          <TeamInline name={row.teamName} logoUrl={row.teamLogoUrl} />
+                        </div>
+                        <div className={`justify-self-center rounded-full border px-2 py-1 text-center text-xs font-medium ${resultCls}`}>
                           {row.won === true ? 'Win' : row.won === false ? 'Lose' : 'N/A'}
                         </div>
-                        <div className="min-w-0 text-right text-sm text-slate-200 truncate">{row.opponentName}</div>
+                        <div className="min-w-0 text-sm text-slate-200">
+                          <TeamInline name={row.opponentName} logoUrl={row.opponentLogoUrl} align="right" />
+                        </div>
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-1.5">
