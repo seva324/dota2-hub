@@ -152,4 +152,41 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(res.payload).toEqual({ account_id: '9001', player: { name: 'Cached Player' } });
     expect(queryMock.mock.calls.find((call) => String(call[0]).includes('FROM matches m'))).toBeUndefined();
   });
+
+  it('returns seed payload quickly when fast mode is enabled and cache is empty', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM player_profile_cache')) {
+        return [];
+      }
+      if (sql.includes('FROM pro_players') && sql.includes('LIMIT 1')) {
+        return [{
+          account_id: 9001,
+          name: 'Seed Player',
+          team_id: 10,
+          team_name: 'Team Seed',
+          country_code: 'CN',
+          avatar_url: null,
+        }];
+      }
+      if (sql.includes('FROM upcoming_series')) {
+        return [];
+      }
+      return [];
+    });
+    queryMock.mockResolvedValue([]);
+
+    const { default: handler } = await import('../../api/player-profile.js');
+    const req = { method: 'GET', query: { account_id: '9001', fast: '1' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['X-Player-Profile-Cache']).toBe('seed');
+    expect(res.headers['Cache-Control']).toBe('private, no-store, max-age=0');
+    expect((res.payload as any)?.player?.name).toBe('Seed Player');
+    expect((res.payload as any)?.meta?.partial).toBe(true);
+    expect((res.payload as any)?.recent_matches).toEqual([]);
+  });
 });

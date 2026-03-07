@@ -49,8 +49,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database not available' });
   }
 
-  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
-
   const accountId = parseAccountId(req.query.account_id ?? req.query.accountId);
   if (!accountId) {
     return res.status(400).json({ error: 'Invalid account_id' });
@@ -59,6 +57,7 @@ export default async function handler(req, res) {
   try {
     const result = await getPlayerProfilePayload(db, accountId, {
       forceRefresh: toBool(req.query.refresh),
+      preferFast: toBool(req.query.fast),
       maxAgeHours: 24,
     });
 
@@ -66,7 +65,14 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Player profile not found' });
     }
 
-    res.setHeader('X-Player-Profile-Cache', result.source || 'unknown');
+    const source = result.source || 'unknown';
+    if (source === 'seed' || source === 'cache-partial' || source === 'stale') {
+      res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+    }
+
+    res.setHeader('X-Player-Profile-Cache', source);
     return res.status(200).json(result.payload);
   } catch (error) {
     console.error('[PlayerProfile API] Error:', error.message);
