@@ -98,6 +98,7 @@ describe('player profile helpers', () => {
     const summary = summarizePlayerMatches(rows, 1001, {
       nowTs: 1741200000,
       windowDays: 90,
+      signatureMinMatchesExclusive: 0,
       recentLimit: 10,
     });
 
@@ -142,10 +143,73 @@ describe('player profile helpers', () => {
     ], 1001, {
       nowTs: 1741200000,
       windowDays: 90,
+      signatureMinMatchesExclusive: 0,
       recentLimit: 10,
     });
 
     expect(summary.recentMatches).toHaveLength(1);
     expect(summary.recentMatches[0].team_hero_ids).toEqual([1, 3, 2, 4, 5]);
+  });
+
+  it('selects signature heroes from the past two years with more than 10 games by highest win rate', () => {
+    const nowTs = 1760000000;
+    const basePlayers = [
+      { account_id: 1001, player_slot: 0 },
+      { account_id: 2001, player_slot: 1, hero_id: 2 },
+      { account_id: 2002, player_slot: 2, hero_id: 3 },
+      { account_id: 2003, player_slot: 3, hero_id: 4 },
+      { account_id: 2004, player_slot: 4, hero_id: 5 },
+      { account_id: 3001, player_slot: 128, hero_id: 6 },
+      { account_id: 3002, player_slot: 129, hero_id: 7 },
+      { account_id: 3003, player_slot: 130, hero_id: 8 },
+      { account_id: 3004, player_slot: 131, hero_id: 9 },
+      { account_id: 3005, player_slot: 132, hero_id: 10 },
+    ];
+
+    const rows = [];
+    for (let i = 0; i < 12; i += 1) {
+      rows.push({
+        match_id: 1000 + i,
+        start_time: nowTs - i * 86400,
+        radiant_win: i < 10,
+        payload: { players: [{ ...basePlayers[0], hero_id: 1 }, ...basePlayers.slice(1)] },
+      });
+    }
+    for (let i = 0; i < 12; i += 1) {
+      rows.push({
+        match_id: 2000 + i,
+        start_time: nowTs - (20 + i) * 86400,
+        radiant_win: i < 9,
+        payload: { players: [{ ...basePlayers[0], hero_id: 2 }, ...basePlayers.slice(1)] },
+      });
+    }
+    for (let i = 0; i < 11; i += 1) {
+      rows.push({
+        match_id: 3000 + i,
+        start_time: nowTs - (40 + i) * 86400,
+        radiant_win: i < 8,
+        payload: { players: [{ ...basePlayers[0], hero_id: 3 }, ...basePlayers.slice(1)] },
+      });
+    }
+    rows.push({
+      match_id: 4000,
+      start_time: nowTs - 900 * 86400,
+      radiant_win: true,
+      payload: { players: [{ ...basePlayers[0], hero_id: 99 }, ...basePlayers.slice(1)] },
+    });
+
+    const summary = summarizePlayerMatches(rows, 1001, {
+      nowTs,
+      windowDays: 90,
+      signatureWindowDays: 730,
+      signatureMinMatchesExclusive: 10,
+      recentLimit: 10,
+    });
+
+    expect(summary.signatureHeroes.map((hero) => hero.hero_id)).toEqual([1, 2, 3]);
+    expect(summary.signatureHeroes[0]).toMatchObject({ hero_id: 1, matches: 12, wins: 10, win_rate: 83 });
+    expect(summary.signatureHeroes[1]).toMatchObject({ hero_id: 2, matches: 12, wins: 9, win_rate: 75 });
+    expect(summary.signatureHeroes[2]).toMatchObject({ hero_id: 3, matches: 11, wins: 8, win_rate: 73 });
+    expect(summary.signatureHero).toMatchObject({ hero_id: 1 });
   });
 });

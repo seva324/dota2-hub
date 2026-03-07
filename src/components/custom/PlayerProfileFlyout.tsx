@@ -256,7 +256,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             <section>
               <div className="mb-3 flex items-center gap-2 text-white">
                 <Trophy className="h-4 w-4 text-amber-400" />
-                <h4 className="font-semibold">招牌英雄（最高胜率）</h4>
+                <h4 className="font-semibold">招牌英雄（近两年 &gt;10 场，胜率最高）</h4>
               </div>
               {signatureHeroes.length ? (
                 <div className="grid grid-cols-3 gap-3">
@@ -283,7 +283,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                 </div>
               ) : (
                 <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
-                  暂无英雄样本
+                  暂无满足近两年超过 10 场条件的英雄样本
                 </div>
               )}
             </section>

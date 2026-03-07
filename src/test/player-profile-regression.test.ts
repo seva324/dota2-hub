@@ -97,6 +97,7 @@ describe('player profile regression coverage', () => {
     const summary = summarizePlayerMatches(rows, '9001', {
       nowTs: 1741200000,
       windowDays: 90,
+      signatureMinMatchesExclusive: 0,
       recentLimit: 15,
     });
 
@@ -104,7 +105,7 @@ describe('player profile regression coverage', () => {
     expect(summary.recentMatches[0].team_hero_ids).toEqual([99, 2, 3, 4, 5]);
     expect(summary.mostPlayedHeroes).toHaveLength(1);
     expect(summary.mostPlayedHeroes[0]).toMatchObject({ hero_id: 99, matches: 2, wins: 1, win_rate: 50 });
-    expect(summary.signatureHero).toMatchObject({ hero_id: 99 });
+    expect(summary.signatureHero).toMatchObject({ hero_id: 42 });
     expect(summary.winRate).toBe(50);
   });
 
@@ -153,6 +154,7 @@ describe('player profile regression coverage', () => {
     const summary = summarizePlayerMatches(rows, 7777, {
       nowTs: 1741200000,
       windowDays: 90,
+      signatureMinMatchesExclusive: 0,
       recentLimit: 15,
     });
 
