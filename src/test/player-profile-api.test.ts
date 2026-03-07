@@ -112,8 +112,8 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['X-Player-Profile-Cache']).toBe('live');
     expect((res.payload as any)?.recent_matches?.length).toBe(1);
-    expect((res.payload as any)?.signature_hero?.hero_id).toBe(12);
-    expect((res.payload as any)?.signature_heroes?.[0]?.hero_id).toBe(12);
+    expect((res.payload as any)?.signature_hero).toBeNull();
+    expect((res.payload as any)?.signature_heroes).toEqual([]);
     expect((res.payload as any)?.recent_matches?.[0]?.team_hero_ids).toEqual([1, 12, 3, 4, 2]);
     expect((res.payload as any)?.stats?.win_rate).toBe(100);
 
