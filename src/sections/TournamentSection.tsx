@@ -406,14 +406,20 @@ export function TournamentSection({
 
   // Set initial tournament when tournaments are loaded
   useEffect(() => {
+    const pickPreferredTournament = (list: Tournament[]) => {
+      const byStatus = (target: string) =>
+        list.find((t) => String(t.status || '').toLowerCase() === target);
+      return byStatus('ongoing') || byStatus('completed') || list[0];
+    };
+
     if (sortedTournaments.length > 0 && !selectedTournament) {
-      setSelectedTournament(sortedTournaments[0]);
+      setSelectedTournament(pickPreferredTournament(sortedTournaments));
       return;
     }
     if (selectedTournament && sortedTournaments.length > 0) {
       const exists = sortedTournaments.some(t => t.id === selectedTournament.id);
       if (!exists) {
-        setSelectedTournament(sortedTournaments[0]);
+        setSelectedTournament(pickPreferredTournament(sortedTournaments));
       }
     }
   }, [sortedTournaments, selectedTournament]);
