@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +30,7 @@ interface Match {
 }
 
 interface UpcomingSectionProps {
-  upcoming: Match[];
+  upcoming?: Match[];
   allMatches?: Array<{
     match_id: string | number;
     start_time: number;
@@ -83,6 +83,70 @@ const teamLogoFallbackMap: Record<string, string> = {
   'mouz': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104918.png',
   'team spirit': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
 };
+
+
+const UPCOMING_DEFAULT_DAYS = 2;
+const UPCOMING_PLACEHOLDER_CARD_COUNT = 3;
+
+function useInView<T extends HTMLElement>(options?: IntersectionObserverInit) {
+  const ref = useRef<T | null>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    if (isInView || typeof IntersectionObserver === 'undefined') {
+      if (typeof IntersectionObserver === 'undefined') {
+        setIsInView(true);
+      }
+      return;
+    }
+
+    const node = ref.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setIsInView(true);
+        observer.disconnect();
+      }
+    }, options);
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isInView, options]);
+
+  return { ref, isInView };
+}
+
+function buildUpcomingApiUrl(days: number = UPCOMING_DEFAULT_DAYS): string {
+  const params = new URLSearchParams({ days: String(days) });
+  return `/api/upcoming?${params.toString()}`;
+}
+
+function UpcomingSectionSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="h-11 w-28 rounded-xl bg-slate-800/60 border border-white/10 animate-pulse" />
+        <div className="h-11 w-28 rounded-xl bg-slate-800/60 border border-white/10 animate-pulse" />
+        <div className="h-11 w-40 rounded-xl bg-slate-800/60 border border-white/10 animate-pulse" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        {Array.from({ length: UPCOMING_PLACEHOLDER_CARD_COUNT }).map((_, index) => (
+          <Card key={index} className="bg-slate-900/60 backdrop-blur-xl border border-white/10 overflow-hidden">
+            <CardContent className="p-4 sm:p-5 space-y-4">
+              <div className="h-10 rounded-xl bg-slate-800/60 animate-pulse" />
+              <div className="h-12 rounded-xl bg-slate-800/60 animate-pulse" />
+              <div className="space-y-3">
+                <div className="h-12 rounded-xl bg-slate-800/60 animate-pulse" />
+                <div className="h-12 rounded-xl bg-slate-800/60 animate-pulse" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const teamAbbr: Record<string, string> = {
   'Xtreme Gaming': 'XG',
@@ -170,25 +234,73 @@ function getMatchPeriod(timestamp: number): string {
   return '晚上';
 }
 
-export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: UpcomingSectionProps) {
+export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: UpcomingSectionProps) {
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
+  const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
+  const [lazyTeams, setLazyTeams] = useState<NonNullable<UpcomingSectionProps['teams']>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
   const [playerFlyoutOpen, setPlayerFlyoutOpen] = useState(false);
   const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
+  const { ref: sectionRef, isInView } = useInView<HTMLElement>({ rootMargin: '240px 0px' });
+  const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
+  const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
-    isTeamInRegion(team || null, teams, ['China']);
-  // viewMode removed
+    isTeamInRegion(team || null, effectiveTeams, ['China']);
+
+  useEffect(() => {
+    if (!isInView || hasLoaded) return;
+
+    let cancelled = false;
+
+    const loadUpcoming = async () => {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const response = await fetch(buildUpcomingApiUrl());
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (cancelled) return;
+
+        setLazyUpcoming(Array.isArray(payload?.upcoming) ? payload.upcoming : []);
+        setLazyTeams(Array.isArray(payload?.teams) ? payload.teams : []);
+        setHasLoaded(true);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[UpcomingSection] Failed to lazy load upcoming matches:', error);
+        setLoadError('加载赛事预告失败，请稍后重试');
+        setLazyUpcoming(upcoming);
+        setLazyTeams(teams);
+        setHasLoaded(true);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadUpcoming();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasLoaded, isInView, teams, upcoming]);
 
   const now = Math.floor(Date.now() / 1000);
-  const weekLater = now + 7 * 86400;
+  const futureWindowEnd = now + UPCOMING_DEFAULT_DAYS * 86400;
 
-  // 筛选和排序比赛
-  const filteredMatches = upcoming
-    .filter(m => m.start_time >= now && m.start_time <= weekLater)
-    .sort((a, b) => a.start_time - b.start_time);
+  const filteredMatches = useMemo(() => (
+    effectiveUpcoming
+      .filter((m) => m.start_time >= now && m.start_time <= futureWindowEnd)
+      .sort((a, b) => a.start_time - b.start_time)
+  ), [effectiveUpcoming, futureWindowEnd, now]);
 
-  // 按日期分组
   const matchesByDate: Record<string, Match[]> = {};
   filteredMatches.forEach(match => {
     const date = getMatchDate(match.start_time);
@@ -236,7 +348,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
   };
 
   return (
-    <section id="upcoming" className="py-12 sm:py-16 bg-slate-950 relative overflow-hidden">
+    <section id="upcoming" ref={sectionRef} className="py-12 sm:py-16 bg-slate-950 relative overflow-hidden">
       {/* 背景装饰 */}
       <div className="absolute top-0 left-0 w-full h-full">
         <div className="absolute top-20 left-20 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl"></div>
@@ -245,7 +357,7 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8" data-upcoming-state={!isInView ? 'idle' : isLoading ? 'loading' : loadError ? 'error' : 'ready'}>
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.4)]">
               <Calendar className="w-7 h-7 text-white" />
@@ -302,7 +414,29 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
         </div>
 
         {/* 赛事预告列表 */}
-        {displayMatches.length > 0 ? (
+        {!isInView || isLoading ? (
+          <UpcomingSectionSkeleton />
+        ) : loadError && displayMatches.length === 0 ? (
+          <Card className="bg-slate-900/60 backdrop-blur-xl border border-red-500/20 overflow-hidden">
+            <CardContent className="p-12 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 mb-4">
+                <Calendar className="w-10 h-10 text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">赛事预告加载失败</h3>
+              <p className="text-slate-400 text-sm mb-4">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasLoaded(false);
+                  setLoadError('');
+                }}
+                className="text-sm text-blue-300 hover:text-white underline underline-offset-4"
+              >
+                重试
+              </button>
+            </CardContent>
+          </Card>
+        ) : displayMatches.length > 0 ? (
           <div className="space-y-6">
             {sortedDates.map((date) => {
               const dateMatches = matchesByDate[date];
@@ -498,9 +632,9 @@ export function UpcomingSection({ upcoming, allMatches = [], teams = [] }: Upcom
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         selectedTeam={flyoutTeam}
-        teams={teams}
+        teams={effectiveTeams}
         matches={allMatches}
-        upcoming={upcoming}
+        upcoming={effectiveUpcoming}
         onTeamSelect={(team) => openTeamFlyout(team)}
         onPlayerClick={openPlayerFlyout}
       />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowDown, Calendar, Trophy, TrendingUp, Star, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -107,10 +107,52 @@ function getMatchSection(match: Match): string {
   return `${date.toLocaleString('en-US', { month: 'short' })} ${date.getUTCDate()}`;
 }
 
-export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams?: TeamLike[] }) {
+const HERO_DEFAULT_DAYS = 1;
+
+function buildHeroUpcomingApiUrl(days: number = HERO_DEFAULT_DAYS): string {
+  const params = new URLSearchParams({ days: String(days) });
+  return `/api/upcoming?${params.toString()}`;
+}
+
+export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[]; teams?: TeamLike[] }) {
   const [showCountdown, setShowCountdown] = useState(true);
+  const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
+  const [lazyTeams, setLazyTeams] = useState<TeamLike[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadHeroMatches = async () => {
+      try {
+        const response = await fetch(buildHeroUpcomingApiUrl());
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (cancelled) return;
+
+        setLazyUpcoming(Array.isArray(payload?.upcoming) ? payload.upcoming : []);
+        setLazyTeams(Array.isArray(payload?.teams) ? payload.teams : []);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[HeroSection] Failed to load hero upcoming matches:', error);
+        setLazyUpcoming(upcoming);
+        setLazyTeams(teams);
+      }
+    };
+
+    void loadHeroMatches();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [teams, upcoming]);
+
+  const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
+  const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
-    isTeamInRegion(team || null, teams, ['China']);
+    isTeamInRegion(team || null, effectiveTeams, ['China']);
 
   const scrollToTournaments = () => {
     document.querySelector('#tournaments')?.scrollIntoView({ behavior: 'smooth' });
@@ -119,7 +161,7 @@ export function HeroSection({ upcoming, teams = [] }: { upcoming: Match[]; teams
   const now = Math.floor(Date.now() / 1000);
   const tomorrow = now + 24 * 3600;
   
-  const cnMatches = upcoming
+  const cnMatches = effectiveUpcoming
     .filter(m => m.start_time >= now && m.start_time <= tomorrow && (
       isChineseTeam({ teamId: m.radiant_team_id, name: m.radiant_team_name }) ||
       isChineseTeam({ teamId: m.dire_team_id, name: m.dire_team_name })

@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { MapPin, Trophy, ChevronRight, Flame, Clock, Calendar, Award, Loader2 } from 'lucide-react';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
@@ -99,6 +99,27 @@ interface Game {
   picks_bans?: HeroPick[];
 }
 
+interface TournamentSeriesResponse {
+  tournament?: Tournament;
+  series?: Series[];
+  pagination?: {
+    limit?: number;
+    offset?: number;
+    total?: number;
+    hasMore?: boolean;
+  };
+}
+
+interface TournamentSeriesState {
+  items: Series[];
+  total: number;
+  hasMore: boolean;
+  loading: boolean;
+  error: string;
+}
+
+const DEFAULT_SERIES_PAGE_SIZE = 10;
+
 // Team data type for team abbreviations
 const FALLBACK_TEAM_ABBR: Record<string, string> = {
   'Xtreme Gaming': 'XG', 'Yakult Brothers': 'YB',
@@ -138,7 +159,7 @@ function renderTeamName(teamName: string, aliasToTag: Map<string, string>, class
 }
 
 interface TournamentSectionProps {
-  tournaments: Tournament[];
+  tournaments?: Tournament[];
   seriesByTournament?: Record<string, Series[]>;
   allMatches?: Array<{
     match_id: string | number;
@@ -195,6 +216,54 @@ const statusMap: Record<string, { label: string; color: string; gradient: string
     gradient: 'from-slate-500 to-slate-600'
   },
 };
+
+
+function useInView<T extends HTMLElement>(options?: IntersectionObserverInit) {
+  const ref = useRef<T | null>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    if (isInView || typeof IntersectionObserver === 'undefined') {
+      if (typeof IntersectionObserver === 'undefined') {
+        setIsInView(true);
+      }
+      return;
+    }
+
+    const node = ref.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setIsInView(true);
+        observer.disconnect();
+      }
+    }, options);
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isInView, options]);
+
+  return { ref, isInView };
+}
+
+function TournamentSeriesSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-slate-700/70 animate-pulse" />
+              <div className="h-6 w-28 rounded-lg bg-slate-700/70 animate-pulse" />
+            </div>
+            <div className="h-10 w-full rounded-xl bg-slate-700/70 animate-pulse sm:w-72" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -275,7 +344,7 @@ function getSeriesStartTime(series: Series): number {
 }
 
 export function TournamentSection({
-  tournaments,
+  tournaments = [],
   seriesByTournament,
   allMatches = [],
   upcoming = [],
@@ -291,11 +360,18 @@ export function TournamentSection({
   const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
   const [playerFlyoutOpen, setPlayerFlyoutOpen] = useState(false);
   const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
+  const [seriesStateByTournament, setSeriesStateByTournament] = useState<Record<string, TournamentSeriesState>>({});
+  const [lazyTournaments, setLazyTournaments] = useState<Tournament[]>([]);
+  const [lazyTeams, setLazyTeams] = useState<NonNullable<TournamentSectionProps['teams']>>([]);
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
+  const { ref: sectionRef, isInView } = useInView<HTMLElement>({ rootMargin: '200px 0px' });
+  const effectiveTournaments = lazyTournaments.length > 0 ? lazyTournaments : tournaments;
+  const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
-    isTeamInRegion(team || null, teams, ['China']);
+    isTeamInRegion(team || null, effectiveTeams, ['China']);
   const teamAliasToTag = useMemo(() => {
     const aliasMap = new Map<string, string>();
-    for (const team of teams) {
+    for (const team of effectiveTeams) {
       const tag = String(team.tag || '').trim();
       if (!tag) continue;
       const aliases = [team.name, team.name_cn, team.tag];
@@ -307,10 +383,10 @@ export function TournamentSection({
       }
     }
     return aliasMap;
-  }, [teams]);
+  }, [effectiveTeams]);
 
   const allSortedTournaments = useMemo(() => {
-    return [...(tournaments || [])].sort((a, b) => {
+    return [...(effectiveTournaments || [])].sort((a, b) => {
       const aStart = a.start_time ?? 0;
       const bStart = b.start_time ?? 0;
       if (bStart !== aStart) return bStart - aStart;
@@ -318,7 +394,7 @@ export function TournamentSection({
       const bEnd = b.end_time ?? 0;
       return bEnd - aEnd;
     });
-  }, [tournaments]);
+  }, [effectiveTournaments]);
 
   const sortedTournaments = useMemo(() => {
     return allSortedTournaments.filter((t) => {
@@ -343,8 +419,125 @@ export function TournamentSection({
   }, [sortedTournaments, selectedTournament]);
 
   useEffect(() => {
-    setStageFilter('all');
-  }, [selectedTournament?.id]);
+    if (!isInView || hasBootstrapped || tournaments.length > 0 || teams.length > 0) return;
+
+    let cancelled = false;
+
+    const bootstrapSection = async () => {
+      try {
+        const [tournamentsResponse, teamsResponse] = await Promise.all([
+          fetch('/api/tournaments'),
+          fetch('/api/teams')
+        ]);
+
+        if (!tournamentsResponse.ok) {
+          throw new Error(`tournaments_http_${tournamentsResponse.status}`);
+        }
+        if (!teamsResponse.ok) {
+          throw new Error(`teams_http_${teamsResponse.status}`);
+        }
+
+        const tournamentsPayload = await tournamentsResponse.json();
+        const teamsPayload = await teamsResponse.json();
+        if (cancelled) return;
+
+        setLazyTournaments(Array.isArray(tournamentsPayload?.tournaments) ? tournamentsPayload.tournaments : []);
+        setLazyTeams(Array.isArray(teamsPayload) ? teamsPayload : []);
+        setHasBootstrapped(true);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[TournamentSection] Failed to bootstrap lazy data:', error);
+        setHasBootstrapped(true);
+      }
+    };
+
+    void bootstrapSection();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasBootstrapped, isInView, teams.length, tournaments.length]);
+
+  const fetchTournamentSeries = useCallback(async (tournamentId: string, offset = 0) => {
+    setSeriesStateByTournament((prev) => {
+      const current = prev[tournamentId] || {
+        items: seriesByTournament?.[tournamentId] || [],
+        total: (seriesByTournament?.[tournamentId] || []).length,
+        hasMore: false,
+        loading: false,
+        error: ''
+      };
+
+      return {
+        ...prev,
+        [tournamentId]: {
+          ...current,
+          loading: true,
+          error: ''
+        }
+      };
+    });
+
+    try {
+      const params = new URLSearchParams({
+        tournamentId,
+        limit: String(DEFAULT_SERIES_PAGE_SIZE),
+        offset: String(offset)
+      });
+      const res = await fetch(`/api/tournaments?${params.toString()}`);
+      const payload = (await res.json()) as TournamentSeriesResponse;
+
+      if (!res.ok) {
+        throw new Error((payload as { error?: string })?.error || '赛事详情加载失败');
+      }
+
+      const nextItems = Array.isArray(payload.series) ? payload.series : [];
+      const total = Number(payload.pagination?.total || 0);
+      const hasMore = Boolean(payload.pagination?.hasMore);
+
+      setSeriesStateByTournament((prev) => {
+        const current = prev[tournamentId];
+        const mergedItems = offset > 0 ? [...(current?.items || []), ...nextItems] : nextItems;
+
+        return {
+          ...prev,
+          [tournamentId]: {
+            items: mergedItems,
+            total: total || mergedItems.length,
+            hasMore,
+            loading: false,
+            error: ''
+          }
+        };
+      });
+    } catch (error) {
+      setSeriesStateByTournament((prev) => {
+        const current = prev[tournamentId] || {
+          items: [],
+          total: 0,
+          hasMore: false,
+          loading: false,
+          error: ''
+        };
+
+        return {
+          ...prev,
+          [tournamentId]: {
+            ...current,
+            loading: false,
+            error: error instanceof Error ? error.message : '赛事详情加载失败'
+          }
+        };
+      });
+    }
+  }, [seriesByTournament]);
+
+  useEffect(() => {
+    if (!isInView || !selectedTournament?.id) return;
+    const currentState = seriesStateByTournament[selectedTournament.id];
+    if (currentState?.items?.length || currentState?.loading) return;
+    void fetchTournamentSeries(selectedTournament.id, 0);
+  }, [fetchTournamentSeries, isInView, selectedTournament?.id, seriesStateByTournament]);
 
   // Load heroes data on mount
   useEffect(() => {
@@ -387,7 +580,13 @@ export function TournamentSection({
     }
   };
 
-  const currentSeries = selectedTournament ? (seriesByTournament?.[selectedTournament.id] || []) : [];
+  const currentSeriesState = selectedTournament ? seriesStateByTournament[selectedTournament.id] : undefined;
+  const currentSeries = selectedTournament
+    ? (currentSeriesState?.items || seriesByTournament?.[selectedTournament.id] || [])
+    : [];
+  const currentSeriesTotal = currentSeriesState?.total || currentSeries.length;
+  const currentSeriesLoading = Boolean(currentSeriesState?.loading);
+  const currentSeriesError = currentSeriesState?.error || '';
   const seriesByStageKind = useMemo(() => {
     const map = new Map<StageFilterKey, Series[]>();
     for (const s of currentSeries) {
@@ -483,7 +682,7 @@ export function TournamentSection({
   ).length;
 
   return (
-    <section id="tournaments" className="py-12 sm:py-16 bg-slate-950 relative overflow-hidden">
+    <section ref={sectionRef} id="tournaments" className="py-12 sm:py-16 bg-slate-950 relative overflow-hidden">
       {/* 背景装饰 */}
       <div className="absolute top-20 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 left-0 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl"></div>
@@ -533,7 +732,7 @@ export function TournamentSection({
             <div className="flex items-center gap-2 min-w-0 bg-slate-800/60 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl border border-white/10">
               <Trophy className="w-4 h-4 text-amber-400" />
               <span className="text-sm text-slate-300">总场次</span>
-              <span className="text-lg font-bold text-white">{currentSeries.length}</span>
+              <span className="text-lg font-bold text-white">{currentSeriesTotal}</span>
             </div>
           </div>
         </div>
@@ -639,7 +838,27 @@ export function TournamentSection({
                 })}
               </div>
 
-              {filteredSeries.length > 0 ? (
+              {!isInView && currentSeries.length === 0 ? (
+                <TournamentSeriesSkeleton />
+              ) : currentSeriesLoading && currentSeries.length === 0 ? (
+                <div className="py-12 flex items-center justify-center gap-3 text-slate-300">
+                  <Loader2 className="w-5 h-5 animate-spin text-red-400" />
+                  <span>正在加载赛事系列...</span>
+                </div>
+              ) : currentSeriesError && currentSeries.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-red-400 text-sm sm:text-base mb-4">{currentSeriesError}</p>
+                  {selectedTournament && (
+                    <button
+                      type="button"
+                      onClick={() => void fetchTournamentSeries(selectedTournament.id, 0)}
+                      className="inline-flex items-center rounded-xl border border-red-500/30 bg-red-600/10 px-4 py-2 text-sm text-red-300 hover:bg-red-600/20 transition-colors"
+                    >
+                      重试加载
+                    </button>
+                  )}
+                </div>
+              ) : filteredSeries.length > 0 ? (
                 <div className="space-y-3">
                   {filteredSeries.map((series) => {
                     const teamAIsCN = isChineseTeam({ teamId: series.radiant_team_id, name: series.radiant_team_name });
@@ -927,6 +1146,19 @@ export function TournamentSection({
                       </div>
                     );
                   })}
+                  {selectedTournament && (currentSeriesState?.hasMore || currentSeriesLoading) && (
+                    <div className="pt-2 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => void fetchTournamentSeries(selectedTournament.id, currentSeries.length)}
+                        disabled={currentSeriesLoading}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/80 px-4 py-2 text-sm text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {currentSeriesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {currentSeriesLoading ? '加载中...' : '加载更多'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -945,7 +1177,7 @@ export function TournamentSection({
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         selectedTeam={flyoutTeam}
-        teams={teams}
+        teams={effectiveTeams}
         matches={allMatches}
         upcoming={upcoming}
         onTeamSelect={(team) => openTeamFlyout(team)}

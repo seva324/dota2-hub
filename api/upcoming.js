@@ -64,12 +64,16 @@ export default async function handler(req, res) {
   try {
     // Get upcoming series (status = 'upcoming' and start_time > now)
     const now = Math.floor(Date.now() / 1000);
+    const parsedDays = Number.parseInt(String(req.query?.days ?? ''), 10);
+    const days = Number.isFinite(parsedDays) && parsedDays > 0 ? Math.min(parsedDays, 14) : 2;
+    const maxStartTime = now + days * 86400;
 
     const upcoming = await db`
       SELECT s.*, t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
       FROM upcoming_series s
       LEFT JOIN tournaments t ON s.league_id = t.league_id
       WHERE s.start_time > ${now}
+        AND s.start_time <= ${maxStartTime}
       ORDER BY s.start_time ASC
       LIMIT 50
     `;
@@ -104,6 +108,7 @@ export default async function handler(req, res) {
     });
 
     return res.status(200).json({
+      days,
       upcoming: result,
       teams: teams.map(t => ({
         team_id: t.team_id,
