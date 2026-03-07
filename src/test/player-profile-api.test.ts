@@ -125,7 +125,7 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(sql).toContain('LEFT JOIN teams dt');
     expect(sql).toContain(`to_jsonb(m)->>'league_id'`);
     expect(sql).not.toContain('m.start_time >=');
-    expect(params).toEqual([9001]);
+    expect(params).toEqual([9001, 240]);
   });
 
   it('returns cached payload directly when cache is fresh', async () => {
