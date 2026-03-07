@@ -6,6 +6,8 @@
 import { neon } from '@neondatabase/serverless';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const DEFAULT_SERIES_LIMIT = 10;
+const MAX_SERIES_LIMIT = 50;
 
 let sql = null;
 
@@ -19,6 +21,11 @@ function getDb() {
     }
   }
   return sql;
+}
+
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 // Normalize logo URL
@@ -37,7 +44,6 @@ function convertSeriesType(seriesType) {
     2: 'BO5',
     3: 'BO2'
   };
-  // If already a string (e.g., 'BO3'), return as-is
   if (typeof seriesType === 'string') {
     const normalized = seriesType.toUpperCase();
     if (normalized.startsWith('BO')) return normalized;
@@ -90,6 +96,130 @@ function resolveSeriesStage(stageWindows, startTime, fallbackStage) {
   };
 }
 
+function formatTournament(tournament) {
+  return {
+    id: String(tournament.id || tournament.league_id),
+    league_id: tournament.league_id,
+    name: tournament.name,
+    name_cn: tournament.name_cn,
+    tier: tournament.tier,
+    location: tournament.location,
+    status: tournament.status,
+    start_time: tournament.start_time ?? null,
+    end_time: tournament.end_time ?? null,
+    prize_pool: tournament.prize_pool ?? null,
+    prize_pool_usd: tournament.prize_pool_usd ?? null,
+    start_date: tournament.start_date ?? null,
+    end_date: tournament.end_date ?? null,
+    image: tournament.image || null
+  };
+}
+
+async function listTournamentSummaries(db) {
+  const tournaments = await db`
+    SELECT *
+    FROM tournaments
+    ORDER BY COALESCE(start_time, 0) DESC, COALESCE(end_time, 0) DESC
+  `;
+
+  return tournaments.map(formatTournament);
+}
+
+async function getTournamentById(db, tournamentId) {
+  const rows = await db`
+    SELECT *
+    FROM tournaments
+    WHERE CAST(league_id AS TEXT) = ${tournamentId}
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
+
+async function loadTeamMap(db) {
+  const teams = await db`SELECT * FROM teams`;
+  const teamMap = new Map();
+  for (const team of teams) {
+    teamMap.set(team.team_id, team);
+  }
+  return teamMap;
+}
+
+async function loadSeriesPage(db, tournament, limit, offset) {
+  const totalRows = await db`
+    SELECT COUNT(*)::int AS count
+    FROM series
+    WHERE league_id = ${tournament.league_id}
+  `;
+  const total = Number(totalRows?.[0]?.count || 0);
+
+  const pageSeries = await db`
+    SELECT *
+    FROM series
+    WHERE league_id = ${tournament.league_id}
+    ORDER BY start_time DESC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `;
+
+  return { total, pageSeries };
+}
+
+async function loadMatchesForSeries(db, seriesId) {
+  return db`
+    SELECT *
+    FROM matches
+    WHERE series_id = ${seriesId}
+    ORDER BY start_time ASC
+  `;
+}
+
+function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows) {
+  return seriesRows.map((seriesRow) => {
+    const radiantTeam = seriesRow.radiant_team_id ? teamMap.get(seriesRow.radiant_team_id) : null;
+    const direTeam = seriesRow.dire_team_id ? teamMap.get(seriesRow.dire_team_id) : null;
+    const stageInfo = resolveSeriesStage(stageWindows, Number(seriesRow.start_time), seriesRow.stage);
+
+    const games = (matchesBySeries[String(seriesRow.series_id)] || []).map((matchRow) => {
+      const matchRadiantTeam = matchRow.radiant_team_id ? teamMap.get(matchRow.radiant_team_id) : null;
+      const matchDireTeam = matchRow.dire_team_id ? teamMap.get(matchRow.dire_team_id) : null;
+
+      return {
+        match_id: String(matchRow.match_id),
+        radiant_team_id: matchRow.radiant_team_id ? String(matchRow.radiant_team_id) : null,
+        dire_team_id: matchRow.dire_team_id ? String(matchRow.dire_team_id) : null,
+        radiant_team_name: matchRadiantTeam?.name || radiantTeam?.name || null,
+        dire_team_name: matchDireTeam?.name || direTeam?.name || null,
+        radiant_team_logo: normalizeLogo(matchRadiantTeam?.logo_url || radiantTeam?.logo_url),
+        dire_team_logo: normalizeLogo(matchDireTeam?.logo_url || direTeam?.logo_url),
+        radiant_score: matchRow.radiant_score,
+        dire_score: matchRow.dire_score,
+        radiant_win: matchRow.radiant_win ? 1 : 0,
+        start_time: matchRow.start_time,
+        duration: matchRow.duration,
+        picks_bans: Array.isArray(matchRow.picks_bans) ? matchRow.picks_bans : []
+      };
+    });
+
+    return {
+      series_id: String(seriesRow.series_id),
+      series_type: convertSeriesType(seriesRow.series_type),
+      radiant_team_id: seriesRow.radiant_team_id ? String(seriesRow.radiant_team_id) : null,
+      dire_team_id: seriesRow.dire_team_id ? String(seriesRow.dire_team_id) : null,
+      radiant_team_name: radiantTeam?.name || null,
+      dire_team_name: direTeam?.name || null,
+      radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
+      dire_team_logo: normalizeLogo(direTeam?.logo_url),
+      radiant_score: seriesRow.radiant_wins,
+      dire_score: seriesRow.dire_wins,
+      radiant_wins: seriesRow.radiant_wins,
+      dire_wins: seriesRow.dire_wins,
+      stage: stageInfo.stage,
+      stage_kind: stageInfo.stage_kind,
+      games
+    };
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -104,140 +234,46 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database not available' });
   }
 
+  const tournamentId = String(req.query?.tournamentId || '').trim();
+  const limit = Math.min(parsePositiveInt(req.query?.limit, DEFAULT_SERIES_LIMIT) || DEFAULT_SERIES_LIMIT, MAX_SERIES_LIMIT);
+  const offset = parsePositiveInt(req.query?.offset, 0);
+
   try {
-    // Get tournaments
-    const tournaments = await db`SELECT * FROM tournaments`;
-
-    // Get series with team info
-    const seriesData = await db`
-      SELECT s.*, t.name as tournament_name, t.name_cn as tournament_name_cn
-      FROM series s
-      LEFT JOIN tournaments t ON s.league_id = t.league_id
-      ORDER BY s.start_time DESC
-    `;
-
-    // Get teams for logo lookup
-    const teams = await db`SELECT * FROM teams`;
-
-    // Create team map
-    const teamMap = new Map();
-    for (const team of teams) {
-      teamMap.set(team.team_id, team);
+    if (!tournamentId) {
+      const tournaments = await listTournamentSummaries(db);
+      return res.status(200).json({ tournaments });
     }
 
-    // Get matches for tournament leagues so older tournaments can still expand correctly
-    const leagueIds = tournaments
-      .map((t) => Number(t.league_id))
-      .filter((id) => Number.isFinite(id));
-
-    const matches = leagueIds.length > 0
-      ? await db.query(
-          `
-            SELECT m.*, s.league_id
-            FROM matches m
-            JOIN series s ON m.series_id = s.series_id
-            WHERE s.league_id = ANY($1::int[])
-            ORDER BY m.start_time DESC
-          `,
-          [leagueIds]
-        )
-      : [];
-
-    // Build series by tournament (based on tournaments table only)
-    const seriesByTournament = {};
-    const leagueStageWindows = {};
-    const tournamentKeyByLeague = new Map();
-
-    for (const t of tournaments) {
-      const tournamentKey = String(t.id || t.league_id);
-      tournamentKeyByLeague.set(Number(t.league_id), tournamentKey);
-      seriesByTournament[tournamentKey] = [];
-      leagueStageWindows[t.league_id] = normalizeStageWindows(t.stage_windows);
+    const tournament = await getTournamentById(db, tournamentId);
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
     }
 
-    // Group matches by series
-    const seriesMatches = {};
-    for (const m of matches) {
-      if (!m.series_id) continue;
-      if (!seriesMatches[m.series_id]) {
-        seriesMatches[m.series_id] = [];
-      }
-      seriesMatches[m.series_id].push(m);
-    }
+    const [{ total, pageSeries }, teamMap] = await Promise.all([
+      loadSeriesPage(db, tournament, limit, offset),
+      loadTeamMap(db)
+    ]);
 
-    // Build series with games
-    for (const s of seriesData) {
-      const tournamentKey = tournamentKeyByLeague.get(Number(s.league_id));
-      if (!tournamentKey) continue;
+    const matchesBySeries = {};
+    await Promise.all(
+      pageSeries.map(async (seriesRow) => {
+        const rows = await loadMatchesForSeries(db, seriesRow.series_id);
+        matchesBySeries[String(seriesRow.series_id)] = rows;
+      })
+    );
 
-      const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
-      const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
-      const stageInfo = resolveSeriesStage(
-        leagueStageWindows[s.league_id] || [],
-        Number(s.start_time),
-        s.stage
-      );
-
-      const games = (seriesMatches[s.series_id] || [])
-        .sort((a, b) => a.start_time - b.start_time)
-        .map(m => {
-          // Use the team from this match, not from series
-          const matchRadiantTeam = m.radiant_team_id ? teamMap.get(m.radiant_team_id) : null;
-          const matchDireTeam = m.dire_team_id ? teamMap.get(m.dire_team_id) : null;
-          return {
-            match_id: String(m.match_id),
-            radiant_team_id: m.radiant_team_id ? String(m.radiant_team_id) : null,
-            dire_team_id: m.dire_team_id ? String(m.dire_team_id) : null,
-            radiant_team_name: matchRadiantTeam?.name || radiantTeam?.name || null,
-            dire_team_name: matchDireTeam?.name || direTeam?.name || null,
-            radiant_team_logo: normalizeLogo(matchRadiantTeam?.logo_url || radiantTeam?.logo_url),
-            dire_team_logo: normalizeLogo(matchDireTeam?.logo_url || direTeam?.logo_url),
-            radiant_score: m.radiant_score,
-            dire_score: m.dire_score,
-            radiant_win: m.radiant_win ? 1 : 0,
-            start_time: m.start_time,
-            duration: m.duration
-          };
-        });
-
-      seriesByTournament[tournamentKey].push({
-        series_id: String(s.series_id),
-        series_type: convertSeriesType(s.series_type),
-        radiant_team_id: s.radiant_team_id ? String(s.radiant_team_id) : null,
-        dire_team_id: s.dire_team_id ? String(s.dire_team_id) : null,
-        radiant_team_name: radiantTeam?.name || null,
-        dire_team_name: direTeam?.name || null,
-        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
-        dire_team_logo: normalizeLogo(direTeam?.logo_url),
-        radiant_score: s.radiant_wins,
-        dire_score: s.dire_wins,
-        radiant_wins: s.radiant_wins,
-        dire_wins: s.dire_wins,
-        stage: stageInfo.stage,
-        stage_kind: stageInfo.stage_kind,
-        games
-      });
-    }
-
-    // Format tournaments
-    const formattedTournaments = tournaments.map(t => {
-      return {
-        id: String(t.id || t.league_id),
-        league_id: t.league_id,
-        name: t.name,
-        name_cn: t.name_cn,
-        tier: t.tier,
-        location: t.location,
-        status: t.status,
-        start_time: t.start_time ?? null,
-        end_time: t.end_time ?? null,
-        prize_pool_usd: t.prize_pool_usd ?? null
-      };
-    });
+    const stageWindows = normalizeStageWindows(tournament.stage_windows);
+    const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows);
 
     return res.status(200).json({
-      tournaments: formattedTournaments,
-      seriesByTournament
+      tournament: formatTournament(tournament),
+      series,
+      pagination: {
+        limit,
+        offset,
+        total,
+        hasMore: offset + series.length < total
+      }
     });
   } catch (e) {
     console.error('[Tournaments API] Error:', e.message);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,23 @@ type HeroMeta = {
   name?: string;
   name_cn?: string;
   img?: string;
+};
+
+const RECENT_MATCHES_BATCH_SIZE = 5;
+const EMPTY_TEAMS: TeamLike[] = [];
+const EMPTY_MATCHES: MatchLike[] = [];
+
+type ProPlayerMeta = {
+  name?: string | null;
+  name_cn?: string | null;
+  team_id?: string | null;
+  team_name?: string | null;
+  country_code?: string | null;
+  avatar_url?: string | null;
+  realname?: string | null;
+  birth_date?: string | null;
+  birth_year?: number | null;
+  birth_month?: number | null;
 };
 
 type SquadPlayerCard = {
@@ -118,6 +135,45 @@ function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   return '';
 }
 
+async function fetchJsonSafe(res: Response): Promise<any> {
+  return res.json();
+}
+
+function buildTeamFlyoutApiUrl(selectedTeam: { team_id?: string | null; name: string }): string {
+  const params = new URLSearchParams({
+    limit: String(RECENT_MATCHES_BATCH_SIZE),
+    offset: '0'
+  });
+  if (selectedTeam.team_id) params.set('teamId', String(selectedTeam.team_id));
+  if (selectedTeam.name) params.set('name', selectedTeam.name);
+  return `/api/team-flyout?${params.toString()}`;
+}
+
+function buildTeamFlyoutLoadMoreUrl(selectedTeam: { team_id?: string | null; name: string }, cursor: number): string {
+  const params = new URLSearchParams({
+    limit: String(RECENT_MATCHES_BATCH_SIZE),
+    offset: String(cursor)
+  });
+  if (selectedTeam.team_id) params.set('teamId', String(selectedTeam.team_id));
+  if (selectedTeam.name) params.set('name', selectedTeam.name);
+  return `/api/team-flyout?${params.toString()}`;
+}
+
+type TeamFlyoutApiPayload = {
+  team?: TeamLike | null;
+  nextMatch?: MatchLike | null;
+  recentMatches?: MatchLike[];
+  stats?: {
+    wins?: number;
+    losses?: number;
+    winRate?: number;
+  };
+  pagination?: {
+    hasMore?: boolean;
+    nextCursor?: number | null;
+  };
+};
+
 export interface TeamFlyoutProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -137,16 +193,26 @@ export function TeamFlyout({
   open,
   onOpenChange,
   selectedTeam,
-  teams = [],
-  upcoming = [],
+  teams = EMPTY_TEAMS,
+  matches = EMPTY_MATCHES,
+  upcoming = EMPTY_MATCHES,
   onTeamSelect,
   onPlayerClick
 }: TeamFlyoutProps) {
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
   const [teamHeroesByMatch, setTeamHeroesByMatch] = useState<Record<string, number[]>>({});
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
-  const [teamMatches, setTeamMatches] = useState<MatchLike[]>([]);
   const [activeSquad, setActiveSquad] = useState<SquadPlayerCard[]>([]);
+  const [flyoutTeams, setFlyoutTeams] = useState<TeamLike[]>([]);
+  const [flyoutMatches, setFlyoutMatches] = useState<MatchLike[]>([]);
+  const [flyoutUpcoming, setFlyoutUpcoming] = useState<MatchLike[]>([]);
+  const [isFlyoutLoading, setIsFlyoutLoading] = useState(false);
+  const [hasFetchedFlyoutData, setHasFetchedFlyoutData] = useState(false);
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [nextHistoryCursor, setNextHistoryCursor] = useState<number | null>(null);
+  const [serverStats, setServerStats] = useState<{ wins: number; losses: number; winRate: number } | null>(null);
+  const matchDetailCacheRef = useRef<Record<number, any>>({});
+  const matchDetailPromiseCacheRef = useRef<Record<number, Promise<any>>>({});
 
   useEffect(() => {
     fetch('/api/heroes')
@@ -161,29 +227,104 @@ export function TeamFlyout({
     if (!open || !selectedTeam?.name) return;
 
     let cancelled = false;
-    setTeamMatches([]);
+    setIsFlyoutLoading(true);
     setTeamHeroesByMatch({});
     setActiveSquad([]);
-    const params = new URLSearchParams();
-    if (selectedTeam.team_id) params.set('team_id', String(selectedTeam.team_id));
-    else params.set('team_name', selectedTeam.name);
-    params.set('limit', '120');
+    setHasMoreHistory(false);
+    setNextHistoryCursor(null);
+    setServerStats(null);
+    matchDetailCacheRef.current = {};
+    matchDetailPromiseCacheRef.current = {};
 
-    fetch(`/api/matches?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) {
-          setTeamMatches(Array.isArray(data) ? data : []);
+    (async () => {
+      try {
+        const response = await fetch(buildTeamFlyoutApiUrl(selectedTeam));
+        const payload = (await response.json()) as TeamFlyoutApiPayload;
+        if (!response.ok) {
+          throw new Error('flyout_request_failed');
         }
-      })
-      .catch(() => {
-        if (!cancelled) setTeamMatches([]);
-      });
+
+        if (cancelled) return;
+
+        setFlyoutTeams(payload?.team ? [payload.team] : []);
+        setFlyoutMatches(Array.isArray(payload?.recentMatches) ? payload.recentMatches : []);
+        setFlyoutUpcoming(payload?.nextMatch ? [payload.nextMatch] : []);
+        setHasMoreHistory(Boolean(payload?.pagination?.hasMore));
+        setNextHistoryCursor(
+          typeof payload?.pagination?.nextCursor === 'number' ? payload.pagination.nextCursor : null
+        );
+        setServerStats({
+          wins: Number(payload?.stats?.wins || 0),
+          losses: Number(payload?.stats?.losses || 0),
+          winRate: Number(payload?.stats?.winRate || 0)
+        });
+        setHasFetchedFlyoutData(true);
+      } catch {
+        if (cancelled) return;
+        setFlyoutTeams(Array.isArray(teams) ? teams : []);
+        setFlyoutMatches(Array.isArray(matches) ? matches : []);
+        setFlyoutUpcoming(Array.isArray(upcoming) ? upcoming : []);
+        setHasMoreHistory(false);
+        setNextHistoryCursor(null);
+        setServerStats(null);
+        setHasFetchedFlyoutData(false);
+      } finally {
+        if (!cancelled) {
+          setIsFlyoutLoading(false);
+        }
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [open, selectedTeam?.name, selectedTeam?.team_id]);
+  }, [open, selectedTeam?.team_id, selectedTeam?.name]);
+
+  const resolvedTeams = hasFetchedFlyoutData ? flyoutTeams : teams;
+  const resolvedMatches = hasFetchedFlyoutData ? flyoutMatches : matches;
+  const resolvedUpcoming = hasFetchedFlyoutData ? flyoutUpcoming : upcoming;
+
+  const loadMoreHistory = useCallback(async () => {
+    if (!selectedTeam?.name || nextHistoryCursor === null || isFlyoutLoading) return;
+
+    setIsFlyoutLoading(true);
+    try {
+      const response = await fetch(buildTeamFlyoutLoadMoreUrl(selectedTeam, nextHistoryCursor));
+      const payload = (await response.json()) as TeamFlyoutApiPayload;
+      if (!response.ok) {
+        throw new Error('history_request_failed');
+      }
+
+      const nextMatches = Array.isArray(payload?.recentMatches) ? payload.recentMatches : [];
+      setFlyoutMatches((current) => [...current, ...nextMatches]);
+      setHasMoreHistory(Boolean(payload?.pagination?.hasMore));
+      setNextHistoryCursor(
+        typeof payload?.pagination?.nextCursor === 'number' ? payload.pagination.nextCursor : null
+      );
+    } catch (error) {
+      console.error('[TeamFlyout] Failed to load more history:', error);
+    } finally {
+      setIsFlyoutLoading(false);
+    }
+  }, [isFlyoutLoading, nextHistoryCursor, selectedTeam]);
+
+  const loadMatchDetails = useCallback(async (matchId: number) => {
+    if (matchDetailCacheRef.current[matchId]) {
+      return matchDetailCacheRef.current[matchId];
+    }
+    if (!matchDetailPromiseCacheRef.current[matchId]) {
+      matchDetailPromiseCacheRef.current[matchId] = fetch(`/api/match-details?match_id=${matchId}`)
+        .then(fetchJsonSafe)
+        .then((data) => {
+          matchDetailCacheRef.current[matchId] = data;
+          return data;
+        })
+        .finally(() => {
+          delete matchDetailPromiseCacheRef.current[matchId];
+        });
+    }
+    return matchDetailPromiseCacheRef.current[matchId];
+  }, []);
 
   const model = useMemo(() => {
     if (!selectedTeam?.name) return null;
@@ -191,9 +332,8 @@ export function TeamFlyout({
     const selectedName = normalize(selectedTeam.name);
     const selectedTeamId = selectedTeam.team_id ? String(selectedTeam.team_id) : null;
     const now = Math.floor(Date.now() / 1000);
-    const sourceMatches = teamMatches;
 
-    const resolveMeta = () => teams.find((team) => {
+    const resolveMeta = () => resolvedTeams.find((team) => {
       const teamId = team.team_id ? String(team.team_id) : null;
       if (selectedTeamId && teamId && selectedTeamId === teamId) return true;
       return (
@@ -228,7 +368,7 @@ export function TeamFlyout({
     };
 
     const threeMonthsAgo = now - 90 * 24 * 60 * 60;
-    const recentRows: RecentRow[] = sourceMatches
+    const recentRows: RecentRow[] = resolvedMatches
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) <= now)
       .filter((m) => Number(m.start_time) >= threeMonthsAgo)
@@ -266,16 +406,12 @@ export function TeamFlyout({
         };
       });
 
-    const latestPlayedMatch = sourceMatches
-      .filter(isTeamMatch)
-      .filter((m) => Number(m.start_time) <= now)
-      .sort((a, b) => Number(b.start_time || 0) - Number(a.start_time || 0))
-      [0] || null;
-
-    const nextMatch = upcoming
+    const nextMatchOverride = resolvedUpcoming
       .filter(isTeamMatch)
       .filter((m) => Number(m.start_time) > now)
       .sort((a, b) => Number(a.start_time || 0) - Number(b.start_time || 0))[0];
+
+    const nextMatch = nextMatchOverride || null;
 
     const wins = recentRows.filter((r) => r.won === true).length;
     const losses = recentRows.filter((r) => r.won === false).length;
@@ -287,74 +423,12 @@ export function TeamFlyout({
       selectedName,
       meta: selectedMeta,
       recentRows,
-      latestPlayedMatch,
-      resolveTeamSide,
       nextMatch,
       wins,
       losses,
       winRate
     };
-  }, [selectedTeam, teams, teamMatches, upcoming]);
-
-  useEffect(() => {
-    if (!open || !model?.latestPlayedMatch) {
-      setActiveSquad([]);
-      return;
-    }
-
-    const latestMatchId = toMatchId(model.latestPlayedMatch);
-    const latestSide = model.resolveTeamSide(model.latestPlayedMatch);
-    if (!latestMatchId || !latestSide) {
-      setActiveSquad([]);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const detailRes = await fetch(`/api/match-details?match_id=${latestMatchId}`);
-        const detail = await detailRes.json();
-        const players = Array.isArray(detail?.players) ? detail.players : [];
-        const sidePlayers = players
-          .filter((p: any) => latestSide === 'radiant' ? Number(p.player_slot) < 128 : Number(p.player_slot) >= 128)
-          .sort((a: any, b: any) => Number(a.player_slot || 0) - Number(b.player_slot || 0))
-          .slice(0, 5);
-
-        const squad = await Promise.all(sidePlayers.map(async (player: any) => {
-          const accountId = Number(player.account_id);
-          let profile: any = null;
-          if (Number.isFinite(accountId) && accountId > 0) {
-            try {
-              const profileRes = await fetch(`/api/pro-players?account_id=${accountId}`);
-              if (profileRes.ok) {
-                profile = await profileRes.json();
-              }
-            } catch {
-              profile = null;
-            }
-          }
-
-          return {
-            accountId: Number.isFinite(accountId) && accountId > 0 ? accountId : null,
-            name: String(profile?.name || player.personaname || player.name || `Player ${player.player_slot}`),
-            realname: profile?.realname || null,
-            avatarUrl: profile?.avatar_url || null,
-            countryCode: profile?.country_code ? String(profile.country_code).toUpperCase() : null
-          } satisfies SquadPlayerCard;
-        }));
-
-        if (!cancelled) {
-          setActiveSquad(squad);
-        }
-      } catch {
-        if (!cancelled) setActiveSquad([]);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, model?.latestPlayedMatch, model?.resolveTeamSide]);
+  }, [selectedTeam, resolvedTeams, resolvedMatches, resolvedUpcoming]);
 
   useEffect(() => {
     if (!open || !model?.recentRows?.length) return;
@@ -369,8 +443,7 @@ export function TeamFlyout({
       await Promise.all(
         missing.map(async (row) => {
           try {
-            const res = await fetch(`/api/match-details?match_id=${row.matchId}`);
-            const data = await res.json();
+            const data = row.matchId ? await loadMatchDetails(row.matchId) : null;
             const players = Array.isArray(data?.players) ? data.players : [];
             const heroIds = players
               .filter((p: any) => (row.isSelectedRadiant ? p.player_slot < 128 : p.player_slot >= 128))
@@ -390,7 +463,73 @@ export function TeamFlyout({
     return () => {
       cancelled = true;
     };
-  }, [open, model, teamHeroesByMatch]);
+  }, [open, model, teamHeroesByMatch, loadMatchDetails]);
+
+  useEffect(() => {
+    if (!open || !model?.recentRows?.length) {
+      setActiveSquad([]);
+      return;
+    }
+
+    const latestRow = model.recentRows[0];
+    const latestMatchId = latestRow?.matchId;
+    if (!latestRow || latestMatchId === null) {
+      setActiveSquad([]);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await loadMatchDetails(latestMatchId);
+        const players = Array.isArray(data?.players) ? data.players : [];
+        const teamPlayers = players
+          .filter((p: any) => (latestRow.isSelectedRadiant ? p.player_slot < 128 : p.player_slot >= 128))
+          .sort((a: any, b: any) => Number(a.player_slot || 0) - Number(b.player_slot || 0))
+          .slice(0, 5);
+
+        const accountIds = teamPlayers
+          .map((p: any) => Number(p.account_id))
+          .filter((id: number) => Number.isFinite(id) && id > 0);
+
+        const metaEntries = await Promise.all(
+          accountIds.map(async (accountId: number) => {
+            try {
+              const metaRes = await fetch(`/api/pro-players?account_id=${accountId}`);
+              if (!metaRes.ok) return [accountId, null] as const;
+              const meta = await metaRes.json();
+              return [accountId, meta as ProPlayerMeta | null] as const;
+            } catch {
+              return [accountId, null] as const;
+            }
+          })
+        );
+
+        const metaMap = new Map<number, ProPlayerMeta | null>(metaEntries);
+        const squad = teamPlayers.map((player: any) => {
+          const accountId = Number(player.account_id);
+          const meta = Number.isFinite(accountId) ? metaMap.get(accountId) || null : null;
+          return {
+            accountId: Number.isFinite(accountId) && accountId > 0 ? accountId : null,
+            name: meta?.name || player.name || player.personaname || (Number.isFinite(accountId) ? String(accountId) : 'Unknown'),
+            realname: meta?.realname || null,
+            countryCode: meta?.country_code ? String(meta.country_code).toUpperCase() : null,
+            avatarUrl: meta?.avatar_url || null,
+          };
+        });
+
+        if (!cancelled) {
+          setActiveSquad(squad);
+        }
+      } catch {
+        if (!cancelled) setActiveSquad([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, model, loadMatchDetails]);
 
   const topFiveHeroes = useMemo(() => {
     const counts = new Map<number, number>();
@@ -404,6 +543,10 @@ export function TeamFlyout({
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
   }, [model, teamHeroesByMatch]);
+
+  const wins = serverStats?.wins ?? model?.wins ?? 0;
+  const losses = serverStats?.losses ?? model?.losses ?? 0;
+  const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
 
   return (
     <>
@@ -428,8 +571,9 @@ export function TeamFlyout({
               </div>
 
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
-                {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, teams) ? (
+                {isFlyoutLoading && <Badge variant="outline" className="border-blue-500/30 text-blue-300">加载中...</Badge>}
+              {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
+                {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, resolvedTeams) ? (
                   <Badge variant="outline" className="border-red-500/40 text-red-300">
                     <Flag className="w-3 h-3 mr-1" />
                     {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown')
@@ -439,10 +583,10 @@ export function TeamFlyout({
                 ) : null}
                 <Badge variant="outline" className="border-slate-600 text-slate-300">
                   <Target className="w-3 h-3 mr-1" />
-                  近3个月 {model?.wins ?? 0}-{model?.losses ?? 0}
+                  近3个月 {wins}-{losses}
                 </Badge>
                 <Badge variant="outline" className="border-slate-600 text-slate-300">
-                  胜率 {model?.winRate ?? 0}%
+                  胜率 {winRate}%
                 </Badge>
               </div>
             </SheetHeader>
@@ -454,7 +598,7 @@ export function TeamFlyout({
                   <h4 className="font-semibold">当前阵容</h4>
                 </div>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                  {activeSquad.map((player) => {
+                  {activeSquad.map((player, idx) => {
                     const flagUrl = toFlagImageUrl(player.countryCode, 40);
                     const body = (
                       <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-center">
@@ -479,7 +623,7 @@ export function TeamFlyout({
 
                     return player.accountId ? (
                       <button
-                        key={`squad-${player.accountId}`}
+                        key={`squad-${player.accountId}-${idx}`}
                         type="button"
                         className="text-left"
                         onClick={() => onPlayerClick?.(player.accountId!)}
@@ -487,7 +631,7 @@ export function TeamFlyout({
                         {body}
                       </button>
                     ) : (
-                      <div key={`squad-${player.name}`}>{body}</div>
+                      <div key={`squad-${player.name}-${idx}`}>{body}</div>
                     );
                   })}
                   {!activeSquad.length && (
@@ -548,6 +692,7 @@ export function TeamFlyout({
                 <div className="flex items-center gap-2 mb-3 text-white">
                   <Trophy className="w-4 h-4 text-amber-400" />
                   <h4 className="font-semibold">过去 3 个月比赛</h4>
+                  {isFlyoutLoading && <span className="text-xs text-slate-400">加载中…</span>}
                 </div>
                 <div className="space-y-2">
                   {(model?.recentRows || []).map((row) => {
@@ -638,6 +783,16 @@ export function TeamFlyout({
                     <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
                       暂无历史比赛
                     </div>
+                  )}
+                  {!!model?.recentRows?.length && hasMoreHistory && (
+                    <button
+                      type="button"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800/40 px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                      onClick={() => void loadMoreHistory()}
+                      disabled={isFlyoutLoading}
+                    >
+                      {isFlyoutLoading ? '加载中...' : '加载更多比赛'}
+                    </button>
                   )}
                 </div>
               </section>

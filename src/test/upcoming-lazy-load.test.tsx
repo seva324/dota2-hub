@@ -1,0 +1,110 @@
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/components/custom/TeamFlyout', () => ({
+  TeamFlyout: () => null,
+}));
+
+vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
+  PlayerProfileFlyout: () => null,
+}));
+
+vi.mock('@/lib/playerProfile', () => ({
+  createMinimalPlayerFlyoutModel: vi.fn(),
+  fetchPlayerProfileFlyoutModel: vi.fn(),
+}));
+
+import { UpcomingSection } from '@/sections/UpcomingSection';
+
+class MockIntersectionObserver {
+  static instances: MockIntersectionObserver[] = [];
+
+  readonly callback: IntersectionObserverCallback;
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+    MockIntersectionObserver.instances.push(this);
+  }
+
+  trigger(isIntersecting: boolean) {
+    this.callback([
+      {
+        isIntersecting,
+        target: document.createElement('div'),
+        boundingClientRect: {} as DOMRectReadOnly,
+        intersectionRatio: isIntersecting ? 1 : 0,
+        intersectionRect: {} as DOMRectReadOnly,
+        rootBounds: null,
+        time: 0,
+      } as IntersectionObserverEntry,
+    ], this as unknown as IntersectionObserver);
+  }
+}
+
+describe('UpcomingSection lazy loading', () => {
+  beforeEach(() => {
+    MockIntersectionObserver.instances = [];
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver as unknown as typeof IntersectionObserver);
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  it('waits until the section is in view, fetches 2-day upcoming data, and excludes later matches', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        upcoming: (() => {
+          const now = Math.floor(Date.now() / 1000);
+          return [
+            {
+              id: 1,
+              match_id: 1,
+              radiant_team_id: '1',
+              dire_team_id: '2',
+              radiant_team_name: 'Xtreme Gaming',
+              dire_team_name: 'Team Spirit',
+              start_time: now + 36 * 3600,
+              series_type: 'BO3',
+              tournament_name: 'DreamLeague',
+            },
+            {
+              id: 2,
+              match_id: 2,
+              radiant_team_id: '3',
+              dire_team_id: '4',
+              radiant_team_name: 'Team Liquid',
+              dire_team_name: 'Tundra Esports',
+              start_time: now + 72 * 3600,
+              series_type: 'BO3',
+              tournament_name: 'Too Late Cup',
+            },
+          ];
+        })(),
+        teams: [
+          { team_id: '1', name: 'Xtreme Gaming', region: 'China' },
+          { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe' },
+        ],
+      }),
+    } as Response);
+
+    render(<UpcomingSection upcoming={[]} teams={[]} allMatches={[]} />);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.queryByText('DreamLeague')).not.toBeInTheDocument();
+
+    await act(async () => {
+      MockIntersectionObserver.instances[0]?.trigger(true);
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/upcoming?days=2');
+    });
+
+    expect(await screen.findByText('DreamLeague')).toBeInTheDocument();
+    expect(screen.queryByText('Too Late Cup')).not.toBeInTheDocument();
+    expect(screen.getByText('本周场次').nextElementSibling).toHaveTextContent('1');
+  });
+});

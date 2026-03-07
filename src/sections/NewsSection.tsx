@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Newspaper, Flame, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,54 @@ const categoryLabels: Record<string, string> = {
   tournament: '赛事',
   default: '资讯',
 };
+
+
+
+function useInView<T extends HTMLElement>(options?: IntersectionObserverInit) {
+  const ref = useRef<T | null>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    if (isInView || typeof IntersectionObserver === 'undefined') {
+      if (typeof IntersectionObserver === 'undefined') {
+        setIsInView(true);
+      }
+      return;
+    }
+
+    const node = ref.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setIsInView(true);
+        observer.disconnect();
+      }
+    }, options);
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isInView, options]);
+
+  return { ref, isInView };
+}
+
+function NewsSectionSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Card key={index} className="h-full border-slate-800 bg-slate-900/50 overflow-hidden">
+          <div className="h-40 bg-slate-800/70 animate-pulse" />
+          <CardContent className="p-4 space-y-3">
+            <div className="h-5 rounded bg-slate-800/70 animate-pulse" />
+            <div className="h-4 rounded bg-slate-800/70 animate-pulse" />
+            <div className="h-4 w-1/2 rounded bg-slate-800/70 animate-pulse" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 function normalizeUrl(url?: string) {
   if (!url) return '';
@@ -147,9 +195,54 @@ function renderRichContent(rawText: string) {
   return blocks;
 }
 
-export function NewsSection({ news }: { news: NewsItem[] }) {
+export function NewsSection({ news = [] }: { news?: NewsItem[] }) {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [showAllNews, setShowAllNews] = useState(false);
+  const [lazyNews, setLazyNews] = useState<NewsItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const { ref: sectionRef, isInView } = useInView<HTMLElement>({ rootMargin: '240px 0px' });
+  const effectiveNews = lazyNews.length > 0 ? lazyNews : news;
+
+  useEffect(() => {
+    if (!isInView || hasLoaded) return;
+
+    let cancelled = false;
+
+    const loadNews = async () => {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const response = await fetch('/api/news');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (cancelled) return;
+
+        setLazyNews(Array.isArray(payload) ? payload : []);
+        setHasLoaded(true);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[NewsSection] Failed to lazy load news:', error);
+        setLoadError('加载新闻失败，请稍后重试');
+        setLazyNews(news);
+        setHasLoaded(true);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadNews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasLoaded, isInView, news]);
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
@@ -179,7 +272,7 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
   };
 
   return (
-    <section className="py-20 bg-slate-950" id="news">
+    <section ref={sectionRef} className="py-20 bg-slate-950" id="news">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4 mb-12">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-600 to-yellow-600 flex items-center justify-center">
@@ -191,10 +284,14 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
           </div>
         </div>
 
-        {news.length > 0 ? (
+        {!isInView ? (
+          <NewsSectionSkeleton />
+        ) : isLoading && effectiveNews.length === 0 ? (
+          <NewsSectionSkeleton />
+        ) : effectiveNews.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {news.slice(0, 6).map((item) => (
+              {effectiveNews.slice(0, 6).map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -255,7 +352,7 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
         ) : (
           <div className="text-center py-12 text-slate-500">
             <Newspaper className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>暂无新闻数据</p>
+            <p>{loadError || '暂无新闻数据'}</p>
           </div>
         )}
       </div>
@@ -268,7 +365,7 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 pt-4 space-y-3">
-            {news.map((item) => (
+            {effectiveNews.map((item) => (
               <button
                 key={`more-${item.id}`}
                 type="button"
