@@ -376,15 +376,30 @@ function isFastResponsePartial(source: string | null, data: any): boolean {
   return Boolean(data?.meta?.partial);
 }
 
-async function fetchFullPlayerProfileFlyoutModel(accountId: number): Promise<PlayerFlyoutModel | null> {
-  try {
-    const res = await fetch(`/api/player-profile?account_id=${accountId}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return mapPlayerProfileApiToFlyoutModel(data);
-  } catch {
-    return null;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function pollFastHydratedProfile(accountId: number, maxAttempts = 3): Promise<PlayerFlyoutModel | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (attempt > 0) {
+      await sleep(1200);
+    }
+    try {
+      const res = await fetch(`/api/player-profile?account_id=${accountId}&fast=1`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const mapped = mapPlayerProfileApiToFlyoutModel(data);
+      if (!mapped) continue;
+      const partial = isFastResponsePartial(res.headers.get('X-Player-Profile-Cache'), data);
+      if (!partial) return mapped;
+    } catch {
+      // keep polling attempts resilient
+    }
   }
+  return null;
 }
 
 export async function fetchPlayerProfileFlyoutModel(accountId: number, options: FetchPlayerProfileFlyoutOptions = {}): Promise<PlayerFlyoutModel | null> {
@@ -398,7 +413,7 @@ export async function fetchPlayerProfileFlyoutModel(accountId: number, options: 
       const mapped = mapPlayerProfileApiToFlyoutModel(data);
       if (mapped) {
         if (options.onHydrated && isFastResponsePartial(res.headers.get('X-Player-Profile-Cache'), data)) {
-          void fetchFullPlayerProfileFlyoutModel(id).then((fullModel) => {
+          void pollFastHydratedProfile(id).then((fullModel) => {
             if (fullModel) options.onHydrated?.(fullModel);
           });
         }
