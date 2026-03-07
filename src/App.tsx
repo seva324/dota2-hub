@@ -123,8 +123,10 @@ function groupMatchesIntoSeries(matches: any[], leagueToTournament: Record<numbe
   // Convert to series format
   const result: Record<string, any[]> = {};
   
-  Object.entries(seriesByKey).forEach(([key, seriesMatches]) => {
-    const [tournamentId] = key.split('_vs_');
+  Object.values(seriesByKey).forEach((seriesMatches) => {
+    const leagueId = seriesMatches[0]?.league_id;
+    const tournamentId = leagueToTournament[Number(leagueId)];
+    if (!tournamentId) return;
     const seriesType = seriesMatches[0]?.series_type || 'BO3';
     
     if (!result[tournamentId]) {
@@ -142,8 +144,9 @@ function groupMatchesIntoSeries(matches: any[], leagueToTournament: Record<numbe
       else direWins++;
     });
     
+    const firstMatch = seriesMatches[0];
     const series = {
-      series_id: `series_${key}`,
+      series_id: `series_${tournamentId}_${firstMatch?.match_id || 'unknown'}_${seriesType}`,
       series_type: seriesType,
       radiant_team_id: seriesMatches[0].radiant_team_id ? String(seriesMatches[0].radiant_team_id) : null,
       dire_team_id: seriesMatches[0].dire_team_id ? String(seriesMatches[0].dire_team_id) : null,
