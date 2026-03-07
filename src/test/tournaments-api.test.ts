@@ -48,7 +48,7 @@ describe('/api/tournaments lazy loading', () => {
   it('returns tournament summaries without series data when no tournamentId is provided', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
-      if (sql.includes('FROM tournaments') && !sql.includes('WHERE CAST(id AS TEXT)')) {
+      if (sql.includes('FROM tournaments') && !sql.includes('WHERE CAST(league_id AS TEXT)')) {
         return [{
           id: 'dreamleague-s28',
           league_id: 42,
@@ -86,7 +86,7 @@ describe('/api/tournaments lazy loading', () => {
   it('returns paginated series for a selected tournament', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = renderSql(strings);
-      if (sql.includes('WHERE CAST(id AS TEXT)') || sql.includes('WHERE CAST(league_id AS TEXT)')) {
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
         return [{
           id: 'dreamleague-s28',
           league_id: 42,
@@ -137,7 +137,7 @@ describe('/api/tournaments lazy loading', () => {
     });
 
     const { default: handler } = await import('../../api/tournaments.js');
-    const req = { method: 'GET', query: { tournamentId: 'dreamleague-s28', limit: '10', offset: '0' } };
+    const req = { method: 'GET', query: { tournamentId: '42', limit: '10', offset: '0' } };
     const res = createRes();
 
     await handler(req as never, res as never);

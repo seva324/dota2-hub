@@ -129,8 +129,7 @@ async function getTournamentById(db, tournamentId) {
   const rows = await db`
     SELECT *
     FROM tournaments
-    WHERE CAST(id AS TEXT) = ${tournamentId}
-       OR CAST(league_id AS TEXT) = ${tournamentId}
+    WHERE CAST(league_id AS TEXT) = ${tournamentId}
     LIMIT 1
   `;
   return rows[0] || null;
