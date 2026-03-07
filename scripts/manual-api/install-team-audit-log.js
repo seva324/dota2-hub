@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createDbWithAppName, ensureTeamAuditLog } from './team-audit.js';
+import { createDbWithAppName, ensureTeamAuditLog } from '../../lib/server/team-audit.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 
@@ -9,7 +9,7 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const db = createDbWithAppName(DATABASE_URL, 'api/install-team-audit-log.js');
+const db = createDbWithAppName(DATABASE_URL, 'scripts/manual-api/install-team-audit-log.js');
 
 await ensureTeamAuditLog(db);
 
