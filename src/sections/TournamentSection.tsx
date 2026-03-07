@@ -623,7 +623,7 @@ export function TournamentSection({
 
   if (!sortedTournaments.length) {
     return (
-      <section id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
+      <section ref={sectionRef} id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
         {/* 背景光效 */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl"></div>
 
