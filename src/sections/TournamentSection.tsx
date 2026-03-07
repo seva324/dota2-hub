@@ -36,7 +36,6 @@ async function loadHeroesData() {
     Object.entries(heroesJson).forEach(([key, value]) => {
       heroesData[parseInt(key)] = value as HeroData;
     });
-    console.log('Heroes loaded in TournamentSection:', Object.keys(heroesData).length);
   } catch (err) {
     console.error('Error loading heroes:', err);
   }
@@ -577,7 +576,11 @@ export function TournamentSection({
     setPlayerFlyoutModel(createMinimalPlayerFlyoutModel(accountId));
     setPlayerFlyoutOpen(true);
     try {
-      const model = await fetchPlayerProfileFlyoutModel(accountId);
+      const model = await fetchPlayerProfileFlyoutModel(accountId, {
+        onHydrated: (hydrated) => {
+          setPlayerFlyoutModel((current) => (current?.accountId === accountId ? hydrated : current));
+        },
+      });
       if (model) {
         setPlayerFlyoutModel(model);
       }

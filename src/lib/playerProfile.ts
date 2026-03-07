@@ -366,16 +366,44 @@ async function fetchProPlayersSnapshot(accountId: number): Promise<ProPlayersSna
   }
 }
 
-export async function fetchPlayerProfileFlyoutModel(accountId: number): Promise<PlayerFlyoutModel | null> {
+type FetchPlayerProfileFlyoutOptions = {
+  onHydrated?: (model: PlayerFlyoutModel) => void;
+};
+
+function isFastResponsePartial(source: string | null, data: any): boolean {
+  const normalized = String(source || '').toLowerCase();
+  if (normalized === 'seed' || normalized === 'cache-partial' || normalized === 'stale') return true;
+  return Boolean(data?.meta?.partial);
+}
+
+async function fetchFullPlayerProfileFlyoutModel(accountId: number): Promise<PlayerFlyoutModel | null> {
+  try {
+    const res = await fetch(`/api/player-profile?account_id=${accountId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return mapPlayerProfileApiToFlyoutModel(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPlayerProfileFlyoutModel(accountId: number, options: FetchPlayerProfileFlyoutOptions = {}): Promise<PlayerFlyoutModel | null> {
   const id = Number(accountId);
   if (!Number.isFinite(id) || id <= 0) return null;
 
   try {
-    const res = await fetch(`/api/player-profile?account_id=${id}`);
+    const res = await fetch(`/api/player-profile?account_id=${id}&fast=1`);
     if (res.ok) {
       const data = await res.json();
       const mapped = mapPlayerProfileApiToFlyoutModel(data);
-      if (mapped) return mapped;
+      if (mapped) {
+        if (options.onHydrated && isFastResponsePartial(res.headers.get('X-Player-Profile-Cache'), data)) {
+          void fetchFullPlayerProfileFlyoutModel(id).then((fullModel) => {
+            if (fullModel) options.onHydrated?.(fullModel);
+          });
+        }
+        return mapped;
+      }
     }
   } catch {
     // fall through to fallback snapshot

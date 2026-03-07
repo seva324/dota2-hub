@@ -338,7 +338,11 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
     setPlayerFlyoutModel(createMinimalPlayerFlyoutModel(accountId));
     setPlayerFlyoutOpen(true);
     try {
-      const model = await fetchPlayerProfileFlyoutModel(accountId);
+      const model = await fetchPlayerProfileFlyoutModel(accountId, {
+        onHydrated: (hydrated) => {
+          setPlayerFlyoutModel((current) => (current?.accountId === accountId ? hydrated : current));
+        },
+      });
       if (model) {
         setPlayerFlyoutModel(model);
       }
