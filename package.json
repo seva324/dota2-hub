@@ -13,6 +13,7 @@
     "manual:generate-report": "node scripts/manual-api/generate-report.js",
     "manual:enrich-proplayers": "node scripts/manual-api/enrich-pro-players.js",
     "manual:install-proplayers-audit": "node scripts/manual-api/install-pro-player-audit-log.js",
+    "manual:install-team-audit": "node api/install-team-audit-log.js",
     "manual:backfill-hot-player-history": "node scripts/manual-api/backfill-hot-player-history.js",
     "ops:monitor-backfill-tg": "node scripts/ops/monitor-hot-player-backfill.mjs",
     "ops:cron-refresh-hourly": "node scripts/ops/hourly-cron-refresh.mjs",
