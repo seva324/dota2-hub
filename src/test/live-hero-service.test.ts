@@ -105,6 +105,101 @@ describe('live hero service league matching', () => {
     ]);
   });
 
+  it('merges fresh live snapshots with cached rows instead of short-circuiting on cache hit', async () => {
+    listRecentActiveHeroLiveScores.mockResolvedValue([
+      {
+        series_key: 'aurora::heroic',
+        last_seen_at: '2026-03-08T16:00:00.000Z',
+        payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'Aurora' }, { name: 'Heroic' }] },
+      },
+    ]);
+    const db = {
+      query: vi.fn().mockResolvedValue([
+        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: null, tier: 'S' },
+      ]),
+    };
+    fetchHtml.mockResolvedValue('<html></html>');
+    parseHawkHomepageSeriesList.mockReturnValue([
+      {
+        id: '92352',
+        slug: 'parivision-vs-natus-vincere',
+        leagueName: 'PGL Wallachia Season 7: Group Stage',
+        team1Name: 'PARIVISION',
+        team2Name: 'Natus Vincere',
+        teamKey: 'natus vincere::parivision',
+        url: 'https://hawk.live/pgl',
+      },
+    ]);
+    fetchLiveSeriesDetails.mockResolvedValue({
+      id: '92352',
+      slug: 'parivision-vs-natus-vincere',
+      url: 'https://hawk.live/pgl',
+      leagueName: 'PGL Wallachia Season 7: Group Stage',
+      team1Name: 'PARIVISION',
+      team2Name: 'Natus Vincere',
+      detail: {
+        bestOf: 3,
+        team1Name: 'PARIVISION',
+        team2Name: 'Natus Vincere',
+        maps: [],
+        liveMap: null,
+      },
+    });
+    upsertHeroLiveScore.mockImplementation(async (snapshot) => ({
+      series_key: snapshot.series_key,
+      last_seen_at: '2026-03-08T16:01:00.000Z',
+      payload: snapshot.payload,
+    }));
+
+    const { getLiveHeroPayloads } = await import('../../lib/server/live-hero-service.js');
+    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
+
+    expect(fetchLiveSeriesDetails).toHaveBeenCalled();
+    expect(payloads).toHaveLength(2);
+    expect(payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({ name: 'Aurora' }),
+          expect.objectContaining({ name: 'Heroic' }),
+        ]),
+      }),
+      expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({ name: 'PARIVISION' }),
+          expect.objectContaining({ name: 'Natus Vincere' }),
+        ]),
+      }),
+    ]));
+  });
+
+  it('falls back to cached rows when live refresh fails', async () => {
+    listRecentActiveHeroLiveScores.mockResolvedValue([
+      {
+        series_key: 'natus vincere::parivision',
+        last_seen_at: '2026-03-08T16:00:00.000Z',
+        payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'PARIVISION' }, { name: 'Natus Vincere' }] },
+      },
+    ]);
+    const db = {
+      query: vi.fn().mockResolvedValue([
+        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: null, tier: 'S' },
+      ]),
+    };
+    fetchHtml.mockRejectedValue(new Error('temporary hawk failure'));
+
+    const { getLiveHeroPayloads } = await import('../../lib/server/live-hero-service.js');
+    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
+
+    expect(payloads).toEqual([
+      expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({ name: 'PARIVISION' }),
+          expect.objectContaining({ name: 'Natus Vincere' }),
+        ]),
+      }),
+    ]);
+  });
+
   it('returns matched and unmatched hawk live series in debug mode', async () => {
     const db = {
       query: vi.fn().mockResolvedValue([
