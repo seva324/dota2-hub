@@ -4,6 +4,7 @@ import {
   buildUnorderedTeamKey,
   extractInertiaPageData,
   parseHawkHomepageSeriesList,
+  selectMatchingLiveSeries,
   summarizeSeriesDetail,
 } from '@/../lib/server/hawk-live.js';
 
@@ -77,10 +78,27 @@ describe('hawk live parser helpers', () => {
 
     const summary = summarizeSeriesDetail(html);
     expect(summary?.maps).toEqual([
-      expect.objectContaining({ label: 'Map 1', score: '0 - 1', status: 'completed' }),
-      expect.objectContaining({ label: 'Map 2', score: '1 - 1', status: 'completed' }),
-      expect.objectContaining({ label: 'Map 3', score: '1 - 1', status: 'live' }),
+      expect.objectContaining({ label: 'Map 1', score: '22 - 30', status: 'completed', team1SeriesWins: 0, team2SeriesWins: 1 }),
+      expect.objectContaining({ label: 'Map 2', score: '28 - 17', status: 'completed', team1SeriesWins: 1, team2SeriesWins: 1 }),
+      expect.objectContaining({ label: 'Map 3', score: '14 - 11', status: 'live', team1SeriesWins: 1, team2SeriesWins: 1 }),
     ]);
     expect(summary?.liveMap).toMatchObject({ label: 'Map 3', score: '14 - 11', status: 'live' });
+  });
+
+  it('matches all upcoming rows against hawk live rows using unordered normalized team keys', () => {
+    const matches = selectMatchingLiveSeries(
+      [
+        { upcomingSeriesId: '1', team1Name: 'OG', team2Name: 'BetBoom Team' },
+        { upcomingSeriesId: '2', team1Name: 'NAVI', team2Name: 'PARIVISION' },
+      ],
+      [
+        { id: 'hawk-1', teamKey: buildUnorderedTeamKey('BetBoom Team', 'OG') },
+        { id: 'hawk-2', teamKey: buildUnorderedTeamKey('PARIVISION', 'Natus Vincere') },
+      ],
+    );
+
+    expect(matches).toHaveLength(2);
+    expect(matches[0]?.upcoming?.upcomingSeriesId).toBe('1');
+    expect(matches[1]?.upcoming?.upcomingSeriesId).toBe('2');
   });
 });
