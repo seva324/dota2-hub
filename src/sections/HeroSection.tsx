@@ -325,7 +325,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                 <div className="flex items-center justify-between text-left">
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-red-300/80">Hero 实时比分</p>
-                    <h2 className="text-lg sm:text-xl font-bold text-white mt-1">5 小时内开赛 · Hawk Live 命中</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-white mt-1">直播对局</h2>
                   </div>
                   <Badge className="bg-red-500/15 text-red-200 border border-red-400/30">{liveHeroes.length} 场</Badge>
                 </div>
@@ -405,7 +405,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
 
                           {liveHero.sourceUrl && (
                             <div className="text-[11px] text-slate-500">
-                              Hawk Live · <a className="text-red-300 hover:text-red-200" href={liveHero.sourceUrl} target="_blank" rel="noreferrer">打开比分页</a>
+                              <a className="text-red-300 hover:text-red-200" href={liveHero.sourceUrl} target="_blank" rel="noreferrer">打开比分页</a>
                             </div>
                           )}
                         </CardContent>
