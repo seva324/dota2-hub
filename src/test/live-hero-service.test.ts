@@ -5,6 +5,9 @@ const listRecentActiveHeroLiveScores = vi.fn();
 const listActiveHeroLiveScores = vi.fn();
 const markHeroLiveScoreEnded = vi.fn();
 const upsertHeroLiveScore = vi.fn();
+const fetchHtml = vi.fn();
+const fetchLiveSeriesDetails = vi.fn();
+const parseHawkHomepageSeriesList = vi.fn(() => []);
 
 vi.mock('../../lib/server/hero-live-score-cache.js', () => ({
   ensureHeroLiveScoresTable,
@@ -16,13 +19,12 @@ vi.mock('../../lib/server/hero-live-score-cache.js', () => ({
 
 vi.mock('../../lib/server/hawk-live.js', () => ({
   buildUnorderedTeamKey: (teamA: string, teamB: string) => [teamA, teamB].map((value) => value.toLowerCase()).sort().join('::'),
-  fetchHtml: vi.fn(),
-  fetchLiveSeriesDetails: vi.fn(),
-  parseHawkHomepageSeriesList: vi.fn(() => []),
-  selectMatchingLiveSeries: vi.fn(() => []),
+  fetchHtml,
+  fetchLiveSeriesDetails,
+  parseHawkHomepageSeriesList,
 }));
 
-describe('live hero service cache behavior', () => {
+describe('live hero service league matching', () => {
   beforeEach(() => {
     vi.resetModules();
     ensureHeroLiveScoresTable.mockReset();
@@ -30,108 +32,120 @@ describe('live hero service cache behavior', () => {
     listActiveHeroLiveScores.mockReset();
     markHeroLiveScoreEnded.mockReset();
     upsertHeroLiveScore.mockReset();
+    fetchHtml.mockReset();
+    fetchLiveSeriesDetails.mockReset();
+    parseHawkHomepageSeriesList.mockReset();
+    parseHawkHomepageSeriesList.mockReturnValue([]);
   });
 
-  it('filters cached live rows by target team key', async () => {
-    listRecentActiveHeroLiveScores.mockResolvedValue([
-      { series_key: 'betboom team::og', payload: { leagueName: 'PGL', teams: [{ name: 'OG' }, { name: 'BetBoom Team' }] } },
-      { series_key: 'navi::parivision', payload: { leagueName: 'PGL', teams: [{ name: 'PARIVISION' }, { name: 'Natus Vincere' }] } },
-    ]);
-    const now = Math.floor(Date.now() / 1000);
-    const db = {
-      query: vi.fn().mockResolvedValue([
-        {
-          series_id: 'live-1',
-          start_time: now + 300,
-          series_type: 'BO3',
-          tournament_name: 'PGL Wallachia Season 7',
-          radiant_team_name: 'PARIVISION',
-          radiant_team_logo: 'https://cdn.test/pari.png',
-          dire_team_name: 'NAVI',
-          dire_team_logo: 'https://cdn.test/navi.png',
-        },
-      ]),
-    };
+  it('matches hawk league names against tournaments by keyword', async () => {
+    const { matchLeagueNameToTournaments } = await import('../../lib/server/live-hero-service.js');
+    const matches = matchLeagueNameToTournaments('PGL Wallachia Season 7: Group Stage', [
+      { leagueId: '19435', name: 'PGL Wallachia Season 7', normalized: 'pgl wallachia season 7', tokens: ['pgl', 'wallachia'] },
+      { leagueId: '19269', name: 'DreamLeague Season 28', normalized: 'dreamleague season 28', tokens: ['dreamleague'] },
+    ] as never);
 
-    const { getLiveHeroPayloads } = await import('../../lib/server/live-hero-service.js');
-    const payloads = await getLiveHeroPayloads(db as never, { teamA: 'PARIVISION', teamB: 'NAVI' });
-
-    expect(payloads).toEqual([
+    expect(matches).toEqual([
       expect.objectContaining({
-        teams: [{ name: 'PARIVISION' }, { name: 'Natus Vincere' }],
+        leagueId: '19435',
+        name: 'PGL Wallachia Season 7',
+        fullMatch: true,
       }),
     ]);
   });
 
-  it('uses the broader default cache limit for multi-match reads', async () => {
-    listRecentActiveHeroLiveScores.mockResolvedValue([]);
-    const db = { query: vi.fn().mockResolvedValue([]) };
-
-    const { getLiveHeroPayloads } = await import('../../lib/server/live-hero-service.js');
-    await getLiveHeroPayloads(db as never, { forceRefresh: false });
-
-    expect(listRecentActiveHeroLiveScores).toHaveBeenCalledWith(db, 180, 50);
-  });
-
-  it('only reads upcoming series candidates within the configured window', async () => {
-    const now = Math.floor(Date.now() / 1000);
+  it('loads tournament matchers from tournaments table', async () => {
     const db = {
       query: vi.fn().mockResolvedValue([
-        {
-          series_id: 'live-1',
-          start_time: now - 300,
-          series_type: 'BO3',
-          tournament_name: 'PGL Wallachia Season 7',
-          radiant_team_name: 'Tundra Esports',
-          radiant_team_logo: 'https://cdn.test/tundra.png',
-          dire_team_name: 'Yellow Submarine',
-          dire_team_logo: 'https://cdn.test/ys.png',
-        },
+        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: 'PGL 瓦拉几亚 S7', tier: 'S' },
+        { league_id: 19269, name: 'DreamLeague Season 28', name_cn: '梦联赛 S28', tier: 'S' },
       ]),
     };
 
-    const { loadUpcomingCandidates } = await import('../../lib/server/live-hero-service.js');
-    const rows = await loadUpcomingCandidates(db as never, { windowBeforeSeconds: 900, windowAfterSeconds: 5 * 3600, limit: 20 });
+    const { loadTournamentLeagueMatchers } = await import('../../lib/server/live-hero-service.js');
+    const rows = await loadTournamentLeagueMatchers(db as never, { tournamentLimit: 50 });
 
-    expect(db.query).toHaveBeenCalledTimes(1);
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM upcoming_series s'), [now - 900, now + 5 * 3600, 20]);
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM tournaments'), [50]);
     expect(rows).toEqual([
-      expect.objectContaining({
-        upcomingSeriesId: 'live-1',
-        team1Name: 'Tundra Esports',
-        team2Name: 'Yellow Submarine',
-        source: 'upcoming_series',
-      }),
+      expect.objectContaining({ leagueId: '19435', tokens: expect.arrayContaining(['pgl', 'wallachia']) }),
+      expect.objectContaining({ leagueId: '19269', tokens: expect.arrayContaining(['dreamleague']) }),
     ]);
   });
 
-  it('filters cached rows to current upcoming team keys before returning them', async () => {
-    const now = Math.floor(Date.now() / 1000);
+  it('filters cached live rows by matched league names', async () => {
     listRecentActiveHeroLiveScores.mockResolvedValue([
-      { series_key: 'betboom::og', payload: { teams: [{ name: 'OG' }, { name: 'BetBoom Team' }] } },
-      { series_key: 'tundra esports::yellow submarine', payload: { teams: [{ name: 'Tundra Esports' }, { name: 'Yellow Submarine' }] } },
+      { series_key: 'betboom team::og', league_name: 'PGL Wallachia Season 7: Group Stage', payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'OG' }, { name: 'BetBoom Team' }] } },
+      { series_key: 'other::series', league_name: 'Unknown Weekly Cup', payload: { leagueName: 'Unknown Weekly Cup', teams: [{ name: 'A' }, { name: 'B' }] } },
     ]);
     const db = {
       query: vi.fn().mockResolvedValue([
-        {
-          series_id: 'live-1',
-          start_time: now - 300,
-          series_type: 'BO3',
-          tournament_name: 'PGL Wallachia Season 7',
-          radiant_team_name: 'Tundra Esports',
-          radiant_team_logo: 'https://cdn.test/tundra.png',
-          dire_team_name: 'Yellow Submarine',
-          dire_team_logo: 'https://cdn.test/ys.png',
-        },
+        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: null, tier: 'S' },
       ]),
     };
+    fetchHtml.mockResolvedValue('<html></html>');
+    parseHawkHomepageSeriesList.mockReturnValue([
+      {
+        id: '92350',
+        slug: 'og-vs-betboom-team',
+        leagueName: 'PGL Wallachia Season 7: Group Stage',
+        team1Name: 'OG',
+        team2Name: 'BetBoom Team',
+        teamKey: 'betboom team::og',
+        url: 'https://hawk.live/example',
+      },
+    ]);
 
     const { getLiveHeroPayloads } = await import('../../lib/server/live-hero-service.js');
     const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
 
     expect(payloads).toEqual([
       expect.objectContaining({
-        teams: [{ name: 'Tundra Esports' }, { name: 'Yellow Submarine' }],
+        teams: [{ name: 'OG' }, { name: 'BetBoom Team' }],
+      }),
+    ]);
+  });
+
+  it('returns matched and unmatched hawk live series in debug mode', async () => {
+    const db = {
+      query: vi.fn().mockResolvedValue([
+        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: null, tier: 'S' },
+      ]),
+    };
+    fetchHtml.mockResolvedValue('<html></html>');
+    parseHawkHomepageSeriesList.mockReturnValue([
+      {
+        id: '92352',
+        slug: 'parivision-vs-natus-vincere',
+        leagueName: 'PGL Wallachia Season 7: Group Stage',
+        team1Name: 'PARIVISION',
+        team2Name: 'Natus Vincere',
+        teamKey: 'natus vincere::parivision',
+        startAt: '2026-03-08T14:00:00.000000Z',
+        url: 'https://hawk.live/pgl',
+      },
+      {
+        id: '99999',
+        slug: 'unknown-vs-unknown',
+        leagueName: 'Unknown Weekly Cup',
+        team1Name: 'A',
+        team2Name: 'B',
+        teamKey: 'a::b',
+        startAt: '2026-03-08T15:00:00.000000Z',
+        url: 'https://hawk.live/unknown',
+      },
+    ]);
+
+    const { explainLiveHeroMatching } = await import('../../lib/server/live-hero-service.js');
+    const debug = await explainLiveHeroMatching(db as never, {});
+
+    expect(debug.matched).toEqual([
+      expect.objectContaining({
+        reason: 'matched_by_league_name',
+      }),
+    ]);
+    expect(debug.unmatchedHawkSeries).toEqual([
+      expect.objectContaining({
+        reason: 'no_matching_tournament_keyword',
       }),
     ]);
   });
