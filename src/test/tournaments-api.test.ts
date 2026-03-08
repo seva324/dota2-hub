@@ -83,6 +83,39 @@ describe('/api/tournaments lazy loading', () => {
     expect(taggedMock.mock.calls.some((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM series'))).toBe(false);
   });
 
+  it('filters out tournaments whose tier is empty in the summary list query', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM tournaments') && !sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        expect(sql).toContain(`WHERE NULLIF(BTRIM(COALESCE(tier, '')), '') IS NOT NULL`);
+        return [{
+          id: 'pgl-wallachia-s7',
+          league_id: 19435,
+          name: 'PGL Wallachia Season 7',
+          tier: 'S',
+          location: 'Romania',
+          status: 'ongoing',
+          start_time: 1700000000,
+          end_time: 1701000000,
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../api/tournaments.js');
+    const req = { method: 'GET', query: {} };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).tournaments).toHaveLength(1);
+    expect((res.payload as any).tournaments[0]).toEqual(expect.objectContaining({
+      league_id: 19435,
+      tier: 'S',
+    }));
+  });
+
   it('returns paginated series for a selected tournament', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = renderSql(strings);

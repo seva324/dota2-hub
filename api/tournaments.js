@@ -119,6 +119,7 @@ async function listTournamentSummaries(db) {
   const tournaments = await db`
     SELECT *
     FROM tournaments
+    WHERE NULLIF(BTRIM(COALESCE(tier, '')), '') IS NOT NULL
     ORDER BY COALESCE(start_time, 0) DESC, COALESCE(end_time, 0) DESC
   `;
 
