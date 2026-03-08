@@ -97,7 +97,7 @@ async function main() {
         }
       }
 
-      const result = await runLiveHeroMonitorCycle(db, { confirmEndedSeriesKeys });
+      const result = await runLiveHeroMonitorCycle(db, { confirmedEndedSeriesKeys });
 
       if (result.live) {
         missCounts.set(result.live.series_key, 0);
