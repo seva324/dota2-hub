@@ -31,6 +31,7 @@ interface LiveHeroPayload {
   bestOf?: string | number | null;
   seriesScore: string;
   live: boolean;
+  startedAt?: string | number | null;
   teams: Array<{
     side: 'team1' | 'team2';
     name: string;
@@ -42,6 +43,8 @@ interface LiveHeroPayload {
     status: 'completed' | 'live';
     team1Score?: number | null;
     team2Score?: number | null;
+    team1NetWorthLead?: number | null;
+    team2NetWorthLead?: number | null;
     gameTime?: number | null;
   }>;
   liveMap?: {
@@ -51,6 +54,8 @@ interface LiveHeroPayload {
     gameTime?: number | null;
     team1Score?: number | null;
     team2Score?: number | null;
+    team1NetWorthLead?: number | null;
+    team2NetWorthLead?: number | null;
   } | null;
 }
 
@@ -153,6 +158,37 @@ function formatGameTime(seconds?: number | null) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+function formatNetWorthLead(value?: number | null) {
+  if (!value || value <= 0) return null;
+  if (value >= 100000) return `+${Math.round(value / 1000)}k`;
+  return `+${(value / 1000).toFixed(1)}k`;
+}
+
+function toSortTimestamp(value: string | number | null | undefined): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return Math.trunc(parsed / 1000);
+  }
+  return 0;
+}
+
+function sortLiveHeroesForDisplay(items: LiveHeroPayload[]) {
+  return [...items].sort((a, b) => {
+    const aStart = toSortTimestamp(a.startedAt);
+    const bStart = toSortTimestamp(b.startedAt);
+    if (aStart !== bStart) return aStart - bStart;
+    const aLeague = String(a.leagueName || '');
+    const bLeague = String(b.leagueName || '');
+    if (aLeague !== bLeague) return aLeague.localeCompare(bLeague);
+    const aTeams = (a.teams || []).map((team) => team.name).join(' vs ');
+    const bTeams = (b.teams || []).map((team) => team.name).join(' vs ');
+    return aTeams.localeCompare(bTeams);
+  });
+}
+
 const HERO_DEFAULT_DAYS = 1;
 
 function buildHeroUpcomingApiUrl(days: number = HERO_DEFAULT_DAYS): string {
@@ -211,7 +247,8 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
 
   const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
   const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
-  const primaryLiveHero = liveHeroes[0] || null;
+  const sortedLiveHeroes = useMemo(() => sortLiveHeroesForDisplay(liveHeroes), [liveHeroes]);
+  const primaryLiveHero = sortedLiveHeroes[0] || null;
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
     isTeamInRegion(team || null, effectiveTeams, ['China']);
 
@@ -307,7 +344,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-lg mx-auto mb-6 sm:mb-8">
           {[
             { value: '3', label: '中国战队', color: 'from-red-500 to-orange-500' },
-            { value: liveHeroes.length > 0 ? String(liveHeroes.length) : '13+', label: liveHeroes.length > 0 ? 'LIVE 对局' : 'T1赛事', color: 'from-purple-500 to-pink-500' },
+            { value: sortedLiveHeroes.length > 0 ? String(sortedLiveHeroes.length) : '13+', label: sortedLiveHeroes.length > 0 ? 'LIVE 对局' : 'T1赛事', color: 'from-purple-500 to-pink-500' },
             { value: '$13M', label: '奖金池', color: 'from-yellow-500 to-amber-500' },
             { value: '实时', label: '更新', color: 'from-green-500 to-emerald-500' },
           ].map((stat, i) => (
@@ -327,26 +364,30 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                     <p className="text-xs uppercase tracking-[0.2em] text-red-300/80">Hero 实时比分</p>
                     <h2 className="text-lg sm:text-xl font-bold text-white mt-1">直播对局</h2>
                   </div>
-                  <Badge className="bg-red-500/15 text-red-200 border border-red-400/30">{liveHeroes.length} 场</Badge>
+                  <Badge className="bg-red-500/15 text-red-200 border border-red-400/30">{sortedLiveHeroes.length} 场</Badge>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2" data-testid="hero-live-grid">
-                  {liveHeroes.map((liveHero) => {
+                  {sortedLiveHeroes.map((liveHero) => {
                     const teams = liveHero.teams || [];
                     return (
-                      <Card key={`${liveHero.sourceUrl || liveHero.leagueName}-${teams[0]?.name || ''}-${teams[1]?.name || ''}`} className="text-left bg-gradient-to-br from-red-950/35 via-slate-900/90 to-slate-950/95 backdrop-blur-2xl border border-red-500/20 shadow-[0_0_35px_rgba(239,68,68,0.12)] overflow-hidden">
-                        <CardContent className="p-3 space-y-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
+                      <Card
+                        key={`${liveHero.sourceUrl || liveHero.leagueName}-${teams[0]?.name || ''}-${teams[1]?.name || ''}`}
+                        data-testid="hero-live-card"
+                        className="h-full text-left bg-gradient-to-br from-red-950/35 via-slate-900/90 to-slate-950/95 backdrop-blur-2xl border border-red-500/20 shadow-[0_0_35px_rgba(239,68,68,0.12)] overflow-hidden"
+                      >
+                        <CardContent className="h-full p-3 grid grid-rows-[auto_auto_1fr_auto] gap-3">
+                          <div className="flex min-h-[4.25rem] items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 mb-1.5">
                                 <Badge className="bg-red-500/20 text-red-300 border border-red-400/40">
                                   <Radio className="w-3 h-3 mr-1 animate-pulse" />LIVE
                                 </Badge>
                                 <Badge variant="outline" className="border-white/15 text-slate-300 bg-white/5">{liveHero.bestOf || 'BO3'}</Badge>
                               </div>
-                              <h3 className="text-sm font-bold text-white leading-tight">{liveHero.leagueName}</h3>
+                              <h3 className="line-clamp-2 text-sm font-bold text-white leading-tight">{liveHero.leagueName}</h3>
                             </div>
-                            <div className="text-right shrink-0">
+                            <div className="w-20 shrink-0 text-right">
                               <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Series</p>
                               <div className="text-lg font-black text-white">{liveHero.seriesScore}</div>
                             </div>
@@ -354,25 +395,34 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
 
                           <div className="space-y-2">
                             {teams.map((team, index) => (
-                              <div key={`${team.side}-${team.name}`} className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
-                                <div className="flex items-center gap-2 min-w-0">
+                              <div key={`${team.side}-${team.name}`} className="grid min-h-[3.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                                <div className="flex min-w-0 items-center gap-2">
                                   {getTeamLogo(team.logo, team.name) ? (
                                     <img src={getTeamLogo(team.logo, team.name)} alt="" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
                                   ) : (
                                     <div className="w-8 h-8 rounded-full bg-slate-800" />
                                   )}
-                                  <span className="text-sm font-semibold text-white truncate">{team.name}</span>
+                                  <div className="min-w-0">
+                                    <div className="text-sm font-semibold text-white truncate">{team.name}</div>
+                                    <div className="min-h-[1rem] text-[11px] font-semibold text-emerald-300">
+                                      {index === 0
+                                        ? formatNetWorthLead(liveHero.liveMap?.team1NetWorthLead)
+                                        : formatNetWorthLead(liveHero.liveMap?.team2NetWorthLead)}
+                                    </div>
+                                  </div>
                                 </div>
-                                {liveHero.liveMap && (
-                                  <span className={`text-xs font-bold ${index === 0 ? 'text-emerald-300' : 'text-slate-300'}`}>
-                                    {index === 0 ? liveHero.liveMap.team1Score : liveHero.liveMap.team2Score}
-                                  </span>
-                                )}
+                                <div className="w-12 text-right">
+                                  {liveHero.liveMap && (
+                                    <span className={`text-sm font-bold ${index === 0 ? 'text-emerald-300' : 'text-slate-300'}`}>
+                                      {index === 0 ? liveHero.liveMap.team1Score : liveHero.liveMap.team2Score}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             ))}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2" data-testid="hero-live-maps">
+                          <div className="grid auto-rows-fr grid-cols-2 gap-2" data-testid="hero-live-maps">
                             {liveHero.maps.map((map) => {
                               const mapKey = `${liveHero.sourceUrl || liveHero.leagueName}-${map.label}`;
                               const expanded = expandedMapKeys[mapKey] === true;
@@ -380,7 +430,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                                 <button
                                   key={mapKey}
                                   type="button"
-                                  className={`rounded-2xl border px-3 py-2 text-left transition-colors ${map.status === 'live' ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-white/10 bg-white/5'}`}
+                                  className={`h-full rounded-2xl border px-3 py-2 text-left transition-colors ${map.status === 'live' ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-white/10 bg-white/5'}`}
                                   onClick={() => toggleMap(mapKey)}
                                 >
                                   <div className="flex items-center justify-between gap-2">
