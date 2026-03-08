@@ -40,6 +40,14 @@
 - `/api/sync-opendota`：`0 8 * * *`
 - `/api/sync-liquipedia`：`0 14 * * *`
 - `/api/sync-news`：`30 9 * * *`
+- `/api/cron?action=refresh-derived-data-incremental`：`30 14 * * *`（增量刷新最近活跃队伍/选手的衍生缓存）
+
+手动监控当前衍生缓存全量刷新进度（tmux + Telegram）：
+
+```bash
+tmux new-session -d -s d2hub-derived-monitor \
+  'cd /home/seva324/dota2-hub && node --env-file=.env.local scripts/ops/monitor-derived-refresh.mjs --pid=<refresh_pid> --started-at=<iso_time>'
+```
 
 ## 环境变量
 
