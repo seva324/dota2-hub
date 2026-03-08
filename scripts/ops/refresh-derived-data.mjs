@@ -30,17 +30,30 @@ async function main() {
   const playerLimit = args['player-limit'] ? Math.max(1, Number(args['player-limit'])) : null;
   const teamLimit = args['team-limit'] ? Math.max(1, Number(args['team-limit'])) : null;
   const matchLimit = Math.max(30, Math.min(240, Number(args['match-limit'] || 180)));
+  const mode = String(args.mode || (args.incremental ? 'incremental' : 'full')).toLowerCase() === 'incremental' ? 'incremental' : 'full';
+  const recentDays = Math.max(1, Math.trunc(Number(args['recent-days'] || 7)));
+  const upcomingDays = Math.max(1, Math.trunc(Number(args['upcoming-days'] || 3)));
   const db = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL);
   const startedAt = new Date().toISOString();
 
+  const sharedOptions = {
+    mode,
+    incremental: mode === 'incremental',
+    recentDays,
+    upcomingDays,
+  };
+
   const [playerProfiles, teamFlyouts] = await Promise.all([
-    warmPlayerProfileCache(db, { limit: playerLimit, matchLimit }),
-    warmTeamFlyoutCache(db, { limit: teamLimit }),
+    warmPlayerProfileCache(db, { ...sharedOptions, limit: playerLimit, matchLimit }),
+    warmTeamFlyoutCache(db, { ...sharedOptions, limit: teamLimit }),
   ]);
 
   const payload = {
     startedAt,
     finishedAt: new Date().toISOString(),
+    mode,
+    recentDays,
+    upcomingDays,
     matchLimit,
     playerProfiles,
     teamFlyouts,
@@ -51,9 +64,10 @@ async function main() {
 
   await sendTelegramMessage(
     [
-      '✅ derived cache refresh 已完成',
+      `✅ derived cache refresh 已完成 (${mode})`,
       `player selected/refreshed/failed: ${playerProfiles.selected}/${playerProfiles.refreshed}/${playerProfiles.failed}`,
       `team selected/refreshed/failed: ${teamFlyouts.selected}/${teamFlyouts.refreshed}/${teamFlyouts.failed}`,
+      mode === 'incremental' ? `window recent/upcoming days: ${recentDays}/${upcomingDays}` : 'window: full refresh',
       `log: ${out}`,
     ].join('\n')
   );

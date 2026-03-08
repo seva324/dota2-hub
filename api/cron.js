@@ -27,20 +27,61 @@ function pickParam(value, fallback = '') {
   return String(value);
 }
 
-async function runAction(action) {
-  if (action === 'refresh-player-profiles') {
+function pickPositiveInt(value, fallback) {
+  const parsed = Number(pickParam(value, ''));
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.trunc(parsed);
+}
+
+function buildRefreshOptions(raw = {}) {
+  const mode = String(pickParam(raw.mode, '')).trim().toLowerCase() === 'incremental' ? 'incremental' : 'full';
+  return {
+    mode,
+    incremental: mode === 'incremental',
+    recentDays: pickPositiveInt(raw.recentDays, 7),
+    upcomingDays: pickPositiveInt(raw.upcomingDays, 3),
+    matchLimit: pickPositiveInt(raw.matchLimit, 180),
+    playerLimit: pickPositiveInt(raw.playerLimit, null),
+    teamLimit: pickPositiveInt(raw.teamLimit, null),
+  };
+}
+
+async function runAction(action, refreshOptions = buildRefreshOptions()) {
+  const playerRefreshOptions = {
+    mode: refreshOptions.mode,
+    incremental: refreshOptions.incremental,
+    recentDays: refreshOptions.recentDays,
+    upcomingDays: refreshOptions.upcomingDays,
+    matchLimit: refreshOptions.matchLimit,
+    limit: refreshOptions.playerLimit,
+  };
+  const teamRefreshOptions = {
+    mode: refreshOptions.mode,
+    incremental: refreshOptions.incremental,
+    recentDays: refreshOptions.recentDays,
+    upcomingDays: refreshOptions.upcomingDays,
+    limit: refreshOptions.teamLimit,
+  };
+
+  if (action === 'refresh-player-profiles' || action === 'refresh-player-profiles-incremental') {
     const db = getDb();
     if (!db) throw new Error('Database not available');
-    return { action, result: await warmPlayerProfileCache(db) };
+    const options = action.endsWith('-incremental')
+      ? { ...playerRefreshOptions, mode: 'incremental', incremental: true }
+      : playerRefreshOptions;
+    return { action, result: await warmPlayerProfileCache(db, options) };
   }
-  if (action === 'refresh-derived-data') {
+  if (action === 'refresh-derived-data' || action === 'refresh-derived-data-incremental') {
     const db = getDb();
     if (!db) throw new Error('Database not available');
+    const options = action.endsWith('-incremental')
+      ? { mode: 'incremental', incremental: true, recentDays: refreshOptions.recentDays, upcomingDays: refreshOptions.upcomingDays }
+      : { mode: refreshOptions.mode, incremental: refreshOptions.incremental, recentDays: refreshOptions.recentDays, upcomingDays: refreshOptions.upcomingDays };
     const [playerProfiles, teamFlyouts] = await Promise.all([
-      warmPlayerProfileCache(db),
-      warmTeamFlyoutCache(db),
+      warmPlayerProfileCache(db, { ...playerRefreshOptions, ...options }),
+      warmTeamFlyoutCache(db, { ...teamRefreshOptions, ...options }),
     ]);
-    return { action, result: { playerProfiles, teamFlyouts } };
+    return { action, result: { mode: options.mode, playerProfiles, teamFlyouts } };
   }
   if (action === 'sync-opendota') {
     return { action, result: await runSyncOpenDota() };
@@ -86,7 +127,15 @@ export default async function handler(req, res) {
     const query = req.query || {};
     const body = typeof req.body === 'object' && req.body ? req.body : {};
     const action = pickParam(query.action || body.action, 'all').trim().toLowerCase();
-    const payload = await runAction(action || 'all');
+    const refreshOptions = buildRefreshOptions({
+      mode: query.mode || body.mode,
+      recentDays: query.recentDays || body.recentDays,
+      upcomingDays: query.upcomingDays || body.upcomingDays,
+      matchLimit: query.matchLimit || body.matchLimit,
+      playerLimit: query.playerLimit || body.playerLimit,
+      teamLimit: query.teamLimit || body.teamLimit,
+    });
+    const payload = await runAction(action || 'all', refreshOptions);
     return res.status(200).json({ ok: true, ...payload });
   } catch (error) {
     return res.status(500).json({

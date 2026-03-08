@@ -16,7 +16,7 @@
       "schedule": "0 14 * * *"
     },
     {
-      "path": "/api/cron?action=refresh-derived-data",
+      "path": "/api/cron?action=refresh-derived-data-incremental",
       "schedule": "30 14 * * *"
     }
   ]
