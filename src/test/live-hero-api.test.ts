@@ -112,8 +112,8 @@ describe('/api/live-hero', () => {
     getLiveHeroPayload.mockResolvedValue(null);
     getLiveHeroPayloads.mockResolvedValue([]);
     explainLiveHeroMatching.mockResolvedValue({
-      matched: [{ reason: 'matched_by_team_key' }],
-      unmatchedUpcoming: [{ reason: 'no_matching_hawk_live_series' }],
+      matched: [{ reason: 'matched_by_league_name' }],
+      unmatchedHawkSeries: [{ reason: 'no_matching_tournament_keyword' }],
     });
 
     const { default: handler } = await import('../../api/live-hero.js');
@@ -125,8 +125,8 @@ describe('/api/live-hero', () => {
       debug: true,
     }));
     expect((res.payload as any).debug).toEqual({
-      matched: [{ reason: 'matched_by_team_key' }],
-      unmatchedUpcoming: [{ reason: 'no_matching_hawk_live_series' }],
+      matched: [{ reason: 'matched_by_league_name' }],
+      unmatchedHawkSeries: [{ reason: 'no_matching_tournament_keyword' }],
     });
   });
 });
