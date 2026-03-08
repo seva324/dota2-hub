@@ -21,7 +21,8 @@
     "ops:cron-refresh-hourly": "node scripts/ops/hourly-cron-refresh.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "ops:monitor-live-hero-tg": "node --env-file=.env.local scripts/ops/monitor-live-hero-score.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
