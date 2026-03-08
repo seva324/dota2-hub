@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { neon } from '@neondatabase/serverless';
 import { warmPlayerProfileCache } from '../../lib/server/player-profile-cache.js';
+import { warmTeamFlyoutCache } from '../../lib/server/team-flyout-cache.js';
 import { sendTelegramMessage } from './telegram-util.mjs';
 
 function parseArgs(argv) {
@@ -25,33 +26,34 @@ function ensureDir(filePath) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const limit = args.limit ? Math.max(1, Number(args.limit)) : null;
+  const out = args.out || '/tmp/d2hub-refresh-derived-data.json';
+  const playerLimit = args['player-limit'] ? Math.max(1, Number(args['player-limit'])) : null;
+  const teamLimit = args['team-limit'] ? Math.max(1, Number(args['team-limit'])) : null;
   const matchLimit = Math.max(30, Math.min(240, Number(args['match-limit'] || 180)));
-  const out = args.out || '/tmp/d2hub-player-profile-warm.json';
   const db = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL);
   const startedAt = new Date().toISOString();
 
-  const result = await warmPlayerProfileCache(db, { limit, matchLimit });
+  const [playerProfiles, teamFlyouts] = await Promise.all([
+    warmPlayerProfileCache(db, { limit: playerLimit, matchLimit }),
+    warmTeamFlyoutCache(db, { limit: teamLimit }),
+  ]);
+
   const payload = {
     startedAt,
     finishedAt: new Date().toISOString(),
-    limit,
     matchLimit,
-    ...result,
+    playerProfiles,
+    teamFlyouts,
   };
 
   ensureDir(out);
   fs.writeFileSync(out, JSON.stringify(payload, null, 2));
 
-  const failedAccounts = Array.isArray(result.failedAccounts) ? result.failedAccounts : [];
-  const failedText = failedAccounts.length ? failedAccounts.join(', ') : '无';
   await sendTelegramMessage(
     [
-      '✅ player profile warm 已完成',
-      `selected: ${result.selected}`,
-      `refreshed: ${result.refreshed}`,
-      `failed: ${result.failed}`,
-      `failed accounts: ${failedText}`,
+      '✅ derived cache refresh 已完成',
+      `player selected/refreshed/failed: ${playerProfiles.selected}/${playerProfiles.refreshed}/${playerProfiles.failed}`,
+      `team selected/refreshed/failed: ${teamFlyouts.selected}/${teamFlyouts.refreshed}/${teamFlyouts.failed}`,
       `log: ${out}`,
     ].join('\n')
   );
@@ -63,7 +65,7 @@ main().catch(async (error) => {
   const message = error instanceof Error ? error.stack || error.message : String(error);
   console.error(message);
   try {
-    await sendTelegramMessage(['❌ player profile warm 失败', message.slice(0, 3000)].join('\n'));
+    await sendTelegramMessage(['❌ derived cache refresh 失败', message.slice(0, 3000)].join('\n'));
   } catch {}
   process.exit(1);
 });
