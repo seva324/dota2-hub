@@ -44,10 +44,23 @@ function formatStopMessage(row) {
   ].filter(Boolean).join('\n');
 }
 
+function getSnapshots(result) {
+  return Array.isArray(result?.liveSnapshots)
+    ? result.liveSnapshots
+    : result?.live
+      ? [result.live]
+      : [];
+}
+
 async function maybeNotifyStart(db, snapshot, notify) {
   if (!snapshot || !notify) return;
   const row = await getCurrentHeroLiveScore(db, 86400);
-  if (row?.series_key !== snapshot.series_key || row?.notified_start_at) return;
+  if (row?.series_key !== snapshot.series_key && row?.series_key) {
+    const latestRows = await db.query(`SELECT * FROM hero_live_scores WHERE series_key = $1 LIMIT 1`, [snapshot.series_key]);
+    if (latestRows?.[0]?.notified_start_at) return;
+  } else if (row?.notified_start_at) {
+    return;
+  }
   await sendTelegramMessage(formatStartMessage(snapshot.payload));
   await upsertHeroLiveScore({ ...snapshot, notified_start_at: new Date().toISOString() }, db);
 }
@@ -87,9 +100,9 @@ async function main() {
 
   while (true) {
     try {
-      const activeBefore = await getCurrentHeroLiveScore(db, 86400);
+      const activeBeforeRows = await db.query(`SELECT * FROM hero_live_scores WHERE is_live = true ORDER BY last_seen_at DESC`);
       const confirmedEndedSeriesKeys = [];
-      if (activeBefore?.series_key) {
+      for (const activeBefore of activeBeforeRows) {
         const misses = (missCounts.get(activeBefore.series_key) || 0) + 1;
         missCounts.set(activeBefore.series_key, misses);
         if (misses >= missThreshold) {
@@ -97,12 +110,13 @@ async function main() {
         }
       }
 
-      const result = await runLiveHeroMonitorCycle(db, { confirmedEndedSeriesKeys });
+      const result = await runLiveHeroMonitorCycle(db, { confirmEndedSeriesKeys: confirmedEndedSeriesKeys });
+      const liveSnapshots = getSnapshots(result);
 
-      if (result.live) {
-        missCounts.set(result.live.series_key, 0);
-        console.log(`[live-hero-monitor] live ${result.live.team1_name} vs ${result.live.team2_name} ${result.live.payload?.seriesScore || ''}`);
-        await maybeNotifyStart(db, result.live, notify);
+      for (const snapshot of liveSnapshots) {
+        missCounts.set(snapshot.series_key, 0);
+        console.log(`[live-hero-monitor] live ${snapshot.team1_name} vs ${snapshot.team2_name} ${snapshot.payload?.seriesScore || ''}`);
+        await maybeNotifyStart(db, snapshot, notify);
       }
 
       for (const row of result.missed || []) {
