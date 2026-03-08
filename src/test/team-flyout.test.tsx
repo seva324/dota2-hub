@@ -46,19 +46,12 @@ describe('TeamFlyout', () => {
       if (url === '/api/team-flyout?limit=5&offset=0&teamId=1&name=Team+Alpha') {
         return createJsonResponse({
           team: { team_id: '1', name: 'Team Alpha', tag: 'ALP' },
-          recentMatches: buildRecentMatches(2),
+          recentMatches: buildRecentMatches(2).map((match) => ({ ...match, team_hero_ids: [1, 2, 3, 4, 5] })),
           nextMatch: null,
+          activeSquad: [{ account_id: '11', name: 'Player 11', realname: 'Real 11', country_code: 'CN', avatar_url: null }],
+          topHeroes: [{ hero_id: 1, matches: 2 }],
           stats: { wins: 2, losses: 0, winRate: 100 },
           pagination: { hasMore: false, nextCursor: null },
-        });
-      }
-      if (url.startsWith('/api/match-details?match_id=')) {
-        return createJsonResponse({
-          players: Array.from({ length: 10 }, (_, index) => ({
-            player_slot: index < 5 ? index : 128 + index,
-            hero_id: index + 1,
-            account_id: 0,
-          })),
         });
       }
       throw new Error(`Unhandled fetch: ${url}`);
@@ -96,8 +89,10 @@ describe('TeamFlyout', () => {
       if (url === '/api/team-flyout?limit=5&offset=0&teamId=1&name=Team+Alpha') {
         return createJsonResponse({
           team: { team_id: '1', name: 'Team Alpha', tag: 'ALP' },
-          recentMatches: matches.slice(0, 5),
+          recentMatches: matches.slice(0, 5).map((match) => ({ ...match, team_hero_ids: [1, 2, 3, 4, 5] })),
           nextMatch: null,
+          activeSquad: [{ account_id: '11', name: 'Player 11', realname: 'Real 11', country_code: 'CN', avatar_url: null }],
+          topHeroes: [{ hero_id: 1, matches: 5 }],
           stats: { wins: 5, losses: 0, winRate: 100 },
           pagination: { hasMore: true, nextCursor: 5 },
         });
@@ -105,20 +100,12 @@ describe('TeamFlyout', () => {
       if (url === '/api/team-flyout?limit=5&offset=5&teamId=1&name=Team+Alpha') {
         return createJsonResponse({
           team: { team_id: '1', name: 'Team Alpha', tag: 'ALP' },
-          recentMatches: matches.slice(5),
+          recentMatches: matches.slice(5).map((match) => ({ ...match, team_hero_ids: [1, 2, 3, 4, 5] })),
           nextMatch: null,
+          activeSquad: [{ account_id: '11', name: 'Player 11', realname: 'Real 11', country_code: 'CN', avatar_url: null }],
+          topHeroes: [{ hero_id: 1, matches: 8 }],
           stats: { wins: 8, losses: 0, winRate: 100 },
           pagination: { hasMore: false, nextCursor: null },
-        });
-      }
-      if (url.startsWith('/api/match-details?match_id=')) {
-        const matchId = Number(url.split('=').pop());
-        return createJsonResponse({
-          players: Array.from({ length: 10 }, (_, index) => ({
-            player_slot: index < 5 ? index : 128 + index,
-            hero_id: (matchId % 10) + index + 1,
-            account_id: 0,
-          })),
         });
       }
       throw new Error(`Unhandled fetch: ${url}`);
@@ -136,11 +123,6 @@ describe('TeamFlyout', () => {
     expect(await screen.findByText('Opp 5')).toBeInTheDocument();
     expect(screen.queryByText('Opp 6')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /加载更多比赛/ })).toBeInTheDocument();
-
-    await waitFor(() => {
-      const matchDetailCalls = fetchMock.mock.calls.filter(([url]) => String(url).startsWith('/api/match-details?match_id='));
-      expect(matchDetailCalls).toHaveLength(5);
-    });
 
     fireEvent.click(screen.getByRole('button', { name: /加载更多比赛/ }));
 

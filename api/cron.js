@@ -3,6 +3,7 @@ import { runSyncOpenDota } from '../lib/server/sync-opendota.js';
 import { runSyncLiquipedia } from '../lib/server/sync-liquipedia.js';
 import { neon } from '@neondatabase/serverless';
 import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
+import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -30,7 +31,16 @@ async function runAction(action) {
   if (action === 'refresh-player-profiles') {
     const db = getDb();
     if (!db) throw new Error('Database not available');
-    return { action, result: await warmPlayerProfileCache(db, { limit: 60 }) };
+    return { action, result: await warmPlayerProfileCache(db) };
+  }
+  if (action === 'refresh-derived-data') {
+    const db = getDb();
+    if (!db) throw new Error('Database not available');
+    const [playerProfiles, teamFlyouts] = await Promise.all([
+      warmPlayerProfileCache(db),
+      warmTeamFlyoutCache(db),
+    ]);
+    return { action, result: { playerProfiles, teamFlyouts } };
   }
   if (action === 'sync-opendota') {
     return { action, result: await runSyncOpenDota() };
@@ -46,7 +56,8 @@ async function runAction(action) {
     const liquipedia = await runSyncLiquipedia();
     const news = await syncNewsToDb();
     const db = getDb();
-    const playerProfiles = db ? await warmPlayerProfileCache(db, { limit: 60 }) : { skipped: true, reason: 'db_unavailable' };
+    const playerProfiles = db ? await warmPlayerProfileCache(db) : { skipped: true, reason: 'db_unavailable' };
+    const teamFlyouts = db ? await warmTeamFlyoutCache(db) : { skipped: true, reason: 'db_unavailable' };
     return {
       action,
       result: {
@@ -54,6 +65,7 @@ async function runAction(action) {
         liquipedia,
         news,
         playerProfiles,
+        teamFlyouts,
       },
     };
   }

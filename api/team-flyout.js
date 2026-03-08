@@ -3,6 +3,10 @@
  * Returns team summary, next match, and paginated recent matches for a team.
  */
 import { neon } from '@neondatabase/serverless';
+import {
+  enrichRecentMatchesWithTeamHeroes,
+  getTeamFlyoutCachePayload,
+} from '../lib/server/team-flyout-cache.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_LIMIT = 5;
@@ -145,6 +149,10 @@ export default async function handler(req, res) {
     const selectedTeamId = String(selectedTeam.team_id);
     const now = Math.floor(Date.now() / 1000);
     const minStartTime = now - HISTORY_WINDOW_SECONDS;
+    const teamCachePayloadPromise = getTeamFlyoutCachePayload(db, selectedTeamId).catch((error) => {
+      console.warn('[TeamFlyout API] Failed to load team cache:', error?.message || error);
+      return null;
+    });
 
     const [recentCountRows, recentRows, recentStatsRows, nextMatchRows] = await Promise.all([
       db`
@@ -184,6 +192,14 @@ export default async function handler(req, res) {
       `,
     ]);
 
+    const [teamCachePayload, enrichedRecentRows] = await Promise.all([
+      teamCachePayloadPromise,
+      enrichRecentMatchesWithTeamHeroes(db, recentRows, selectedTeamId).catch((error) => {
+        console.warn('[TeamFlyout API] Failed to enrich recent matches:', error?.message || error);
+        return recentRows.map((row) => ({ ...row, team_hero_ids: [] }));
+      }),
+    ]);
+
     const wins = recentStatsRows.filter((match) => {
       const isRadiant = String(match.radiant_team_id || '') === selectedTeamId;
       if (match.radiant_win === null || match.radiant_win === undefined) return false;
@@ -196,13 +212,18 @@ export default async function handler(req, res) {
     }).length;
     const decided = wins + losses;
     const total = Number(recentCountRows?.[0]?.count || 0);
-    const recentMatches = recentRows.map((row) => formatMatchRow(row, teamMap));
+    const recentMatches = enrichedRecentRows.map((row) => ({
+      ...formatMatchRow(row, teamMap),
+      team_hero_ids: Array.isArray(row.team_hero_ids) ? row.team_hero_ids : [],
+    }));
     const nextMatch = nextMatchRows[0] ? formatMatchRow(nextMatchRows[0], teamMap) : null;
 
     return res.status(200).json({
       team: formatTeam(selectedTeam),
       recentMatches,
       nextMatch,
+      activeSquad: Array.isArray(teamCachePayload?.active_squad) ? teamCachePayload.active_squad : [],
+      topHeroes: Array.isArray(teamCachePayload?.top_heroes_90d) ? teamCachePayload.top_heroes_90d : [],
       stats: {
         wins,
         losses,
