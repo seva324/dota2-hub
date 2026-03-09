@@ -84,6 +84,9 @@ describe('/api/cron incremental refresh actions', () => {
         matchLimit: '120',
         playerLimit: '50',
         teamLimit: '20',
+        playerConcurrency: '4',
+        teamConcurrency: '3',
+        teamOnly: '1',
       },
     };
     const res = createRes();
@@ -100,6 +103,8 @@ describe('/api/cron incremental refresh actions', () => {
       upcomingDays: 2,
       matchLimit: 120,
       limit: 50,
+      concurrency: 4,
+      teamOnly: true,
     }));
     expect(warmTeamFlyoutCacheMock).toHaveBeenCalledWith(db, expect.objectContaining({
       mode: 'incremental',
@@ -107,6 +112,7 @@ describe('/api/cron incremental refresh actions', () => {
       recentDays: 5,
       upcomingDays: 2,
       limit: 20,
+      concurrency: 3,
     }));
   });
 
@@ -130,6 +136,8 @@ describe('/api/cron incremental refresh actions', () => {
       upcomingDays: 3,
       matchLimit: 180,
       limit: null,
+      concurrency: 6,
+      teamOnly: true,
     }));
     expect(warmTeamFlyoutCacheMock).toHaveBeenCalledWith(db, expect.objectContaining({
       mode: 'full',
@@ -137,6 +145,81 @@ describe('/api/cron incremental refresh actions', () => {
       recentDays: 7,
       upcomingDays: 3,
       limit: null,
+      concurrency: 6,
     }));
+  });
+
+  it('forwards team-only player warming options without constraining team flyout warming', async () => {
+    const { default: handler } = await import('../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'refresh-derived-data-incremental',
+        recentDays: '4',
+        upcomingDays: '2',
+        matchLimit: '90',
+        playerLimit: '25',
+        teamLimit: '12',
+        teamOnly: '1',
+      },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(warmPlayerProfileCacheMock).toHaveBeenCalledWith(db, expect.objectContaining({
+      mode: 'incremental',
+      incremental: true,
+      recentDays: 4,
+      upcomingDays: 2,
+      matchLimit: 90,
+      limit: 25,
+      teamOnly: true,
+      concurrency: 6,
+    }));
+    expect(warmTeamFlyoutCacheMock).toHaveBeenCalledWith(db, expect.objectContaining({
+      mode: 'incremental',
+      incremental: true,
+      recentDays: 4,
+      upcomingDays: 2,
+      limit: 12,
+      concurrency: 6,
+    }));
+    expect(warmTeamFlyoutCacheMock).not.toHaveBeenCalledWith(db, expect.objectContaining({
+      teamOnly: true,
+    }));
+  });
+
+  it('passes team-only player warming through the player-only refresh action', async () => {
+    const { default: handler } = await import('../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'refresh-player-profiles-incremental',
+        recentDays: '6',
+        upcomingDays: '1',
+        matchLimit: '75',
+        playerLimit: '18',
+        teamOnly: 'true',
+        playerConcurrency: '5',
+      },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(warmPlayerProfileCacheMock).toHaveBeenCalledWith(db, expect.objectContaining({
+      mode: 'incremental',
+      incremental: true,
+      recentDays: 6,
+      upcomingDays: 1,
+      matchLimit: 75,
+      limit: 18,
+      teamOnly: true,
+      concurrency: 5,
+    }));
+    expect(warmTeamFlyoutCacheMock).not.toHaveBeenCalled();
   });
 });
