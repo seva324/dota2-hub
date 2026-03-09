@@ -41,6 +41,7 @@ interface LiveHeroPayload {
     label: string;
     score?: string | null;
     status: 'completed' | 'live';
+    result?: 'team1' | 'team2' | null;
     team1Score?: number | null;
     team2Score?: number | null;
     team1NetWorthLead?: number | null;
@@ -173,6 +174,16 @@ function formatBestOf(value?: string | number | null) {
   const parsed = Number(normalized);
   if (Number.isFinite(parsed)) return `BO${parsed}`;
   return normalized;
+}
+
+function getCompletedMapWinner(map?: LiveHeroPayload['maps'][number] | null) {
+  if (!map || map.status !== 'completed') return null;
+  if (map.result === 'team1' || map.result === 'team2') return map.result;
+  if (typeof map.team1Score === 'number' && typeof map.team2Score === 'number') {
+    if (map.team1Score > map.team2Score) return 'team1';
+    if (map.team2Score > map.team1Score) return 'team2';
+  }
+  return null;
 }
 
 function toSortTimestamp(value: string | number | null | undefined): number {
@@ -405,10 +416,9 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                       || liveHero.maps[0]
                       || null;
                     const selectedMapScore = parseMapScore(selectedMap);
+                    const selectedWinner = getCompletedMapWinner(selectedMap && selectedMap.status === 'completed' ? selectedMap : null);
                     const scoreTone = selectedMap?.status === 'live' ? 'text-emerald-300' : 'text-white';
-                    const selectedDuration = formatGameTime(
-                      selectedMap?.gameTime ?? (selectedMap?.status === 'live' ? liveHero.liveMap?.gameTime : null)
-                    );
+                    const selectedDuration = formatGameTime(selectedMap?.gameTime ?? null);
                     return (
                       <Card
                         key={cardKey}
@@ -433,38 +443,48 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                           </div>
 
                           <div className="space-y-2">
-                            {teams.map((team, index) => (
-                              <div key={`${team.side}-${team.name}`} className="grid min-h-[3.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  {getTeamLogo(team.logo, team.name) ? (
-                                    <img src={getTeamLogo(team.logo, team.name)} alt="" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-full bg-slate-800" />
-                                  )}
-                                  <div className="min-w-0">
-                                    <div className="text-sm font-semibold text-white truncate">{team.name}</div>
-                                    <div className="min-h-[1rem] text-[11px] font-semibold text-emerald-300">
-                                      {selectedMap?.status === 'live'
-                                        ? (index === 0
-                                          ? formatNetWorthLead(selectedMap.team1NetWorthLead ?? liveHero.liveMap?.team1NetWorthLead)
-                                          : formatNetWorthLead(selectedMap.team2NetWorthLead ?? liveHero.liveMap?.team2NetWorthLead))
-                                        : (
-                                          <span className="text-slate-500">
-                                            {selectedMap?.label ? `${selectedMap.label} 已结束` : ''}
-                                          </span>
-                                        )}
+                            {teams.map((team, index) => {
+                              const teamKey = `team${index + 1}` as 'team1' | 'team2';
+                              const liveLead = teamKey === 'team1'
+                                ? formatNetWorthLead(selectedMap?.team1NetWorthLead ?? liveHero.liveMap?.team1NetWorthLead)
+                                : formatNetWorthLead(selectedMap?.team2NetWorthLead ?? liveHero.liveMap?.team2NetWorthLead);
+                              const completedLead = teamKey === 'team1'
+                                ? formatNetWorthLead(selectedMap?.team1NetWorthLead)
+                                : formatNetWorthLead(selectedMap?.team2NetWorthLead);
+                              const teamMeta = selectedMap?.status === 'live'
+                                ? (liveLead ? <span className="text-emerald-300">{liveLead}</span> : null)
+                                : selectedWinner
+                                  ? (
+                                    <span className={selectedWinner === teamKey ? 'text-amber-300' : 'text-slate-500'}>
+                                      {selectedWinner === teamKey
+                                        ? `胜利方${completedLead ? ` · 终盘${completedLead}` : ''}`
+                                        : '失利方'}
+                                    </span>
+                                  )
+                                  : <span className="text-slate-500">已结束</span>;
+                              return (
+                                <div key={`${team.side}-${team.name}`} className="grid min-h-[3.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    {getTeamLogo(team.logo, team.name) ? (
+                                      <img src={getTeamLogo(team.logo, team.name)} alt="" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-full bg-slate-800" />
+                                    )}
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-semibold text-white truncate">{team.name}</div>
+                                      <div className="min-h-[1rem] text-[11px] font-semibold">{teamMeta}</div>
                                     </div>
                                   </div>
+                                  <div className="w-12 text-right">
+                                    {selectedMap && (
+                                      <span className={`text-sm font-bold ${scoreTone}`}>
+                                        {index === 0 ? selectedMapScore.team1 : selectedMapScore.team2}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="w-12 text-right">
-                                  {selectedMap && (
-                                    <span className={`text-sm font-bold ${scoreTone}`}>
-                                      {index === 0 ? selectedMapScore.team1 : selectedMapScore.team2}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
