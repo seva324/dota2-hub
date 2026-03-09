@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, Calendar, Flame, Radio, Trophy, TrendingUp, Star } from 'lucide-react';
+import { ArrowDown, Calendar, Clock3, Flame, Radio, Trophy, TrendingUp, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -164,6 +164,17 @@ function formatNetWorthLead(value?: number | null) {
   return `+${(value / 1000).toFixed(1)}k`;
 }
 
+function formatBestOf(value?: string | number | null) {
+  if (value === null || value === undefined || value === '') return 'BO3';
+  if (typeof value === 'number' && Number.isFinite(value)) return `BO${value}`;
+  const normalized = String(value).trim().toUpperCase();
+  if (!normalized) return 'BO3';
+  if (normalized.startsWith('BO')) return normalized;
+  const parsed = Number(normalized);
+  if (Number.isFinite(parsed)) return `BO${parsed}`;
+  return normalized;
+}
+
 function toSortTimestamp(value: string | number | null | undefined): number {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
@@ -201,7 +212,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
   const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
   const [lazyTeams, setLazyTeams] = useState<TeamLike[]>([]);
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
-  const [expandedMapKeys, setExpandedMapKeys] = useState<Record<string, boolean>>({});
+  const [selectedMapKeys, setSelectedMapKeys] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -300,11 +311,28 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
     };
   };
 
-  const toggleMap = (key: string) => {
-    setExpandedMapKeys((current) => ({
+  const selectMap = (cardKey: string, mapLabel: string) => {
+    setSelectedMapKeys((current) => ({
       ...current,
-      [key]: !current[key],
+      [cardKey]: mapLabel,
     }));
+  };
+
+  const parseMapScore = (map?: LiveHeroPayload['maps'][number] | LiveHeroPayload['liveMap'] | null) => {
+    if (map?.team1Score != null || map?.team2Score != null) {
+      return {
+        team1: map?.team1Score ?? null,
+        team2: map?.team2Score ?? null,
+      };
+    }
+    const score = map?.score;
+    if (!score) return { team1: null, team2: null };
+    const match = score.match(/(\d+)\s*-\s*(\d+)/);
+    if (!match) return { team1: null, team2: null };
+    return {
+      team1: Number(match[1]),
+      team2: Number(match[2]),
+    };
   };
 
   return (
@@ -370,9 +398,20 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                 <div className="grid gap-3 md:grid-cols-2" data-testid="hero-live-grid">
                   {sortedLiveHeroes.map((liveHero) => {
                     const teams = liveHero.teams || [];
+                    const cardKey = `${liveHero.sourceUrl || liveHero.leagueName}-${teams[0]?.name || ''}-${teams[1]?.name || ''}`;
+                    const selectedMapLabel = selectedMapKeys[cardKey];
+                    const selectedMap = liveHero.maps.find((map) => map.label === selectedMapLabel)
+                      || liveHero.liveMap
+                      || liveHero.maps[0]
+                      || null;
+                    const selectedMapScore = parseMapScore(selectedMap);
+                    const scoreTone = selectedMap?.status === 'live' ? 'text-emerald-300' : 'text-white';
+                    const selectedDuration = formatGameTime(
+                      selectedMap?.gameTime ?? (selectedMap?.status === 'live' ? liveHero.liveMap?.gameTime : null)
+                    );
                     return (
                       <Card
-                        key={`${liveHero.sourceUrl || liveHero.leagueName}-${teams[0]?.name || ''}-${teams[1]?.name || ''}`}
+                        key={cardKey}
                         data-testid="hero-live-card"
                         className="h-full text-left bg-gradient-to-br from-red-950/35 via-slate-900/90 to-slate-950/95 backdrop-blur-2xl border border-red-500/20 shadow-[0_0_35px_rgba(239,68,68,0.12)] overflow-hidden"
                       >
@@ -383,7 +422,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                                 <Badge className="bg-red-500/20 text-red-300 border border-red-400/40">
                                   <Radio className="w-3 h-3 mr-1 animate-pulse" />LIVE
                                 </Badge>
-                                <Badge variant="outline" className="border-white/15 text-slate-300 bg-white/5">{liveHero.bestOf || 'BO3'}</Badge>
+                                <Badge variant="outline" className="border-white/15 text-slate-300 bg-white/5">{formatBestOf(liveHero.bestOf)}</Badge>
                               </div>
                               <h3 className="line-clamp-2 text-sm font-bold text-white leading-tight">{liveHero.leagueName}</h3>
                             </div>
@@ -405,16 +444,22 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                                   <div className="min-w-0">
                                     <div className="text-sm font-semibold text-white truncate">{team.name}</div>
                                     <div className="min-h-[1rem] text-[11px] font-semibold text-emerald-300">
-                                      {index === 0
-                                        ? formatNetWorthLead(liveHero.liveMap?.team1NetWorthLead)
-                                        : formatNetWorthLead(liveHero.liveMap?.team2NetWorthLead)}
+                                      {selectedMap?.status === 'live'
+                                        ? (index === 0
+                                          ? formatNetWorthLead(selectedMap.team1NetWorthLead ?? liveHero.liveMap?.team1NetWorthLead)
+                                          : formatNetWorthLead(selectedMap.team2NetWorthLead ?? liveHero.liveMap?.team2NetWorthLead))
+                                        : (
+                                          <span className="text-slate-500">
+                                            {selectedMap?.label ? `${selectedMap.label} 已结束` : ''}
+                                          </span>
+                                        )}
                                     </div>
                                   </div>
                                 </div>
                                 <div className="w-12 text-right">
-                                  {liveHero.liveMap && (
-                                    <span className={`text-sm font-bold ${index === 0 ? 'text-emerald-300' : 'text-slate-300'}`}>
-                                      {index === 0 ? liveHero.liveMap.team1Score : liveHero.liveMap.team2Score}
+                                  {selectedMap && (
+                                    <span className={`text-sm font-bold ${scoreTone}`}>
+                                      {index === 0 ? selectedMapScore.team1 : selectedMapScore.team2}
                                     </span>
                                   )}
                                 </div>
@@ -422,32 +467,46 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                             ))}
                           </div>
 
-                          <div className="grid auto-rows-fr grid-cols-2 gap-2" data-testid="hero-live-maps">
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                            {selectedMap?.label && (
+                              <Badge variant="outline" className={`border-white/10 bg-white/[0.04] ${selectedMap.status === 'live' ? 'text-emerald-200 border-emerald-400/30 bg-emerald-500/10' : 'text-slate-200'}`}>
+                                {selectedMap.label}
+                              </Badge>
+                            )}
+                            {selectedDuration && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-slate-300">
+                                <Clock3 className="h-3 w-3" />
+                                时长 {selectedDuration}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid auto-rows-fr grid-cols-3 gap-2" data-testid="hero-live-maps">
                             {liveHero.maps.map((map) => {
-                              const mapKey = `${liveHero.sourceUrl || liveHero.leagueName}-${map.label}`;
-                              const expanded = expandedMapKeys[mapKey] === true;
+                              const isSelected = selectedMap?.label === map.label;
                               return (
                                 <button
-                                  key={mapKey}
+                                  key={`${cardKey}-${map.label}`}
                                   type="button"
-                                  className={`h-full rounded-2xl border px-3 py-2 text-left transition-colors ${map.status === 'live' ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-white/10 bg-white/5'}`}
-                                  onClick={() => toggleMap(mapKey)}
+                                  aria-pressed={isSelected}
+                                  className={`h-full rounded-2xl border px-2.5 py-2 text-left transition-colors ${
+                                    isSelected
+                                      ? 'border-red-400/50 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.12)]'
+                                      : map.status === 'live'
+                                        ? 'border-emerald-500/40 bg-emerald-500/10'
+                                        : 'border-white/10 bg-white/5'
+                                  }`}
+                                  onClick={() => selectMap(cardKey, map.label)}
                                 >
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">{map.label}</span>
-                                    <div className="flex items-center gap-2">
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-100">{map.label}</span>
                                       {map.status === 'live' && <span className="text-[10px] font-bold text-emerald-300">LIVE</span>}
-                                      <span className="text-[10px] text-slate-500">{expanded ? '收起' : '展开'}</span>
                                     </div>
+                                    <span className="text-[10px] text-slate-500">
+                                      {map.status === 'completed' ? '点击查看比分' : '进行中'}
+                                    </span>
                                   </div>
-                                  {expanded && (
-                                    <div className="mt-2 space-y-1">
-                                      <div className="text-sm font-black text-white">{map.score || '暂无比分'}</div>
-                                      {formatGameTime(map.gameTime ?? liveHero.liveMap?.gameTime) && (
-                                        <div className="text-[11px] text-slate-400">{formatGameTime(map.gameTime ?? liveHero.liveMap?.gameTime)}</div>
-                                      )}
-                                    </div>
-                                  )}
                                 </button>
                               );
                             })}

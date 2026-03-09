@@ -4,7 +4,7 @@
   ],
   "crons": [
     {
-      "path": "/api/sync-opendota",
+      "path": "/api/cron?action=sync-opendota",
       "schedule": "0 8 * * *"
     },
     {

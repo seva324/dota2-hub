@@ -122,9 +122,15 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[0]).getByText('Natus Vincere')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Heroic')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('时长 28:58')).toBeInTheDocument();
 
     fireEvent.click(within(cards[1]).getByRole('button', { name: /map 1/i }));
-    expect(await screen.findByText('22 - 30')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(cards[1]).getByText('22')).toBeInTheDocument();
+      expect(within(cards[1]).getByText('30')).toBeInTheDocument();
+    });
+    expect(within(cards[1]).getAllByText('Map 1 已结束')).toHaveLength(2);
+    expect(within(cards[1]).queryByText('时长 28:58')).not.toBeInTheDocument();
   });
 
   it('falls back cleanly when the live API returns no match', async () => {
