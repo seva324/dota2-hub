@@ -46,8 +46,8 @@ describe('HeroSection live spotlight', () => {
                 { side: 'team2', name: 'Heroic', logo: 'https://hawk.live/storage/teams/6398.png' },
               ],
               maps: [
-                { label: 'Map 1', score: '22 - 30', status: 'completed' },
-                { label: 'Map 2', score: '28 - 17', status: 'completed' },
+                { label: 'Map 1', score: '22 - 30', status: 'completed', result: 'team2', gameTime: 2100, team1Score: 22, team2Score: 30, team2NetWorthLead: 12400 },
+                { label: 'Map 2', score: '28 - 17', status: 'completed', result: 'team1', gameTime: 1950, team1Score: 28, team2Score: 17, team1NetWorthLead: 9100 },
                 { label: 'Map 3', score: '14 - 11', status: 'live', gameTime: 1738, team1NetWorthLead: 8400, team2NetWorthLead: null },
               ],
               liveMap: { label: 'Map 3', score: '14 - 11', status: 'live', gameTime: 1738, team1Score: 14, team2Score: 11, team1NetWorthLead: 8400, team2NetWorthLead: null },
@@ -66,8 +66,8 @@ describe('HeroSection live spotlight', () => {
                   { side: 'team2', name: 'Heroic', logo: 'https://hawk.live/storage/teams/6398.png' },
                 ],
                 maps: [
-                  { label: 'Map 1', score: '22 - 30', status: 'completed' },
-                  { label: 'Map 2', score: '28 - 17', status: 'completed' },
+                  { label: 'Map 1', score: '22 - 30', status: 'completed', result: 'team2', gameTime: 2100, team1Score: 22, team2Score: 30, team2NetWorthLead: 12400 },
+                  { label: 'Map 2', score: '28 - 17', status: 'completed', result: 'team1', gameTime: 1950, team1Score: 28, team2Score: 17, team1NetWorthLead: 9100 },
                   { label: 'Map 3', score: '14 - 11', status: 'live', gameTime: 1738, team1NetWorthLead: 8400, team2NetWorthLead: null },
                 ],
                 liveMap: { label: 'Map 3', score: '14 - 11', status: 'live', gameTime: 1738, team1Score: 14, team2Score: 11, team1NetWorthLead: 8400, team2NetWorthLead: null },
@@ -129,8 +129,10 @@ describe('HeroSection live spotlight', () => {
       expect(within(cards[1]).getByText('22')).toBeInTheDocument();
       expect(within(cards[1]).getByText('30')).toBeInTheDocument();
     });
-    expect(within(cards[1]).getAllByText('Map 1 已结束')).toHaveLength(2);
-    expect(within(cards[1]).queryByText('时长 28:58')).not.toBeInTheDocument();
+    expect(within(cards[1]).getByText('胜利方 · 终盘+12.4k')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('失利方')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('时长 35:00')).toBeInTheDocument();
+    expect(within(cards[1]).queryByText('Map 1 已结束')).not.toBeInTheDocument();
   });
 
   it('falls back cleanly when the live API returns no match', async () => {
