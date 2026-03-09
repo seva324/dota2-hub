@@ -56,6 +56,23 @@ cd /home/seva324/dota2-hub
 ./scripts/ops/launch-sync-opendota-hourly-tmux.sh
 ```
 
+便捷控制脚本：
+
+```bash
+cd /home/seva324/dota2-hub
+./scripts/ops/sync-opendota-hourlyctl.sh status
+./scripts/ops/sync-opendota-hourlyctl.sh restart
+./scripts/ops/sync-opendota-hourlyctl.sh logs
+```
+
+支持命令：
+- `start`：启动 hourly 服务
+- `stop`：停止 hourly 服务和 tmux session
+- `restart`：重启 hourly 服务
+- `status`：查看 systemd、tmux、最近日志
+- `attach`：进入 tmux 会话
+- `logs`：实时查看日志
+
 常用参数：
 - `--session=<name>`：tmux 会话名（默认 `d2hub-sync-opendota-hourly`）
 - `--base-url=<url>`：目标站点（默认 `https://dota2-hub.vercel.app`）
