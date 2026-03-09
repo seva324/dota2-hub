@@ -37,7 +37,7 @@
 ## 自动任务（Vercel Cron）
 
 `vercel.json` 中配置了定时任务：
-- `/api/sync-opendota`：`0 8 * * *`
+- `/api/cron?action=sync-opendota`：`0 8 * * *`
 - `/api/sync-liquipedia`：`0 14 * * *`
 - `/api/sync-news`：`30 9 * * *`
 - `/api/cron?action=refresh-derived-data-incremental`：`30 14 * * *`（增量刷新最近活跃队伍/选手的衍生缓存）
@@ -47,6 +47,30 @@
 ```bash
 tmux new-session -d -s d2hub-derived-monitor \
   'cd /home/seva324/dota2-hub && node --env-file=.env.local scripts/ops/monitor-derived-refresh.mjs --pid=<refresh_pid> --started-at=<iso_time>'
+```
+
+在 tmux 下常驻、按小时触发 OpenDota 同步：
+
+```bash
+cd /home/seva324/dota2-hub
+./scripts/ops/launch-sync-opendota-hourly-tmux.sh
+```
+
+常用参数：
+- `--session=<name>`：tmux 会话名（默认 `d2hub-sync-opendota-hourly`）
+- `--base-url=<url>`：目标站点（默认 `https://dota2-hub.vercel.app`）
+- `--interval-min=<N>`：轮询间隔分钟数（默认 `60`）
+- `--timeout-ms=<N>`：单次请求超时（默认 `120000`）
+- `--quiet=0|1`：`1` 表示仅失败时通知，`0` 表示每轮都通知
+- `--env-file=<path>`：加载环境变量文件（默认 `.env.local`）
+- `--log-file=<path>`：JSONL 日志路径（默认 `/tmp/<session>.jsonl`）
+
+查看/停止：
+
+```bash
+tmux attach -t d2hub-sync-opendota-hourly
+tail -f /tmp/d2hub-sync-opendota-hourly.jsonl
+tmux kill-session -t d2hub-sync-opendota-hourly
 ```
 
 ## 环境变量
