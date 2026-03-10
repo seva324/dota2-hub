@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: '赛事详情',
+  navigationBarTitleText: 'Tournament Detail',
 });

@@ -1,10 +1,11 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react';
 import Taro, { useRouter } from '@tarojs/taro';
-import { Button, Text, View } from '@tarojs/components';
+import { Button, Image, Text, View } from '@tarojs/components';
+import { CompactMatchRow } from '@/components/CompactMatchRow';
 import { LoadState } from '@/components/LoadState';
-import { MatchCard } from '@/components/MatchCard';
-import { fetchTeamDetail } from '@/services/api';
+import { StatusBadge } from '@/components/StatusBadge';
+import { fetchMpTeamDetail } from '@/services/api';
 import { getWinRateLabel } from '@/utils/format';
 
 const PAGE_SIZE = 5;
@@ -22,7 +23,7 @@ export default function TeamDetailPage() {
 
   const load = async (nextOffset, append) => {
     if (!teamId) {
-      setError('缺少战队 ID');
+      setError('Team id is required');
       setLoading(false);
       return;
     }
@@ -31,14 +32,15 @@ export default function TeamDetailPage() {
     else setLoading(true);
 
     try {
-      const response = await fetchTeamDetail(teamId, nextOffset, PAGE_SIZE);
+      const response = await fetchMpTeamDetail(teamId, nextOffset, PAGE_SIZE);
+      const items = response.items || [];
       setPayload(response);
-      setRecentMatches((current) => (append ? [...current, ...(response.recentMatches || [])] : response.recentMatches || []));
-      setOffset(nextOffset + (response.recentMatches || []).length);
+      setRecentMatches((current) => (append ? [...current, ...items] : items));
+      setOffset(nextOffset + items.length);
       setHasMore(Boolean(response.pagination?.hasMore));
       setError('');
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : '战队详情加载失败');
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load team detail');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -49,50 +51,122 @@ export default function TeamDetailPage() {
     void load(0, false);
   }, [teamId]);
 
+  const team = payload?.team;
+
   return (
     <View className="app-page">
       <View className="page-header">
-        <Text className="page-title">{payload?.team?.name || '战队详情'}</Text>
-        <Text className="page-subtitle">{payload?.team?.region || '未知地区'} · 胜率 {getWinRateLabel(payload?.stats?.winRate)}</Text>
+        <Text className="page-title">{team?.name_cn || team?.name || 'Team Detail'}</Text>
+        <Text className="page-subtitle">
+          {team?.region || 'Unknown region'} · Win rate {getWinRateLabel(payload?.stats?.winRate)}
+        </Text>
       </View>
 
+      {team ? (
+        <View className="section-card team-hero-card">
+          <View className="team-hero-top">
+            <View className="team-hero-brand">
+              {team.logo_url ? (
+                <Image className="team-logo-large" src={team.logo_url} mode="aspectFit" />
+              ) : (
+                <View className="team-logo-large team-logo team-logo-fallback" />
+              )}
+              <View className="stack summary-main">
+                <Text className="section-title">{team.name_cn || team.name}</Text>
+                {team.name_cn && team.name_cn !== team.name ? (
+                  <Text className="muted">{team.name}</Text>
+                ) : null}
+                <Text className="muted">{team.region || 'Unknown region'}</Text>
+              </View>
+            </View>
+            <StatusBadge status={payload?.nextMatch ? 'upcoming' : 'completed'} label={payload?.nextMatch ? 'Next scheduled' : 'No next match'} />
+          </View>
+
+          <View className="stats-grid">
+            <View className="stats-item">
+              <Text className="stats-value">{payload?.stats?.wins ?? 0}</Text>
+              <Text className="muted">Wins</Text>
+            </View>
+            <View className="stats-item">
+              <Text className="stats-value">{payload?.stats?.losses ?? 0}</Text>
+              <Text className="muted">Losses</Text>
+            </View>
+            <View className="stats-item">
+              <Text className="stats-value">{getWinRateLabel(payload?.stats?.winRate)}</Text>
+              <Text className="muted">Win rate</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
       {payload?.nextMatch ? (
-        <View>
-          <Text className="section-title">下一场比赛</Text>
-          <MatchCard match={payload.nextMatch} />
+        <View className="section-card">
+          <View className="section-heading">
+            <View className="stack">
+              <Text className="section-title">Next Match</Text>
+              <Text className="muted">Upcoming scheduled series</Text>
+            </View>
+          </View>
+          <CompactMatchRow match={payload.nextMatch} prioritizeTournament />
         </View>
       ) : null}
 
       {payload ? (
         <View className="section-card">
-          <Text className="section-title">队伍概览</Text>
-          <Text className="muted">近 90 天战绩：{payload.stats.wins} 胜 / {payload.stats.losses} 负</Text>
-          <Text className="muted">活跃阵容：{payload.activeSquad.map((player) => player.name).filter(Boolean).join(' / ') || '待补充'}</Text>
-          <Text className="muted">高频英雄：{payload.topHeroes.map((hero) => `#${hero.hero_id}`).join('、') || '待补充'}</Text>
+          <View className="section-heading">
+            <View className="stack">
+              <Text className="section-title">Team Summary</Text>
+              <Text className="muted">Current metrics and tracked roster context</Text>
+            </View>
+          </View>
+
+          <View className="list-gap compact-meta">
+            <View className="summary-row">
+              <Text className="muted">Active squad</Text>
+              <Text className="summary-inline-text">
+                {payload.activeSquad.map((player) => player.name).filter(Boolean).join(' / ') || 'No roster data'}
+              </Text>
+            </View>
+            <View className="summary-row">
+              <Text className="muted">Top heroes</Text>
+              <Text className="summary-inline-text">
+                {payload.topHeroes.map((hero) => `#${hero.hero_id} (${hero.matches})`).join(' · ') || 'No hero trend data'}
+              </Text>
+            </View>
+          </View>
         </View>
       ) : null}
 
-      <Text className="section-title">近期比赛</Text>
-      <LoadState loading={loading} error={error} empty={!loading && recentMatches.length === 0} emptyText="该战队暂无近期比赛" />
-
-      {!loading && !error ? (
-        <>
-          <View className="list-gap">
-            {recentMatches.map((match) => (
-              <MatchCard key={match.match_id} match={match} showScore />
-            ))}
+      <View className="section-card">
+        <View className="section-heading">
+          <View className="stack">
+            <Text className="section-title">Recent Matches</Text>
+            <Text className="muted">Compact history view with stable pagination</Text>
           </View>
-          {hasMore ? (
-            <Button className="button-secondary" loading={loadingMore} onClick={() => void load(offset, true)}>
-              加载更多战绩
-            </Button>
-          ) : null}
-          {!teamId ? (
-            <Button className="button-secondary" onClick={() => Taro.navigateBack()}>
-              返回
-            </Button>
-          ) : null}
-        </>
+        </View>
+
+        <LoadState loading={loading} error={error} empty={!loading && recentMatches.length === 0} emptyText="No recent matches found" />
+
+        {!loading && !error ? (
+          <>
+            <View className="list-gap">
+              {recentMatches.map((match) => (
+                <CompactMatchRow key={match.match_id} match={match} showScore prioritizeTournament />
+              ))}
+            </View>
+            {hasMore ? (
+              <Button className="button-secondary" loading={loadingMore} onClick={() => void load(offset, true)}>
+                Load more matches
+              </Button>
+            ) : null}
+          </>
+        ) : null}
+      </View>
+
+      {!teamId ? (
+        <Button className="button-secondary" onClick={() => Taro.navigateBack()}>
+          Back
+        </Button>
       ) : null}
     </View>
   );

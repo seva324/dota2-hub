@@ -1,6 +1,6 @@
 # DOTA2 Hub Workspace
 
-This repository now uses a workspace layout so the existing web app and the new WeChat Mini Program can live together while still sharing backend APIs, DTOs, and helper logic.
+This repository uses a workspace layout so the existing web app and the new WeChat Mini Program can live together while still sharing backend APIs, DTOs, and helper logic.
 
 ## Repository Layout
 
@@ -14,14 +14,31 @@ This repository now uses a workspace layout so the existing web app and the new 
 /scripts
 ```
 
+## Architecture
+
+- `apps/web`
+  - Existing browser-facing React + Vite app
+- `apps/mp-wechat`
+  - WeChat-native page-based app built with Taro + React
+- `api`
+  - Shared Vercel backend for both frontends
+- `lib/server`
+  - Shared backend aggregation, cache, and derived-data logic
+- `packages/shared-types`
+  - Cross-frontend DTOs and schemas
+- `packages/api-client`
+  - Shared request client factory for backend routes
+
+## Workspace Structure
+
 ### What lives where
 
 - `apps/web`
   - Existing React + TypeScript + Vite frontend
   - All current UI sections, tests, and web build config
 - `apps/mp-wechat`
-  - New Taro + React WeChat Mini Program frontend
-  - Focused on the MVP pages first
+  - Taro + React WeChat Mini Program frontend
+  - Main-package list pages + subpackaged detail pages
 - `packages/shared-types`
   - Shared DTOs
   - Shared response schemas
@@ -91,6 +108,23 @@ npm run dev:weapp -w @dota2hub/mp-wechat
 
 Then open [apps/mp-wechat/dist](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/dist) with WeChat DevTools.
 
+## Mini Program Packaging
+
+Main package:
+
+- `pages/home/index`
+- `pages/upcoming/index`
+- `pages/tournaments/index`
+- `pages/settings/index`
+
+Subpackages:
+
+- `packages/tournament/pages/detail/index`
+- `packages/team/pages/detail/index`
+- `packages/match/pages/detail/index`
+
+This keeps startup-critical navigation in the main package and pushes heavier detail pages into on-demand bundles.
+
 ## Shared Packages
 
 ### `@dota2hub/shared-types`
@@ -150,14 +184,26 @@ These new routes keep the old APIs intact and add:
 - Backend-side shaping so the mini program stays thin
 
 Detailed endpoint notes live in [docs/api-mini-program.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/api-mini-program.md).
+Migration notes live in [docs/mp-migration-notes.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/mp-migration-notes.md).
+
+## Deployment Notes
+
+- Backend deployment continues to use Vercel
+- Database remains Neon Postgres
+- Mini program build output is generated under `apps/mp-wechat/dist`
+- WeChat upload/review is completed from WeChat DevTools after building
+
+## WeChat-Specific Notes
+
+- See [apps/mp-wechat/README.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/README.md) for environment variables, local setup, build flow, and WeChat DevTools steps.
 
 ## Notes
 
 - The web app remains buildable from `apps/web`.
 - The WeChat Mini Program currently builds from `apps/mp-wechat`.
-- A focused mini program setup guide lives in [apps/mp-wechat/README.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/README.md).
 - Mini-program-ready DTOs and response envelopes now live in `@dota2hub/shared-types`.
 - The shared API client now includes both legacy web endpoints and the new `/api/mp/*` routes.
+- The mini program request layer includes lightweight caching, retry, and error normalization for deployment-readiness.
 
 ## Validation
 

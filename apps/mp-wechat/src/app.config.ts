@@ -1,4 +1,5 @@
 export default defineAppConfig({
+  lazyCodeLoading: 'requiredComponents',
   pages: [
     'pages/home/index',
     'pages/upcoming/index',
@@ -9,16 +10,33 @@ export default defineAppConfig({
     {
       root: 'packages/tournament',
       pages: ['pages/detail/index'],
+      name: 'tournament-detail',
     },
     {
       root: 'packages/team',
       pages: ['pages/detail/index'],
+      name: 'team-detail',
     },
     {
       root: 'packages/match',
       pages: ['pages/detail/index'],
+      name: 'match-detail',
     },
   ],
+  preloadRule: {
+    'pages/home/index': {
+      network: 'all',
+      packages: ['tournament-detail', 'team-detail'],
+    },
+    'pages/tournaments/index': {
+      network: 'all',
+      packages: ['tournament-detail'],
+    },
+    'pages/upcoming/index': {
+      network: 'all',
+      packages: ['match-detail', 'team-detail'],
+    },
+  },
   window: {
     navigationBarTitleText: '\u5200\u5200\u5bf9\u5c40\u96f7\u8fbe\u7ad9',
     navigationBarBackgroundColor: '#0f172a',

@@ -4,8 +4,13 @@ import Taro, { useRouter } from '@tarojs/taro';
 import { Button, Text, View } from '@tarojs/components';
 import { LoadState } from '@/components/LoadState';
 import { SeriesCard } from '@/components/SeriesCard';
-import { fetchTournamentDetail } from '@/services/api';
-import { formatMatchTime } from '@/utils/format';
+import { StatusBadge } from '@/components/StatusBadge';
+import { fetchMpTournamentDetail } from '@/services/api';
+import {
+  formatDateRange,
+  formatPrizePool,
+  getTournamentStatusMeta,
+} from '@/utils/format';
 
 const PAGE_SIZE = 10;
 
@@ -22,7 +27,7 @@ export default function TournamentDetailPage() {
 
   const load = async (nextOffset, append) => {
     if (!tournamentId) {
-      setError('缺少赛事 ID');
+      setError('Tournament id is required');
       setLoading(false);
       return;
     }
@@ -31,14 +36,15 @@ export default function TournamentDetailPage() {
     else setLoading(true);
 
     try {
-      const response = await fetchTournamentDetail(tournamentId, nextOffset, PAGE_SIZE);
+      const response = await fetchMpTournamentDetail(tournamentId, nextOffset, PAGE_SIZE);
+      const items = response.items || [];
       setTournament(response.tournament || null);
-      setSeries((current) => (append ? [...current, ...(response.series || [])] : response.series || []));
-      setOffset(nextOffset + (response.series || []).length);
+      setSeries((current) => (append ? [...current, ...items] : items));
+      setOffset(nextOffset + items.length);
       setHasMore(Boolean(response.pagination?.hasMore));
       setError('');
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : '赛事详情加载失败');
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load tournament detail');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -49,22 +55,47 @@ export default function TournamentDetailPage() {
     void load(0, false);
   }, [tournamentId]);
 
+  const statusMeta = getTournamentStatusMeta(tournament);
+
   return (
     <View className="app-page">
       <View className="page-header">
-        <Text className="page-title">{tournament?.name || '赛事详情'}</Text>
-        <Text className="page-subtitle">{tournament?.location || '未知地区'} · {tournament?.status || 'unknown'}</Text>
+        <Text className="page-title">{tournament?.name_cn || tournament?.name || 'Tournament Detail'}</Text>
+        {tournament?.name_cn && tournament?.name_cn !== tournament?.name ? (
+          <Text className="page-subtitle">{tournament?.name}</Text>
+        ) : (
+          <Text className="page-subtitle">Paginated series view for mini program usage</Text>
+        )}
       </View>
 
       {tournament ? (
         <View className="section-card">
-          <Text className="section-title">赛事信息</Text>
-          <Text className="muted">开赛：{formatMatchTime(tournament.start_time)}</Text>
-          <Text className="muted">奖金：{tournament.prize_pool || (tournament.prize_pool_usd ? `$${tournament.prize_pool_usd}` : '待补充')}</Text>
+          <View className="section-heading">
+            <View className="stack">
+              <Text className="section-title">Tournament Metadata</Text>
+              <Text className="muted">{tournament.location || 'Global'}</Text>
+            </View>
+            <StatusBadge status={statusMeta.tone} label={statusMeta.label} />
+          </View>
+
+          <View className="list-gap compact-meta">
+            <View className="summary-row">
+              <Text className="muted">Prize Pool</Text>
+              <Text>{formatPrizePool(tournament.prize_pool, tournament.prize_pool_usd)}</Text>
+            </View>
+            <View className="summary-row">
+              <Text className="muted">Dates</Text>
+              <Text>{formatDateRange(tournament.start_time, tournament.end_time)}</Text>
+            </View>
+            <View className="summary-row">
+              <Text className="muted">Status</Text>
+              <Text>{tournament.status || 'Upcoming'}</Text>
+            </View>
+          </View>
         </View>
       ) : null}
 
-      <LoadState loading={loading} error={error} empty={!loading && series.length === 0} emptyText="这个赛事暂时还没有系列赛数据" />
+      <LoadState loading={loading} error={error} empty={!loading && series.length === 0} emptyText="No series found for this tournament" />
 
       {!loading && !error ? (
         <>
@@ -73,14 +104,16 @@ export default function TournamentDetailPage() {
               <SeriesCard key={item.series_id} series={item} />
             ))}
           </View>
+
           {hasMore ? (
             <Button className="button-secondary" loading={loadingMore} onClick={() => void load(offset, true)}>
-              加载更多系列赛
+              Load 10 more series
             </Button>
           ) : null}
+
           {!tournamentId ? (
             <Button className="button-secondary" onClick={() => Taro.navigateBack()}>
-              返回
+              Back
             </Button>
           ) : null}
         </>

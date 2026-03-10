@@ -1,11 +1,11 @@
 // @ts-nocheck
 import { Text, View } from '@tarojs/components';
 
-export function LoadState({ loading, error, empty, emptyText = '暂无数据' }) {
+export function LoadState({ loading, error, empty, emptyText = 'No data yet' }) {
   if (loading) {
     return (
       <View className="loading-card">
-        <Text>数据加载中...</Text>
+        <Text>Loading data…</Text>
       </View>
     );
   }

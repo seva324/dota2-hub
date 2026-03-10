@@ -43,6 +43,10 @@ page {
   box-shadow: var(--shadow-panel);
 }
 
+.section-card-compact {
+  padding: 20rpx 24rpx;
+}
+
 .section-title {
   display: block;
   margin-bottom: 16rpx;
@@ -64,6 +68,14 @@ page {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
 }
 
 .stack {
@@ -109,6 +121,12 @@ page {
   font-weight: 600;
 }
 
+.button-small {
+  min-height: 64rpx;
+  padding: 0 20rpx;
+  font-size: 22rpx;
+}
+
 .list-gap > * + * {
   margin-top: 16rpx;
 }
@@ -136,6 +154,31 @@ page {
   gap: 16rpx;
   padding: 20rpx 0;
   border-bottom: 1rpx solid var(--border-weak);
+}
+
+.summary-row-tappable {
+  padding: 16rpx 0;
+}
+
+.summary-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-side {
+  align-items: flex-end;
+  gap: 8rpx;
+  flex-shrink: 0;
+}
+
+.summary-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-title-wrap {
+  line-height: 1.35;
 }
 
 .summary-row:last-child {
@@ -228,7 +271,177 @@ page {
   align-items: flex-end;
 }
 
+.compact-meta .summary-row {
+  padding: 14rpx 0;
+}
+
+.series-games {
+  margin-top: 16rpx;
+}
+
 .api-endpoint {
   display: block;
   word-break: break-all;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 112rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.status-live {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+}
+
+.status-upcoming {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.status-completed {
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+}
+
+.home-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 28rpx;
+  border-radius: 28rpx;
+  background:
+    linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(15, 23, 42, 0.2)),
+    rgba(15, 23, 42, 0.88);
+  border: 1rpx solid rgba(249, 115, 22, 0.18);
+}
+
+.home-hero-copy {
+  flex: 1;
+}
+
+.home-hero-meta {
+  align-items: flex-end;
+}
+
+.hero-number {
+  font-size: 56rpx;
+  font-weight: 800;
+  color: #fb923c;
+}
+
+.refresh-hint {
+  margin-bottom: 12rpx;
+}
+
+.quick-grid-compact {
+  margin-bottom: 16rpx;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.quick-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1rpx solid var(--border-soft);
+}
+
+.quick-chip-text {
+  color: var(--text-secondary);
+  font-size: 22rpx;
+}
+
+.section-card-live {
+  border-color: rgba(239, 68, 68, 0.24);
+}
+
+.live-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.live-hero-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.live-hero-score {
+  font-size: 42rpx;
+  font-weight: 800;
+  color: #fb923c;
+}
+
+.team-hero-card {
+  gap: 20rpx;
+}
+
+.team-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.team-hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.team-logo-large {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 24rpx;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1rpx solid var(--border-soft);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  padding: 18rpx;
+  border-radius: 20rpx;
+  background: rgba(30, 41, 59, 0.72);
+  border: 1rpx solid var(--border-soft);
+}
+
+.stats-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.summary-inline-text {
+  flex: 1;
+  text-align: right;
+  color: var(--text-secondary);
+  font-size: 24rpx;
+  line-height: 1.35;
 }

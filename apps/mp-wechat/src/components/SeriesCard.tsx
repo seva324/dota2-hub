@@ -1,18 +1,29 @@
 // @ts-nocheck
 import Taro from '@tarojs/taro';
-import { Button, Text, View } from '@tarojs/components';
-import { formatDuration, formatMatchTime, formatSeriesScore } from '@/utils/format';
+import { Text, View } from '@tarojs/components';
+import { StatusBadge } from '@/components/StatusBadge';
+import {
+  formatDuration,
+  formatMatchTime,
+  formatSeriesScore,
+  getSeriesStatusMeta,
+} from '@/utils/format';
 import { TeamRow } from './TeamRow';
 
 export function SeriesCard({ series }) {
+  const statusMeta = getSeriesStatusMeta(series);
+
   return (
     <View className="section-card">
-      <View className="row-between">
+      <View className="section-heading">
         <View className="stack">
           <Text className="section-title">{series.stage || 'Main Stage'}</Text>
-          <Text className="muted">{series.series_type || 'BO3'}</Text>
+          <Text className="muted">{series.series_type || 'BO3'} · {series.stage_kind || 'series'}</Text>
         </View>
-        <View className="chip">{formatSeriesScore(series.radiant_score, series.dire_score)}</View>
+        <View className="stack summary-side">
+          <StatusBadge status={statusMeta.tone} label={statusMeta.label} />
+          <Text className="chip">{formatSeriesScore(series.radiant_score, series.dire_score)}</Text>
+        </View>
       </View>
 
       <View className="match-body">
@@ -25,7 +36,8 @@ export function SeriesCard({ series }) {
           <TeamRow logoUrl={series.radiant_team_logo} name={series.radiant_team_name} />
         </View>
         <View className="score-block">
-          <Text className="score-main">系列赛</Text>
+          <Text className="score-main">{formatSeriesScore(series.radiant_score, series.dire_score)}</Text>
+          <Text className="muted">{series.series_type || 'BO3'}</Text>
         </View>
         <View
           onClick={() =>
@@ -37,15 +49,15 @@ export function SeriesCard({ series }) {
         </View>
       </View>
 
-      <View className="list-gap">
-        {series.games.map((game, index) => (
+      <View className="list-gap series-games">
+        {(series.games || []).map((game, index) => (
           <View
             key={game.match_id}
             className="game-row"
             onClick={() => Taro.navigateTo({ url: `/packages/match/pages/detail/index?matchId=${game.match_id}` })}
           >
             <View className="stack">
-              <Text className="game-title">第 {index + 1} 局</Text>
+              <Text className="game-title">Game {index + 1}</Text>
               <Text className="muted">{formatMatchTime(game.start_time)}</Text>
             </View>
             <View className="stack game-meta">
