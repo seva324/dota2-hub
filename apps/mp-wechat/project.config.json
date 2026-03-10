@@ -1,0 +1,18 @@
+{
+  "appid": "wxb147ef15446ed384",
+  "projectname": "dota2-hub-wechat",
+  "compileType": "miniprogram",
+  "libVersion": "3.6.5",
+  "srcMiniprogramRoot": "dist",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "enhance": true,
+    "postcss": true,
+    "minifyWXSS": true,
+    "minifyWXML": true
+  }
+}

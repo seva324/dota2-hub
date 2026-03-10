@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {},
+    "composite": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": false,
+    "outDir": "./dist",
+    "skipLibCheck": true
+  },
+  "include": [
+    "src"
+  ]
+}

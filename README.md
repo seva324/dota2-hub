@@ -1,123 +1,215 @@
-# DOTA2 Pro Hub
+# DOTA2 Hub Workspace
 
-专业的 DOTA2 战报与赛事资讯平台，聚合赛事、赛程、新闻与社区内容。
+This repository uses a workspace layout so the existing web app and the new WeChat Mini Program can live together while still sharing backend APIs, DTOs, and helper logic.
 
-## 功能特性
+## Repository Layout
 
-- **赛事战报**：实时比分、关键战绩与赛事汇总
-- **赛事预告**：即将开赛对阵与时间线
-- **新闻聚合**：聚合 BO3.gg 与 Hawk Live 新闻
-- **中文翻译**：新闻标题、摘要、正文自动翻译并入库
-- **内容过滤**：自动过滤博彩相关新闻
-
-## 新闻抓取与翻译流程
-
-1. `GET/POST /api/sync-news` 抓取 BO3.gg + Hawk Live 新闻，并写入 `news_articles`。
-2. 入库时保存英文原文字段（`*_en`）。
-3. 对新增或更新文章触发 MiniMax 翻译，写入中文字段（`*_zh`）。
-4. `GET /api/news` 直接读取数据库，按发布时间倒序返回中文优先内容。
-
-说明：
-- BO3 正文仅从 `.c-article-body .c-editorjs-render` 提取，保留正文段落、正文内链接和正文图片。
-- 已存在且未变化的新闻不会重复抓取/重复翻译。
-
-## 关键 API
-
-- `GET /api/news`：读取新闻列表（中文优先）
-- `GET/POST /api/sync-news`：手动触发新闻同步与增量翻译
-
-> 说明：`translate-news-content` 与 `backfill-match-details` 已移至 `scripts/manual-api/`，不再作为 Vercel Serverless Function 部署（用于控制 Hobby 计划函数数量）。
-
-`/api/sync-news` 常用参数：
-- `onlySource=bo3|hawk`：仅同步指定来源
-- `purgeBo3=1`：同步前删除 BO3 历史数据
-- `testUrl=<bo3文章URL>`：仅抓取指定 BO3 文章（测试模式）
-- `translateLimit=<N>`：本次最多翻译 N 篇
-
-## 自动任务（Vercel Cron）
-
-`vercel.json` 中配置了定时任务：
-- `/api/cron?action=sync-opendota`：`0 8 * * *`
-- `/api/sync-liquipedia`：`0 14 * * *`
-- `/api/sync-news`：`30 9 * * *`
-- `/api/cron?action=refresh-derived-data-incremental`：`30 14 * * *`（增量刷新最近活跃队伍/选手的衍生缓存）
-
-手动监控当前衍生缓存全量刷新进度（tmux + Telegram）：
-
-```bash
-tmux new-session -d -s d2hub-derived-monitor \
-  'cd /home/seva324/dota2-hub && node --env-file=.env.local scripts/ops/monitor-derived-refresh.mjs --pid=<refresh_pid> --started-at=<iso_time>'
+```text
+/apps/web
+/apps/mp-wechat
+/packages/shared-types
+/packages/api-client
+/api
+/lib
+/scripts
 ```
 
-在 tmux 下常驻、按小时触发 OpenDota 同步：
+## Architecture
 
-```bash
-cd /home/seva324/dota2-hub
-./scripts/ops/launch-sync-opendota-hourly-tmux.sh
-```
+- `apps/web`
+  - Existing browser-facing React + Vite app
+- `apps/mp-wechat`
+  - WeChat-native page-based app built with Taro + React
+- `api`
+  - Shared Vercel backend for both frontends
+- `lib/server`
+  - Shared backend aggregation, cache, and derived-data logic
+- `packages/shared-types`
+  - Cross-frontend DTOs and schemas
+- `packages/api-client`
+  - Shared request client factory for backend routes
 
-便捷控制脚本：
+## Workspace Structure
 
-```bash
-cd /home/seva324/dota2-hub
-./scripts/ops/sync-opendota-hourlyctl.sh status
-./scripts/ops/sync-opendota-hourlyctl.sh restart
-./scripts/ops/sync-opendota-hourlyctl.sh logs
-```
+### What lives where
 
-支持命令：
-- `start`：启动 hourly 服务
-- `stop`：停止 hourly 服务和 tmux session
-- `restart`：重启 hourly 服务
-- `status`：查看 systemd、tmux、最近日志
-- `attach`：进入 tmux 会话
-- `logs`：实时查看日志
+- `apps/web`
+  - Existing React + TypeScript + Vite frontend
+  - All current UI sections, tests, and web build config
+- `apps/mp-wechat`
+  - Taro + React WeChat Mini Program frontend
+  - Main-package list pages + subpackaged detail pages
+- `packages/shared-types`
+  - Shared DTOs
+  - Shared response schemas
+  - Shared constants
+  - Shared formatting helpers
+- `packages/api-client`
+  - Shared API client factory for existing backend endpoints
+  - Designed for both web and mini program callers
+- `api`
+  - Existing Vercel Serverless Functions
+- `lib`
+  - Shared backend and server-side data logic
+- `scripts`
+  - Manual ops, migration, and refresh scripts
 
-常用参数：
-- `--session=<name>`：tmux 会话名（默认 `d2hub-sync-opendota-hourly`）
-- `--base-url=<url>`：目标站点（默认 `https://dota2-hub.vercel.app`）
-- `--interval-min=<N>`：轮询间隔分钟数（默认 `60`）
-- `--timeout-ms=<N>`：单次请求超时（默认 `120000`）
-- `--quiet=0|1`：`1` 表示仅失败时通知，`0` 表示每轮都通知
-- `--env-file=<path>`：加载环境变量文件（默认 `.env.local`）
-- `--log-file=<path>`：JSONL 日志路径（默认 `/tmp/<session>.jsonl`）
+## Design Goals
 
-查看/停止：
+- Preserve the existing web app with minimal disruption
+- Keep backend behavior under `/api` as the source of truth
+- Add a WeChat Mini Program app without rewriting the backend
+- Extract shared contracts and API calling logic only where it reduces duplication
+- Prefer incremental, reviewable changes over broad churn
 
-```bash
-tmux attach -t d2hub-sync-opendota-hourly
-tail -f /tmp/d2hub-sync-opendota-hourly.jsonl
-tmux kill-session -t d2hub-sync-opendota-hourly
-```
+## Workspace Commands
 
-## 环境变量
-
-- `DATABASE_URL` 或 `POSTGRES_URL`：PostgreSQL 连接串（Neon）
-- `MINIMAX_API_KEY`：MiniMax API Key，用于中文翻译
-- `MINIMAX_MODEL`：可选，默认 `MiniMax-M2.5`
-
-## 数据来源
-
-- [OpenDota API](https://docs.opendota.com/)
-- [Liquipedia](https://liquipedia.net/dota2)
-- [BO3.gg](https://bo3.gg/dota2/news)
-- [Hawk Live](https://hawk.live/tags/dota-2-news)
-
-## 技术栈
-
-- React + TypeScript + Vite
-- Vercel Serverless Functions
-- PostgreSQL (Neon)
-- Tailwind CSS + shadcn/ui
-
-## 本地开发
+Install dependencies from the repository root:
 
 ```bash
 npm install
-npm run dev
-npm run build
 ```
 
-## 许可证
+Run the web app:
 
-MIT
+```bash
+npm run dev
+```
+
+Build the web app:
+
+```bash
+npm run build:web
+```
+
+Run web tests:
+
+```bash
+npm run test:web
+```
+
+Type-check the WeChat Mini Program app:
+
+```bash
+npm run typecheck:mp-wechat
+```
+
+Build the WeChat Mini Program app:
+
+```bash
+npm run build:mp-wechat
+```
+
+Run the WeChat Mini Program in watch mode:
+
+```bash
+npm run dev:weapp -w @dota2hub/mp-wechat
+```
+
+Then open [apps/mp-wechat/dist](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/dist) with WeChat DevTools.
+
+## Mini Program Packaging
+
+Main package:
+
+- `pages/home/index`
+- `pages/upcoming/index`
+- `pages/tournaments/index`
+- `pages/settings/index`
+
+Subpackages:
+
+- `packages/tournament/pages/detail/index`
+- `packages/team/pages/detail/index`
+- `packages/match/pages/detail/index`
+
+This keeps startup-critical navigation in the main package and pushes heavier detail pages into on-demand bundles.
+
+## Shared Packages
+
+### `@dota2hub/shared-types`
+
+Contains:
+
+- Legacy front-end type exports used by the existing web app
+- Shared API DTO contracts
+- Zod schemas for core backend responses
+- Shared page-size constants
+- Reusable display formatting helpers
+
+### `@dota2hub/api-client`
+
+Contains:
+
+- URL joining helpers
+- A generic request-based API client factory
+- Endpoint helpers for:
+  - upcoming matches
+  - tournament list
+  - tournament detail
+  - team detail
+  - match detail
+  - mini-program `/api/mp/*` endpoints
+
+## API Layers
+
+The backend remains centered on the existing Vercel functions under [api](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/api).
+
+Current source-of-truth endpoints:
+
+- `/api/tournaments`
+- `/api/upcoming`
+- `/api/team-flyout`
+- `/api/match-details`
+- `/api/news`
+- `/api/pro-players`
+- `/api/player-profile`
+- `/api/heroes`
+- `/api/live-hero`
+
+New mini-program-oriented endpoints:
+
+- `/api/mp/home`
+- `/api/mp/tournaments`
+- `/api/mp/tournament/:id`
+- `/api/mp/upcoming`
+- `/api/mp/team/:id`
+- `/api/mp/match/:id`
+
+These new routes keep the old APIs intact and add:
+
+- Stable response envelopes with `ok`, `data`, `error`, and `meta`
+- Explicit pagination fields: `items`, `total`, `offset`, `limit`, `hasMore`, `nextCursor`
+- Aggregated home payloads for the mini program
+- Backend-side shaping so the mini program stays thin
+
+Detailed endpoint notes live in [docs/api-mini-program.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/api-mini-program.md).
+Migration notes live in [docs/mp-migration-notes.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/mp-migration-notes.md).
+
+## Deployment Notes
+
+- Backend deployment continues to use Vercel
+- Database remains Neon Postgres
+- Mini program build output is generated under `apps/mp-wechat/dist`
+- WeChat upload/review is completed from WeChat DevTools after building
+
+## WeChat-Specific Notes
+
+- See [apps/mp-wechat/README.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/README.md) for environment variables, local setup, build flow, and WeChat DevTools steps.
+
+## Notes
+
+- The web app remains buildable from `apps/web`.
+- The WeChat Mini Program currently builds from `apps/mp-wechat`.
+- Mini-program-ready DTOs and response envelopes now live in `@dota2hub/shared-types`.
+- The shared API client now includes both legacy web endpoints and the new `/api/mp/*` routes.
+- The mini program request layer includes lightweight caching, retry, and error normalization for deployment-readiness.
+
+## Validation
+
+The current workspace refactor has been validated with:
+
+- `npm run build:web`
+- `npm run test:web`
+- `npm run typecheck:mp-wechat`
+- `npm run build:mp-wechat`

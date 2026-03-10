@@ -1,0 +1,26 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@dota2hub/shared-types": [
+        "../../packages/shared-types/src/index.ts"
+      ],
+      "@dota2hub/api-client": [
+        "../../packages/api-client/src/index.ts"
+      ]
+    }
+  }
+}

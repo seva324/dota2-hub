@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@dota2hub/shared-types": [
+        "./packages/shared-types/src/index.ts"
+      ],
+      "@dota2hub/api-client": [
+        "./packages/api-client/src/index.ts"
+      ]
+    }
+  }
+}
