@@ -3,6 +3,7 @@ export default defineAppConfig({
     'pages/home/index',
     'pages/upcoming/index',
     'pages/tournaments/index',
+    'pages/settings/index',
   ],
   subpackages: [
     {
@@ -42,6 +43,10 @@ export default defineAppConfig({
       {
         pagePath: 'pages/tournaments/index',
         text: '\u8d5b\u4e8b',
+      },
+      {
+        pagePath: 'pages/settings/index',
+        text: '\u5173\u4e8e',
       },
     ],
   },

@@ -83,6 +83,14 @@ Build the WeChat Mini Program app:
 npm run build:mp-wechat
 ```
 
+Run the WeChat Mini Program in watch mode:
+
+```bash
+npm run dev:weapp -w @dota2hub/mp-wechat
+```
+
+Then open [apps/mp-wechat/dist](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/dist) with WeChat DevTools.
+
 ## Shared Packages
 
 ### `@dota2hub/shared-types`
@@ -112,6 +120,7 @@ Contains:
 
 - The web app remains buildable from `apps/web`.
 - The WeChat Mini Program currently builds from `apps/mp-wechat`.
+- A focused mini program setup guide lives in [apps/mp-wechat/README.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/README.md).
 - The mini program keeps its runtime request wrapper local for now because Taro's default external-package transpilation is stricter than Vite's. The shared API client package is still available for future consolidation.
 
 ## Validation
