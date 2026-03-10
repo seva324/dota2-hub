@@ -29,10 +29,15 @@ async function main() {
   const out = args.out || '/tmp/d2hub-refresh-derived-data.json';
   const playerLimit = args['player-limit'] ? Math.max(1, Number(args['player-limit'])) : null;
   const teamLimit = args['team-limit'] ? Math.max(1, Number(args['team-limit'])) : null;
+  const playerConcurrency = args['player-concurrency'] ? Math.max(1, Number(args['player-concurrency'])) : (args.concurrency ? Math.max(1, Number(args.concurrency)) : 6);
+  const teamConcurrency = args['team-concurrency'] ? Math.max(1, Number(args['team-concurrency'])) : (args.concurrency ? Math.max(1, Number(args.concurrency)) : 6);
   const matchLimit = Math.max(30, Math.min(240, Number(args['match-limit'] || 180)));
   const mode = String(args.mode || (args.incremental ? 'incremental' : 'full')).toLowerCase() === 'incremental' ? 'incremental' : 'full';
   const recentDays = Math.max(1, Math.trunc(Number(args['recent-days'] || 7)));
   const upcomingDays = Math.max(1, Math.trunc(Number(args['upcoming-days'] || 3)));
+  const teamOnly = args['team-only'] === undefined
+    ? true
+    : ['1', 'true', 'yes', 'on'].includes(String(args['team-only']).trim().toLowerCase());
   const db = neon(process.env.DATABASE_URL || process.env.POSTGRES_URL);
   const startedAt = new Date().toISOString();
 
@@ -44,8 +49,8 @@ async function main() {
   };
 
   const [playerProfiles, teamFlyouts] = await Promise.all([
-    warmPlayerProfileCache(db, { ...sharedOptions, limit: playerLimit, matchLimit }),
-    warmTeamFlyoutCache(db, { ...sharedOptions, limit: teamLimit }),
+    warmPlayerProfileCache(db, { ...sharedOptions, limit: playerLimit, matchLimit, concurrency: playerConcurrency, teamOnly }),
+    warmTeamFlyoutCache(db, { ...sharedOptions, limit: teamLimit, concurrency: teamConcurrency }),
   ]);
 
   const payload = {
@@ -55,6 +60,9 @@ async function main() {
     recentDays,
     upcomingDays,
     matchLimit,
+    playerConcurrency,
+    teamConcurrency,
+    teamOnly,
     playerProfiles,
     teamFlyouts,
   };

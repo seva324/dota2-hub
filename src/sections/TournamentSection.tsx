@@ -406,9 +406,7 @@ export function TournamentSection({
   // Set initial tournament when tournaments are loaded
   useEffect(() => {
     const pickPreferredTournament = (list: Tournament[]) => {
-      const byStatus = (target: string) =>
-        list.find((t) => String(t.status || '').toLowerCase() === target);
-      return byStatus('ongoing') || byStatus('completed') || list[0];
+      return list[0];
     };
 
     if (sortedTournaments.length > 0 && !selectedTournament) {

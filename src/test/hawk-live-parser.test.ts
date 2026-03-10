@@ -78,8 +78,8 @@ describe('hawk live parser helpers', () => {
 
     const summary = summarizeSeriesDetail(html);
     expect(summary?.maps).toEqual([
-      expect.objectContaining({ label: 'Map 1', score: '22 - 30', status: 'completed', team1SeriesWins: 0, team2SeriesWins: 1 }),
-      expect.objectContaining({ label: 'Map 2', score: '28 - 17', status: 'completed', team1SeriesWins: 1, team2SeriesWins: 1 }),
+      expect.objectContaining({ label: 'Map 1', score: '22 - 30', status: 'completed', result: 'team2', team1SeriesWins: 0, team2SeriesWins: 1, gameTime: 2100 }),
+      expect.objectContaining({ label: 'Map 2', score: '28 - 17', status: 'completed', result: 'team1', team1SeriesWins: 1, team2SeriesWins: 1, gameTime: 1950 }),
       expect.objectContaining({ label: 'Map 3', score: '14 - 11', status: 'live', team1SeriesWins: 1, team2SeriesWins: 1 }),
     ]);
     expect(summary?.liveMap).toMatchObject({ label: 'Map 3', score: '14 - 11', status: 'live' });

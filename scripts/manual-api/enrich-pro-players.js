@@ -56,7 +56,6 @@ function usage() {
       '  --limit <n>                 Row limit for --from-db (default: 50)',
       '  --output <path>             Output JSON path (default: /tmp/pro-player-enrichment.json)',
       '  --sql-output <path>         Output SQL path (default: /tmp/pro-player-enrichment.sql)',
-      '  --overwrite-name            Prefer parsed source player_name over existing DB name',
       '  --apply                     Apply UPSERTs to DB (requires DATABASE_URL/POSTGRES_URL)',
       '  --help                      Show this help',
       '',
@@ -74,7 +73,6 @@ function parseArgs(argv) {
     limit: 50,
     output: '/tmp/pro-player-enrichment.json',
     sqlOutput: '/tmp/pro-player-enrichment.sql',
-    overwriteName: false,
     apply: false,
   };
 
@@ -121,9 +119,6 @@ function parseArgs(argv) {
     if (arg === '--apply') {
       options.apply = true;
       continue;
-    }
-    if (arg === '--overwrite-name') {
-      options.overwriteName = true;
     }
   }
 
@@ -424,15 +419,10 @@ function parseProfileFromSource(sourceUrl, raw) {
   };
 }
 
-function mergeEnrichment(base, next, options = {}) {
-  const nextName = next.name || null;
-  const mergedName = options.overwriteName && nextName
-    ? nextName
-    : (base.name || nextName || null);
-
+export function mergeEnrichment(base, next) {
   return {
     account_id: base.account_id || next.account_id || null,
-    name: mergedName,
+    name: next.name || base.name || null,
     name_cn: base.name_cn || next.name_cn || null,
     realname: base.realname || next.realname || null,
     team_name: base.team_name || next.team_name || null,
@@ -504,11 +494,12 @@ async function applyUpserts(db, rows) {
     if (!row.account_id) continue;
     await db.query(
       `
+        /* name_source:enrich-pro-players */
         INSERT INTO pro_players (
           account_id, name, name_cn, team_name, country_code, avatar_url, realname, birth_year, birth_month, updated_at
         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
         ON CONFLICT (account_id) DO UPDATE SET
-          name = COALESCE(EXCLUDED.name, pro_players.name),
+          name = COALESCE(NULLIF(EXCLUDED.name, ''), pro_players.name),
           name_cn = COALESCE(EXCLUDED.name_cn, pro_players.name_cn),
           team_name = COALESCE(EXCLUDED.team_name, pro_players.team_name),
           country_code = COALESCE(EXCLUDED.country_code, pro_players.country_code),
@@ -623,7 +614,7 @@ async function main() {
         birth_month: parsed.birth_month || null,
         source_urls: [url],
       };
-      const mergedNext = mergeEnrichment(merged, next, { overwriteName: options.overwriteName });
+      const mergedNext = mergeEnrichment(merged, next);
       Object.assign(merged, mergedNext);
     }
 
@@ -648,10 +639,11 @@ async function main() {
   const upsertRows = results.filter((row) => row.account_id);
   const sqlStatements = upsertRows.map(
     (row) => `
+/* name_source:enrich-pro-players */
 INSERT INTO pro_players (account_id, name, name_cn, team_name, country_code, avatar_url, realname, birth_year, birth_month, updated_at)
 VALUES (${sqlLiteral(row.account_id)}, ${sqlLiteral(row.name)}, ${sqlLiteral(row.name_cn)}, ${sqlLiteral(row.team_name)}, ${sqlLiteral(row.country_code)}, ${sqlLiteral(row.avatar_url)}, ${sqlLiteral(row.realname)}, ${sqlLiteral(row.birth_year)}, ${sqlLiteral(row.birth_month)}, NOW())
 ON CONFLICT (account_id) DO UPDATE SET
-  name = COALESCE(EXCLUDED.name, pro_players.name),
+  name = COALESCE(NULLIF(EXCLUDED.name, ''), pro_players.name),
   name_cn = COALESCE(EXCLUDED.name_cn, pro_players.name_cn),
   team_name = COALESCE(EXCLUDED.team_name, pro_players.team_name),
   country_code = COALESCE(EXCLUDED.country_code, pro_players.country_code),
@@ -681,7 +673,9 @@ ON CONFLICT (account_id) DO UPDATE SET
   }
 }
 
-main().catch((error) => {
-  console.error('[enrich-pro-players] failed:', error?.message || error);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((error) => {
+    console.error('[enrich-pro-players] failed:', error?.message || error);
+    process.exit(1);
+  });
+}
