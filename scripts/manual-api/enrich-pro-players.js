@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { neon } from '@neondatabase/serverless';
 import { buildDbUrlWithAppName, ensureProPlayerAuditLog } from '../../lib/server/pro-player-audit.js';
+import { mergeEnrichment } from '../../lib/server/pro-player-enrichment.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 
@@ -416,21 +417,6 @@ function parseProfileFromSource(sourceUrl, raw) {
     avatar_url: dltvFields.avatarUrl || ogImage || null,
     birth_year: birthYear,
     birth_month: birthMonth,
-  };
-}
-
-export function mergeEnrichment(base, next) {
-  return {
-    account_id: base.account_id || next.account_id || null,
-    name: next.name || base.name || null,
-    name_cn: base.name_cn || next.name_cn || null,
-    realname: base.realname || next.realname || null,
-    team_name: base.team_name || next.team_name || null,
-    country_code: base.country_code || next.country_code || null,
-    avatar_url: base.avatar_url || next.avatar_url || null,
-    birth_year: base.birth_year || next.birth_year || null,
-    birth_month: base.birth_month || next.birth_month || null,
-    source_urls: Array.from(new Set([...(base.source_urls || []), ...(next.source_urls || [])])),
   };
 }
 

@@ -1,14 +1,8 @@
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
+import { mergeEnrichment } from '../../../../lib/server/pro-player-enrichment.js';
 
 describe('name update rules', () => {
   it('enrich-pro-players prefers fetched name over existing stored name', async () => {
-    const moduleUrl = pathToFileURL(
-      path.resolve(process.cwd(), '../../scripts/manual-api/enrich-pro-players.js')
-    ).href;
-    const { mergeEnrichment } = await import(/* @vite-ignore */ moduleUrl);
-
     expect(
       mergeEnrichment(
         { account_id: 9403474, name: 'yamich', source_urls: [] },
