@@ -4,6 +4,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import { handleMpRoute } from '../lib/server/mp-route-handler.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -59,6 +60,10 @@ export default async function handler(req, res) {
   const db = getDb();
   if (!db) {
     return res.status(500).json({ error: 'Database not available' });
+  }
+
+  if (req.query?.__mp) {
+    return handleMpRoute(req, res, db);
   }
 
   try {

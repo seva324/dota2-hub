@@ -1,5 +1,10 @@
 {
+  "framework": "vite",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "apps/web/dist",
   "rewrites": [
+    { "source": "/api/mp/:route*", "destination": "/api/matches?__mp=:route*" },
     { "source": "/api/:path*", "destination": "/api/:path*" }
   ],
   "crons": [
