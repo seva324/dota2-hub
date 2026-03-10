@@ -33,6 +33,14 @@ function pickPositiveInt(value, fallback) {
   return Math.trunc(parsed);
 }
 
+function pickBoolean(value, fallback = false) {
+  const normalized = pickParam(value, '').trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return fallback;
+}
+
 function buildRefreshOptions(raw = {}) {
   const mode = String(pickParam(raw.mode, '')).trim().toLowerCase() === 'incremental' ? 'incremental' : 'full';
   return {
@@ -43,6 +51,9 @@ function buildRefreshOptions(raw = {}) {
     matchLimit: pickPositiveInt(raw.matchLimit, 180),
     playerLimit: pickPositiveInt(raw.playerLimit, null),
     teamLimit: pickPositiveInt(raw.teamLimit, null),
+    playerConcurrency: pickPositiveInt(raw.playerConcurrency || raw.concurrency, 6),
+    teamConcurrency: pickPositiveInt(raw.teamConcurrency || raw.concurrency, 6),
+    teamOnly: pickBoolean(raw.teamOnly, true),
   };
 }
 
@@ -54,6 +65,8 @@ async function runAction(action, refreshOptions = buildRefreshOptions()) {
     upcomingDays: refreshOptions.upcomingDays,
     matchLimit: refreshOptions.matchLimit,
     limit: refreshOptions.playerLimit,
+    concurrency: refreshOptions.playerConcurrency,
+    teamOnly: refreshOptions.teamOnly,
   };
   const teamRefreshOptions = {
     mode: refreshOptions.mode,
@@ -61,6 +74,7 @@ async function runAction(action, refreshOptions = buildRefreshOptions()) {
     recentDays: refreshOptions.recentDays,
     upcomingDays: refreshOptions.upcomingDays,
     limit: refreshOptions.teamLimit,
+    concurrency: refreshOptions.teamConcurrency,
   };
 
   if (action === 'refresh-player-profiles' || action === 'refresh-player-profiles-incremental') {
@@ -134,6 +148,10 @@ export default async function handler(req, res) {
       matchLimit: query.matchLimit || body.matchLimit,
       playerLimit: query.playerLimit || body.playerLimit,
       teamLimit: query.teamLimit || body.teamLimit,
+      concurrency: query.concurrency || body.concurrency,
+      playerConcurrency: query.playerConcurrency || body.playerConcurrency,
+      teamConcurrency: query.teamConcurrency || body.teamConcurrency,
+      teamOnly: query.teamOnly || body.teamOnly,
     });
     const payload = await runAction(action || 'all', refreshOptions);
     return res.status(200).json({ ok: true, ...payload });

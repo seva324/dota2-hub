@@ -139,7 +139,7 @@ async function upsertTeam(teamId) {
     INSERT INTO teams (team_id, name, tag, logo_url, region, created_at, updated_at)
     VALUES (${String(team.team_id)}, ${team.name || `Team ${team.team_id}`}, ${team.tag || null}, ${team.logo_url || null}, ${team.region || null}, NOW(), NOW())
     ON CONFLICT (team_id) DO UPDATE SET
-      name = EXCLUDED.name,
+      name = COALESCE(NULLIF(teams.name, ''), NULLIF(EXCLUDED.name, '')),
       tag = COALESCE(NULLIF(EXCLUDED.tag, ''), teams.tag),
       logo_url = COALESCE(NULLIF(EXCLUDED.logo_url, ''), teams.logo_url),
       region = COALESCE(NULLIF(EXCLUDED.region, ''), teams.region),
