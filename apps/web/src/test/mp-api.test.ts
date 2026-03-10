@@ -1,0 +1,381 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {};
+
+const taggedMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
+const db = (async (strings: TemplateStringsArray, ...values: unknown[]) => taggedMock(strings, ...values)) as TaggedFn;
+const neonMock = vi.fn(() => db);
+const getLiveHeroPayloadsMock = vi.fn();
+const getTeamFlyoutCachePayloadMock = vi.fn();
+const enrichRecentMatchesWithTeamHeroesMock = vi.fn();
+
+vi.mock('@neondatabase/serverless', () => ({
+  neon: neonMock,
+}));
+
+vi.mock('../../../../lib/server/live-hero-service.js', () => ({
+  getLiveHeroPayloads: getLiveHeroPayloadsMock,
+}));
+
+vi.mock('../../../../lib/server/team-flyout-cache.js', () => ({
+  getTeamFlyoutCachePayload: getTeamFlyoutCachePayloadMock,
+  enrichRecentMatchesWithTeamHeroes: enrichRecentMatchesWithTeamHeroesMock,
+}));
+
+function createRes() {
+  const headers: Record<string, string> = {};
+  return {
+    headers,
+    statusCode: 200,
+    payload: null as unknown,
+    setHeader(key: string, value: string) {
+      headers[key] = value;
+    },
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      this.payload = payload;
+      return this;
+    },
+    end() {
+      return this;
+    },
+  };
+}
+
+function renderSql(strings: TemplateStringsArray) {
+  return strings.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+describe('/api/mp/*', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.DATABASE_URL = 'postgres://example.test/db';
+    taggedMock.mockReset();
+    neonMock.mockClear();
+    getLiveHeroPayloadsMock.mockReset();
+    getTeamFlyoutCachePayloadMock.mockReset();
+    enrichRecentMatchesWithTeamHeroesMock.mockReset();
+  });
+
+  it('returns a mini-program-ready home payload', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('COUNT(*)::int AS count') && sql.includes('FROM tournaments')) {
+        return [{ count: 1 }];
+      }
+      if (sql.includes('FROM tournaments') && sql.includes('LIMIT')) {
+        return [{
+          id: 'dreamleague-s28',
+          league_id: 42,
+          name: 'DreamLeague Season 28',
+          tier: 'S',
+          status: 'ongoing',
+        }];
+      }
+      if (sql.includes('COUNT(*)::int AS count') && sql.includes('FROM upcoming_series')) {
+        return [{ count: 1 }];
+      }
+      if (sql.includes('FROM upcoming_series s')) {
+        return [{
+          id: 1,
+          series_id: 11,
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          start_time: 1700000100,
+          series_type: 1,
+          tournament_name: 'DreamLeague Season 28',
+          tournament_tier: 'S',
+          status: 'upcoming',
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 1, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/xg.png', region: 'China', is_cn_team: 1 },
+          { team_id: 2, name: 'Team Spirit', logo_url: 'https://steamcdn-a.akamaihd.net/ts.png', region: 'EEU', is_cn_team: 0 },
+        ];
+      }
+      if (sql.includes('FROM news_articles')) {
+        return [{
+          id: 'news-1',
+          source: 'BO3.gg',
+          url: 'https://example.test/news-1',
+          category: 'tournament',
+          image_url: 'https://example.test/news-1.png',
+          published_at: 1700000200,
+          title_en: 'English title',
+          summary_en: 'English summary',
+          title_zh: '中文标题',
+          summary_zh: '中文摘要',
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    getLiveHeroPayloadsMock.mockResolvedValue([{
+      source: 'hawk.live',
+      leagueName: 'DreamLeague Season 28',
+      seriesScore: '1-0',
+      live: true,
+      teams: [
+        { side: 'team1', name: 'Xtreme Gaming', logo: null },
+        { side: 'team2', name: 'Team Spirit', logo: null },
+      ],
+      maps: [],
+      liveMap: null,
+    }]);
+
+    const { default: handler } = await import('../../../../api/mp/home.js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: {} } as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        liveMatchCount: 1,
+        heroLive: expect.objectContaining({ leagueName: 'DreamLeague Season 28' }),
+        tournaments: [expect.objectContaining({ league_id: 42 })],
+        upcoming: [expect.objectContaining({ series_id: '11' })],
+        news: [expect.objectContaining({ title: '中文标题' })],
+      }),
+      error: null,
+      meta: expect.objectContaining({
+        generatedAt: expect.any(String),
+      }),
+    });
+  });
+
+  it('returns paginated mini-program upcoming matches', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('COUNT(*)::int AS count') && sql.includes('FROM upcoming_series')) {
+        return [{ count: 2 }];
+      }
+      if (sql.includes('FROM upcoming_series s')) {
+        return [{
+          id: 1,
+          series_id: 11,
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          start_time: 1700000100,
+          series_type: 1,
+          tournament_name: 'DreamLeague Season 28',
+          tournament_name_cn: '梦幻联赛',
+          tournament_tier: 'S',
+          status: 'upcoming',
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 1, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/xg.png', region: 'China', is_cn_team: 1 },
+          { team_id: 2, name: 'Team Spirit', logo_url: 'https://steamcdn-a.akamaihd.net/ts.png', region: 'EEU', is_cn_team: 0 },
+        ];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../../../api/mp/upcoming.js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: { days: '3', limit: '1', offset: '0' } } as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        days: 3,
+        items: [expect.objectContaining({ tournament_name_cn: '梦幻联赛' })],
+        pagination: {
+          total: 2,
+          offset: 0,
+          limit: 1,
+          hasMore: true,
+          nextCursor: 1,
+        },
+      }),
+      error: null,
+      meta: expect.objectContaining({ generatedAt: expect.any(String) }),
+    });
+  });
+
+  it('returns paginated mini-program tournament detail', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        return [{
+          id: 'dreamleague-s28',
+          league_id: 42,
+          name: 'DreamLeague Season 28',
+          status: 'ongoing',
+          stage_windows: [{ label: 'Playoffs', kind: 'playoff', start: 1700000000, end: 1701000000, priority: 1 }],
+        }];
+      }
+      if (sql.includes('COUNT(*)::int AS count') && sql.includes('FROM series')) {
+        return [{ count: 12 }];
+      }
+      if (sql.includes('FROM series') && sql.includes('LIMIT')) {
+        expect(values).toEqual([42, 10, 0]);
+        return [{
+          series_id: 'series-1',
+          league_id: 42,
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_wins: 2,
+          dire_wins: 1,
+          series_type: 1,
+          stage: 'Playoffs',
+          start_time: 1700500000,
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
+          { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
+        ];
+      }
+      if (sql.includes('FROM matches')) {
+        return [{
+          match_id: 101,
+          series_id: 'series-1',
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_score: 30,
+          dire_score: 20,
+          radiant_win: true,
+          start_time: 1700500000,
+          duration: 2400,
+          picks_bans: [],
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../../../api/mp/tournament/[id].js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: { id: '42', limit: '10', offset: '0' } } as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).data).toEqual(expect.objectContaining({
+      tournament: expect.objectContaining({ league_id: 42 }),
+      items: [
+        expect.objectContaining({
+          series_id: 'series-1',
+          games: [expect.objectContaining({ match_id: '101' })],
+        }),
+      ],
+      pagination: expect.objectContaining({ hasMore: true, nextCursor: 1 }),
+    }));
+  });
+
+  it('returns paginated mini-program team detail', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: '1', name: 'Team Alpha', tag: 'ALP', logo_url: 'https://steamcdn-a.akamaihd.net/a.png', region: 'China', is_cn_team: 1 },
+          { team_id: '2', name: 'Opp 1', tag: 'O1', logo_url: null, region: 'SEA', is_cn_team: 0 },
+        ];
+      }
+      if (sql.includes('SELECT COUNT(*)::int AS count FROM matches')) {
+        return [{ count: 7 }];
+      }
+      if (sql.includes('SELECT radiant_team_id, dire_team_id, radiant_win FROM matches')) {
+        return Array.from({ length: 7 }, () => ({
+          radiant_team_id: '1',
+          dire_team_id: '2',
+          radiant_win: true,
+        }));
+      }
+      if (sql.includes('FROM matches m')) {
+        return Array.from({ length: 5 }, (_, index) => ({
+          match_id: 100 + index,
+          start_time: 1_700_000_000 - index * 3600,
+          series_type: 'BO3',
+          status: 'completed',
+          league_id: 42,
+          radiant_team_id: '1',
+          dire_team_id: '2',
+          radiant_score: 2,
+          dire_score: 1,
+          radiant_win: true,
+          tournament_name: 'DreamLeague',
+        }));
+      }
+      if (sql.includes('FROM upcoming_series u')) {
+        return [{
+          id: 'u1',
+          series_id: 'u1',
+          start_time: 1_800_000_000,
+          series_type: 'BO3',
+          league_id: 42,
+          radiant_team_id: '1',
+          dire_team_id: '2',
+          tournament_name: 'DreamLeague',
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    getTeamFlyoutCachePayloadMock.mockResolvedValue({
+      active_squad: [{ account_id: '11', name: 'Player 11' }],
+      top_heroes_90d: [{ hero_id: 99, matches: 4 }],
+    });
+    enrichRecentMatchesWithTeamHeroesMock.mockImplementation(async (_db: unknown, rows: any[]) =>
+      rows.map((row) => ({ ...row, team_hero_ids: [1, 2, 3, 4, 5] }))
+    );
+
+    const { default: handler } = await import('../../../../api/mp/team/[id].js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: { id: '1', limit: '5', offset: '0' } } as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).data.team).toEqual(expect.objectContaining({ team_id: '1', name: 'Team Alpha' }));
+    expect((res.payload as any).data.items[0]).toEqual(expect.objectContaining({ match_id: '100', team_hero_ids: [1, 2, 3, 4, 5] }));
+    expect((res.payload as any).data.pagination).toEqual(expect.objectContaining({ hasMore: true, nextCursor: 5 }));
+  });
+
+  it('returns match detail in the stable mini-program envelope', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('CREATE TABLE IF NOT EXISTS match_details')) {
+        return [];
+      }
+      if (sql.includes('FROM match_details')) {
+        return [{
+          payload: {
+            match_id: 123,
+            duration: 2400,
+            radiant_score: 30,
+            dire_score: 20,
+            radiant_win: true,
+            players: [],
+            picks_bans: [],
+          },
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../../../api/mp/match/[id].js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: { id: '123' } } as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        match_id: 123,
+        radiant_score: 30,
+      }),
+      error: null,
+      meta: expect.objectContaining({ generatedAt: expect.any(String) }),
+    });
+  });
+});

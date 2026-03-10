@@ -115,13 +115,49 @@ Contains:
   - tournament detail
   - team detail
   - match detail
+  - mini-program `/api/mp/*` endpoints
+
+## API Layers
+
+The backend remains centered on the existing Vercel functions under [api](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/api).
+
+Current source-of-truth endpoints:
+
+- `/api/tournaments`
+- `/api/upcoming`
+- `/api/team-flyout`
+- `/api/match-details`
+- `/api/news`
+- `/api/pro-players`
+- `/api/player-profile`
+- `/api/heroes`
+- `/api/live-hero`
+
+New mini-program-oriented endpoints:
+
+- `/api/mp/home`
+- `/api/mp/tournaments`
+- `/api/mp/tournament/:id`
+- `/api/mp/upcoming`
+- `/api/mp/team/:id`
+- `/api/mp/match/:id`
+
+These new routes keep the old APIs intact and add:
+
+- Stable response envelopes with `ok`, `data`, `error`, and `meta`
+- Explicit pagination fields: `items`, `total`, `offset`, `limit`, `hasMore`, `nextCursor`
+- Aggregated home payloads for the mini program
+- Backend-side shaping so the mini program stays thin
+
+Detailed endpoint notes live in [docs/api-mini-program.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/api-mini-program.md).
 
 ## Notes
 
 - The web app remains buildable from `apps/web`.
 - The WeChat Mini Program currently builds from `apps/mp-wechat`.
 - A focused mini program setup guide lives in [apps/mp-wechat/README.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/README.md).
-- The mini program keeps its runtime request wrapper local for now because Taro's default external-package transpilation is stricter than Vite's. The shared API client package is still available for future consolidation.
+- Mini-program-ready DTOs and response envelopes now live in `@dota2hub/shared-types`.
+- The shared API client now includes both legacy web endpoints and the new `/api/mp/*` routes.
 
 ## Validation
 
