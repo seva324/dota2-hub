@@ -208,3 +208,141 @@ export const matchDetailPayloadSchema = z.object({
 });
 
 export type MatchDetailPayload = z.infer<typeof matchDetailPayloadSchema>;
+
+export const newsSummarySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  summary: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+  image_url: z.string().nullable().optional(),
+  published_at: z.number(),
+  category: z.string().nullable().optional(),
+});
+
+export type NewsSummary = z.infer<typeof newsSummarySchema>;
+
+export const heroLiveTeamSchema = z.object({
+  side: z.enum(['team1', 'team2']).nullable().optional(),
+  name: z.string().nullable().optional(),
+  logo: z.string().nullable().optional(),
+});
+
+export type HeroLiveTeam = z.infer<typeof heroLiveTeamSchema>;
+
+export const heroLiveMapSchema = z.object({
+  label: z.string(),
+  score: z.string().nullable().optional(),
+  status: z.enum(['completed', 'live']).nullable().optional(),
+  result: z.enum(['team1', 'team2']).nullable().optional(),
+  gameTime: z.number().nullable().optional(),
+  team1Score: z.number().nullable().optional(),
+  team2Score: z.number().nullable().optional(),
+  team1NetWorthLead: z.number().nullable().optional(),
+  team2NetWorthLead: z.number().nullable().optional(),
+});
+
+export type HeroLiveMap = z.infer<typeof heroLiveMapSchema>;
+
+export const heroLiveSummarySchema = z.object({
+  source: z.string().nullable().optional(),
+  sourceUrl: z.string().nullable().optional(),
+  leagueName: z.string().nullable().optional(),
+  bestOf: z.union([z.string(), z.number()]).nullable().optional(),
+  seriesScore: z.string().nullable().optional(),
+  live: z.boolean().nullable().optional(),
+  startedAt: z.union([z.string(), z.number()]).nullable().optional(),
+  teams: z.array(heroLiveTeamSchema),
+  maps: z.array(heroLiveMapSchema),
+  liveMap: heroLiveMapSchema.nullable().optional(),
+});
+
+export type HeroLiveSummary = z.infer<typeof heroLiveSummarySchema>;
+
+export const apiResponseMetaSchema = z.object({
+  generatedAt: z.string(),
+  requestId: z.string().nullable().optional(),
+});
+
+export type ApiResponseMeta = z.infer<typeof apiResponseMetaSchema>;
+
+export const apiErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.unknown().optional(),
+});
+
+export type ApiErrorPayload = z.infer<typeof apiErrorSchema>;
+
+export function createApiSuccessSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+  return z.object({
+    ok: z.literal(true),
+    data: dataSchema,
+    error: z.null(),
+    meta: apiResponseMetaSchema,
+  });
+}
+
+export const apiErrorResponseSchema = z.object({
+  ok: z.literal(false),
+  data: z.null(),
+  error: apiErrorSchema,
+  meta: apiResponseMetaSchema,
+});
+
+export const mpUpcomingPayloadSchema = z.object({
+  days: z.number(),
+  items: z.array(upcomingMatchSchema),
+  teams: z.array(teamSummarySchema),
+  pagination: paginationPayloadSchema,
+});
+
+export type MpUpcomingPayload = z.infer<typeof mpUpcomingPayloadSchema>;
+
+export const mpTournamentListPayloadSchema = z.object({
+  items: z.array(tournamentSummarySchema),
+  pagination: paginationPayloadSchema,
+});
+
+export type MpTournamentListPayload = z.infer<typeof mpTournamentListPayloadSchema>;
+
+export const mpTournamentDetailPayloadSchema = z.object({
+  tournament: tournamentSummarySchema,
+  items: z.array(tournamentSeriesSchema),
+  pagination: paginationPayloadSchema,
+});
+
+export type MpTournamentDetailPayload = z.infer<typeof mpTournamentDetailPayloadSchema>;
+
+export const mpTeamDetailPayloadSchema = z.object({
+  team: teamSummarySchema.nullable(),
+  items: z.array(teamFlyoutMatchSchema),
+  nextMatch: teamFlyoutMatchSchema.nullable(),
+  activeSquad: teamFlyoutResponseSchema.shape.activeSquad,
+  topHeroes: teamFlyoutResponseSchema.shape.topHeroes,
+  stats: teamFlyoutResponseSchema.shape.stats,
+  pagination: paginationPayloadSchema,
+});
+
+export type MpTeamDetailPayload = z.infer<typeof mpTeamDetailPayloadSchema>;
+
+export const mpHomePayloadSchema = z.object({
+  heroLive: heroLiveSummarySchema.nullable(),
+  liveMatchCount: z.number(),
+  upcoming: z.array(upcomingMatchSchema),
+  tournaments: z.array(tournamentSummarySchema),
+  news: z.array(newsSummarySchema),
+});
+
+export type MpHomePayload = z.infer<typeof mpHomePayloadSchema>;
+
+export const mpMatchDetailPayloadSchema = matchDetailPayloadSchema;
+
+export type MpMatchDetailPayload = z.infer<typeof mpMatchDetailPayloadSchema>;
+
+export const mpHomeResponseSchema = createApiSuccessSchema(mpHomePayloadSchema);
+export const mpUpcomingResponseSchema = createApiSuccessSchema(mpUpcomingPayloadSchema);
+export const mpTournamentListResponseSchema = createApiSuccessSchema(mpTournamentListPayloadSchema);
+export const mpTournamentDetailResponseSchema = createApiSuccessSchema(mpTournamentDetailPayloadSchema);
+export const mpTeamDetailResponseSchema = createApiSuccessSchema(mpTeamDetailPayloadSchema);
+export const mpMatchDetailResponseSchema = createApiSuccessSchema(mpMatchDetailPayloadSchema);

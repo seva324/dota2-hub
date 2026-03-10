@@ -4,6 +4,12 @@ import {
   DEFAULT_TOURNAMENT_SERIES_PAGE_SIZE,
   DEFAULT_UPCOMING_DAYS,
   matchDetailPayloadSchema,
+  mpHomeResponseSchema,
+  mpMatchDetailResponseSchema,
+  mpTeamDetailResponseSchema,
+  mpTournamentDetailResponseSchema,
+  mpTournamentListResponseSchema,
+  mpUpcomingResponseSchema,
   teamFlyoutResponseSchema,
   tournamentDetailResponseSchema,
   tournamentListResponseSchema,
@@ -63,6 +69,44 @@ export function createDota2HubApiClient(requestJson: RequestJson) {
     async fetchMatchDetail(matchId: string) {
       return matchDetailPayloadSchema.parse(
         await requestJson(`/api/match-details?matchId=${encodeURIComponent(matchId)}`)
+      );
+    },
+    async fetchMpHome() {
+      return mpHomeResponseSchema.parse(await requestJson('/api/mp/home'));
+    },
+    async fetchMpUpcoming(days = DEFAULT_UPCOMING_DAYS, offset = 0, limit = DEFAULT_TOURNAMENT_SERIES_PAGE_SIZE) {
+      return mpUpcomingResponseSchema.parse(
+        await requestJson(`/api/mp/upcoming?days=${days}&limit=${limit}&offset=${offset}`)
+      );
+    },
+    async fetchMpTournaments(offset = 0, limit = DEFAULT_TOURNAMENT_SERIES_PAGE_SIZE) {
+      return mpTournamentListResponseSchema.parse(
+        await requestJson(`/api/mp/tournaments?limit=${limit}&offset=${offset}`)
+      );
+    },
+    async fetchMpTournamentDetail(
+      tournamentId: string,
+      offset = 0,
+      limit = DEFAULT_TOURNAMENT_SERIES_PAGE_SIZE
+    ) {
+      return mpTournamentDetailResponseSchema.parse(
+        await requestJson(
+          `/api/mp/tournament/${encodeURIComponent(tournamentId)}?limit=${limit}&offset=${offset}`
+        )
+      );
+    },
+    async fetchMpTeamDetail(
+      teamId: string,
+      offset = 0,
+      limit = DEFAULT_TEAM_HISTORY_PAGE_SIZE
+    ) {
+      return mpTeamDetailResponseSchema.parse(
+        await requestJson(`/api/mp/team/${encodeURIComponent(teamId)}?limit=${limit}&offset=${offset}`)
+      );
+    },
+    async fetchMpMatchDetail(matchId: string) {
+      return mpMatchDetailResponseSchema.parse(
+        await requestJson(`/api/mp/match/${encodeURIComponent(matchId)}`)
       );
     },
   };
