@@ -199,7 +199,7 @@ async function selectPhase2Targets(db, matchIds, detailLimit) {
   return db.query(sql, params);
 }
 
-async function upsertTeamFromDetail(db, teamId, name) {
+export async function upsertTeamFromDetail(db, teamId, name) {
   const normalizedId = toInt(teamId);
   if (!normalizedId) return;
   await db.query(
@@ -207,7 +207,7 @@ async function upsertTeamFromDetail(db, teamId, name) {
       INSERT INTO teams (team_id, name)
       VALUES ($1, $2)
       ON CONFLICT (team_id) DO UPDATE SET
-        name = COALESCE(NULLIF(EXCLUDED.name, ''), teams.name)
+        name = COALESCE(NULLIF(teams.name, ''), NULLIF(EXCLUDED.name, ''))
     `,
     [String(normalizedId), name || null]
   );
@@ -369,7 +369,9 @@ async function main() {
   console.log(JSON.stringify(report, null, 2));
 }
 
-main().catch((error) => {
-  console.error('[backfill-hot-player-history] failed:', error?.message || error);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((error) => {
+    console.error('[backfill-hot-player-history] failed:', error?.message || error);
+    process.exit(1);
+  });
+}
