@@ -118,6 +118,7 @@ function parseArgs(argv) {
     }
     if (arg === '--apply') {
       options.apply = true;
+      continue;
     }
   }
 
@@ -228,7 +229,7 @@ function normalizePlayerName(raw) {
   if (!raw) return null;
   return normalizeWhitespace(
     String(raw)
-      .replace(/\s*[-|].*$/, '')
+      .replace(/\s+[|–—-]\s+.*$/, '')
       .replace(/\s+::.*$/, '')
       .replace(/^\s*player\s*:\s*/i, '')
   );
@@ -299,6 +300,13 @@ function parseJsonLdPerson(raw) {
 }
 
 function parseDltvProfileFields(raw) {
+  const avatarUrl = extractFirst(raw, [
+    /<div[^>]+class=["'][^"']*profile__v2-left__image\s+player[^"']*["'][^>]+style=["'][^"']*background-image:\s*url\((['"]?)(https?:\/\/[^)'"]+)\1\)[^"']*["']/i,
+    /<div[^>]+class=["'][^"']*profile__v2-left__image\s+player[^"']*["'][^>]*>[\s\S]*?<span[^>]+data-theme-light=["'](https?:\/\/[^"']+)["']/i,
+    /<div[^>]+class=["'][^"']*profile__v2-left__image\s+player[^"']*["'][^>]*>[\s\S]*?<span[^>]+data-theme-dark=["'](https?:\/\/[^"']+)["']/i,
+    /<div[^>]+class=["'][^"']*profile__v2-left__image\s+player[^"']*["'][^>]+data-src=["'](https?:\/\/[^"']+)["']/i,
+    /<div[^>]+class=["'][^"']*profile__v2-left__image\s+player[^"']*["'][^>]*>[\s\S]*?<img[^>]+src=["'](https?:\/\/[^"']+)["']/i,
+  ]);
   const country = extractFirst(raw, [
     /<div class="country">[\s\S]*?<span[^>]*>\s*([A-Za-z ]+)\s*<\/span>\s*<\/div>/i,
   ]);
@@ -315,6 +323,7 @@ function parseDltvProfileFields(raw) {
     /https:\/\/steamcommunity\.com\/profiles\/(\d{17})/i,
   ]);
   return {
+    avatarUrl,
     country,
     teamName,
     realname,
@@ -404,7 +413,7 @@ function parseProfileFromSource(sourceUrl, raw) {
     team_name: teamName || null,
     nationality_raw: nationalityRaw || null,
     country_code: mapCountryCode(nationalityRaw),
-    avatar_url: ogImage || null,
+    avatar_url: dltvFields.avatarUrl || ogImage || null,
     birth_year: birthYear,
     birth_month: birthMonth,
   };
