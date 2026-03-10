@@ -49,6 +49,13 @@ function renderSql(strings: TemplateStringsArray) {
   return strings.join(' ').replace(/\s+/g, ' ').trim();
 }
 
+async function callMpRoute(query: Record<string, string>) {
+  const { default: handler } = await import('../../../../api/matches.js');
+  const res = createRes();
+  await handler({ method: 'GET', query } as never, res as never);
+  return res;
+}
+
 describe('/api/mp/*', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -127,10 +134,7 @@ describe('/api/mp/*', () => {
       liveMap: null,
     }]);
 
-    const { default: handler } = await import('../../../../api/mp/home.js');
-    const res = createRes();
-
-    await handler({ method: 'GET', query: {} } as never, res as never);
+    const res = await callMpRoute({ __mp: 'home' });
 
     expect(res.statusCode).toBe(200);
     expect(res.payload).toEqual({
@@ -178,10 +182,7 @@ describe('/api/mp/*', () => {
       throw new Error(`Unexpected SQL: ${sql}`);
     });
 
-    const { default: handler } = await import('../../../../api/mp/upcoming.js');
-    const res = createRes();
-
-    await handler({ method: 'GET', query: { days: '3', limit: '1', offset: '0' } } as never, res as never);
+    const res = await callMpRoute({ __mp: 'upcoming', days: '3', limit: '1', offset: '0' });
 
     expect(res.statusCode).toBe(200);
     expect(res.payload).toEqual({
@@ -254,10 +255,7 @@ describe('/api/mp/*', () => {
       throw new Error(`Unexpected SQL: ${sql}`);
     });
 
-    const { default: handler } = await import('../../../../api/mp/tournament/[id].js');
-    const res = createRes();
-
-    await handler({ method: 'GET', query: { id: '42', limit: '10', offset: '0' } } as never, res as never);
+    const res = await callMpRoute({ __mp: 'tournament/42', limit: '10', offset: '0' });
 
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).data).toEqual(expect.objectContaining({
@@ -329,10 +327,7 @@ describe('/api/mp/*', () => {
       rows.map((row) => ({ ...row, team_hero_ids: [1, 2, 3, 4, 5] }))
     );
 
-    const { default: handler } = await import('../../../../api/mp/team/[id].js');
-    const res = createRes();
-
-    await handler({ method: 'GET', query: { id: '1', limit: '5', offset: '0' } } as never, res as never);
+    const res = await callMpRoute({ __mp: 'team/1', limit: '5', offset: '0' });
 
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).data.team).toEqual(expect.objectContaining({ team_id: '1', name: 'Team Alpha' }));
@@ -362,10 +357,7 @@ describe('/api/mp/*', () => {
       throw new Error(`Unexpected SQL: ${sql}`);
     });
 
-    const { default: handler } = await import('../../../../api/mp/match/[id].js');
-    const res = createRes();
-
-    await handler({ method: 'GET', query: { id: '123' } } as never, res as never);
+    const res = await callMpRoute({ __mp: 'match/123' });
 
     expect(res.statusCode).toBe(200);
     expect(res.payload).toEqual({
