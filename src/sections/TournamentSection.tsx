@@ -403,23 +403,24 @@ export function TournamentSection({
     });
   }, [allSortedTournaments, showT1Only]);
 
-  // Set initial tournament when tournaments are loaded
+  // Keep the selected tournament stable by id so rerenders do not loop on new object instances.
   useEffect(() => {
-    const pickPreferredTournament = (list: Tournament[]) => {
-      const byStatus = (target: string) =>
-        list.find((t) => String(t.status || '').toLowerCase() === target);
-      return byStatus('ongoing') || byStatus('completed') || list[0];
-    };
-
-    if (sortedTournaments.length > 0 && !selectedTournament) {
-      setSelectedTournament(pickPreferredTournament(sortedTournaments));
+    const nextTournament = sortedTournaments[0] || null;
+    if (!nextTournament) {
+      if (selectedTournament !== null) {
+        setSelectedTournament(null);
+      }
       return;
     }
-    if (selectedTournament && sortedTournaments.length > 0) {
-      const exists = sortedTournaments.some(t => t.id === selectedTournament.id);
-      if (!exists) {
-        setSelectedTournament(pickPreferredTournament(sortedTournaments));
-      }
+
+    if (!selectedTournament) {
+      setSelectedTournament(nextTournament);
+      return;
+    }
+
+    const selectedStillExists = sortedTournaments.some((t) => t.id === selectedTournament.id);
+    if (!selectedStillExists) {
+      setSelectedTournament(nextTournament);
     }
   }, [sortedTournaments, selectedTournament]);
 
