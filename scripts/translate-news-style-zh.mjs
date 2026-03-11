@@ -1,9 +1,12 @@
 import { neon } from '@neondatabase/serverless';
 
 const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const API_KEY = process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
-const API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
-const MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
+const OPENAI_KEY = process.env.GPT_API_KEY || process.env.OPENAI_API_KEY || '';
+const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
+const OPENAI_MODEL = process.env.GPT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const API_KEY = OPENAI_KEY || process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
+const API_URL = OPENAI_KEY ? OPENAI_API_URL : (process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages');
+const MODEL = OPENAI_KEY ? OPENAI_MODEL : (process.env.MINIMAX_MODEL || 'MiniMax-M2.5');
 const NEWS_TRANSLATION_GUIDANCE = [
   '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成中文论坛搬运帖风格。',
   '',
@@ -104,6 +107,14 @@ function detectTone(item) {
 }
 
 function extractText(data) {
+  if (Array.isArray(data?.content)) {
+    return data.content
+      .filter((x) => x?.type === 'text' && typeof x?.text === 'string')
+      .map((x) => x.text)
+      .join('\n')
+      .trim();
+  }
+  if (typeof data?.output_text === 'string') return data.output_text.trim();
   const txt = data?.choices?.[0]?.message?.content;
   if (Array.isArray(txt)) {
     return txt.map((x) => (typeof x?.text === 'string' ? x.text : '')).join('').trim();
@@ -160,9 +171,18 @@ async function callMiniMax(prompt, maxTokens = 1400, timeoutMs = 25000) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+        ...(OPENAI_KEY
+          ? {
+              model: MODEL,
+              temperature: 0.2,
+              max_tokens: maxTokens,
+              messages: [{ role: 'user', content: prompt }],
+            }
+          : {
+              model: MODEL,
+              max_tokens: maxTokens,
+              messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+            }),
       }),
     },
     timeoutMs
