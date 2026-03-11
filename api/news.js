@@ -1412,19 +1412,28 @@ function hasCompleteChineseBody(value, fallbackEn = '') {
   return true;
 }
 
-async function translateShortText(apiKey, text) {
-  if (!text || looksChinese(text)) return text;
+function looksLikeTranslationRefusal(value = '') {
+  return /抱歉|请提供|请把完整|无法保证|没有看到正文|只看到了标题|not enough|provide the full/i.test(String(value));
+}
+
+function looksLikeStructuredArticle(value = '') {
+  return /标题[:：]|正文[:：]|总结[:：]|点评[:：]/.test(String(value));
+}
+
+async function translateCommunityTitle(apiKey, item) {
+  if (!item?.title || looksChinese(item.title)) return item?.title || null;
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
       '',
-      '请把下面英文内容翻译成中文社区搬运帖风格。',
+      '请基于下面英文 Dota2 新闻信息，写一个适合中文社区传播的中文标题。',
       '要求：',
       '- 保留战队名、选手名、赛事名等专有名词原文',
       '- 不要补充原文没有的信息',
-      '- 只输出译文，不要解释',
+      '- 只输出一行中文标题，不要正文，不要点评，不要解释',
       '',
-      text,
+      `英文标题：${item.title}`,
+      item.summary ? `英文摘要：${item.summary}` : '',
     ].join('\n');
     const res = await fetchWithTimeout(
       MINIMAX_API_URL,
@@ -1442,11 +1451,110 @@ async function translateShortText(apiKey, text) {
       },
       18000
     );
-    if (!res.ok) return text;
+    if (!res.ok) return item.title;
     const data = await res.json();
-    return extractMiniMaxText(data).trim() || text;
+    let output = extractMiniMaxText(data).trim();
+    if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
+      const retryPrompt = [
+        '把下面英文 Dota2 新闻标题改写成一个中文社区传播标题。',
+        '要求：必须输出简体中文；保留专有名词原文；不能输出英文整句；不能输出标题/正文/总结标签；只输出一行标题。',
+        item.title,
+      ].join('\n');
+      const retryRes = await fetchWithTimeout(
+        MINIMAX_API_URL,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: MINIMAX_MODEL,
+            max_tokens: 400,
+            messages: [{ role: 'user', content: [{ type: 'text', text: retryPrompt }] }],
+          }),
+        },
+        15000
+      );
+      if (retryRes.ok) {
+        const retryData = await retryRes.json();
+        output = extractMiniMaxText(retryData).trim() || output;
+      }
+    }
+    return output || item.title;
   } catch {
-    return text;
+    return item.title;
+  }
+}
+
+async function translateCommunitySummary(apiKey, item) {
+  const seed = item?.summary || item?.content || item?.content_markdown || item?.title;
+  if (!seed || looksChinese(seed)) return item?.summary || seed || null;
+  try {
+    const prompt = [
+      NEWS_TRANSLATION_GUIDANCE,
+      '',
+      '请基于下面英文 Dota2 新闻信息，写一句简短点评/总结。',
+      '要求：',
+      '- 20 到 50 字',
+      '- 口语化，但不要乱玩梗',
+      '- 只输出一句中文，不要标题，不要正文，不要解释',
+      '',
+      `英文标题：${item.title || ''}`,
+      item.summary ? `英文摘要：${item.summary}` : '',
+      item.content ? `英文正文：${String(item.content).slice(0, 1600)}` : '',
+    ].join('\n');
+    const res = await fetchWithTimeout(
+      MINIMAX_API_URL,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MINIMAX_MODEL,
+          max_tokens: 800,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+        }),
+      },
+      18000
+    );
+    if (!res.ok) return item.summary || item.title;
+    const data = await res.json();
+    let output = extractMiniMaxText(data).trim();
+    if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
+      const retryPrompt = [
+        '基于下面英文 Dota2 新闻信息，写一句中文总结。',
+        '要求：必须输出简体中文；20到50字；不能道歉；不能要求补充材料；不能输出标题/正文/总结标签；只输出一句话。',
+        `标题：${item.title || ''}`,
+        item.summary ? `摘要：${item.summary}` : '',
+        item.content ? `正文：${String(item.content).slice(0, 1200)}` : '',
+      ].join('\n');
+      const retryRes = await fetchWithTimeout(
+        MINIMAX_API_URL,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: MINIMAX_MODEL,
+            max_tokens: 400,
+            messages: [{ role: 'user', content: [{ type: 'text', text: retryPrompt }] }],
+          }),
+        },
+        15000
+      );
+      if (retryRes.ok) {
+        const retryData = await retryRes.json();
+        output = extractMiniMaxText(retryData).trim() || output;
+      }
+    }
+    return output || item.summary || item.title;
+  } catch {
+    return item.summary || item.title;
   }
 }
 
@@ -1491,7 +1599,35 @@ async function translateLongMarkdown(apiKey, text) {
         continue;
       }
       const data = await res.json();
-      translated.push(extractMiniMaxText(data).trim() || chunk);
+      let output = extractMiniMaxText(data).trim() || chunk;
+      if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
+        const retryPrompt = [
+          '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
+          '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
+          chunk,
+        ].join('\n');
+        const retryRes = await fetchWithTimeout(
+          MINIMAX_API_URL,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: MINIMAX_MODEL,
+              max_tokens: 1800,
+              messages: [{ role: 'user', content: [{ type: 'text', text: retryPrompt }] }],
+            }),
+          },
+          22000
+        );
+        if (retryRes.ok) {
+          const retryData = await retryRes.json();
+          output = extractMiniMaxText(retryData).trim() || output;
+        }
+      }
+      translated.push(output);
     } catch {
       translated.push(chunk);
     }
@@ -1512,8 +1648,8 @@ async function translateItem(apiKey, item) {
   }
 
   const [title_zh, summary_zh, content_markdown_zh] = await Promise.all([
-    translateShortText(apiKey, item.title),
-    item.summary ? translateShortText(apiKey, item.summary) : Promise.resolve(item.summary),
+    translateCommunityTitle(apiKey, item),
+    translateCommunitySummary(apiKey, item),
     sourceBody ? translateLongMarkdown(apiKey, sourceBody) : Promise.resolve(sourceBody),
   ]);
 

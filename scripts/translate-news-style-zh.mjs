@@ -47,6 +47,14 @@ function looksChinese(text) {
   return /[\u4e00-\u9fff]/.test(String(text || ''));
 }
 
+function looksLikeTranslationRefusal(text = '') {
+  return /抱歉|请提供|请把完整|无法保证|没有看到正文|只看到了标题|not enough|provide the full/i.test(String(text));
+}
+
+function looksLikeStructuredArticle(text = '') {
+  return /标题[:：]|正文[:：]|总结[:：]|点评[:：]/.test(String(text));
+}
+
 function stripMarkdown(md) {
   return String(md || '')
     .replace(/```[\s\S]*?```/g, ' ')
@@ -169,12 +177,52 @@ async function callMiniMax(prompt, maxTokens = 1400, timeoutMs = 25000) {
   return out;
 }
 
-async function translateShort(text, tone) {
-  if (!text || looksChinese(text)) return text || null;
+async function translateTitle(row, tone) {
+  if (!row?.title_en || looksChinese(row.title_en)) return row?.title_en || null;
   try {
-    return await callMiniMax(shortPrompt(text, tone), 700, 18000);
+    let out = await callMiniMax(shortPrompt(`${row.title_en}\n${row.summary_en || ''}`, tone), 700, 18000);
+    if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
+      out = await callMiniMax([
+        '把下面英文 Dota2 新闻标题改写成一个中文社区传播标题。',
+        '要求：必须输出简体中文；保留专有名词原文；不能输出英文整句；不能输出标题/正文/总结标签；只输出一行标题。',
+        row.title_en,
+      ].join('\n'), 400, 15000);
+    }
+    return out;
   } catch {
-    return text;
+    return row.title_en;
+  }
+}
+
+async function translateSummary(row) {
+  const seed = row?.summary_en || row?.content_en || row?.content_markdown_en || row?.title_en;
+  if (!seed || looksChinese(seed)) return row?.summary_en || seed || null;
+  try {
+    let out = await callMiniMax([
+      NEWS_TRANSLATION_GUIDANCE,
+      '',
+      '请基于下面英文 Dota2 新闻信息，写一句简短点评/总结。',
+      '要求：',
+      '- 20 到 50 字',
+      '- 口语化，但不要乱玩梗',
+      '- 只输出一句中文，不要标题，不要正文，不要解释',
+      '',
+      `英文标题：${row.title_en || ''}`,
+      row.summary_en ? `英文摘要：${row.summary_en}` : '',
+      row.content_en ? `英文正文：${String(row.content_en).slice(0, 1600)}` : '',
+    ].join('\n'), 800, 18000);
+    if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
+      out = await callMiniMax([
+        '基于下面英文 Dota2 新闻信息，写一句中文总结。',
+        '要求：必须输出简体中文；20到50字；不能道歉；不能要求补充材料；不能输出标题/正文/总结标签；只输出一句话。',
+        `标题：${row.title_en || ''}`,
+        row.summary_en ? `摘要：${row.summary_en}` : '',
+        row.content_en ? `正文：${String(row.content_en).slice(0, 1200)}` : '',
+      ].join('\n'), 400, 15000);
+    }
+    return out;
+  } catch {
+    return row.summary_en || row.title_en || null;
   }
 }
 
@@ -184,7 +232,15 @@ async function translateMarkdown(text, tone) {
   const out = [];
   for (const chunk of chunks) {
     try {
-      out.push(await callMiniMax(markdownPrompt(chunk, tone), 1800, 26000));
+      let translated = await callMiniMax(markdownPrompt(chunk, tone), 1800, 26000);
+      if (!looksChinese(translated) || looksLikeTranslationRefusal(translated)) {
+        translated = await callMiniMax([
+          '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
+          '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
+          chunk,
+        ].join('\n'), 1800, 22000);
+      }
+      out.push(translated);
     } catch {
       out.push(chunk);
     }
@@ -258,8 +314,8 @@ async function updateRow(row, zh) {
 
 async function translateOne(row, force = false) {
   const tone = detectTone(row);
-  const title_zh = force ? await translateShort(row.title_en, tone) : (row.title_zh || await translateShort(row.title_en, tone));
-  const summary_zh = force ? await translateShort(row.summary_en, tone) : (row.summary_zh || await translateShort(row.summary_en, tone));
+  const title_zh = force ? await translateTitle(row, tone) : (row.title_zh || await translateTitle(row, tone));
+  const summary_zh = force ? await translateSummary(row) : (row.summary_zh || await translateSummary(row));
   const content_markdown_zh = force
     ? await translateMarkdown(row.content_markdown_en, tone)
     : (row.content_markdown_zh || await translateMarkdown(row.content_markdown_en, tone));
