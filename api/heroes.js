@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
         name: row.name || null,
         name_cn: row.name_cn || row.name || null,
         img: row.img || null,
-        img_url: row.img_url || null
+        img_url: getMirroredAssetUrl(row.img_url || (row.img ? `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/heroes/${row.img}_lg.png` : null), req)
       };
     }
 

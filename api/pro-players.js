@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -23,14 +24,14 @@ function parseAccountId(rawValue) {
   return normalized > 0 ? normalized : null;
 }
 
-function mapRow(row) {
+function mapRow(row, req) {
   return {
     name: row.name || null,
     name_cn: row.name_cn || null,
     team_id: row.team_id !== null && row.team_id !== undefined ? String(row.team_id) : null,
     team_name: row.team_name || null,
     country_code: row.country_code || null,
-    avatar_url: row.avatar_url || null,
+    avatar_url: getMirroredAssetUrl(row.avatar_url || null, req),
     realname: row.realname || null,
     birth_date: row.birth_date || null,
     birth_year: row.birth_year ?? null,
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
       `;
 
       const row = rows[0];
-      return res.status(200).json(row ? mapRow(row) : null);
+      return res.status(200).json(row ? mapRow(row, req) : null);
     }
 
     const rows = await db.query(`
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
 
     const payload = {};
     for (const row of rows) {
-      payload[String(row.account_id)] = mapRow(row);
+      payload[String(row.account_id)] = mapRow(row, req);
     }
 
     return res.status(200).json(payload);

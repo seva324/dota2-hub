@@ -4,6 +4,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -21,9 +22,8 @@ function getDb() {
   return sql;
 }
 
-function normalizeLogo(url) {
-  if (!url) return null;
-  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+function normalizeLogo(url, req) {
+  return getMirroredAssetUrl(url, req);
 }
 
 export default async function handler(req, res) {
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       name: team.name || null,
       name_cn: team.name_cn || null,
       tag: team.tag || null,
-      logo_url: normalizeLogo(team.logo_url),
+      logo_url: normalizeLogo(team.logo_url, req),
       region: team.region || null,
       is_cn_team: team.is_cn_team
     }));

@@ -3,6 +3,7 @@
  * Returns team summary, next match, and paginated recent matches for a team.
  */
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import {
   enrichRecentMatchesWithTeamHeroes,
   getTeamFlyoutCachePayload,
@@ -31,9 +32,8 @@ function normalize(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function normalizeLogo(url) {
-  if (!url) return null;
-  return String(url).replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+function normalizeLogo(url, req) {
+  return getMirroredAssetUrl(url, req);
 }
 
 function parsePositiveInt(value, fallback) {
@@ -60,7 +60,7 @@ function convertSeriesType(seriesType) {
   return map[seriesType] || 'BO3';
 }
 
-function formatTeam(team) {
+function formatTeam(team, req) {
   if (!team) return null;
   return {
     team_id: team.team_id ? String(team.team_id) : null,
@@ -68,13 +68,13 @@ function formatTeam(team) {
     name: team.name || null,
     name_cn: team.name_cn || null,
     tag: team.tag || null,
-    logo_url: normalizeLogo(team.logo_url),
+    logo_url: normalizeLogo(team.logo_url, req),
     region: team.region || null,
     is_cn_team: team.is_cn_team ?? null,
   };
 }
 
-function formatMatchRow(match, teamMap) {
+function formatMatchRow(match, teamMap, req) {
   const radiantId = match.radiant_team_id ? String(match.radiant_team_id) : null;
   const direId = match.dire_team_id ? String(match.dire_team_id) : null;
   const radiantTeam = radiantId ? teamMap.get(radiantId) : null;
@@ -88,8 +88,8 @@ function formatMatchRow(match, teamMap) {
     dire_team_id: direId,
     radiant_team_name: radiantTeam?.name || match.radiant_team_name || null,
     dire_team_name: direTeam?.name || match.dire_team_name || null,
-    radiant_team_logo: normalizeLogo(radiantTeam?.logo_url || match.radiant_team_logo),
-    dire_team_logo: normalizeLogo(direTeam?.logo_url || match.dire_team_logo),
+    radiant_team_logo: normalizeLogo(radiantTeam?.logo_url || match.radiant_team_logo, req),
+    dire_team_logo: normalizeLogo(direTeam?.logo_url || match.dire_team_logo, req),
     radiant_score: match.radiant_score ?? null,
     dire_score: match.dire_score ?? null,
     radiant_win: match.radiant_win ? 1 : 0,
@@ -213,13 +213,13 @@ export default async function handler(req, res) {
     const decided = wins + losses;
     const total = Number(recentCountRows?.[0]?.count || 0);
     const recentMatches = enrichedRecentRows.map((row) => ({
-      ...formatMatchRow(row, teamMap),
+      ...formatMatchRow(row, teamMap, req),
       team_hero_ids: Array.isArray(row.team_hero_ids) ? row.team_hero_ids : [],
     }));
-    const nextMatch = nextMatchRows[0] ? formatMatchRow(nextMatchRows[0], teamMap) : null;
+    const nextMatch = nextMatchRows[0] ? formatMatchRow(nextMatchRows[0], teamMap, req) : null;
 
     return res.status(200).json({
-      team: formatTeam(selectedTeam),
+      team: formatTeam(selectedTeam, req),
       recentMatches,
       nextMatch,
       activeSquad: Array.isArray(teamCachePayload?.active_squad) ? teamCachePayload.active_squad : [],

@@ -4,6 +4,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -22,9 +23,8 @@ function getDb() {
 }
 
 // Normalize logo URL
-function normalizeLogo(url) {
-  if (!url) return null;
-  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+function normalizeLogo(url, req) {
+  return getMirroredAssetUrl(url, req);
 }
 
 // Convert OpenDota series_type to human-readable format
@@ -96,8 +96,8 @@ export default async function handler(req, res) {
         dire_team_id: s.dire_team_id,
         radiant_team_name: radiantTeam?.name || null,
         dire_team_name: direTeam?.name || null,
-        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
-        dire_team_logo: normalizeLogo(direTeam?.logo_url),
+        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url, req),
+        dire_team_logo: normalizeLogo(direTeam?.logo_url, req),
         start_time: s.start_time,
         series_type: convertSeriesType(s.series_type),
         tournament_name: s.tournament_name || null,
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
         name: t.name,
         name_cn: t.name_cn,
         tag: t.tag,
-        logo_url: normalizeLogo(t.logo_url),
+        logo_url: normalizeLogo(t.logo_url, req),
         region: t.region,
         is_cn_team: t.is_cn_team
       }))
