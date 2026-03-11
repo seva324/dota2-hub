@@ -12,6 +12,7 @@ dist/docs/
 !public/data/
 .vercel
 .env*.local
+apps/web/public/images/mirror/
 
 # Claude files
 .claude/
