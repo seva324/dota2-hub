@@ -30,15 +30,8 @@
     "ops:monitor-derived-refresh-tg": "node scripts/ops/monitor-derived-refresh.mjs",
     "ops:refresh-derived-data": "node scripts/ops/refresh-derived-data.mjs",
     "ops:cron-refresh-hourly": "node scripts/ops/hourly-cron-refresh.mjs",
-<<<<<<< Updated upstream
-    "ops:monitor-live-hero-tg": "node --env-file=.env.local scripts/ops/monitor-live-hero-score.mjs"
-=======
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
     "ops:monitor-live-hero-tg": "node --env-file=.env.local scripts/ops/monitor-live-hero-score.mjs",
     "ops:mirror-assets": "node scripts/mirror-assets-to-public.mjs"
->>>>>>> Stashed changes
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
