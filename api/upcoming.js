@@ -22,6 +22,13 @@ function getDb() {
   return sql;
 }
 
+async function ensureUpcomingSeriesFallbackColumns(db) {
+  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS radiant_team_name TEXT`;
+  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS radiant_team_name_cn TEXT`;
+  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS dire_team_name TEXT`;
+  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS dire_team_name_cn TEXT`;
+}
+
 // Normalize logo URL
 function normalizeLogo(url, req) {
   return getMirroredAssetUrl(url, req);
@@ -62,6 +69,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    await ensureUpcomingSeriesFallbackColumns(db);
+
     // Get upcoming series (status = 'upcoming' and start_time > now)
     const now = Math.floor(Date.now() / 1000);
     const parsedDays = Number.parseInt(String(req.query?.days ?? ''), 10);
