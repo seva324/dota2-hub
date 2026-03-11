@@ -188,6 +188,13 @@ async function translateTitle(row, tone) {
         row.title_en,
       ].join('\n'), 400, 15000);
     }
+    if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
+      out = await callMiniMax([
+        '将下面英文 Dota2 新闻标题直接翻译为简体中文标题。',
+        '要求：必须输出中文；保留专有名词原文；只输出一行标题；不要解释。',
+        row.title_en,
+      ].join('\n'), 400, 15000);
+    }
     return out;
   } catch {
     return row.title_en;
@@ -220,6 +227,15 @@ async function translateSummary(row) {
         row.content_en ? `正文：${String(row.content_en).slice(0, 1200)}` : '',
       ].join('\n'), 400, 15000);
     }
+    if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
+      out = await callMiniMax([
+        '把下面英文 Dota2 新闻摘要翻译并压缩成一句简体中文总结。',
+        '要求：必须输出中文；20到50字；只输出一句话；不要解释。',
+        `标题：${row.title_en || ''}`,
+        row.summary_en ? `摘要：${row.summary_en}` : '',
+        row.content_en ? `正文：${String(row.content_en).slice(0, 1200)}` : '',
+      ].join('\n'), 400, 15000);
+    }
     return out;
   } catch {
     return row.summary_en || row.title_en || null;
@@ -237,6 +253,13 @@ async function translateMarkdown(text, tone) {
         translated = await callMiniMax([
           '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
           '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
+          chunk,
+        ].join('\n'), 1800, 22000);
+      }
+      if (!looksChinese(translated) || looksLikeTranslationRefusal(translated)) {
+        translated = await callMiniMax([
+          '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
+          '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释。',
           chunk,
         ].join('\n'), 1800, 22000);
       }
