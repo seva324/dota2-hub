@@ -6,7 +6,7 @@ import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
-import { isTeamInRegion } from '@/lib/teams';
+import { isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
 
 
 
@@ -57,32 +57,6 @@ interface UpcomingSectionProps {
     is_cn_team?: number | boolean;
   }>;
 }
-
-// 战队Logo fallback 映射
-const teamLogoFallbackMap: Record<string, string> = {
-  'xg': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
-  'xtreme gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
-  'yb': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8255888.png',
-  'yakult brothers': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8255888.png',
-  'vg': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7391077.png',
-  'vici gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7391077.png',
-  'lgd': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/5014976.png',
-  'psg.lgd': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/5014976.png',
-  'aurora gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1163959.png',
-  'natus vincere': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png',
-  'team liquid': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/2163.png',
-  'team falcons': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/4972334.png',
-  'og': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/2587576.png',
-  'tundra esports': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104958.png',
-  'gamerlegion': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9756454.png',
-  'parivision': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png',
-  'betboom team': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
-  'pain gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/67.png',
-  'team yandex': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7481929.png',
-  'execration': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8317125.png',
-  'mouz': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104918.png',
-  'team spirit': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
-};
 
 
 const UPCOMING_DEFAULT_DAYS = 2;
@@ -169,15 +143,6 @@ const teamAbbr: Record<string, string> = {
   'Team Yandex': 'Yandex',
 };
 
-function getTeamLogo(apiLogoUrl: string | undefined, teamName: string | undefined): string {
-  // 优先使用 API 返回的 logo URL
-  if (apiLogoUrl) return apiLogoUrl;
-  // 否则使用 fallback 映射
-  if (!teamName) return '';
-  const key = teamName.toLowerCase();
-  return teamLogoFallbackMap[key] || '';
-}
-
 function getAbbr(teamName: string | null | undefined): string {
   if (!teamName) return '';
   return teamAbbr[teamName] || teamName || '';
@@ -248,6 +213,8 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
   const { ref: sectionRef, isInView } = useInView<HTMLElement>({ rootMargin: '240px 0px' });
   const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
   const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
+  const getTeamLogo = (teamId?: string | null, teamName?: string | null, explicitLogo?: string | null) =>
+    resolveTeamLogo({ teamId, name: teamName }, effectiveTeams, explicitLogo);
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
     isTeamInRegion(team || null, effectiveTeams, ['China']);
 
@@ -546,8 +513,8 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
                                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                   }
                                 `}>
-                                  {getTeamLogo(match.radiant_team_logo, match.radiant_team_name) ? (
-                                    <img src={getTeamLogo(match.radiant_team_logo, match.radiant_team_name)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                  {getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo) ? (
+                                    <img src={getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
                                   )}
@@ -594,8 +561,8 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
                                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
                                   }
                                 `}>
-                                  {getTeamLogo(match.dire_team_logo, match.dire_team_name) ? (
-                                    <img src={getTeamLogo(match.dire_team_logo, match.dire_team_name)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                  {getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo) ? (
+                                    <img src={getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                                   ) : (
                                     <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
                                   )}

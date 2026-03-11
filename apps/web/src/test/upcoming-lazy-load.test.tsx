@@ -84,8 +84,8 @@ describe('UpcomingSection lazy loading', () => {
           ];
         })(),
         teams: [
-          { team_id: '1', name: 'Xtreme Gaming', region: 'China' },
-          { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe' },
+          { team_id: '1', name: 'Xtreme Gaming', region: 'China', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png' },
+          { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/7119388.png' },
         ],
       }),
     } as Response);
@@ -106,5 +106,6 @@ describe('UpcomingSection lazy loading', () => {
     expect(await screen.findByText('DreamLeague')).toBeInTheDocument();
     expect(screen.queryByText('Too Late Cup')).not.toBeInTheDocument();
     expect(screen.getByText('本周场次').nextElementSibling).toHaveTextContent('1');
+    expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src'))).toContain('https://dota2-hub.vercel.app/images/mirror/teams/7119388.png');
   });
 });

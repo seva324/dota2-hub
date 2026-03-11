@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { isTeamInRegion } from '@/lib/teams';
+import { isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
 import type { TeamLike } from '@/lib/teams';
 
 interface Match {
@@ -58,39 +58,6 @@ interface LiveHeroPayload {
     team1NetWorthLead?: number | null;
     team2NetWorthLead?: number | null;
   } | null;
-}
-
-const teamLogoFallbackMap: Record<string, string> = {
-  xg: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
-  'xtreme gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8261502.png',
-  yb: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8255888.png',
-  'yakult brothers': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8255888.png',
-  vg: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7391077.png',
-  'vici gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7391077.png',
-  lgd: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/5014976.png',
-  'psg.lgd': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/5014976.png',
-  'aurora gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1163959.png',
-  aurora: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1163959.png',
-  'natus vincere': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png',
-  'team liquid': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/2163.png',
-  'team falcons': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/4972334.png',
-  og: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/2587576.png',
-  'tundra esports': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104958.png',
-  gamerlegion: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9756454.png',
-  parivision: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png',
-  'betboom team': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/1371884.png',
-  'pain gaming': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/67.png',
-  'team yandex': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7481929.png',
-  execration: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/8317125.png',
-  mouz: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/104918.png',
-  heroic: 'https://hawk.live/storage/teams/6398.png',
-  'team spirit': 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/7119388.png',
-};
-
-function getTeamLogo(apiLogoUrl: string | undefined | null, teamName: string | undefined | null): string {
-  if (apiLogoUrl) return apiLogoUrl;
-  if (!teamName) return '';
-  return teamLogoFallbackMap[teamName.toLowerCase()] || '';
 }
 
 const teamAbbr: Record<string, string> = {
@@ -271,6 +238,8 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
   const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
   const sortedLiveHeroes = useMemo(() => sortLiveHeroesForDisplay(liveHeroes), [liveHeroes]);
   const primaryLiveHero = sortedLiveHeroes[0] || null;
+  const getTeamLogo = (teamName?: string | null, explicitLogo?: string | null) =>
+    resolveTeamLogo({ name: teamName }, effectiveTeams, explicitLogo);
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
     isTeamInRegion(team || null, effectiveTeams, ['China']);
 
@@ -465,8 +434,8 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                               return (
                                 <div key={`${team.side}-${team.name}`} className="grid min-h-[3.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
                                   <div className="flex min-w-0 items-center gap-2">
-                                    {getTeamLogo(team.logo, team.name) ? (
-                                      <img src={getTeamLogo(team.logo, team.name)} alt="" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
+                                    {getTeamLogo(team.name, team.logo) ? (
+                                      <img src={getTeamLogo(team.name, team.logo)} alt="" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
                                     ) : (
                                       <div className="w-8 h-8 rounded-full bg-slate-800" />
                                     )}
@@ -575,11 +544,11 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                             <div className="px-3 py-2">
                               <div className="text-[11px] uppercase tracking-[0.12em] text-slate-500 truncate mb-2">{match.tournament_name_cn || match.tournament_name}</div>
                               <div className={`flex items-center gap-2 py-1.5 border-b border-white/5 ${layout.topIsCN ? 'text-red-400' : ''}`}>
-                                {getTeamLogo(layout.topLogo, layout.top) ? <img src={getTeamLogo(layout.topLogo, layout.top)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+                                {getTeamLogo(layout.top, layout.topLogo) ? <img src={getTeamLogo(layout.top, layout.topLogo)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
                                 <span className="text-sm font-bold truncate">{renderTeamName(layout.top)}</span>
                               </div>
                               <div className="flex items-center gap-2 py-1.5">
-                                {getTeamLogo(layout.bottomLogo, layout.bottom) ? <img src={getTeamLogo(layout.bottomLogo, layout.bottom)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
+                                {getTeamLogo(layout.bottom, layout.bottomLogo) ? <img src={getTeamLogo(layout.bottom, layout.bottomLogo)} alt="" className="w-5 h-5 object-contain" /> : <div className="w-5 h-5 bg-slate-700 rounded" />}
                                 <span className="text-sm font-bold text-white truncate">{renderTeamName(layout.bottom)}</span>
                               </div>
                             </div>
