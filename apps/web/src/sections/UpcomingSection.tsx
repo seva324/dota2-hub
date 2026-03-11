@@ -6,7 +6,7 @@ import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
-import { isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
+import { findTeamRow, isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
 
 
 
@@ -215,6 +215,8 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
   const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
   const getTeamLogo = (teamId?: string | null, teamName?: string | null, explicitLogo?: string | null) =>
     resolveTeamLogo({ teamId, name: teamName }, effectiveTeams, explicitLogo);
+  const getTeamRow = (teamId?: string | null, teamName?: string | null) =>
+    findTeamRow(effectiveTeams, teamId, teamName);
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
     isTeamInRegion(team || null, effectiveTeams, ['China']);
 
@@ -437,6 +439,10 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
                     {filteredDateMatches.map((match) => {
                       const radiantIsCN = isChineseTeam({ teamId: match.radiant_team_id, name: match.radiant_team_name });
                       const direIsCN = isChineseTeam({ teamId: match.dire_team_id, name: match.dire_team_name });
+                      const radiantTeamRow = getTeamRow(match.radiant_team_id, match.radiant_team_name);
+                      const direTeamRow = getTeamRow(match.dire_team_id, match.dire_team_name);
+                      const canOpenRadiantFlyout = Boolean(radiantTeamRow && match.radiant_team_name);
+                      const canOpenDireFlyout = Boolean(direTeamRow && match.dire_team_name);
                       const hasCN = radiantIsCN || direIsCN;
                       const countdown = formatCountdown(match.start_time);
                       const period = getMatchPeriod(match.start_time);
@@ -497,37 +503,63 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
                             {/* 对阵展示 */}
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4">
                               {/* Radiant 队 */}
-                              <button
-                                type="button"
-                                className={`flex-1 flex items-center gap-2 sm:gap-3 text-left ${radiantIsCN ? 'group/team-a' : ''}`}
-                                onClick={() => openTeamFlyout({
-                                  team_id: match.radiant_team_id ? String(match.radiant_team_id) : null,
-                                  name: match.radiant_team_name,
-                                  logo_url: match.radiant_team_logo
-                                })}
-                              >
-                                <div className={`
-                                  w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border transition-all duration-300
-                                  ${radiantIsCN
-                                    ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)] group-hover/team-a:scale-110'
-                                    : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                                  }
-                                `}>
-                                  {getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo) ? (
-                                    <img src={getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
-                                  ) : (
-                                    <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className={`text-sm font-bold truncate ${radiantIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
-                                    {renderTeamName(match.radiant_team_name)}
+                              {canOpenRadiantFlyout ? (
+                                <button
+                                  type="button"
+                                  className={`flex-1 flex items-center gap-2 sm:gap-3 text-left ${radiantIsCN ? 'group/team-a' : ''}`}
+                                  onClick={() => openTeamFlyout({
+                                    team_id: String(radiantTeamRow?.team_id || radiantTeamRow?.id || match.radiant_team_id || '') || null,
+                                    name: radiantTeamRow?.name || match.radiant_team_name,
+                                    logo_url: radiantTeamRow?.logo_url || match.radiant_team_logo || null
+                                  })}
+                                >
+                                  <div className={`
+                                    w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border transition-all duration-300
+                                    ${radiantIsCN
+                                      ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)] group-hover/team-a:scale-110'
+                                      : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                                    }
+                                  `}>
+                                    {getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo) ? (
+                                      <img src={getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    ) : (
+                                      <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
+                                    )}
                                   </div>
-                                  {match.radiant_team_name_cn && (
-                                    <div className="text-xs text-slate-500 truncate hidden sm:block">{match.radiant_team_name_cn}</div>
-                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className={`text-sm font-bold truncate ${radiantIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
+                                      {renderTeamName(match.radiant_team_name)}
+                                    </div>
+                                    {match.radiant_team_name_cn && (
+                                      <div className="text-xs text-slate-500 truncate hidden sm:block">{match.radiant_team_name_cn}</div>
+                                    )}
+                                  </div>
+                                </button>
+                              ) : (
+                                <div className="flex-1 flex items-center gap-2 sm:gap-3 text-left">
+                                  <div className={`
+                                    w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border
+                                    ${radiantIsCN
+                                      ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                      : 'bg-slate-800 border-slate-700'
+                                    }
+                                  `}>
+                                    {getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo) ? (
+                                      <img src={getTeamLogo(match.radiant_team_id, match.radiant_team_name, match.radiant_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    ) : (
+                                      <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.radiant_team_name).substring(0, 2)}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className={`text-sm font-bold truncate ${radiantIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
+                                      {renderTeamName(match.radiant_team_name)}
+                                    </div>
+                                    {match.radiant_team_name_cn && (
+                                      <div className="text-xs text-slate-500 truncate hidden sm:block">{match.radiant_team_name_cn}</div>
+                                    )}
+                                  </div>
                                 </div>
-                              </button>
+                              )}
 
                               {/* VS */}
                               <div className="hidden sm:flex items-center justify-center">
@@ -537,37 +569,63 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
                               </div>
 
                               {/* Dire 队 */}
-                              <button
-                                type="button"
-                                className={`flex-1 flex items-center gap-2 sm:gap-3 justify-end text-right ${direIsCN ? 'group/team-b' : ''}`}
-                                onClick={() => openTeamFlyout({
-                                  team_id: match.dire_team_id ? String(match.dire_team_id) : null,
-                                  name: match.dire_team_name,
-                                  logo_url: match.dire_team_logo
-                                })}
-                              >
-                                <div className="flex-1 min-w-0 text-right">
-                                  <div className={`text-sm font-bold truncate ${direIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
-                                    {renderTeamName(match.dire_team_name)}
+                              {canOpenDireFlyout ? (
+                                <button
+                                  type="button"
+                                  className={`flex-1 flex items-center gap-2 sm:gap-3 justify-end text-right ${direIsCN ? 'group/team-b' : ''}`}
+                                  onClick={() => openTeamFlyout({
+                                    team_id: String(direTeamRow?.team_id || direTeamRow?.id || match.dire_team_id || '') || null,
+                                    name: direTeamRow?.name || match.dire_team_name,
+                                    logo_url: direTeamRow?.logo_url || match.dire_team_logo || null
+                                  })}
+                                >
+                                  <div className="flex-1 min-w-0 text-right">
+                                    <div className={`text-sm font-bold truncate ${direIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
+                                      {renderTeamName(match.dire_team_name)}
+                                    </div>
+                                    {match.dire_team_name_cn && (
+                                      <div className="text-xs text-slate-500 truncate hidden sm:block">{match.dire_team_name_cn}</div>
+                                    )}
                                   </div>
-                                  {match.dire_team_name_cn && (
-                                    <div className="text-xs text-slate-500 truncate hidden sm:block">{match.dire_team_name_cn}</div>
-                                  )}
+                                  <div className={`
+                                    w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border transition-all duration-300
+                                    ${direIsCN
+                                      ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)] group-hover/team-b:scale-110'
+                                      : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                                    }
+                                  `}>
+                                    {getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo) ? (
+                                      <img src={getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    ) : (
+                                      <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
+                                    )}
+                                  </div>
+                                </button>
+                              ) : (
+                                <div className="flex-1 flex items-center gap-2 sm:gap-3 justify-end text-right">
+                                  <div className="flex-1 min-w-0 text-right">
+                                    <div className={`text-sm font-bold truncate ${direIsCN ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400' : 'text-white'}`}>
+                                      {renderTeamName(match.dire_team_name)}
+                                    </div>
+                                    {match.dire_team_name_cn && (
+                                      <div className="text-xs text-slate-500 truncate hidden sm:block">{match.dire_team_name_cn}</div>
+                                    )}
+                                  </div>
+                                  <div className={`
+                                    w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border
+                                    ${direIsCN
+                                      ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                      : 'bg-slate-800 border-slate-700'
+                                    }
+                                  `}>
+                                    {getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo) ? (
+                                      <img src={getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                                    ) : (
+                                      <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className={`
-                                  w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center border transition-all duration-300
-                                  ${direIsCN
-                                    ? 'bg-gradient-to-br from-red-500 to-orange-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)] group-hover/team-b:scale-110'
-                                    : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                                  }
-                                `}>
-                                  {getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo) ? (
-                                    <img src={getTeamLogo(match.dire_team_id, match.dire_team_name, match.dire_team_logo)} alt="" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
-                                  ) : (
-                                    <span className="text-sm sm:text-base font-bold text-white">{getAbbr(match.dire_team_name).substring(0, 2)}</span>
-                                  )}
-                                </div>
-                              </button>
+                              )}
                             </div>
 
                             {/* 悬浮指示 */}

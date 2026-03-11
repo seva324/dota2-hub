@@ -74,9 +74,9 @@ describe('UpcomingSection lazy loading', () => {
               id: 2,
               match_id: 2,
               radiant_team_id: '3',
-              dire_team_id: '4',
+              dire_team_id: '999',
               radiant_team_name: 'Team Liquid',
-              dire_team_name: 'Tundra Esports',
+              dire_team_name: 'Team Falcons',
               start_time: now + 72 * 3600,
               series_type: 'BO3',
               tournament_name: 'Too Late Cup',
@@ -107,5 +107,45 @@ describe('UpcomingSection lazy loading', () => {
     expect(screen.queryByText('Too Late Cup')).not.toBeInTheDocument();
     expect(screen.getByText('本周场次').nextElementSibling).toHaveTextContent('1');
     expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src'))).toContain('https://dota2-hub.vercel.app/images/mirror/teams/7119388.png');
+  });
+
+  it('shows Liquipedia fallback names and disables team flyout when the opponent is missing from teams', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        upcoming: (() => {
+          const now = Math.floor(Date.now() / 1000);
+          return [
+            {
+              id: 3,
+              match_id: 3,
+              radiant_team_id: '1',
+              dire_team_id: '999',
+              radiant_team_name: 'Xtreme Gaming',
+              dire_team_name: 'Team Liquid',
+              start_time: now + 3600,
+              series_type: 'BO3',
+              tournament_name: 'DreamLeague',
+            },
+          ];
+        })(),
+        teams: [
+          { team_id: '1', name: 'Xtreme Gaming', region: 'China', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png' },
+        ],
+      }),
+    } as Response);
+
+    render(<UpcomingSection upcoming={[]} teams={[]} allMatches={[]} />);
+
+    await act(async () => {
+      MockIntersectionObserver.instances[0]?.trigger(true);
+    });
+
+    expect(await screen.findByText('Team Liquid')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Team Liquid/i })).not.toBeInTheDocument();
+    expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
+      expect.arrayContaining([expect.stringContaining('/images/mirror/teams/2163.png')])
+    );
   });
 });
