@@ -15,10 +15,12 @@ const NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
-const OPENAI_MODEL = process.env.GPT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const MINIMAX_API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
+const NEWS_TRANSLATION_PROVIDER = 'minimax';
+const TRANSLATION_STATUS_PENDING = 'pending';
+const TRANSLATION_STATUS_PARTIAL = 'partial';
+const TRANSLATION_STATUS_COMPLETED = 'completed';
 let sql = null;
 const NEWS_TRANSLATION_GUIDANCE = [
   '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成中文论坛搬运帖风格。',
@@ -1259,89 +1261,52 @@ function extractMiniMaxText(data) {
   }
 
   if (typeof data?.output_text === 'string') return data.output_text;
-  const openaiContent = data?.choices?.[0]?.message?.content;
-  if (typeof openaiContent === 'string') return openaiContent;
-  if (Array.isArray(openaiContent)) {
-    return openaiContent
-      .map((x) => (typeof x?.text === 'string' ? x.text : ''))
-      .join('\n');
-  }
   return '';
 }
 
-function getTranslationConfig() {
-  const openaiKey = process.env.GPT_API_KEY || process.env.OPENAI_API_KEY || '';
-  if (openaiKey) {
-    return {
-      provider: 'openai',
-      apiKey: openaiKey,
-      url: OPENAI_API_URL,
-      model: OPENAI_MODEL,
-    };
-  }
-
-  const minimaxKey = process.env.MINIMAX_API_KEY || '';
-  if (minimaxKey) {
-    return {
-      provider: 'minimax',
-      apiKey: minimaxKey,
-      url: MINIMAX_API_URL,
-      model: MINIMAX_MODEL,
-    };
-  }
-
-  return null;
+function getTranslationApiKey() {
+  return process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
 }
 
-async function callTranslationModel(prompt, maxTokens = 1200, timeoutMs = 20000) {
-  const config = getTranslationConfig();
-  if (!config?.apiKey) {
+async function callTranslationModel(apiKey, prompt, maxTokens = 1200, timeoutMs = 20000) {
+  if (!apiKey) {
     throw new Error('No translation model API key configured');
   }
 
-  const body = config.provider === 'openai'
-    ? {
-        model: config.model,
-        temperature: 0.2,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }
-    : {
-        model: config.model,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
-      };
-
   const response = await fetchWithTimeout(
-    config.url,
+    MINIMAX_API_URL,
     {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${config.apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: MINIMAX_MODEL,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+      }),
     },
     timeoutMs
   );
 
   if (!response.ok) {
     const bodyText = await response.text().catch(() => '');
-    throw new Error(`${config.provider} HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
+    throw new Error(`minimax HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
   }
 
   const payload = await response.json();
   const outputText = extractMiniMaxText(payload).trim();
   if (!outputText) {
-    throw new Error(`${config.provider} returned empty translations`);
+    throw new Error('minimax returned empty translations');
   }
   return outputText;
 }
 
 async function translateNewsWithMiniMax(news) {
-  const config = getTranslationConfig();
+  const apiKey = getTranslationApiKey();
   if (!Array.isArray(news) || news.length === 0) return news;
-  if (!config?.apiKey) {
+  if (!apiKey) {
     console.warn('[News API] translation API key is missing, skip translation');
     return news;
   }
@@ -1370,7 +1335,7 @@ async function translateNewsWithMiniMax(news) {
       sourceLines,
     ].join('\n');
 
-    const outputText = await callTranslationModel(prompt, 2500, 25000);
+    const outputText = await callTranslationModel(apiKey, prompt, 2500, 25000);
     const map = new Map();
     const lines = String(outputText || '').split('\n');
     for (const line of lines) {
@@ -1416,12 +1381,24 @@ async function ensureNewsTable(db) {
       summary_zh TEXT,
       content_zh TEXT,
       content_markdown_zh TEXT,
+      translation_status TEXT,
+      translation_provider TEXT,
+      title_zh_provider TEXT,
+      summary_zh_provider TEXT,
+      content_zh_provider TEXT,
+      translated_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
 
   await db`ALTER TABLE news_articles DROP COLUMN IF EXISTS content_images`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_status TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS title_zh_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS summary_zh_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS content_zh_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translated_at TIMESTAMPTZ`;
 }
 
 function splitTextChunks(text, maxLen = 1400) {
@@ -1470,6 +1447,40 @@ function looksLikeStructuredArticle(value = '') {
   return /标题[:：]|正文[:：]|总结[:：]|点评[:：]/.test(String(value));
 }
 
+function hasChineseTitle(value = '', fallbackEn = '') {
+  const zh = String(value || '').trim();
+  if (!zh || !looksChinese(zh) || looksLikeStructuredArticle(zh) || looksLikeTranslationRefusal(zh)) return false;
+  return !fallbackEn || zh !== String(fallbackEn || '').trim();
+}
+
+function hasChineseSummary(value = '', fallbackEn = '') {
+  const zh = String(value || '').trim();
+  if (!zh || !looksChinese(zh) || looksLikeStructuredArticle(zh) || looksLikeTranslationRefusal(zh)) return false;
+  return !fallbackEn || zh !== String(fallbackEn || '').trim();
+}
+
+function buildTranslationMeta(item, translated, provider = NEWS_TRANSLATION_PROVIDER) {
+  const sourceBody = item?.content_markdown || item?.content || '';
+  const titleDone = item?.title ? hasChineseTitle(translated?.title_zh, item.title) : true;
+  const summaryDone = item?.summary ? hasChineseSummary(translated?.summary_zh, item.summary) : true;
+  const bodyDone = sourceBody ? hasCompleteChineseBody(translated?.content_markdown_zh || translated?.content_zh || '', sourceBody) : true;
+  const anyDone = titleDone || summaryDone || bodyDone;
+  const complete = titleDone && summaryDone && bodyDone;
+
+  return {
+    translation_status: complete
+      ? TRANSLATION_STATUS_COMPLETED
+      : anyDone
+        ? TRANSLATION_STATUS_PARTIAL
+        : TRANSLATION_STATUS_PENDING,
+    translation_provider: anyDone ? provider : null,
+    title_zh_provider: titleDone ? provider : null,
+    summary_zh_provider: summaryDone ? provider : null,
+    content_zh_provider: bodyDone ? provider : null,
+    translated_at: anyDone ? new Date().toISOString() : null,
+  };
+}
+
 async function translateCommunityTitle(apiKey, item) {
   if (!item?.title || looksChinese(item.title)) return item?.title || null;
   try {
@@ -1485,21 +1496,21 @@ async function translateCommunityTitle(apiKey, item) {
       `英文标题：${item.title}`,
       item.summary ? `英文摘要：${item.summary}` : '',
     ].join('\n');
-    let output = await callTranslationModel(prompt, 800, 18000);
+    let output = await callTranslationModel(apiKey, prompt, 800, 18000);
     if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
       const retryPrompt = [
         '把下面英文 Dota2 新闻标题改写成一个中文社区传播标题。',
         '要求：必须输出简体中文；保留专有名词原文；不能输出英文整句；不能输出标题/正文/总结标签；只输出一行标题。',
         item.title,
       ].join('\n');
-      output = await callTranslationModel(retryPrompt, 400, 15000).catch(() => output);
+      output = await callTranslationModel(apiKey, retryPrompt, 400, 15000).catch(() => output);
       if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
         const finalPrompt = [
           '将下面英文 Dota2 新闻标题直接翻译为简体中文标题。',
           '要求：必须输出中文；保留专有名词原文；只输出一行标题；不要解释。',
           item.title,
         ].join('\n');
-        output = await callTranslationModel(finalPrompt, 400, 15000).catch(() => output);
+        output = await callTranslationModel(apiKey, finalPrompt, 400, 15000).catch(() => output);
       }
     }
     return output || item.title;
@@ -1525,7 +1536,7 @@ async function translateCommunitySummary(apiKey, item) {
       item.summary ? `英文摘要：${item.summary}` : '',
       item.content ? `英文正文：${String(item.content).slice(0, 1600)}` : '',
     ].join('\n');
-    let output = await callTranslationModel(prompt, 800, 18000);
+    let output = await callTranslationModel(apiKey, prompt, 800, 18000);
     if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
       const retryPrompt = [
         '基于下面英文 Dota2 新闻信息，写一句中文总结。',
@@ -1534,7 +1545,7 @@ async function translateCommunitySummary(apiKey, item) {
         item.summary ? `摘要：${item.summary}` : '',
         item.content ? `正文：${String(item.content).slice(0, 1200)}` : '',
       ].join('\n');
-      output = await callTranslationModel(retryPrompt, 400, 15000).catch(() => output);
+      output = await callTranslationModel(apiKey, retryPrompt, 400, 15000).catch(() => output);
       if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
         const finalPrompt = [
           '把下面英文 Dota2 新闻摘要翻译并压缩成一句简体中文总结。',
@@ -1543,7 +1554,7 @@ async function translateCommunitySummary(apiKey, item) {
           item.summary ? `摘要：${item.summary}` : '',
           item.content ? `正文：${String(item.content).slice(0, 1200)}` : '',
         ].join('\n');
-        output = await callTranslationModel(finalPrompt, 400, 15000).catch(() => output);
+        output = await callTranslationModel(apiKey, finalPrompt, 400, 15000).catch(() => output);
       }
     }
     return output || item.summary || item.title;
@@ -1572,21 +1583,21 @@ async function translateLongMarkdown(apiKey, text) {
         '',
         chunk,
       ].join('\n');
-      let output = await callTranslationModel(prompt, 1800, 22000).catch(() => chunk);
+      let output = await callTranslationModel(apiKey, prompt, 1800, 22000).catch(() => chunk);
       if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
         const retryPrompt = [
           '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
           '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
           chunk,
         ].join('\n');
-        output = await callTranslationModel(retryPrompt, 1800, 22000).catch(() => output);
+        output = await callTranslationModel(apiKey, retryPrompt, 1800, 22000).catch(() => output);
         if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
           const finalPrompt = [
             '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
             '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释。',
             chunk,
           ].join('\n');
-          output = await callTranslationModel(finalPrompt, 1800, 22000).catch(() => output);
+          output = await callTranslationModel(apiKey, finalPrompt, 1800, 22000).catch(() => output);
         }
       }
       translated.push(output);
@@ -1602,10 +1613,10 @@ async function translateItem(apiKey, item) {
   const sourceBody = item.content_markdown || item.content || '';
   if (!apiKey) {
     return {
-      title_zh: item.title,
-      summary_zh: item.summary,
-      content_zh: item.content,
-      content_markdown_zh: sourceBody,
+      title_zh: null,
+      summary_zh: null,
+      content_zh: null,
+      content_markdown_zh: null,
     };
   }
 
@@ -1647,6 +1658,8 @@ async function getStoredNews(db, limit = 20) {
       content_markdown: noisyZh
         ? (row.content_markdown_en || row.content_markdown_zh)
         : (row.content_markdown_zh || row.content_markdown_en),
+      translation_status: row.translation_status || null,
+      translation_provider: row.translation_provider || null,
     };
   }).filter((x) => !isBettingNews(x));
 }
@@ -1764,10 +1777,10 @@ export async function syncNewsToDb(options = {}) {
 
   const urls = news.map((x) => x.url);
   const existingRows = urls.length > 0
-    ? await db`SELECT url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh FROM news_articles WHERE url = ANY(${urls})`
+    ? await db`SELECT url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh, translation_status, translation_provider, title_zh_provider, summary_zh_provider, content_zh_provider FROM news_articles WHERE url = ANY(${urls})`
     : [];
   const existingMap = new Map(existingRows.map((r) => [r.url, r]));
-  const apiKey = getTranslationConfig()?.apiKey;
+  const apiKey = getTranslationApiKey();
 
   let translatedCount = 0;
   let insertedCount = 0;
@@ -1803,6 +1816,11 @@ export async function syncNewsToDb(options = {}) {
       summary_zh: existing?.summary_zh || null,
       content_zh: existing?.content_zh || null,
       content_markdown_zh: existing?.content_markdown_zh || null,
+      translation_status: existing?.translation_status || TRANSLATION_STATUS_PENDING,
+      translation_provider: existing?.translation_provider || null,
+      title_zh_provider: existing?.title_zh_provider || null,
+      summary_zh_provider: existing?.summary_zh_provider || null,
+      content_zh_provider: existing?.content_zh_provider || null,
     };
 
     await db`
@@ -1810,11 +1828,13 @@ export async function syncNewsToDb(options = {}) {
         id, source, url, category, image_url, published_at,
         title_en, summary_en, content_en, content_markdown_en,
         title_zh, summary_zh, content_zh, content_markdown_zh,
+        translation_status, translation_provider, title_zh_provider, summary_zh_provider, content_zh_provider,
         updated_at
       ) VALUES (
         ${item.id}, ${item.source}, ${item.url}, ${item.category}, ${item.image_url || null}, ${item.published_at},
         ${item.title}, ${item.summary || null}, ${item.content || null}, ${item.content_markdown || null},
         ${existingZh.title_zh || null}, ${existingZh.summary_zh || null}, ${existingZh.content_zh || null}, ${existingZh.content_markdown_zh || null},
+        ${existingZh.translation_status}, ${existingZh.translation_provider}, ${existingZh.title_zh_provider}, ${existingZh.summary_zh_provider}, ${existingZh.content_zh_provider},
         NOW()
       )
       ON CONFLICT (url) DO UPDATE SET
@@ -1831,6 +1851,11 @@ export async function syncNewsToDb(options = {}) {
         summary_zh = EXCLUDED.summary_zh,
         content_zh = EXCLUDED.content_zh,
         content_markdown_zh = EXCLUDED.content_markdown_zh,
+        translation_status = EXCLUDED.translation_status,
+        translation_provider = EXCLUDED.translation_provider,
+        title_zh_provider = EXCLUDED.title_zh_provider,
+        summary_zh_provider = EXCLUDED.summary_zh_provider,
+        content_zh_provider = EXCLUDED.content_zh_provider,
         updated_at = NOW()
     `;
     insertedCount += 1;
@@ -1845,17 +1870,24 @@ export async function syncNewsToDb(options = {}) {
     : pendingTranslateItems.length;
   for (const item of pendingTranslateItems.slice(0, translateLimit)) {
     const zh = await translateItem(apiKey, item);
+    const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
     await db`
       UPDATE news_articles
       SET
-        title_zh = ${zh.title_zh || null},
-        summary_zh = ${zh.summary_zh || null},
-        content_zh = ${zh.content_zh || null},
-        content_markdown_zh = ${zh.content_markdown_zh || null},
+        title_zh = ${meta.title_zh_provider ? zh.title_zh || null : null},
+        summary_zh = ${meta.summary_zh_provider ? zh.summary_zh || null : null},
+        content_zh = ${meta.content_zh_provider ? zh.content_zh || null : null},
+        content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
+        translation_status = ${meta.translation_status},
+        translation_provider = ${meta.translation_provider},
+        title_zh_provider = ${meta.title_zh_provider},
+        summary_zh_provider = ${meta.summary_zh_provider},
+        content_zh_provider = ${meta.content_zh_provider},
+        translated_at = ${meta.translated_at},
         updated_at = NOW()
       WHERE url = ${item.url}
     `;
-    translatedCount += 1;
+    if (meta.translation_status === TRANSLATION_STATUS_COMPLETED) translatedCount += 1;
   }
 
   return {
@@ -1868,6 +1900,96 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count,
     onlySource: onlySource || 'all',
     cutoffSeconds,
+  };
+}
+
+export async function translateNewsBackfill(options = {}) {
+  const db = getDb();
+  if (!db) {
+    throw new Error('DATABASE_URL not configured');
+  }
+
+  await ensureNewsTable(db);
+  const apiKey = getTranslationApiKey();
+  if (!apiKey) {
+    return { scanned: 0, translated: 0, completed: 0, pending: 0, provider: NEWS_TRANSLATION_PROVIDER, skipped: 'missing_api_key' };
+  }
+
+  const recentDays = Number.isFinite(Number(options?.recentDays))
+    ? Math.max(1, Number(options.recentDays))
+    : 2;
+  const limit = Number.isFinite(Number(options?.limit))
+    ? Math.max(1, Number(options.limit))
+    : 20;
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - (recentDays * 86400);
+
+  const rows = await db`
+    SELECT id, url, title_en, summary_en, content_en, content_markdown_en,
+           title_zh, summary_zh, content_zh, content_markdown_zh,
+           translation_status, translation_provider, title_zh_provider, summary_zh_provider, content_zh_provider,
+           published_at
+    FROM news_articles
+    WHERE published_at >= ${cutoffSeconds}
+      AND (
+        COALESCE(title_en, '') <> ''
+        OR COALESCE(summary_en, '') <> ''
+        OR COALESCE(content_en, '') <> ''
+        OR COALESCE(content_markdown_en, '') <> ''
+      )
+      AND (
+        COALESCE(translation_status, ${TRANSLATION_STATUS_PENDING}) <> ${TRANSLATION_STATUS_COMPLETED}
+        OR translation_provider = ${NEWS_TRANSLATION_PROVIDER}
+        OR COALESCE(title_zh, '') = ''
+        OR COALESCE(summary_zh, '') = ''
+        OR COALESCE(content_zh, '') = ''
+        OR COALESCE(content_markdown_zh, '') = ''
+      )
+    ORDER BY published_at DESC NULLS LAST, updated_at DESC NULLS LAST
+    LIMIT ${limit}
+  `;
+
+  let translated = 0;
+  let completed = 0;
+  let pending = 0;
+
+  for (const row of rows) {
+    const item = {
+      title: row.title_en,
+      summary: row.summary_en,
+      content: row.content_en,
+      content_markdown: row.content_markdown_en,
+    };
+    const zh = await translateItem(apiKey, item);
+    const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
+    await db`
+      UPDATE news_articles
+      SET
+        title_zh = ${meta.title_zh_provider ? zh.title_zh || null : null},
+        summary_zh = ${meta.summary_zh_provider ? zh.summary_zh || null : null},
+        content_zh = ${meta.content_zh_provider ? zh.content_zh || null : null},
+        content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
+        translation_status = ${meta.translation_status},
+        translation_provider = ${meta.translation_provider},
+        title_zh_provider = ${meta.title_zh_provider},
+        summary_zh_provider = ${meta.summary_zh_provider},
+        content_zh_provider = ${meta.content_zh_provider},
+        translated_at = ${meta.translated_at},
+        updated_at = NOW()
+      WHERE id = ${row.id}
+    `;
+    translated += 1;
+    if (meta.translation_status === TRANSLATION_STATUS_COMPLETED) completed += 1;
+    if (meta.translation_status !== TRANSLATION_STATUS_COMPLETED) pending += 1;
+  }
+
+  return {
+    scanned: rows.length,
+    translated,
+    completed,
+    pending,
+    provider: NEWS_TRANSLATION_PROVIDER,
+    recentDays,
+    limit,
   };
 }
 

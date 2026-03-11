@@ -1,12 +1,13 @@
 import { neon } from '@neondatabase/serverless';
 
 const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const OPENAI_KEY = process.env.GPT_API_KEY || process.env.OPENAI_API_KEY || '';
-const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
-const OPENAI_MODEL = process.env.GPT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
-const API_KEY = OPENAI_KEY || process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
-const API_URL = OPENAI_KEY ? OPENAI_API_URL : (process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages');
-const MODEL = OPENAI_KEY ? OPENAI_MODEL : (process.env.MINIMAX_MODEL || 'MiniMax-M2.5');
+const API_KEY = process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
+const API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
+const MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
+const TRANSLATION_PROVIDER = 'minimax';
+const TRANSLATION_STATUS_PENDING = 'pending';
+const TRANSLATION_STATUS_PARTIAL = 'partial';
+const TRANSLATION_STATUS_COMPLETED = 'completed';
 const NEWS_TRANSLATION_GUIDANCE = [
   '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成中文论坛搬运帖风格。',
   '',
@@ -56,6 +57,29 @@ function looksLikeTranslationRefusal(text = '') {
 
 function looksLikeStructuredArticle(text = '') {
   return /标题[:：]|正文[:：]|总结[:：]|点评[:：]/.test(String(text));
+}
+
+function hasChineseTitle(value = '', fallbackEn = '') {
+  const zh = String(value || '').trim();
+  if (!zh || !looksChinese(zh) || looksLikeStructuredArticle(zh) || looksLikeTranslationRefusal(zh)) return false;
+  return !fallbackEn || zh !== String(fallbackEn || '').trim();
+}
+
+function hasChineseSummary(value = '', fallbackEn = '') {
+  const zh = String(value || '').trim();
+  if (!zh || !looksChinese(zh) || looksLikeStructuredArticle(zh) || looksLikeTranslationRefusal(zh)) return false;
+  return !fallbackEn || zh !== String(fallbackEn || '').trim();
+}
+
+function hasCompleteChineseBody(value = '', fallbackEn = '') {
+  const zh = String(value || '').trim();
+  if (!zh || !looksChinese(zh) || looksLikeTranslationRefusal(zh)) return false;
+  const en = stripMarkdown(fallbackEn || '');
+  const zhText = stripMarkdown(zh);
+  if (!zhText) return false;
+  if (en && zhText === en) return false;
+  if (en && zhText.length < Math.min(120, Math.floor(en.length * 0.45))) return false;
+  return true;
 }
 
 function stripMarkdown(md) {
@@ -171,18 +195,9 @@ async function callMiniMax(prompt, maxTokens = 1400, timeoutMs = 25000) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ...(OPENAI_KEY
-          ? {
-              model: MODEL,
-              temperature: 0.2,
-              max_tokens: maxTokens,
-              messages: [{ role: 'user', content: prompt }],
-            }
-          : {
-              model: MODEL,
-              max_tokens: maxTokens,
-              messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
-            }),
+        model: MODEL,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
       }),
     },
     timeoutMs
@@ -294,7 +309,7 @@ async function translateMarkdown(text, tone) {
 async function loadPending(limit, force = false) {
   if (force) {
     return sql`
-      SELECT id, url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh
+      SELECT id, url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh, translation_status, translation_provider
       FROM news_articles
       WHERE (
         COALESCE(title_en, '') <> ''
@@ -308,7 +323,7 @@ async function loadPending(limit, force = false) {
   }
 
   return sql`
-    SELECT id, url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh
+    SELECT id, url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh, translation_status, translation_provider
     FROM news_articles
     WHERE (
       COALESCE(title_en, '') <> ''
@@ -317,6 +332,9 @@ async function loadPending(limit, force = false) {
       OR COALESCE(content_markdown_en, '') <> ''
     )
     AND (
+      COALESCE(translation_status, ${TRANSLATION_STATUS_PENDING}) <> ${TRANSLATION_STATUS_COMPLETED}
+      OR translation_provider = ${TRANSLATION_PROVIDER}
+      OR
       COALESCE(title_zh, '') = ''
       OR COALESCE(summary_zh, '') = ''
       OR COALESCE(content_zh, '') = ''
@@ -329,7 +347,7 @@ async function loadPending(limit, force = false) {
 
 async function loadForceRows(limit) {
   return sql`
-    SELECT id, url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh
+    SELECT id, url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh, translation_status, translation_provider
     FROM news_articles
     WHERE (
       COALESCE(title_en, '') <> ''
@@ -343,13 +361,30 @@ async function loadForceRows(limit) {
 }
 
 async function updateRow(row, zh) {
+  const sourceBody = row.content_markdown_en || row.content_en || '';
+  const titleDone = row.title_en ? hasChineseTitle(zh.title_zh, row.title_en) : true;
+  const summaryDone = row.summary_en ? hasChineseSummary(zh.summary_zh, row.summary_en) : true;
+  const bodyDone = sourceBody ? hasCompleteChineseBody(zh.content_markdown_zh || zh.content_zh || '', sourceBody) : true;
+  const anyDone = titleDone || summaryDone || bodyDone;
+  const status = titleDone && summaryDone && bodyDone
+    ? TRANSLATION_STATUS_COMPLETED
+    : anyDone
+      ? TRANSLATION_STATUS_PARTIAL
+      : TRANSLATION_STATUS_PENDING;
+
   await sql`
     UPDATE news_articles
     SET
-      title_zh = ${zh.title_zh || null},
-      summary_zh = ${zh.summary_zh || null},
-      content_markdown_zh = ${zh.content_markdown_zh || null},
-      content_zh = ${zh.content_zh || null},
+      title_zh = ${titleDone ? zh.title_zh || null : null},
+      summary_zh = ${summaryDone ? zh.summary_zh || null : null},
+      content_markdown_zh = ${bodyDone ? zh.content_markdown_zh || null : null},
+      content_zh = ${bodyDone ? zh.content_zh || null : null},
+      translation_status = ${status},
+      translation_provider = ${anyDone ? TRANSLATION_PROVIDER : null},
+      title_zh_provider = ${titleDone ? TRANSLATION_PROVIDER : null},
+      summary_zh_provider = ${summaryDone ? TRANSLATION_PROVIDER : null},
+      content_zh_provider = ${bodyDone ? TRANSLATION_PROVIDER : null},
+      translated_at = ${anyDone ? new Date().toISOString() : null},
       updated_at = NOW()
     WHERE id = ${row.id}
   `;
@@ -357,11 +392,15 @@ async function updateRow(row, zh) {
 
 async function translateOne(row, force = false) {
   const tone = detectTone(row);
-  const title_zh = force ? await translateTitle(row, tone) : (row.title_zh || await translateTitle(row, tone));
-  const summary_zh = force ? await translateSummary(row) : (row.summary_zh || await translateSummary(row));
+  const keepTitle = !force && hasChineseTitle(row.title_zh, row.title_en);
+  const keepSummary = !force && (!row.summary_en || hasChineseSummary(row.summary_zh, row.summary_en));
+  const keepBody = !force && hasCompleteChineseBody(row.content_markdown_zh || row.content_zh || '', row.content_markdown_en || row.content_en || '');
+
+  const title_zh = keepTitle ? row.title_zh : await translateTitle(row, tone);
+  const summary_zh = keepSummary ? row.summary_zh : await translateSummary(row);
   const content_markdown_zh = force
     ? await translateMarkdown(row.content_markdown_en, tone)
-    : (row.content_markdown_zh || await translateMarkdown(row.content_markdown_en, tone));
+    : (keepBody ? row.content_markdown_zh : await translateMarkdown(row.content_markdown_en, tone));
   const content_zh = content_markdown_zh ? stripMarkdown(content_markdown_zh) : (row.content_en || null);
 
   await updateRow(row, { title_zh, summary_zh, content_markdown_zh, content_zh });

@@ -1,4 +1,4 @@
-import { syncNewsToDb } from './news.js';
+import { syncNewsToDb, translateNewsBackfill } from './news.js';
 import { runSyncOpenDota } from '../lib/server/sync-opendota.js';
 import { runSyncLiquipedia } from '../lib/server/sync-liquipedia.js';
 import { neon } from '@neondatabase/serverless';
@@ -105,6 +105,15 @@ async function runAction(action, refreshOptions = buildRefreshOptions()) {
   }
   if (action === 'sync-news') {
     return { action, result: await syncNewsToDb() };
+  }
+  if (action === 'translate-news-backfill') {
+    return {
+      action,
+      result: await translateNewsBackfill({
+        recentDays: refreshOptions.recentDays,
+        limit: refreshOptions.matchLimit,
+      }),
+    };
   }
   if (action === 'all') {
     const opendota = await runSyncOpenDota();

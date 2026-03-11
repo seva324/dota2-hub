@@ -7,6 +7,7 @@ const warmTeamFlyoutCacheMock = vi.fn();
 const runSyncOpenDotaMock = vi.fn();
 const runSyncLiquipediaMock = vi.fn();
 const syncNewsToDbMock = vi.fn();
+const translateNewsBackfillMock = vi.fn();
 
 vi.mock('@neondatabase/serverless', () => ({
   neon: neonMock,
@@ -30,6 +31,7 @@ vi.mock('../../../../lib/server/sync-liquipedia.js', () => ({
 
 vi.mock('../../../../api/news.js', () => ({
   syncNewsToDb: syncNewsToDbMock,
+  translateNewsBackfill: translateNewsBackfillMock,
 }));
 
 function createRes() {
@@ -65,12 +67,14 @@ describe('/api/cron incremental refresh actions', () => {
     runSyncOpenDotaMock.mockReset();
     runSyncLiquipediaMock.mockReset();
     syncNewsToDbMock.mockReset();
+    translateNewsBackfillMock.mockReset();
 
     warmPlayerProfileCacheMock.mockResolvedValue({ selected: 12, refreshed: 12, failed: 0, mode: 'incremental' });
     warmTeamFlyoutCacheMock.mockResolvedValue({ selected: 8, refreshed: 8, failed: 0, mode: 'incremental' });
     runSyncOpenDotaMock.mockResolvedValue({ success: true });
     runSyncLiquipediaMock.mockResolvedValue({ success: true });
     syncNewsToDbMock.mockResolvedValue({ success: true });
+    translateNewsBackfillMock.mockResolvedValue({ translated: 5, completed: 5, pending: 0, provider: 'minimax' });
   });
 
   it('passes incremental windows to the derived-data refresh alias', async () => {
@@ -221,5 +225,27 @@ describe('/api/cron incremental refresh actions', () => {
       concurrency: 5,
     }));
     expect(warmTeamFlyoutCacheMock).not.toHaveBeenCalled();
+  });
+
+  it('routes translate-news-backfill through the news translator action', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'translate-news-backfill',
+        recentDays: '2',
+        matchLimit: '15',
+      },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(translateNewsBackfillMock).toHaveBeenCalledWith({
+      recentDays: 2,
+      limit: 15,
+    });
+    expect((res.payload as any)?.result?.provider).toBe('minimax');
   });
 });
