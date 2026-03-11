@@ -135,7 +135,9 @@ async function run() {
         `状态: ${status}`,
         `详情:`,
         detail,
-      ].join('\n'));
+      ].join('\n')).catch((error) => {
+        console.error(`[hourly-cron-refresh] Telegram notify failed: ${error instanceof Error ? error.message : String(error)}`);
+      });
     }
 
     if (once) break;
