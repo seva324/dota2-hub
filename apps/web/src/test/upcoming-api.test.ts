@@ -58,6 +58,10 @@ describe('/api/upcoming', () => {
           series_id: 11,
           radiant_team_id: 1,
           dire_team_id: 2,
+          radiant_team_name: 'Xtreme Gaming',
+          dire_team_name: 'Team Liquid',
+          radiant_team_name_cn: '雪碧? nope',
+          dire_team_name_cn: '液体',
           start_time: 100,
           series_type: 1,
           tournament_name: 'DreamLeague',
@@ -69,7 +73,6 @@ describe('/api/upcoming', () => {
       if (sql.includes('SELECT * FROM teams')) {
         return [
           { team_id: 1, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/logo.png', region: 'China', is_cn_team: 1 },
-          { team_id: 2, name: 'Team Spirit', logo_url: null, region: 'Eastern Europe', is_cn_team: 0 },
         ];
       }
       return [];
@@ -102,5 +105,18 @@ describe('/api/upcoming', () => {
     const upcomingCall = taggedMock.mock.calls.findLast((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
     const [, nowValue, maxStartTime] = upcomingCall as unknown as [TemplateStringsArray, number, number];
     expect(maxStartTime - nowValue).toBe(14 * 86400);
+  });
+
+  it('falls back to upcoming_series team names when a team row is missing', async () => {
+    const { default: handler } = await import('../../../../api/upcoming.js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: {} } as never, res as never);
+
+    const [match] = (res.payload as any).upcoming;
+    expect(match.radiant_team_name).toBe('Xtreme Gaming');
+    expect(match.dire_team_name).toBe('Team Liquid');
+    expect(match.dire_team_name_cn).toBe('液体');
+    expect(match.dire_team_logo).toBeNull();
   });
 });
