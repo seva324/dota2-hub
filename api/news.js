@@ -14,11 +14,26 @@ const MAX_CONTENT_LENGTH = 5000;
 const NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const TRANSLATE_BATCH_LIMIT = 2;
 
 const MINIMAX_API_URL = 'https://api.minimax.io/anthropic/v1/messages';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
 let sql = null;
+const NEWS_TRANSLATION_GUIDANCE = [
+  '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成中文论坛搬运帖风格。',
+  '',
+  '你的写作风格：',
+  '- 像资深 Dota2 观众在复述消息',
+  '- 轻松、自然、口语化',
+  '- 不要官方通稿腔，不要逐字直译',
+  '- 可以有一点互联网感，但不要乱玩梗',
+  '- 重点突出比赛结果、队伍状态、选手发言和观众最关心的信息',
+  '- 所有事实必须忠于原文，不能脑补',
+  '',
+  '每次我给你英文新闻时，请输出：',
+  '1. 一个适合中文社区传播的标题',
+  '2. 一段自然流畅的正文',
+  '3. 一句简短点评/总结',
+].join('\n');
 
 function getDb() {
   if (!sql && DATABASE_URL) {
@@ -1385,10 +1400,32 @@ function splitTextChunks(text, maxLen = 1400) {
   return chunks.slice(0, 8);
 }
 
+function hasCompleteChineseBody(value, fallbackEn = '') {
+  const zh = String(value || '').trim();
+  if (!zh) return false;
+  if (!looksChinese(zh)) return false;
+  const en = markdownToText(fallbackEn || '');
+  const zhText = markdownToText(zh);
+  if (!zhText) return false;
+  if (en && zhText === en) return false;
+  if (en && zhText.length < Math.min(120, Math.floor(en.length * 0.45))) return false;
+  return true;
+}
+
 async function translateShortText(apiKey, text) {
   if (!text || looksChinese(text)) return text;
   try {
-    const prompt = `将下面内容翻译为简体中文，保留专有名词原文，不要解释：\n${text}`;
+    const prompt = [
+      NEWS_TRANSLATION_GUIDANCE,
+      '',
+      '请把下面英文内容翻译成中文社区搬运帖风格。',
+      '要求：',
+      '- 保留战队名、选手名、赛事名等专有名词原文',
+      '- 不要补充原文没有的信息',
+      '- 只输出译文，不要解释',
+      '',
+      text,
+    ].join('\n');
     const res = await fetchWithTimeout(
       MINIMAX_API_URL,
       {
@@ -1421,8 +1458,16 @@ async function translateLongMarkdown(apiKey, text) {
   for (const chunk of chunks) {
     try {
       const prompt = [
-        '将下面 Dota2 新闻正文翻译为简体中文。',
-        '要求：保留 markdown 链接与图片语法；保留专有名词原文；保持段落。',
+        NEWS_TRANSLATION_GUIDANCE,
+        '',
+        '请把下面 Dota2 英文新闻正文翻译成中文社区搬运帖风格。',
+        '要求：',
+        '- 保留 markdown 链接与图片语法',
+        '- 保留专有名词原文',
+        '- 保持段落结构',
+        '- 标题、摘要、正文、点评都要完整，不要只翻译一部分',
+        '- 只输出中文正文内容，不要额外解释',
+        '',
         chunk,
       ].join('\n');
       const res = await fetchWithTimeout(
@@ -1456,19 +1501,20 @@ async function translateLongMarkdown(apiKey, text) {
 }
 
 async function translateItem(apiKey, item) {
+  const sourceBody = item.content_markdown || item.content || '';
   if (!apiKey) {
     return {
       title_zh: item.title,
       summary_zh: item.summary,
       content_zh: item.content,
-      content_markdown_zh: item.content_markdown,
+      content_markdown_zh: sourceBody,
     };
   }
 
   const [title_zh, summary_zh, content_markdown_zh] = await Promise.all([
     translateShortText(apiKey, item.title),
     item.summary ? translateShortText(apiKey, item.summary) : Promise.resolve(item.summary),
-    item.content_markdown ? translateLongMarkdown(apiKey, item.content_markdown) : Promise.resolve(item.content_markdown),
+    sourceBody ? translateLongMarkdown(apiKey, sourceBody) : Promise.resolve(sourceBody),
   ]);
 
   return {
@@ -1643,8 +1689,15 @@ export async function syncNewsToDb(options = {}) {
       (existing.summary_en || '') !== (item.summary || '') ||
       (existing.content_en || '') !== (item.content || '') ||
       (existing.content_markdown_en || '') !== (item.content_markdown || '');
-    const needTranslate = enChanged || !existing?.title_zh || !existing?.content_markdown_zh;
-    const hasChineseBody = looksChinese(existing?.content_markdown_zh || '');
+    const englishBody = item.content_markdown || item.content || '';
+    const missingCoreZh =
+      !existing?.title_zh ||
+      !looksChinese(existing?.title_zh) ||
+      !existing?.summary_zh ||
+      !looksChinese(existing?.summary_zh) ||
+      !existing?.content_markdown_zh;
+    const needTranslate = enChanged || missingCoreZh;
+    const hasChineseBody = hasCompleteChineseBody(existing?.content_markdown_zh || existing?.content_zh || '', englishBody);
     const shouldTranslate = needTranslate || !hasChineseBody;
 
     const existingZh = {
@@ -1691,7 +1744,7 @@ export async function syncNewsToDb(options = {}) {
 
   const translateLimit = Number.isFinite(Number(options?.translateLimit))
     ? Math.max(0, Number(options.translateLimit))
-    : TRANSLATE_BATCH_LIMIT;
+    : pendingTranslateItems.length;
   for (const item of pendingTranslateItems.slice(0, translateLimit)) {
     const zh = await translateItem(apiKey, item);
     await db`

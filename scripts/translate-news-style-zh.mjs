@@ -4,6 +4,22 @@ const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const API_KEY = process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
 const API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
 const MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
+const NEWS_TRANSLATION_GUIDANCE = [
+  '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成中文论坛搬运帖风格。',
+  '',
+  '你的写作风格：',
+  '- 像资深 Dota2 观众在复述消息',
+  '- 轻松、自然、口语化',
+  '- 不要官方通稿腔，不要逐字直译',
+  '- 可以有一点互联网感，但不要乱玩梗',
+  '- 重点突出比赛结果、队伍状态、选手发言和观众最关心的信息',
+  '- 所有事实必须忠于原文，不能脑补',
+  '',
+  '每次我给你英文新闻时，请输出：',
+  '1. 一个适合中文社区传播的标题',
+  '2. 一段自然流畅的正文',
+  '3. 一句简短点评/总结',
+].join('\n');
 
 if (!DB_URL) {
   console.error('Missing DATABASE_URL/POSTGRES_URL');
@@ -103,6 +119,8 @@ function shortPrompt(text, tone) {
     ? '语气偏电竞八卦，轻松有梗但克制，不夸张不造谣。'
     : '语气偏新闻快讯，客观、准确、简洁。';
   return [
+    NEWS_TRANSLATION_GUIDANCE,
+    '',
     '将下列英文内容翻译为简体中文。',
     style,
     '要求：保留战队名、选手ID、赛事名等专有名词原文；不要添加原文没有的信息；只输出译文。',
@@ -115,6 +133,8 @@ function markdownPrompt(text, tone) {
     ? '整体语气偏电竞八卦，轻松有梗但克制，不夸张不造谣。'
     : '整体语气偏新闻报道，客观、准确、简洁。';
   return [
+    NEWS_TRANSLATION_GUIDANCE,
+    '',
     '将下列 Dota2 新闻正文翻译为简体中文。',
     style,
     '要求：保留 markdown 链接、图片、列表、标题等语法；保留专有名词原文；保持段落结构；不要额外解释。',
