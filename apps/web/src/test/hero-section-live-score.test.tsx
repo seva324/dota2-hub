@@ -26,8 +26,9 @@ describe('HeroSection live spotlight', () => {
               },
             ],
             teams: [
-              { team_id: '1', name: 'Xtreme Gaming', region: 'China' },
-              { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe' },
+              { team_id: '1', name: 'Xtreme Gaming', region: 'China', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png' },
+              { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/7119388.png' },
+              { team_id: '3', name: 'Heroic', region: 'South America', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/9303484.png' },
             ],
           }),
         } as Response);
@@ -43,7 +44,7 @@ describe('HeroSection live spotlight', () => {
               startedAt: '2026-03-08T15:00:00.000000Z',
               teams: [
                 { side: 'team1', name: 'Aurora', logo: 'https://hawk.live/storage/teams/6274.png' },
-                { side: 'team2', name: 'Heroic', logo: 'https://hawk.live/storage/teams/6398.png' },
+                { side: 'team2', name: 'Heroic', logo: 'https://hawk.live/storage/teams/wrong-heroic.png' },
               ],
               maps: [
                 { label: 'Map 1', score: '22 - 30', status: 'completed', result: 'team2', gameTime: 2100, team1Score: 22, team2Score: 30, team2NetWorthLead: 12400 },
@@ -63,7 +64,7 @@ describe('HeroSection live spotlight', () => {
                 startedAt: '2026-03-08T15:00:00.000000Z',
                 teams: [
                   { side: 'team1', name: 'Aurora', logo: 'https://hawk.live/storage/teams/6274.png' },
-                  { side: 'team2', name: 'Heroic', logo: 'https://hawk.live/storage/teams/6398.png' },
+                  { side: 'team2', name: 'Heroic', logo: 'https://hawk.live/storage/teams/wrong-heroic.png' },
                 ],
                 maps: [
                   { label: 'Map 1', score: '22 - 30', status: 'completed', result: 'team2', gameTime: 2100, team1Score: 22, team2Score: 30, team2NetWorthLead: 12400 },
@@ -123,6 +124,7 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Heroic')).toBeInTheDocument();
     expect(within(cards[1]).getByText('时长 28:58')).toBeInTheDocument();
+    expect(Array.from(cards[1].querySelectorAll('img')).map((node) => node.getAttribute('src'))).toContain('https://dota2-hub.vercel.app/images/mirror/teams/9303484.png');
 
     fireEvent.click(within(cards[1]).getByRole('button', { name: /map 1/i }));
     await waitFor(() => {
@@ -156,8 +158,8 @@ describe('HeroSection live spotlight', () => {
               },
             ],
             teams: [
-              { team_id: '1', name: 'Xtreme Gaming', region: 'China' },
-              { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe' },
+              { team_id: '1', name: 'Xtreme Gaming', region: 'China', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png' },
+              { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/7119388.png' },
             ],
           }),
         } as Response);
