@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="/home/seva324/dota2-hub"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 name=""
 action=""
 base="https://dota2-hub.vercel.app"
-timeout_ms="120000"
+timeout_ms="180000"
 notify="1"
 
 for arg in "$@"; do
@@ -21,7 +21,7 @@ for arg in "$@"; do
 done
 
 if [[ -z "$name" || -z "$action" ]]; then
-  echo "Usage: $0 --name=<job-name> --action=<cron-action> [--base=URL] [--timeout-ms=120000] [--notify=1]" >&2
+  echo "Usage: $0 --name=<job-name> --action=<cron-action> [--base=URL] [--timeout-ms=180000] [--notify=1]" >&2
   exit 1
 fi
 

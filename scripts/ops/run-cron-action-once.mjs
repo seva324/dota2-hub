@@ -101,7 +101,9 @@ async function main() {
       `状态: ${status}`,
       `时间: ${startedAt}`,
       `详情: ${result.ok ? summarizeResult(result.payload) : (result.errorMessage || summarizeResult(result.payload))}`,
-    ].join('\n')).catch(() => {});
+    ].join('\n')).catch((error) => {
+      console.error(`[run-cron-action-once] Telegram notify failed: ${error instanceof Error ? error.message : String(error)}`);
+    });
   }
 
   if (!result.ok) {
