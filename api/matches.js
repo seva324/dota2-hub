@@ -4,6 +4,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { handleMpRoute } from '../lib/server/mp-route-handler.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -22,14 +23,10 @@ function getDb() {
   return sql;
 }
 
-// Normalize logo URL
-function normalizeLogo(url) {
-  if (!url) return null;
-  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+function normalizeLogo(url, req) {
+  return getMirroredAssetUrl(url, req);
 }
 
-// Convert OpenDota series_type to human-readable format
-// OpenDota: 0=BO1, 1=BO3, 2=BO5, 3=BO2
 function convertSeriesType(seriesType) {
   if (seriesType === null || seriesType === undefined || seriesType === '') return 'BO3';
   const map = {
@@ -38,7 +35,6 @@ function convertSeriesType(seriesType) {
     2: 'BO5',
     3: 'BO2'
   };
-  // If already a string (e.g., 'BO3'), return as-is
   if (typeof seriesType === 'string') {
     const normalized = seriesType.toUpperCase();
     if (normalized.startsWith('BO')) return normalized;
@@ -67,7 +63,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get teams for lookup
     const teams = await db`SELECT * FROM teams`;
     const teamMap = new Map();
     for (const t of teams) {
@@ -126,7 +121,7 @@ export default async function handler(req, res) {
       );
     }
 
-    const formatted = matches.map(m => {
+    const formatted = matches.map((m) => {
       const radiantTeam = m.radiant_team_id ? teamMap.get(m.radiant_team_id) : null;
       const direTeam = m.dire_team_id ? teamMap.get(m.dire_team_id) : null;
 
@@ -137,8 +132,8 @@ export default async function handler(req, res) {
         dire_team_id: m.dire_team_id,
         radiant_team_name: radiantTeam?.name || null,
         dire_team_name: direTeam?.name || null,
-        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
-        dire_team_logo: normalizeLogo(direTeam?.logo_url),
+        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url, req),
+        dire_team_logo: normalizeLogo(direTeam?.logo_url, req),
         radiant_score: m.radiant_score,
         dire_score: m.dire_score,
         radiant_win: m.radiant_win ? 1 : 0,

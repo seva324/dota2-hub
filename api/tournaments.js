@@ -4,6 +4,7 @@
  */
 
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
@@ -29,9 +30,8 @@ function parsePositiveInt(value, fallback) {
 }
 
 // Normalize logo URL
-function normalizeLogo(url) {
-  if (!url) return null;
-  return url.replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+function normalizeLogo(url, req) {
+  return getMirroredAssetUrl(url, req);
 }
 
 // Convert OpenDota series_type to human-readable format
@@ -190,8 +190,8 @@ function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows) 
         dire_team_id: matchRow.dire_team_id ? String(matchRow.dire_team_id) : null,
         radiant_team_name: matchRadiantTeam?.name || radiantTeam?.name || null,
         dire_team_name: matchDireTeam?.name || direTeam?.name || null,
-        radiant_team_logo: normalizeLogo(matchRadiantTeam?.logo_url || radiantTeam?.logo_url),
-        dire_team_logo: normalizeLogo(matchDireTeam?.logo_url || direTeam?.logo_url),
+        radiant_team_logo: normalizeLogo(matchRadiantTeam?.logo_url || radiantTeam?.logo_url, req),
+        dire_team_logo: normalizeLogo(matchDireTeam?.logo_url || direTeam?.logo_url, req),
         radiant_score: matchRow.radiant_score,
         dire_score: matchRow.dire_score,
         radiant_win: matchRow.radiant_win ? 1 : 0,
@@ -208,8 +208,8 @@ function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows) 
       dire_team_id: seriesRow.dire_team_id ? String(seriesRow.dire_team_id) : null,
       radiant_team_name: radiantTeam?.name || null,
       dire_team_name: direTeam?.name || null,
-      radiant_team_logo: normalizeLogo(radiantTeam?.logo_url),
-      dire_team_logo: normalizeLogo(direTeam?.logo_url),
+      radiant_team_logo: normalizeLogo(radiantTeam?.logo_url, req),
+      dire_team_logo: normalizeLogo(direTeam?.logo_url, req),
       radiant_score: seriesRow.radiant_wins,
       dire_score: seriesRow.dire_wins,
       radiant_wins: seriesRow.radiant_wins,

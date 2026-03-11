@@ -3,6 +3,7 @@
  * Returns team summary, next match, and paginated recent matches for a team.
  */
 import { neon } from '@neondatabase/serverless';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import {
   enrichRecentMatchesWithTeamHeroes,
   getTeamFlyoutCachePayload,
@@ -31,9 +32,8 @@ function normalize(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function normalizeLogo(url) {
-  if (!url) return null;
-  return String(url).replace('steamcdn-a.akamaihd.net', 'cdn.steamstatic.com');
+function normalizeLogo(url, req) {
+  return getMirroredAssetUrl(url, req);
 }
 
 function parsePositiveInt(value, fallback) {
@@ -68,7 +68,7 @@ function formatTeam(team) {
     name: team.name || null,
     name_cn: team.name_cn || null,
     tag: team.tag || null,
-    logo_url: normalizeLogo(team.logo_url),
+    logo_url: normalizeLogo(team.logo_url, req),
     region: team.region || null,
     is_cn_team: team.is_cn_team ?? null,
   };
@@ -88,8 +88,8 @@ function formatMatchRow(match, teamMap) {
     dire_team_id: direId,
     radiant_team_name: radiantTeam?.name || match.radiant_team_name || null,
     dire_team_name: direTeam?.name || match.dire_team_name || null,
-    radiant_team_logo: normalizeLogo(radiantTeam?.logo_url || match.radiant_team_logo),
-    dire_team_logo: normalizeLogo(direTeam?.logo_url || match.dire_team_logo),
+    radiant_team_logo: normalizeLogo(radiantTeam?.logo_url || match.radiant_team_logo, req),
+    dire_team_logo: normalizeLogo(direTeam?.logo_url || match.dire_team_logo, req),
     radiant_score: match.radiant_score ?? null,
     dire_score: match.dire_score ?? null,
     radiant_win: match.radiant_win ? 1 : 0,
