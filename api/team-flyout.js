@@ -60,7 +60,7 @@ function convertSeriesType(seriesType) {
   return map[seriesType] || 'BO3';
 }
 
-function formatTeam(team) {
+function formatTeam(team, req) {
   if (!team) return null;
   return {
     team_id: team.team_id ? String(team.team_id) : null,
@@ -74,7 +74,7 @@ function formatTeam(team) {
   };
 }
 
-function formatMatchRow(match, teamMap) {
+function formatMatchRow(match, teamMap, req) {
   const radiantId = match.radiant_team_id ? String(match.radiant_team_id) : null;
   const direId = match.dire_team_id ? String(match.dire_team_id) : null;
   const radiantTeam = radiantId ? teamMap.get(radiantId) : null;
@@ -213,13 +213,13 @@ export default async function handler(req, res) {
     const decided = wins + losses;
     const total = Number(recentCountRows?.[0]?.count || 0);
     const recentMatches = enrichedRecentRows.map((row) => ({
-      ...formatMatchRow(row, teamMap),
+      ...formatMatchRow(row, teamMap, req),
       team_hero_ids: Array.isArray(row.team_hero_ids) ? row.team_hero_ids : [],
     }));
-    const nextMatch = nextMatchRows[0] ? formatMatchRow(nextMatchRows[0], teamMap) : null;
+    const nextMatch = nextMatchRows[0] ? formatMatchRow(nextMatchRows[0], teamMap, req) : null;
 
     return res.status(200).json({
-      team: formatTeam(selectedTeam),
+      team: formatTeam(selectedTeam, req),
       recentMatches,
       nextMatch,
       activeSquad: Array.isArray(teamCachePayload?.active_squad) ? teamCachePayload.active_squad : [],

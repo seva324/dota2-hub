@@ -174,7 +174,7 @@ async function loadMatchesForSeries(db, seriesId) {
   `;
 }
 
-function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows) {
+function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, req) {
   return seriesRows.map((seriesRow) => {
     const radiantTeam = seriesRow.radiant_team_id ? teamMap.get(seriesRow.radiant_team_id) : null;
     const direTeam = seriesRow.dire_team_id ? teamMap.get(seriesRow.dire_team_id) : null;
@@ -264,7 +264,7 @@ export default async function handler(req, res) {
     );
 
     const stageWindows = normalizeStageWindows(tournament.stage_windows);
-    const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows);
+    const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, req);
 
     return res.status(200).json({
       tournament: formatTournament(tournament),
