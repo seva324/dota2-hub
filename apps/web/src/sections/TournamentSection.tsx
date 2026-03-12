@@ -870,7 +870,7 @@ export function TournamentSection({
     }));
 
     try {
-      const response = await fetch(`/api/tournament-featured?tournamentId=${encodeURIComponent(tournament.id)}`);
+      const response = await fetch(`/api/tournaments?tournamentId=${encodeURIComponent(tournament.id)}&featured=1`);
       const payload = await response.json();
 
       if (!response.ok) {
@@ -925,7 +925,7 @@ export function TournamentSection({
     }));
 
     try {
-      const response = await fetch(`/api/tournament-featured?tournamentId=${encodeURIComponent(tournament.id)}`);
+      const response = await fetch(`/api/tournaments?tournamentId=${encodeURIComponent(tournament.id)}&featured=1`);
       const payload = await response.json();
 
       if (!response.ok) {
@@ -1048,7 +1048,7 @@ export function TournamentSection({
   useEffect(() => {
     if (!isInView || !selectedTournament || !isFeaturedTournament(selectedTournament)) return;
     const currentFeaturedState = featuredStateByTournament[selectedTournament.id];
-    if (currentFeaturedState?.data || currentFeaturedState?.loading) return;
+    if (currentFeaturedState?.data || currentFeaturedState?.loading || currentFeaturedState?.error) return;
     void fetchFeaturedTournament(selectedTournament);
   }, [fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
 

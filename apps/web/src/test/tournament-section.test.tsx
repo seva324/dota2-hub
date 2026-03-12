@@ -147,7 +147,7 @@ describe('TournamentSection', () => {
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
         });
       }
-      if (url === '/api/tournament-featured?tournamentId=pgl-wallachia-s7') {
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1') {
         return createJsonResponse({
           tournamentId: 'pgl-wallachia-s7',
           title: 'Main Event',
@@ -284,7 +284,7 @@ describe('TournamentSection', () => {
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
         });
       }
-      if (url === '/api/tournament-featured?tournamentId=pgl-wallachia-s7') {
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1') {
         return createJsonResponse({
           tournamentId: 'pgl-wallachia-s7',
           title: 'Main Event',
@@ -388,7 +388,7 @@ describe('TournamentSection', () => {
     expect(await screen.findByText('Bracket rounds and pairings')).toBeInTheDocument();
     expect(screen.getByText('Upcoming and finished matches')).toBeInTheDocument();
     expect(screen.getAllByText('BetBoom Team').length).toBeGreaterThan(0);
-    expect(fetchMock).toHaveBeenCalledWith('/api/tournament-featured?tournamentId=pgl-wallachia-s7');
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
   });
 
   it('does not render tournaments whose tier is empty', async () => {
