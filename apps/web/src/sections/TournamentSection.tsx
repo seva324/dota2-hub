@@ -432,6 +432,7 @@ function FeaturedTeamChip({
   aliasToTag,
   teams,
   emphasize = false,
+  preferFullName = false,
 }: {
   teamId?: string | null;
   name: string;
@@ -440,6 +441,7 @@ function FeaturedTeamChip({
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
   emphasize?: boolean;
+  preferFullName?: boolean;
 }) {
   const resolvedLogo = resolveTeamLogo({ teamId, name }, teams, logoUrl);
   const highlighted = isCnTeam || isChineseTeamFromTeams({ teamId, name }, teams);
@@ -458,7 +460,7 @@ function FeaturedTeamChip({
         </div>
       )}
       <span className={`min-w-0 truncate text-sm ${highlighted ? 'font-semibold text-red-100' : emphasize ? 'font-semibold text-white' : 'text-slate-300'}`}>
-        {renderTeamName(name, aliasToTag)}
+        {preferFullName ? name : renderTeamName(name, aliasToTag)}
       </span>
       {highlighted ? (
         <span className="rounded-full border border-red-400/30 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-200">
@@ -510,6 +512,159 @@ function FeaturedMatchSurface({
   return <div className={className}>{children}</div>;
 }
 
+function getFeaturedAdvancementTone(advancement?: string | null) {
+  if (advancement === 'playoff') {
+    return {
+      row: 'bg-emerald-500/[0.08]',
+      sticky: 'bg-slate-950/96',
+      badge: 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100',
+    };
+  }
+
+  return {
+    row: 'bg-rose-500/[0.07]',
+    sticky: 'bg-slate-950/96',
+    badge: 'border-rose-400/20 bg-rose-500/10 text-rose-100',
+  };
+}
+
+function getFeaturedRoundTone(round: FeaturedEventRoundCell) {
+  if (round.pending) {
+    return 'border-white/10 bg-slate-950/50 text-slate-500';
+  }
+
+  if (round.matchId) {
+    return 'border-emerald-400/20 bg-emerald-500/[0.08] text-white';
+  }
+
+  return 'border-white/10 bg-slate-900/70 text-white';
+}
+
+function FeaturedMobileStageTable({
+  payload,
+  onOpenMatch,
+  aliasToTag,
+  teams,
+}: {
+  payload: FeaturedTournamentPayload;
+  onOpenMatch: (matchId: string) => void;
+  aliasToTag: Map<string, string>;
+  teams: NonNullable<TournamentSectionProps['teams']>;
+}) {
+  const rankWidth = 56;
+  const teamWidth = 212;
+  const recordWidth = 92;
+  const roundWidth = 92;
+  const leftStickyWidth = rankWidth + teamWidth + recordWidth;
+  const template = `${rankWidth}px ${teamWidth}px ${recordWidth}px repeat(${payload.groupStage.rounds.length}, ${roundWidth}px)`;
+  const minWidth = leftStickyWidth + payload.groupStage.rounds.length * roundWidth;
+
+  return (
+    <div className="md:hidden">
+      <div className="mb-2 flex items-start justify-between gap-3 px-3 pt-3">
+        <div>
+          <h5 className="text-sm font-semibold uppercase tracking-[0.12em] text-white">{payload.groupStage.title}</h5>
+          <p className="mt-1 text-[11px] text-slate-400">Swipe horizontally to view all round results.</p>
+        </div>
+        <div className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-emerald-100">
+          Top 8
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-30 w-7 bg-gradient-to-l from-slate-950 via-slate-950/85 to-transparent" />
+        <div className="overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-max" style={{ minWidth: `${minWidth}px` }}>
+            <div
+              className="grid border-y border-white/10 bg-slate-950/80 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+              style={{ gridTemplateColumns: template }}
+            >
+              <div className="sticky left-0 z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2">Rank</div>
+              <div className="sticky z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2" style={{ left: `${rankWidth}px` }}>Team</div>
+              <div className="sticky z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2 text-center" style={{ left: `${rankWidth + teamWidth}px` }}>Record</div>
+              {payload.groupStage.rounds.map((round) => (
+                <div key={round} className="border-r border-white/10 px-2 py-2 text-center last:border-r-0">
+                  {round}
+                </div>
+              ))}
+            </div>
+
+            {payload.groupStage.standings.map((row) => {
+              const tone = getFeaturedAdvancementTone(row.advancement);
+              return (
+                <div
+                  key={`mobile-stage-${row.rank}-${row.teamName}`}
+                  className="grid border-b border-white/10 text-sm"
+                  style={{ gridTemplateColumns: template }}
+                >
+                  <div className={`sticky left-0 z-10 flex items-center border-r border-white/10 px-3 py-3 ${tone.sticky}`}>
+                    <span className="text-base font-semibold text-white">{row.rank}</span>
+                  </div>
+
+                  <div className={`sticky z-10 flex min-w-0 items-center border-r border-white/10 px-3 py-3 ${tone.sticky} ${row.isCnTeam ? 'shadow-[inset_2px_0_0_rgba(248,113,113,0.45)]' : ''}`} style={{ left: `${rankWidth}px` }}>
+                    <div className="min-w-0">
+                      <FeaturedTeamChip
+                        teamId={row.teamId}
+                        name={row.teamName}
+                        logoUrl={row.logoUrl}
+                        isCnTeam={row.isCnTeam}
+                        aliasToTag={aliasToTag}
+                        teams={teams}
+                        emphasize
+                        preferFullName
+                      />
+                      {row.country ? <div className="pl-8 text-[11px] text-slate-500">{row.country}</div> : null}
+                    </div>
+                  </div>
+
+                  <div className={`sticky z-10 flex flex-col items-center justify-center border-r border-white/10 px-2 py-3 ${tone.sticky}`} style={{ left: `${rankWidth + teamWidth}px` }}>
+                    <span className="text-sm font-semibold text-white">{row.record || 'TBD'}</span>
+                    <span className={`mt-1 rounded-md border px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide ${tone.badge}`}>
+                      {row.advancement === 'playoff' ? 'Advance' : 'Out'}
+                    </span>
+                  </div>
+
+                  {row.rounds.map((round) => (
+                    <FeaturedMatchSurface
+                      key={`mobile-${row.teamName}-${round.roundLabel}`}
+                      href={round.href}
+                      matchId={round.matchId}
+                      onOpenMatch={onOpenMatch}
+                      className={`flex h-full min-h-[72px] flex-col items-center justify-center gap-1 border-r px-2 py-2 text-center last:border-r-0 ${getFeaturedRoundTone(round)}`}
+                    >
+                      {round.pending ? (
+                        <span className="text-[11px] font-medium text-slate-500">TBD</span>
+                      ) : (
+                        <>
+                          {resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl) ? (
+                            <img
+                              src={resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl)}
+                              alt={round.opponentName || 'Opponent'}
+                              className={`h-7 w-7 rounded-full object-contain p-0.5 ${round.opponentIsCnTeam ? 'border border-red-400/40 bg-red-500/10' : 'border border-white/10 bg-slate-950/80'}`}
+                            />
+                          ) : (
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-slate-950/80 text-[10px] font-semibold text-slate-300">
+                              {getTeamAbbrev(round.opponentName, aliasToTag)}
+                            </div>
+                          )}
+                          <span className={`max-w-[72px] truncate text-[11px] font-semibold ${round.opponentIsCnTeam ? 'text-red-100' : 'text-slate-100'}`}>
+                            {getTeamAbbrev(round.opponentName, aliasToTag)}
+                          </span>
+                          <span className="text-xs font-semibold text-white">{round.score || 'TBD'}</span>
+                        </>
+                      )}
+                    </FeaturedMatchSurface>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FeaturedTournamentPanel({
   payload,
   loading,
@@ -558,12 +713,12 @@ function FeaturedTournamentPanel({
   if (!payload) return null;
 
   return (
-    <div className="mb-6 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-950/90 p-4 sm:p-5">
-      <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-5 rounded-xl border border-white/10 bg-slate-950/88 p-3 shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:p-4 md:mb-6 md:rounded-2xl md:border-amber-500/20 md:bg-gradient-to-br md:from-amber-500/10 md:via-slate-900/80 md:to-slate-950/90 md:p-5 md:shadow-none">
+      <div className="mb-4 flex flex-col gap-2 border-b border-white/10 pb-3 md:mb-5 md:flex-row md:items-end md:justify-between md:gap-3 md:pb-4">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300/80">Main Event</div>
-          <h4 className="mt-1 text-lg font-semibold text-white">主赛事定制视图</h4>
-          <p className="mt-1 text-sm text-slate-400">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/80 md:text-xs md:tracking-[0.2em]">Main Event</div>
+          <h4 className="mt-1 text-base font-semibold text-white md:text-lg">主赛事定制视图</h4>
+          <p className="mt-1 text-xs text-slate-400 md:text-sm">
             数据源 {payload.sourceLabel} · 更新于 {formatFeaturedFetchTime(payload.fetchedAt)}
           </p>
         </div>
@@ -571,14 +726,21 @@ function FeaturedTournamentPanel({
           href={payload.sourceUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-200 transition-colors hover:border-amber-400/40 hover:text-white"
+          className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 transition-colors hover:border-amber-400/40 hover:text-white md:rounded-xl md:px-4 md:text-sm"
         >
           查看来源页面
         </a>
       </div>
 
-      <div className="space-y-5">
-        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+      <div className="space-y-4 md:space-y-5">
+        <section className="rounded-xl border border-white/10 bg-slate-950/70 md:rounded-2xl md:bg-slate-950/60 md:p-4">
+          <FeaturedMobileStageTable
+            payload={payload}
+            onOpenMatch={onOpenMatch}
+            aliasToTag={aliasToTag}
+            teams={teams}
+          />
+          <div className="hidden md:block">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h5 className="text-base font-semibold text-white">{payload.groupStage.title}</h5>
@@ -701,33 +863,34 @@ function FeaturedTournamentPanel({
               </div>
             </div>
           </div>
+          </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-          <div className="mb-4">
-            <h5 className="text-base font-semibold text-white">{payload.playoffs.title}</h5>
+        <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
+          <div className="mb-3 md:mb-4">
+            <h5 className="text-sm font-semibold text-white md:text-base">{payload.playoffs.title}</h5>
             <p className="text-xs text-slate-400">淘汰赛对阵信息</p>
-            <p className="text-xs text-slate-400">Bracket rounds and pairings</p>
+            <p className="text-[11px] text-slate-400 md:text-xs">Bracket rounds and pairings</p>
           </div>
-          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid gap-2.5 md:gap-3 lg:grid-cols-2 2xl:grid-cols-4">
             {payload.playoffs.rounds.map((round) => (
-              <div key={round.roundName} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
-                <div className="mb-3 text-sm font-semibold text-white">{round.roundName}</div>
-                <div className="space-y-3">
+              <div key={round.roundName} className="rounded-lg border border-white/10 bg-slate-900/60 p-2.5 md:rounded-2xl md:bg-slate-900/70 md:p-3">
+                <div className="mb-2 text-xs font-semibold text-white md:mb-3 md:text-sm">{round.roundName}</div>
+                <div className="space-y-2 md:space-y-3">
                   {round.matches.map((match) => (
                     <FeaturedMatchSurface
                       key={`${round.roundName}-${match.href}-${match.startTime}`}
                       href={match.href}
                       matchId={match.matchId}
                       onOpenMatch={onOpenMatch}
-                      className={`block rounded-xl border p-3 transition-colors ${
+                      className={`block rounded-lg border p-2.5 text-left transition-colors md:rounded-xl md:p-3 ${
                         match.matchId
                           ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
                           : 'border-white/10 bg-slate-950/70 hover:border-amber-400/30'
                       }`}
                     >
-                      <div className="mb-2 text-xs text-slate-400">{formatEventDateTime(match.startTime)}</div>
-                      <div className="space-y-2">
+                      <div className="mb-1.5 text-[11px] text-slate-400 md:mb-2 md:text-xs">{formatEventDateTime(match.startTime)}</div>
+                      <div className="space-y-1.5 md:space-y-2">
                         {match.teams.map((team, index) => (
                           <div key={`${match.href}-${team.name}-${index}`} className="flex items-center justify-between gap-2">
                             <FeaturedTeamChip
@@ -737,6 +900,7 @@ function FeaturedTournamentPanel({
                               isCnTeam={team.isCnTeam}
                               aliasToTag={aliasToTag}
                               teams={teams}
+                              preferFullName
                             />
                             <span className="text-sm font-semibold text-white">{team.score ?? '0'}</span>
                           </div>
@@ -750,35 +914,35 @@ function FeaturedTournamentPanel({
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-          <div className="mb-4">
-            <h5 className="text-base font-semibold text-white">{payload.matches.title}</h5>
+        <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
+          <div className="mb-3 md:mb-4">
+            <h5 className="text-sm font-semibold text-white md:text-base">{payload.matches.title}</h5>
             <p className="text-xs text-slate-400">Upcoming 和 finished 比赛</p>
-            <p className="text-xs text-slate-400">Upcoming and finished matches</p>
+            <p className="text-[11px] text-slate-400 md:text-xs">Upcoming and finished matches</p>
           </div>
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-3 md:gap-4 xl:grid-cols-2">
             {[
               { title: 'Upcoming', items: payload.matches.upcoming, accent: 'text-cyan-200 bg-cyan-500/10 border-cyan-400/20' },
               { title: 'Finished', items: payload.matches.finished, accent: 'text-rose-200 bg-rose-500/10 border-rose-400/20' },
             ].map((section) => (
-              <div key={section.title} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
-                <div className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs font-medium text-white">
+              <div key={section.title} className="rounded-lg border border-white/10 bg-slate-900/60 p-2.5 md:rounded-2xl md:bg-slate-900/70 md:p-3">
+                <div className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium text-white md:mb-3 md:px-3 md:text-xs">
                   <span className={`rounded-full border px-2 py-0.5 ${section.accent}`}>{section.title}</span>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {section.items.map((match) => (
                     <FeaturedMatchSurface
                       key={`${section.title}-${match.href}-${match.startTime}-${match.score}`}
                       href={match.href}
                       matchId={match.matchId}
                       onOpenMatch={onOpenMatch}
-                      className={`block rounded-xl border p-3 transition-colors ${
+                      className={`block rounded-lg border p-2.5 text-left transition-colors md:rounded-xl md:p-3 ${
                         match.matchId
                           ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
                           : 'border-white/10 bg-slate-950/70 hover:border-amber-400/30'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center justify-between gap-2 md:gap-3">
                         <FeaturedTeamChip
                           teamId={match.teams[0]?.teamId}
                           name={match.teams[0]?.name || 'TBD'}
@@ -786,8 +950,9 @@ function FeaturedTournamentPanel({
                           isCnTeam={match.teams[0]?.isCnTeam}
                           aliasToTag={aliasToTag}
                           teams={teams}
+                          preferFullName
                         />
-                        <div className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">
+                        <div className="rounded-md border border-white/10 bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white md:rounded-lg md:px-3 md:py-1.5 md:text-xs">
                           {match.score || formatEventDateTime(match.startTime, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         <FeaturedTeamChip
@@ -797,6 +962,7 @@ function FeaturedTournamentPanel({
                           isCnTeam={match.teams[1]?.isCnTeam}
                           aliasToTag={aliasToTag}
                           teams={teams}
+                          preferFullName
                         />
                       </div>
                     </FeaturedMatchSurface>
