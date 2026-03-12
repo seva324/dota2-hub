@@ -54,6 +54,7 @@ function getHeroImgUrl(id: number): string {
 
 interface Tournament {
   id: string;
+  league_id?: string | number | null;
   name: string;
   name_cn?: string;
   tier?: string | null;
@@ -117,7 +118,82 @@ interface TournamentSeriesState {
   error: string;
 }
 
+interface FeaturedEventRoundCell {
+  roundLabel: string;
+  pending: boolean;
+  href?: string | null;
+  opponentName?: string | null;
+  opponentLogoUrl?: string | null;
+  score?: string | null;
+}
+
+interface FeaturedEventStandingRow {
+  rank: number;
+  teamName: string;
+  country?: string | null;
+  record?: string | null;
+  logoUrl?: string | null;
+  teamHref?: string | null;
+  advancement?: 'playoff' | 'eliminated' | string | null;
+  rounds: FeaturedEventRoundCell[];
+}
+
+interface FeaturedEventPlayoffMatch {
+  href?: string | null;
+  startTime?: string | null;
+  teams: Array<{
+    name: string;
+    logoUrl?: string | null;
+    score?: string | null;
+  }>;
+}
+
+interface FeaturedEventPlayoffRound {
+  roundName: string;
+  matches: FeaturedEventPlayoffMatch[];
+}
+
+interface FeaturedEventMatchRow {
+  href?: string | null;
+  startTime?: string | null;
+  score?: string | null;
+  teams: Array<{
+    name: string;
+    shortName?: string | null;
+    logoUrl?: string | null;
+  }>;
+}
+
+interface FeaturedTournamentPayload {
+  tournamentId: string;
+  title: string;
+  sourceLabel: string;
+  sourceUrl: string;
+  fetchedAt: string;
+  groupStage: {
+    title: string;
+    rounds: string[];
+    standings: FeaturedEventStandingRow[];
+  };
+  playoffs: {
+    title: string;
+    rounds: FeaturedEventPlayoffRound[];
+  };
+  matches: {
+    title: string;
+    upcoming: FeaturedEventMatchRow[];
+    finished: FeaturedEventMatchRow[];
+  };
+}
+
+interface FeaturedTournamentState {
+  data: FeaturedTournamentPayload | null;
+  loading: boolean;
+  error: string;
+}
+
 const DEFAULT_SERIES_PAGE_SIZE = 10;
+const FEATURED_TOURNAMENT_KEYS = new Set(['pgl-wallachia-s7', '19435', 'pgl wallachia season 7']);
 
 // Team data type for team abbreviations
 const FALLBACK_TEAM_ABBR: Record<string, string> = {
@@ -296,6 +372,322 @@ function formatPrizeUsd(value?: number, fallback?: string): string {
   return fallback || 'TBD';
 }
 
+function parseEventDateTime(value?: string | null): Date | null {
+  if (!value) return null;
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatEventDateTime(value?: string | null, options?: Intl.DateTimeFormatOptions): string {
+  const date = parseEventDateTime(value);
+  if (!date) return 'TBD';
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...options,
+  });
+}
+
+function formatFeaturedFetchTime(value?: string | null): string {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return 'TBD';
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function isFeaturedTournament(tournament: Tournament | null): boolean {
+  if (!tournament) return false;
+  const keys = [tournament.id, tournament.league_id, tournament.name]
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter(Boolean);
+  return keys.some((key) => FEATURED_TOURNAMENT_KEYS.has(key));
+}
+
+function FeaturedTeamChip({
+  name,
+  logoUrl,
+  aliasToTag,
+  emphasize = false,
+}: {
+  name: string;
+  logoUrl?: string | null;
+  aliasToTag: Map<string, string>;
+  emphasize?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={name}
+          className="h-6 w-6 rounded-full border border-white/10 bg-slate-900 object-contain p-0.5"
+        />
+      ) : (
+        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-slate-800 text-[10px] font-semibold text-slate-300">
+          {getTeamAbbrev(name, aliasToTag)}
+        </div>
+      )}
+      <span className={`min-w-0 truncate text-sm ${emphasize ? 'font-semibold text-white' : 'text-slate-300'}`}>
+        {renderTeamName(name, aliasToTag)}
+      </span>
+    </div>
+  );
+}
+
+function FeaturedTournamentPanel({
+  payload,
+  loading,
+  error,
+  onRetry,
+  aliasToTag,
+}: {
+  payload: FeaturedTournamentPayload | null;
+  loading: boolean;
+  error: string;
+  onRetry: () => void;
+  aliasToTag: Map<string, string>;
+}) {
+  if (loading && !payload) {
+    return (
+      <div className="mb-6 rounded-2xl border border-white/10 bg-slate-950/50 p-4 sm:p-5">
+        <div className="mb-4 h-6 w-40 animate-pulse rounded bg-slate-800/80" />
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="h-64 animate-pulse rounded-2xl bg-slate-800/60" />
+          <div className="h-64 animate-pulse rounded-2xl bg-slate-800/60" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !payload) {
+    return (
+      <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-950/20 p-4 sm:p-5">
+        <div className="mb-2 text-sm font-semibold text-red-300">主赛事数据加载失败</div>
+        <p className="mb-4 text-sm text-red-200/80">{error}</p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="inline-flex items-center rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm text-red-100 transition-colors hover:bg-red-500/20"
+        >
+          重试
+        </button>
+      </div>
+    );
+  }
+
+  if (!payload) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-slate-900/80 to-slate-950/90 p-4 sm:p-5">
+      <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300/80">Main Event</div>
+          <h4 className="mt-1 text-lg font-semibold text-white">主赛事定制视图</h4>
+          <p className="mt-1 text-sm text-slate-400">
+            数据源 {payload.sourceLabel} · 更新于 {formatFeaturedFetchTime(payload.fetchedAt)}
+          </p>
+        </div>
+        <a
+          href={payload.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-200 transition-colors hover:border-amber-400/40 hover:text-white"
+        >
+          查看来源页面
+        </a>
+      </div>
+
+      <div className="space-y-5">
+        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h5 className="text-base font-semibold text-white">{payload.groupStage.title}</h5>
+              <p className="text-xs text-slate-400">小组排名和轮次对阵</p>
+            </div>
+            <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+              Top 8 advance
+            </div>
+          </div>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+              <div className="grid grid-cols-[56px_minmax(0,1fr)_88px_86px] border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400">
+                <span>Rank</span>
+                <span>Team</span>
+                <span className="text-center">Record</span>
+                <span className="text-right">Status</span>
+              </div>
+              <div className="divide-y divide-white/10">
+                {payload.groupStage.standings.map((row) => (
+                  <div
+                    key={`${row.rank}-${row.teamName}`}
+                    className="grid grid-cols-[56px_minmax(0,1fr)_88px_86px] items-center gap-2 px-3 py-2.5"
+                  >
+                    <div className="text-sm font-semibold text-white">#{row.rank}</div>
+                    <div className="min-w-0">
+                      <FeaturedTeamChip name={row.teamName} logoUrl={row.logoUrl} aliasToTag={aliasToTag} emphasize />
+                      {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
+                    </div>
+                    <div className="text-center text-sm font-medium text-slate-200">{row.record || 'TBD'}</div>
+                    <div className="text-right">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          row.advancement === 'playoff'
+                            ? 'bg-emerald-500/15 text-emerald-200'
+                            : 'bg-red-500/15 text-red-200'
+                        }`}
+                      >
+                        {row.advancement === 'playoff' ? 'Playoffs' : 'Out'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+              <div className="overflow-x-auto">
+                <div className="min-w-[720px]">
+                  <div
+                    className="grid border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400"
+                    style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
+                  >
+                    <span>Team</span>
+                    {payload.groupStage.rounds.map((round) => (
+                      <span key={round} className="text-center">{round}</span>
+                    ))}
+                  </div>
+                  <div className="divide-y divide-white/10">
+                    {payload.groupStage.standings.map((row) => (
+                      <div
+                        key={`rounds-${row.rank}-${row.teamName}`}
+                        className="grid items-center gap-2 px-3 py-2.5"
+                        style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
+                      >
+                        <FeaturedTeamChip name={row.teamName} logoUrl={row.logoUrl} aliasToTag={aliasToTag} />
+                        {row.rounds.map((round) => (
+                          <a
+                            key={`${row.teamName}-${round.roundLabel}`}
+                            href={round.href || undefined}
+                            target={round.href ? '_blank' : undefined}
+                            rel={round.href ? 'noreferrer' : undefined}
+                            className={`rounded-xl border px-2 py-2 text-center transition-colors ${
+                              round.pending
+                                ? 'cursor-default border-dashed border-white/10 bg-slate-950/40 text-slate-500'
+                                : 'border-white/10 bg-slate-950/60 hover:border-amber-400/30 hover:bg-slate-900'
+                            }`}
+                          >
+                            {round.pending ? (
+                              <div className="text-xs text-slate-500">TBD</div>
+                            ) : (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-center gap-1">
+                                  {round.opponentLogoUrl ? (
+                                    <img src={round.opponentLogoUrl} alt={round.opponentName || 'Opponent'} className="h-5 w-5 rounded-full object-contain" />
+                                  ) : null}
+                                  <span className="max-w-[54px] truncate text-xs text-slate-200">
+                                    {getTeamAbbrev(round.opponentName, aliasToTag)}
+                                  </span>
+                                </div>
+                                <div className="text-xs font-semibold text-white">{round.score || 'TBD'}</div>
+                              </div>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+          <div className="mb-4">
+            <h5 className="text-base font-semibold text-white">{payload.playoffs.title}</h5>
+            <p className="text-xs text-slate-400">淘汰赛对阵信息</p>
+            <p className="text-xs text-slate-400">Bracket rounds and pairings</p>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
+            {payload.playoffs.rounds.map((round) => (
+              <div key={round.roundName} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                <div className="mb-3 text-sm font-semibold text-white">{round.roundName}</div>
+                <div className="space-y-3">
+                  {round.matches.map((match) => (
+                    <a
+                      key={`${round.roundName}-${match.href}-${match.startTime}`}
+                      href={match.href || undefined}
+                      target={match.href ? '_blank' : undefined}
+                      rel={match.href ? 'noreferrer' : undefined}
+                      className="block rounded-xl border border-white/10 bg-slate-950/70 p-3 transition-colors hover:border-amber-400/30"
+                    >
+                      <div className="mb-2 text-xs text-slate-400">{formatEventDateTime(match.startTime)}</div>
+                      <div className="space-y-2">
+                        {match.teams.map((team, index) => (
+                          <div key={`${match.href}-${team.name}-${index}`} className="flex items-center justify-between gap-2">
+                            <FeaturedTeamChip name={team.name} logoUrl={team.logoUrl} aliasToTag={aliasToTag} />
+                            <span className="text-sm font-semibold text-white">{team.score ?? '0'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+          <div className="mb-4">
+            <h5 className="text-base font-semibold text-white">{payload.matches.title}</h5>
+            <p className="text-xs text-slate-400">Upcoming 和 finished 比赛</p>
+            <p className="text-xs text-slate-400">Upcoming and finished matches</p>
+          </div>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {[
+              { title: 'Upcoming', items: payload.matches.upcoming, accent: 'text-cyan-200 bg-cyan-500/10 border-cyan-400/20' },
+              { title: 'Finished', items: payload.matches.finished, accent: 'text-rose-200 bg-rose-500/10 border-rose-400/20' },
+            ].map((section) => (
+              <div key={section.title} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                <div className="mb-3 inline-flex rounded-full border px-3 py-1 text-xs font-medium text-white">
+                  <span className={`rounded-full border px-2 py-0.5 ${section.accent}`}>{section.title}</span>
+                </div>
+                <div className="space-y-3">
+                  {section.items.map((match) => (
+                    <a
+                      key={`${section.title}-${match.href}-${match.startTime}-${match.score}`}
+                      href={match.href || undefined}
+                      target={match.href ? '_blank' : undefined}
+                      rel={match.href ? 'noreferrer' : undefined}
+                      className="block rounded-xl border border-white/10 bg-slate-950/70 p-3 transition-colors hover:border-amber-400/30"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <FeaturedTeamChip name={match.teams[0]?.name || 'TBD'} logoUrl={match.teams[0]?.logoUrl} aliasToTag={aliasToTag} />
+                        <div className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">
+                          {match.score || formatEventDateTime(match.startTime, { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <FeaturedTeamChip name={match.teams[1]?.name || 'TBD'} logoUrl={match.teams[1]?.logoUrl} aliasToTag={aliasToTag} />
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 const STAGE_KIND_META = {
   all: { label: '全部', labelEn: 'All' },
   group: { label: '小组赛', labelEn: 'Group' },
@@ -360,6 +752,7 @@ export function TournamentSection({
   const [playerFlyoutOpen, setPlayerFlyoutOpen] = useState(false);
   const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
   const [seriesStateByTournament, setSeriesStateByTournament] = useState<Record<string, TournamentSeriesState>>({});
+  const [featuredStateByTournament, setFeaturedStateByTournament] = useState<Record<string, FeaturedTournamentState>>({});
   const [lazyTournaments, setLazyTournaments] = useState<Tournament[]>([]);
   const [lazyTeams, setLazyTeams] = useState<NonNullable<TournamentSectionProps['teams']>>([]);
   const [hasBootstrapped, setHasBootstrapped] = useState(false);
@@ -464,6 +857,113 @@ export function TournamentSection({
     };
   }, [hasBootstrapped, isInView, teams.length, tournaments.length]);
 
+  /*
+  const fetchFeaturedTournament = useCallback(async (tournament: Tournament) => {
+    const tournamentKey = tournament.id;
+    setFeaturedStateByTournament((prev) => ({
+      ...prev,
+      [tournamentKey]: {
+        data: prev[tournamentKey]?.data || null,
+        loading: true,
+        error: '',
+      },
+    }));
+
+    try {
+      const response = await fetch(`/api/tournament-featured?tournamentId=${encodeURIComponent(tournament.id)}`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setFeaturedStateByTournament((prev) => ({
+            ...prev,
+            [tournamentKey]: {
+              data: null,
+              loading: false,
+              error: '',
+            },
+          }));
+          return;
+        }
+        //
+        throw new Error((payload as { error?: string })?.error || '涓昏禌浜嬫暟鎹姞杞藉け璐?);
+        //
+        throw new Error((payload as { error?: string })?.error || 'Failed to load main event data');
+      }
+
+      setFeaturedStateByTournament((prev) => ({
+        ...prev,
+        [tournamentKey]: {
+          data: payload as FeaturedTournamentPayload,
+          loading: false,
+          error: '',
+        },
+      }));
+    } catch (error) {
+      setFeaturedStateByTournament((prev) => ({
+        ...prev,
+        [tournamentKey]: {
+          data: prev[tournamentKey]?.data || null,
+          loading: false,
+          //
+          error: error instanceof Error ? error.message : '涓昏禌浜嬫暟鎹姞杞藉け璐?',
+        },
+      }));
+    }
+  }, []);
+  */
+
+  const fetchFeaturedTournament = useCallback(async (tournament: Tournament) => {
+    const tournamentKey = tournament.id;
+    setFeaturedStateByTournament((prev) => ({
+      ...prev,
+      [tournamentKey]: {
+        data: prev[tournamentKey]?.data || null,
+        loading: true,
+        error: '',
+      },
+    }));
+
+    try {
+      const response = await fetch(`/api/tournament-featured?tournamentId=${encodeURIComponent(tournament.id)}`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setFeaturedStateByTournament((prev) => ({
+            ...prev,
+            [tournamentKey]: {
+              data: null,
+              loading: false,
+              error: '',
+            },
+          }));
+          return;
+        }
+
+        throw new Error((payload as { error?: string })?.error || 'Failed to load main event data');
+      }
+
+      setFeaturedStateByTournament((prev) => ({
+        ...prev,
+        [tournamentKey]: {
+          data: payload as FeaturedTournamentPayload,
+          loading: false,
+          error: '',
+        },
+      }));
+    } catch (error) {
+      setFeaturedStateByTournament((prev) => ({
+        ...prev,
+        [tournamentKey]: {
+          data: prev[tournamentKey]?.data || null,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Failed to load main event data',
+        },
+      }));
+    }
+  }, []);
+
   const fetchTournamentSeries = useCallback(async (tournamentId: string, offset = 0) => {
     setSeriesStateByTournament((prev) => {
       const current = prev[tournamentId] || {
@@ -545,6 +1045,13 @@ export function TournamentSection({
     void fetchTournamentSeries(selectedTournament.id, 0);
   }, [fetchTournamentSeries, isInView, selectedTournament?.id, seriesStateByTournament]);
 
+  useEffect(() => {
+    if (!isInView || !selectedTournament || !isFeaturedTournament(selectedTournament)) return;
+    const currentFeaturedState = featuredStateByTournament[selectedTournament.id];
+    if (currentFeaturedState?.data || currentFeaturedState?.loading) return;
+    void fetchFeaturedTournament(selectedTournament);
+  }, [fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
+
   // Load heroes data on mount
   useEffect(() => {
     loadHeroesData().then(() => {
@@ -597,6 +1104,10 @@ export function TournamentSection({
   const currentSeriesTotal = currentSeriesState?.total || currentSeries.length;
   const currentSeriesLoading = Boolean(currentSeriesState?.loading);
   const currentSeriesError = currentSeriesState?.error || '';
+  const currentFeaturedState = selectedTournament ? featuredStateByTournament[selectedTournament.id] : undefined;
+  const currentFeaturedData = currentFeaturedState?.data || null;
+  const currentFeaturedLoading = Boolean(currentFeaturedState?.loading);
+  const currentFeaturedError = currentFeaturedState?.error || '';
   const seriesByStageKind = useMemo(() => {
     const map = new Map<StageFilterKey, Series[]>();
     for (const s of currentSeries) {
@@ -819,6 +1330,16 @@ export function TournamentSection({
             </CardHeader>
 
             <CardContent className="p-6">
+              {isFeaturedTournament(selectedTournament) ? (
+                <FeaturedTournamentPanel
+                  payload={currentFeaturedData}
+                  loading={currentFeaturedLoading}
+                  error={currentFeaturedError}
+                  onRetry={() => void fetchFeaturedTournament(selectedTournament)}
+                  aliasToTag={teamAliasToTag}
+                />
+              ) : null}
+
               <div className="mb-4 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 {stageFilterOptions.map((key) => {
                   const meta = STAGE_KIND_META[key];
