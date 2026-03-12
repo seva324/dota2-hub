@@ -5,6 +5,10 @@
 
 import { neon } from '@neondatabase/serverless';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
+import {
+  fetchFeaturedTournamentPayload,
+  resolveFeaturedTournamentDefinition,
+} from '../lib/server/featured-tournament.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
@@ -240,6 +244,24 @@ export default async function handler(req, res) {
   const offset = parsePositiveInt(req.query?.offset, 0);
 
   try {
+    const wantsFeatured = String(req.query?.featured || '').trim() === '1';
+    if (wantsFeatured) {
+      if (!tournamentId) {
+        return res.status(400).json({ error: 'tournamentId is required' });
+      }
+
+      const definition = resolveFeaturedTournamentDefinition(tournamentId);
+      if (!definition) {
+        return res.status(404).json({ error: 'Featured tournament not configured' });
+      }
+
+      const payload = await fetchFeaturedTournamentPayload(tournamentId);
+      if (!payload) {
+        return res.status(404).json({ error: 'Featured tournament not found' });
+      }
+      return res.status(200).json(payload);
+    }
+
     if (!tournamentId) {
       const tournaments = await listTournamentSummaries(db);
       return res.status(200).json({ tournaments });
