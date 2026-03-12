@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
-import { isTeamInRegion } from '@/lib/teams';
+import { isChineseTeam as isChineseTeamFromTeams, resolveTeamLogo } from '@/lib/teams';
 
 // Hero data type
 interface HeroData {
@@ -122,28 +122,38 @@ interface FeaturedEventRoundCell {
   roundLabel: string;
   pending: boolean;
   href?: string | null;
+  matchId?: string | null;
+  siteSeriesId?: string | null;
   opponentName?: string | null;
+  opponentTeamId?: string | null;
   opponentLogoUrl?: string | null;
+  opponentIsCnTeam?: boolean;
   score?: string | null;
 }
 
 interface FeaturedEventStandingRow {
   rank: number;
+  teamId?: string | null;
   teamName: string;
   country?: string | null;
   record?: string | null;
   logoUrl?: string | null;
   teamHref?: string | null;
+  isCnTeam?: boolean;
   advancement?: 'playoff' | 'eliminated' | string | null;
   rounds: FeaturedEventRoundCell[];
 }
 
 interface FeaturedEventPlayoffMatch {
   href?: string | null;
+  matchId?: string | null;
+  siteSeriesId?: string | null;
   startTime?: string | null;
   teams: Array<{
+    teamId?: string | null;
     name: string;
     logoUrl?: string | null;
+    isCnTeam?: boolean;
     score?: string | null;
   }>;
 }
@@ -155,12 +165,16 @@ interface FeaturedEventPlayoffRound {
 
 interface FeaturedEventMatchRow {
   href?: string | null;
+  matchId?: string | null;
+  siteSeriesId?: string | null;
   startTime?: string | null;
   score?: string | null;
   teams: Array<{
+    teamId?: string | null;
     name: string;
     shortName?: string | null;
     logoUrl?: string | null;
+    isCnTeam?: boolean;
   }>;
 }
 
@@ -411,34 +425,89 @@ function isFeaturedTournament(tournament: Tournament | null): boolean {
 }
 
 function FeaturedTeamChip({
+  teamId,
   name,
   logoUrl,
+  isCnTeam = false,
   aliasToTag,
+  teams,
   emphasize = false,
 }: {
+  teamId?: string | null;
   name: string;
   logoUrl?: string | null;
+  isCnTeam?: boolean;
   aliasToTag: Map<string, string>;
+  teams: NonNullable<TournamentSectionProps['teams']>;
   emphasize?: boolean;
 }) {
+  const resolvedLogo = resolveTeamLogo({ teamId, name }, teams, logoUrl);
+  const highlighted = isCnTeam || isChineseTeamFromTeams({ teamId, name }, teams);
+
   return (
     <div className="flex min-w-0 items-center gap-2">
-      {logoUrl ? (
+      {resolvedLogo ? (
         <img
-          src={logoUrl}
+          src={resolvedLogo}
           alt={name}
-          className="h-6 w-6 rounded-full border border-white/10 bg-slate-900 object-contain p-0.5"
+          className={`h-6 w-6 rounded-full object-contain p-0.5 ${highlighted ? 'border border-red-400/50 bg-red-500/10' : 'border border-white/10 bg-slate-900'}`}
         />
       ) : (
-        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-slate-800 text-[10px] font-semibold text-slate-300">
+        <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold ${highlighted ? 'border border-red-400/50 bg-red-500/10 text-red-100' : 'border border-white/10 bg-slate-800 text-slate-300'}`}>
           {getTeamAbbrev(name, aliasToTag)}
         </div>
       )}
-      <span className={`min-w-0 truncate text-sm ${emphasize ? 'font-semibold text-white' : 'text-slate-300'}`}>
+      <span className={`min-w-0 truncate text-sm ${highlighted ? 'font-semibold text-red-100' : emphasize ? 'font-semibold text-white' : 'text-slate-300'}`}>
         {renderTeamName(name, aliasToTag)}
       </span>
+      {highlighted ? (
+        <span className="rounded-full border border-red-400/30 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-200">
+          CN
+        </span>
+      ) : null}
     </div>
   );
+}
+
+function FeaturedMatchSurface({
+  href,
+  matchId,
+  onOpenMatch,
+  className,
+  children,
+}: {
+  href?: string | null;
+  matchId?: string | null;
+  onOpenMatch: (matchId: string) => void;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (matchId) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenMatch(matchId)}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return <div className={className}>{children}</div>;
 }
 
 function FeaturedTournamentPanel({
@@ -446,13 +515,17 @@ function FeaturedTournamentPanel({
   loading,
   error,
   onRetry,
+  onOpenMatch,
   aliasToTag,
+  teams,
 }: {
   payload: FeaturedTournamentPayload | null;
   loading: boolean;
   error: string;
   onRetry: () => void;
+  onOpenMatch: (matchId: string) => void;
   aliasToTag: Map<string, string>;
+  teams: NonNullable<TournamentSectionProps['teams']>;
 }) {
   if (loading && !payload) {
     return (
@@ -527,11 +600,19 @@ function FeaturedTournamentPanel({
                 {payload.groupStage.standings.map((row) => (
                   <div
                     key={`${row.rank}-${row.teamName}`}
-                    className="grid grid-cols-[56px_minmax(0,1fr)_88px_86px] items-center gap-2 px-3 py-2.5"
+                    className={`grid grid-cols-[56px_minmax(0,1fr)_88px_86px] items-center gap-2 px-3 py-2.5 ${row.isCnTeam ? 'bg-red-500/5' : ''}`}
                   >
                     <div className="text-sm font-semibold text-white">#{row.rank}</div>
                     <div className="min-w-0">
-                      <FeaturedTeamChip name={row.teamName} logoUrl={row.logoUrl} aliasToTag={aliasToTag} emphasize />
+                      <FeaturedTeamChip
+                        teamId={row.teamId}
+                        name={row.teamName}
+                        logoUrl={row.logoUrl}
+                        isCnTeam={row.isCnTeam}
+                        aliasToTag={aliasToTag}
+                        teams={teams}
+                        emphasize
+                      />
                       {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
                     </div>
                     <div className="text-center text-sm font-medium text-slate-200">{row.record || 'TBD'}</div>
@@ -570,17 +651,26 @@ function FeaturedTournamentPanel({
                         className="grid items-center gap-2 px-3 py-2.5"
                         style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
                       >
-                        <FeaturedTeamChip name={row.teamName} logoUrl={row.logoUrl} aliasToTag={aliasToTag} />
+                        <FeaturedTeamChip
+                          teamId={row.teamId}
+                          name={row.teamName}
+                          logoUrl={row.logoUrl}
+                          isCnTeam={row.isCnTeam}
+                          aliasToTag={aliasToTag}
+                          teams={teams}
+                        />
                         {row.rounds.map((round) => (
-                          <a
+                          <FeaturedMatchSurface
                             key={`${row.teamName}-${round.roundLabel}`}
-                            href={round.href || undefined}
-                            target={round.href ? '_blank' : undefined}
-                            rel={round.href ? 'noreferrer' : undefined}
+                            href={round.href}
+                            matchId={round.matchId}
+                            onOpenMatch={onOpenMatch}
                             className={`rounded-xl border px-2 py-2 text-center transition-colors ${
                               round.pending
                                 ? 'cursor-default border-dashed border-white/10 bg-slate-950/40 text-slate-500'
-                                : 'border-white/10 bg-slate-950/60 hover:border-amber-400/30 hover:bg-slate-900'
+                                : round.matchId
+                                  ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40 hover:bg-emerald-500/10'
+                                  : 'border-white/10 bg-slate-950/60 hover:border-amber-400/30 hover:bg-slate-900'
                             }`}
                           >
                             {round.pending ? (
@@ -588,17 +678,21 @@ function FeaturedTournamentPanel({
                             ) : (
                               <div className="space-y-1">
                                 <div className="flex items-center justify-center gap-1">
-                                  {round.opponentLogoUrl ? (
-                                    <img src={round.opponentLogoUrl} alt={round.opponentName || 'Opponent'} className="h-5 w-5 rounded-full object-contain" />
+                                  {resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl) ? (
+                                    <img
+                                      src={resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl)}
+                                      alt={round.opponentName || 'Opponent'}
+                                      className={`h-5 w-5 rounded-full object-contain ${round.opponentIsCnTeam ? 'border border-red-400/50 bg-red-500/10 p-0.5' : ''}`}
+                                    />
                                   ) : null}
-                                  <span className="max-w-[54px] truncate text-xs text-slate-200">
+                                  <span className={`max-w-[54px] truncate text-xs ${round.opponentIsCnTeam ? 'font-semibold text-red-100' : 'text-slate-200'}`}>
                                     {getTeamAbbrev(round.opponentName, aliasToTag)}
                                   </span>
                                 </div>
                                 <div className="text-xs font-semibold text-white">{round.score || 'TBD'}</div>
                               </div>
                             )}
-                          </a>
+                          </FeaturedMatchSurface>
                         ))}
                       </div>
                     ))}
@@ -621,23 +715,34 @@ function FeaturedTournamentPanel({
                 <div className="mb-3 text-sm font-semibold text-white">{round.roundName}</div>
                 <div className="space-y-3">
                   {round.matches.map((match) => (
-                    <a
+                    <FeaturedMatchSurface
                       key={`${round.roundName}-${match.href}-${match.startTime}`}
-                      href={match.href || undefined}
-                      target={match.href ? '_blank' : undefined}
-                      rel={match.href ? 'noreferrer' : undefined}
-                      className="block rounded-xl border border-white/10 bg-slate-950/70 p-3 transition-colors hover:border-amber-400/30"
+                      href={match.href}
+                      matchId={match.matchId}
+                      onOpenMatch={onOpenMatch}
+                      className={`block rounded-xl border p-3 transition-colors ${
+                        match.matchId
+                          ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
+                          : 'border-white/10 bg-slate-950/70 hover:border-amber-400/30'
+                      }`}
                     >
                       <div className="mb-2 text-xs text-slate-400">{formatEventDateTime(match.startTime)}</div>
                       <div className="space-y-2">
                         {match.teams.map((team, index) => (
                           <div key={`${match.href}-${team.name}-${index}`} className="flex items-center justify-between gap-2">
-                            <FeaturedTeamChip name={team.name} logoUrl={team.logoUrl} aliasToTag={aliasToTag} />
+                            <FeaturedTeamChip
+                              teamId={team.teamId}
+                              name={team.name}
+                              logoUrl={team.logoUrl}
+                              isCnTeam={team.isCnTeam}
+                              aliasToTag={aliasToTag}
+                              teams={teams}
+                            />
                             <span className="text-sm font-semibold text-white">{team.score ?? '0'}</span>
                           </div>
                         ))}
                       </div>
-                    </a>
+                    </FeaturedMatchSurface>
                   ))}
                 </div>
               </div>
@@ -662,21 +767,39 @@ function FeaturedTournamentPanel({
                 </div>
                 <div className="space-y-3">
                   {section.items.map((match) => (
-                    <a
+                    <FeaturedMatchSurface
                       key={`${section.title}-${match.href}-${match.startTime}-${match.score}`}
-                      href={match.href || undefined}
-                      target={match.href ? '_blank' : undefined}
-                      rel={match.href ? 'noreferrer' : undefined}
-                      className="block rounded-xl border border-white/10 bg-slate-950/70 p-3 transition-colors hover:border-amber-400/30"
+                      href={match.href}
+                      matchId={match.matchId}
+                      onOpenMatch={onOpenMatch}
+                      className={`block rounded-xl border p-3 transition-colors ${
+                        match.matchId
+                          ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
+                          : 'border-white/10 bg-slate-950/70 hover:border-amber-400/30'
+                      }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <FeaturedTeamChip name={match.teams[0]?.name || 'TBD'} logoUrl={match.teams[0]?.logoUrl} aliasToTag={aliasToTag} />
+                        <FeaturedTeamChip
+                          teamId={match.teams[0]?.teamId}
+                          name={match.teams[0]?.name || 'TBD'}
+                          logoUrl={match.teams[0]?.logoUrl}
+                          isCnTeam={match.teams[0]?.isCnTeam}
+                          aliasToTag={aliasToTag}
+                          teams={teams}
+                        />
                         <div className="rounded-lg border border-white/10 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">
                           {match.score || formatEventDateTime(match.startTime, { hour: '2-digit', minute: '2-digit' })}
                         </div>
-                        <FeaturedTeamChip name={match.teams[1]?.name || 'TBD'} logoUrl={match.teams[1]?.logoUrl} aliasToTag={aliasToTag} />
+                        <FeaturedTeamChip
+                          teamId={match.teams[1]?.teamId}
+                          name={match.teams[1]?.name || 'TBD'}
+                          logoUrl={match.teams[1]?.logoUrl}
+                          isCnTeam={match.teams[1]?.isCnTeam}
+                          aliasToTag={aliasToTag}
+                          teams={teams}
+                        />
                       </div>
-                    </a>
+                    </FeaturedMatchSurface>
                   ))}
                 </div>
               </div>
@@ -760,7 +883,7 @@ export function TournamentSection({
   const effectiveTournaments = lazyTournaments.length > 0 ? lazyTournaments : tournaments;
   const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
   const isChineseTeam = (team?: { teamId?: string | null; name?: string | null } | string | null) =>
-    isTeamInRegion(team || null, effectiveTeams, ['China']);
+    isChineseTeamFromTeams(team || null, effectiveTeams);
   const teamAliasToTag = useMemo(() => {
     const aliasMap = new Map<string, string>();
     for (const team of effectiveTeams) {
@@ -1336,7 +1459,9 @@ export function TournamentSection({
                   loading={currentFeaturedLoading}
                   error={currentFeaturedError}
                   onRetry={() => void fetchFeaturedTournament(selectedTournament)}
+                  onOpenMatch={(matchId) => setSelectedMatchId(Number(matchId))}
                   aliasToTag={teamAliasToTag}
+                  teams={effectiveTeams}
                 />
               ) : null}
 

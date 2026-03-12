@@ -2,8 +2,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TournamentSection } from '@/sections/TournamentSection';
 
+const matchDetailModalSpy = vi.fn();
+
 vi.mock('@/components/custom/MatchDetailModal', () => ({
-  MatchDetailModal: () => null,
+  MatchDetailModal: (props: unknown) => {
+    matchDetailModalSpy(props);
+    return null;
+  },
 }));
 
 vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
@@ -45,6 +50,7 @@ function buildSeries(start: number, count: number) {
 describe('TournamentSection', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    matchDetailModalSpy.mockReset();
   });
 
   it('loads 10 series by default and fetches the next page on load more', async () => {
@@ -297,18 +303,23 @@ describe('TournamentSection', () => {
             standings: [
               {
                 rank: 1,
+                teamId: '2163',
                 teamName: 'Team Liquid',
                 country: 'Sweden',
                 record: '3 - 0',
                 logoUrl: null,
+                isCnTeam: false,
                 advancement: 'playoff',
                 rounds: [
                   {
                     roundLabel: 'R 1',
                     pending: false,
+                    matchId: '4254021',
                     href: 'https://dltv.org/matches/425402/team-liquid-vs-betboom-team-pgl-wallachia-season-7',
                     opponentName: 'BetBoom Team',
+                    opponentTeamId: '8255888',
                     opponentLogoUrl: null,
+                    opponentIsCnTeam: false,
                     score: '2 - 1',
                   },
                 ],
@@ -322,11 +333,12 @@ describe('TournamentSection', () => {
                 roundName: 'Upper Bracket R1 (bo3)',
                 matches: [
                   {
+                    matchId: null,
                     href: 'https://dltv.org/matches/425448/heroic-vs-betboom-team-pgl-wallachia-season-7',
                     startTime: '2026-03-12 08:00:00',
                     teams: [
-                      { name: 'Heroic', logoUrl: null, score: '0' },
-                      { name: 'BetBoom Team', logoUrl: null, score: '0' },
+                      { teamId: '9303484', name: 'HEROIC', logoUrl: null, isCnTeam: false, score: '0' },
+                      { teamId: '8255888', name: 'BetBoom Team', logoUrl: null, isCnTeam: false, score: '0' },
                     ],
                   },
                 ],
@@ -337,23 +349,25 @@ describe('TournamentSection', () => {
             title: 'Matches & Scores',
             upcoming: [
               {
+                matchId: null,
                 href: 'https://dltv.org/matches/425448/heroic-vs-betboom-team-pgl-wallachia-season-7',
                 startTime: '2026-03-12 08:00:00',
                 score: null,
                 teams: [
-                  { name: 'Heroic', shortName: 'Heroic', logoUrl: null },
-                  { name: 'BetBoom Team', shortName: 'BetBoom', logoUrl: null },
+                  { teamId: '9303484', name: 'HEROIC', shortName: 'Heroic', logoUrl: null, isCnTeam: false },
+                  { teamId: '8255888', name: 'BetBoom Team', shortName: 'BetBoom', logoUrl: null, isCnTeam: false },
                 ],
               },
             ],
             finished: [
               {
+                matchId: '4254021',
                 href: 'https://dltv.org/matches/425402/team-liquid-vs-betboom-team-pgl-wallachia-season-7',
                 startTime: null,
                 score: '2-1',
                 teams: [
-                  { name: 'Team Liquid', shortName: 'Liquid', logoUrl: null },
-                  { name: 'BetBoom Team', shortName: 'BetBoom', logoUrl: null },
+                  { teamId: '2163', name: 'Team Liquid', shortName: 'Liquid', logoUrl: null, isCnTeam: false },
+                  { teamId: '8255888', name: 'BetBoom Team', shortName: 'BetBoom', logoUrl: null, isCnTeam: false },
                 ],
               },
             ],
@@ -379,7 +393,11 @@ describe('TournamentSection', () => {
           },
         ]}
         seriesByTournament={{}}
-        teams={[]}
+        teams={[
+          { team_id: '2163', name: 'Team Liquid', tag: 'Liquid', logo_url: '/liquid.png', region: 'EU' },
+          { team_id: '8255888', name: 'BetBoom Team', tag: 'BB', logo_url: '/bb.png', region: 'EEU' },
+          { team_id: '9303484', name: 'HEROIC', tag: 'HEROIC', logo_url: '/heroic.png', region: 'SA' },
+        ]}
         allMatches={[]}
         upcoming={[]}
       />
@@ -389,6 +407,91 @@ describe('TournamentSection', () => {
     expect(screen.getByText('Upcoming and finished matches')).toBeInTheDocument();
     expect(screen.getAllByText('BetBoom Team').length).toBeGreaterThan(0);
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
+  });
+
+  it('opens internal match details for finished featured matches instead of linking out', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(1, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1') {
+        return createJsonResponse({
+          tournamentId: 'pgl-wallachia-s7',
+          title: 'Main Event',
+          sourceLabel: 'DLTV',
+          sourceUrl: 'https://dltv.org/events/pgl-wallachia-season-7',
+          fetchedAt: '2026-03-12T08:00:00.000Z',
+          groupStage: {
+            title: 'Group Stage',
+            rounds: [],
+            standings: [],
+          },
+          playoffs: {
+            title: 'Playoffs',
+            rounds: [],
+          },
+          matches: {
+            title: 'Matches & Scores',
+            upcoming: [],
+            finished: [
+              {
+                matchId: '8720834598',
+                href: 'https://dltv.org/matches/425402/team-liquid-vs-betboom-team-pgl-wallachia-season-7',
+                startTime: null,
+                score: '2-1',
+                teams: [
+                  { teamId: '2163', name: 'Team Liquid', shortName: 'Liquid', logoUrl: '/liquid.png', isCnTeam: false },
+                  { teamId: '8255888', name: 'BetBoom Team', shortName: 'BetBoom', logoUrl: '/bb.png', isCnTeam: false },
+                ],
+              },
+            ],
+          },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'pgl-wallachia-s7',
+            league_id: 19435,
+            name: 'PGL Wallachia Season 7',
+            status: 'ongoing',
+            tier: 'S',
+            location: 'Romania',
+            start_time: 1_772_841_600,
+            end_time: 1_773_532_800,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[
+          { team_id: '2163', name: 'Team Liquid', tag: 'Liquid', logo_url: '/liquid.png', region: 'EU' },
+          { team_id: '8255888', name: 'BetBoom Team', tag: 'BB', logo_url: '/bb.png', region: 'EEU' },
+        ]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    await screen.findByText('Upcoming and finished matches');
+    fireEvent.click(screen.getByRole('button', { name: /Team Liquid/i }));
+
+    await waitFor(() => {
+      expect(matchDetailModalSpy).toHaveBeenLastCalledWith(expect.objectContaining({
+        matchId: 8720834598,
+        open: true,
+      }));
+    });
   });
 
   it('does not render tournaments whose tier is empty', async () => {

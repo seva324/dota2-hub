@@ -13,6 +13,25 @@ import {
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
 const MAX_SERIES_LIMIT = 50;
+const FEATURED_TEAM_ALIAS_OVERRIDES = {
+  'pgl-wallachia-s7': {
+    aurora: 'auroragaming',
+    bb: 'betboomteam',
+    betboom: 'betboomteam',
+    falcons: 'teamfalcons',
+    gg: 'gaimingladiators',
+    lgd: 'psglgd',
+    liquid: 'teamliquid',
+    "na'vi": 'natusvincere',
+    navi: 'natusvincere',
+    pari: 'parivision',
+    spirit: 'teamspirit',
+    xg: 'xtremegaming',
+    xtreme: 'xtremegaming',
+    yb: 'yakultbrothers',
+    yakult: 'yakultbrothers',
+  },
+};
 
 let sql = null;
 
@@ -33,13 +52,86 @@ function parsePositiveInt(value, fallback) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
-// Normalize logo URL
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizeCompact(value) {
+  return normalizeText(value).replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+}
+
+function stripCommonTeamAffixes(value) {
+  let normalized = normalizeCompact(value);
+  const prefixes = ['team'];
+  const suffixes = ['team', 'gaming', 'esports', 'esport', 'club'];
+
+  let changed = true;
+  while (changed && normalized) {
+    changed = false;
+
+    for (const prefix of prefixes) {
+      if (normalized.startsWith(prefix) && normalized.length > prefix.length) {
+        normalized = normalized.slice(prefix.length);
+        changed = true;
+      }
+    }
+
+    for (const suffix of suffixes) {
+      if (normalized.endsWith(suffix) && normalized.length > suffix.length) {
+        normalized = normalized.slice(0, -suffix.length);
+        changed = true;
+      }
+    }
+  }
+
+  return normalized;
+}
+
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function getLookupKeys(value) {
+  const raw = normalizeText(value);
+  const compact = normalizeCompact(value);
+  const stripped = stripCommonTeamAffixes(value);
+  return uniqueValues([raw, compact, stripped]);
+}
+
+function isChinaRegion(region) {
+  const normalized = normalizeText(region).replace(/[\s_-]+/g, '');
+  return normalized === 'cn' || normalized === 'china' || normalized === 'prchina' || normalized === '中国';
+}
+
+function isCnTeamRow(teamRow) {
+  if (!teamRow) return false;
+  return isChinaRegion(teamRow.region) || teamRow.is_cn_team === true || teamRow.is_cn_team === 1;
+}
+
+function parseFeaturedScore(value) {
+  const match = String(value || '').match(/(\d+)\s*-\s*(\d+)/);
+  if (!match) return null;
+  return {
+    left: Number(match[1]),
+    right: Number(match[2]),
+  };
+}
+
+function parseFeaturedStartTime(value) {
+  if (!value) return null;
+  const normalized = String(value).includes('T') ? String(value) : String(value).replace(' ', 'T');
+  const timestamp = Date.parse(normalized);
+  return Number.isFinite(timestamp) ? Math.floor(timestamp / 1000) : null;
+}
+
+function hasNonZeroScore(scores) {
+  return scores.some((value) => Number(value || 0) > 0);
+}
+
 function normalizeLogo(url, req) {
   return getMirroredAssetUrl(url, req);
 }
 
-// Convert OpenDota series_type to human-readable format
-// OpenDota: 0=BO1, 1=BO3, 2=BO5, 3=BO2
 function convertSeriesType(seriesType) {
   if (seriesType === null || seriesType === undefined || seriesType === '') return 'BO3';
   const map = {
@@ -140,13 +232,390 @@ async function getTournamentById(db, tournamentId) {
   return rows[0] || null;
 }
 
-async function loadTeamMap(db) {
+async function loadTeams(db) {
   const teams = await db`SELECT * FROM teams`;
   const teamMap = new Map();
   for (const team of teams) {
-    teamMap.set(team.team_id, team);
+    teamMap.set(String(team.team_id), team);
   }
-  return teamMap;
+  return { teams, teamMap };
+}
+
+function buildFeaturedTeamResolver(teams, featuredTournamentId) {
+  const directLookup = new Map();
+  const canonicalLookup = new Map();
+
+  const register = (key, team) => {
+    if (!key || directLookup.has(key)) return;
+    directLookup.set(key, team);
+  };
+
+  for (const team of teams) {
+    for (const alias of [team.name, team.name_cn, team.tag]) {
+      for (const key of getLookupKeys(alias)) {
+        register(key, team);
+        if (!canonicalLookup.has(key)) {
+          canonicalLookup.set(key, team);
+        }
+      }
+    }
+  }
+
+  const overrides = FEATURED_TEAM_ALIAS_OVERRIDES[featuredTournamentId] || {};
+
+  return (teamName) => {
+    for (const key of getLookupKeys(teamName)) {
+      const direct = directLookup.get(key);
+      if (direct) return direct;
+
+      const canonicalKey = overrides[key];
+      if (!canonicalKey) continue;
+
+      const canonical = canonicalLookup.get(canonicalKey);
+      if (canonical) return canonical;
+    }
+
+    return null;
+  };
+}
+
+function buildTeamIdentityKeys(team, teamRow) {
+  return new Set(uniqueValues([
+    team?.teamId ? String(team.teamId) : '',
+    team?.name,
+    team?.shortName,
+    teamRow?.team_id ? String(teamRow.team_id) : '',
+    teamRow?.name,
+    teamRow?.name_cn,
+    teamRow?.tag,
+  ].flatMap((value) => getLookupKeys(value))));
+}
+
+function setsIntersect(a, b) {
+  for (const value of a) {
+    if (b.has(value)) return true;
+  }
+  return false;
+}
+
+async function loadFeaturedSeriesCandidates(db, leagueId) {
+  const rows = await db.query(
+    `
+      SELECT
+        s.series_id,
+        s.start_time AS series_start_time,
+        s.radiant_team_id AS series_radiant_team_id,
+        s.dire_team_id AS series_dire_team_id,
+        s.radiant_wins,
+        s.dire_wins,
+        s.series_type,
+        m.match_id,
+        m.start_time AS match_start_time,
+        m.radiant_team_id,
+        m.dire_team_id,
+        m.radiant_score,
+        m.dire_score,
+        m.radiant_win,
+        m.duration
+      FROM series s
+      LEFT JOIN matches m ON m.series_id = s.series_id
+      WHERE s.league_id = $1
+      ORDER BY COALESCE(s.start_time, 0) DESC, COALESCE(m.start_time, 0) DESC, COALESCE(m.match_id, 0) DESC
+    `,
+    [Number(leagueId)]
+  );
+
+  const detailCandidateIds = rows
+    .map((row) => Number(row.match_id))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  let detailIdSet = new Set();
+  if (detailCandidateIds.length > 0) {
+    try {
+      const detailRows = await db.query(
+        `
+          SELECT match_id
+          FROM match_details
+          WHERE match_id = ANY($1::bigint[])
+        `,
+        [detailCandidateIds]
+      );
+      detailIdSet = new Set(detailRows.map((row) => String(row.match_id)));
+    } catch (error) {
+      const message = String(error?.message || '');
+      if (!message.includes('match_details')) {
+        throw error;
+      }
+    }
+  }
+
+  const grouped = new Map();
+  for (const row of rows) {
+    const seriesId = row.series_id ? String(row.series_id) : null;
+    if (!seriesId) continue;
+
+    if (!grouped.has(seriesId)) {
+      grouped.set(seriesId, {
+        seriesId,
+        startTime: Number(row.series_start_time) || 0,
+        radiantTeamId: row.series_radiant_team_id ? String(row.series_radiant_team_id) : null,
+        direTeamId: row.series_dire_team_id ? String(row.series_dire_team_id) : null,
+        radiantWins: Number(row.radiant_wins) || 0,
+        direWins: Number(row.dire_wins) || 0,
+        seriesType: row.series_type,
+        games: [],
+      });
+    }
+
+    if (row.match_id) {
+      grouped.get(seriesId).games.push({
+        matchId: String(row.match_id),
+        startTime: Number(row.match_start_time) || 0,
+        radiantTeamId: row.radiant_team_id ? String(row.radiant_team_id) : null,
+        direTeamId: row.dire_team_id ? String(row.dire_team_id) : null,
+        radiantScore: Number(row.radiant_score) || 0,
+        direScore: Number(row.dire_score) || 0,
+        radiantWin: row.radiant_win ? 1 : 0,
+        duration: Number(row.duration) || 0,
+        hasDetail: detailIdSet.has(String(row.match_id)),
+      });
+    }
+  }
+
+  return [...grouped.values()].map((entry) => {
+    const games = [...entry.games].sort((a, b) => {
+      if (a.startTime !== b.startTime) return a.startTime - b.startTime;
+      return Number(a.matchId) - Number(b.matchId);
+    });
+    const latestDetailGame = [...games].reverse().find((game) => game.hasDetail) || null;
+
+    return {
+      ...entry,
+      games,
+      detailMatchId: latestDetailGame?.matchId || null,
+    };
+  });
+}
+
+function orientCandidateScore(candidate, directOrder) {
+  if (directOrder) {
+    return {
+      left: candidate.radiantWins,
+      right: candidate.direWins,
+    };
+  }
+
+  return {
+    left: candidate.direWins,
+    right: candidate.radiantWins,
+  };
+}
+
+function matchFeaturedSeries(candidates, leftTeam, rightTeam, options = {}) {
+  if (!leftTeam || !rightTeam) return null;
+
+  const desiredStart = parseFeaturedStartTime(options.startTime);
+  const desiredScore = options.score ? parseFeaturedScore(options.score) : null;
+  const leftRow = options.resolveTeamRow?.(leftTeam.name || '') || null;
+  const rightRow = options.resolveTeamRow?.(rightTeam.name || '') || null;
+  const leftKeys = buildTeamIdentityKeys(leftTeam, leftRow);
+  const rightKeys = buildTeamIdentityKeys(rightTeam, rightRow);
+
+  let bestMatch = null;
+  let bestPenalty = Number.POSITIVE_INFINITY;
+
+  for (const candidate of candidates) {
+    const candidateLeftRow = candidate.radiantTeamId ? options.teamMap?.get(candidate.radiantTeamId) : null;
+    const candidateRightRow = candidate.direTeamId ? options.teamMap?.get(candidate.direTeamId) : null;
+    const candidateLeftKeys = buildTeamIdentityKeys({
+      teamId: candidate.radiantTeamId,
+      name: candidateLeftRow?.name || null,
+    }, candidateLeftRow);
+    const candidateRightKeys = buildTeamIdentityKeys({
+      teamId: candidate.direTeamId,
+      name: candidateRightRow?.name || null,
+    }, candidateRightRow);
+
+    const directOrder = setsIntersect(leftKeys, candidateLeftKeys) && setsIntersect(rightKeys, candidateRightKeys);
+    const reverseOrder = setsIntersect(leftKeys, candidateRightKeys) && setsIntersect(rightKeys, candidateLeftKeys);
+
+    if (!directOrder && !reverseOrder) continue;
+
+    let penalty = candidate.detailMatchId ? 0 : 5000;
+
+    if (desiredScore) {
+      const oriented = orientCandidateScore(candidate, directOrder);
+      if (oriented.left !== desiredScore.left || oriented.right !== desiredScore.right) {
+        penalty += 10000;
+      }
+    }
+
+    if (desiredStart && candidate.startTime) {
+      penalty += Math.abs(candidate.startTime - desiredStart);
+    }
+
+    if (penalty < bestPenalty) {
+      bestPenalty = penalty;
+      bestMatch = candidate;
+    }
+  }
+
+  return bestMatch;
+}
+
+function enrichFeaturedTeam(teamName, explicitLogo, req, resolveTeamRow) {
+  const teamRow = resolveTeamRow(teamName);
+  return {
+    teamId: teamRow?.team_id ? String(teamRow.team_id) : null,
+    name: teamRow?.name || teamName || 'TBD',
+    logoUrl: normalizeLogo(teamRow?.logo_url, req) || explicitLogo || null,
+    isCnTeam: isCnTeamRow(teamRow),
+    tag: teamRow?.tag || null,
+  };
+}
+
+function enrichFeaturedPayload(payload, definition, teams, teamMap, seriesCandidates, req) {
+  const resolveTeamRow = buildFeaturedTeamResolver(teams, definition.id);
+
+  const standings = payload.groupStage.standings.map((row) => {
+    const team = enrichFeaturedTeam(row.teamName, row.logoUrl, req, resolveTeamRow);
+
+    return {
+      ...row,
+      teamId: team.teamId,
+      teamName: team.name,
+      logoUrl: team.logoUrl,
+      isCnTeam: team.isCnTeam,
+      rounds: row.rounds.map((round) => {
+        const opponent = enrichFeaturedTeam(round.opponentName, round.opponentLogoUrl, req, resolveTeamRow);
+        const matchedSeries = round.pending
+          ? null
+          : matchFeaturedSeries(
+              seriesCandidates,
+              { teamId: team.teamId, name: team.name, shortName: team.tag },
+              { teamId: opponent.teamId, name: opponent.name, shortName: opponent.tag },
+              {
+                score: round.score,
+                resolveTeamRow,
+                teamMap,
+              }
+            );
+
+        return {
+          ...round,
+          opponentName: opponent.name,
+          opponentTeamId: opponent.teamId,
+          opponentLogoUrl: opponent.logoUrl,
+          opponentIsCnTeam: opponent.isCnTeam,
+          matchId: matchedSeries?.detailMatchId || null,
+          siteSeriesId: matchedSeries?.seriesId || null,
+        };
+      }),
+    };
+  });
+
+  const enrichSeriesLikeMatch = (match) => {
+    const leftTeam = enrichFeaturedTeam(match.teams?.[0]?.name, match.teams?.[0]?.logoUrl, req, resolveTeamRow);
+    const rightTeam = enrichFeaturedTeam(match.teams?.[1]?.name, match.teams?.[1]?.logoUrl, req, resolveTeamRow);
+    const scoreString = `${match.teams?.[0]?.score ?? ''}-${match.teams?.[1]?.score ?? ''}`;
+    const completed = hasNonZeroScore([
+      Number(match.teams?.[0]?.score || 0),
+      Number(match.teams?.[1]?.score || 0),
+    ]);
+    const matchedSeries = matchFeaturedSeries(
+      seriesCandidates,
+      { teamId: leftTeam.teamId, name: leftTeam.name, shortName: leftTeam.tag },
+      { teamId: rightTeam.teamId, name: rightTeam.name, shortName: rightTeam.tag },
+      {
+        startTime: match.startTime,
+        score: completed ? scoreString : null,
+        resolveTeamRow,
+        teamMap,
+      }
+    );
+
+    return {
+      ...match,
+      matchId: completed ? matchedSeries?.detailMatchId || null : null,
+      siteSeriesId: matchedSeries?.seriesId || null,
+      teams: [
+        {
+          ...match.teams?.[0],
+          teamId: leftTeam.teamId,
+          name: leftTeam.name,
+          logoUrl: leftTeam.logoUrl,
+          isCnTeam: leftTeam.isCnTeam,
+        },
+        {
+          ...match.teams?.[1],
+          teamId: rightTeam.teamId,
+          name: rightTeam.name,
+          logoUrl: rightTeam.logoUrl,
+          isCnTeam: rightTeam.isCnTeam,
+        },
+      ],
+    };
+  };
+
+  const enrichMatchRow = (match) => {
+    const leftTeam = enrichFeaturedTeam(match.teams?.[0]?.name, match.teams?.[0]?.logoUrl, req, resolveTeamRow);
+    const rightTeam = enrichFeaturedTeam(match.teams?.[1]?.name, match.teams?.[1]?.logoUrl, req, resolveTeamRow);
+    const matchedSeries = match.score
+      ? matchFeaturedSeries(
+          seriesCandidates,
+          { teamId: leftTeam.teamId, name: leftTeam.name, shortName: leftTeam.tag },
+          { teamId: rightTeam.teamId, name: rightTeam.name, shortName: rightTeam.tag },
+          {
+            startTime: match.startTime,
+            score: match.score,
+            resolveTeamRow,
+            teamMap,
+          }
+        )
+      : null;
+
+    return {
+      ...match,
+      matchId: matchedSeries?.detailMatchId || null,
+      siteSeriesId: matchedSeries?.seriesId || null,
+      teams: [
+        {
+          ...match.teams?.[0],
+          teamId: leftTeam.teamId,
+          name: leftTeam.name,
+          logoUrl: leftTeam.logoUrl,
+          isCnTeam: leftTeam.isCnTeam,
+        },
+        {
+          ...match.teams?.[1],
+          teamId: rightTeam.teamId,
+          name: rightTeam.name,
+          logoUrl: rightTeam.logoUrl,
+          isCnTeam: rightTeam.isCnTeam,
+        },
+      ],
+    };
+  };
+
+  return {
+    ...payload,
+    groupStage: {
+      ...payload.groupStage,
+      standings,
+    },
+    playoffs: {
+      ...payload.playoffs,
+      rounds: payload.playoffs.rounds.map((round) => ({
+        ...round,
+        matches: round.matches.map(enrichSeriesLikeMatch),
+      })),
+    },
+    matches: {
+      ...payload.matches,
+      upcoming: payload.matches.upcoming.map(enrichMatchRow),
+      finished: payload.matches.finished.map(enrichMatchRow),
+    },
+  };
 }
 
 async function loadSeriesPage(db, tournament, limit, offset) {
@@ -180,13 +649,13 @@ async function loadMatchesForSeries(db, seriesId) {
 
 function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, req) {
   return seriesRows.map((seriesRow) => {
-    const radiantTeam = seriesRow.radiant_team_id ? teamMap.get(seriesRow.radiant_team_id) : null;
-    const direTeam = seriesRow.dire_team_id ? teamMap.get(seriesRow.dire_team_id) : null;
+    const radiantTeam = seriesRow.radiant_team_id ? teamMap.get(String(seriesRow.radiant_team_id)) : null;
+    const direTeam = seriesRow.dire_team_id ? teamMap.get(String(seriesRow.dire_team_id)) : null;
     const stageInfo = resolveSeriesStage(stageWindows, Number(seriesRow.start_time), seriesRow.stage);
 
     const games = (matchesBySeries[String(seriesRow.series_id)] || []).map((matchRow) => {
-      const matchRadiantTeam = matchRow.radiant_team_id ? teamMap.get(matchRow.radiant_team_id) : null;
-      const matchDireTeam = matchRow.dire_team_id ? teamMap.get(matchRow.dire_team_id) : null;
+      const matchRadiantTeam = matchRow.radiant_team_id ? teamMap.get(String(matchRow.radiant_team_id)) : null;
+      const matchDireTeam = matchRow.dire_team_id ? teamMap.get(String(matchRow.dire_team_id)) : null;
 
       return {
         match_id: String(matchRow.match_id),
@@ -255,11 +724,19 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Featured tournament not configured' });
       }
 
-      const payload = await fetchFeaturedTournamentPayload(tournamentId);
+      const [payload, { teams, teamMap }, seriesCandidates] = await Promise.all([
+        fetchFeaturedTournamentPayload(tournamentId),
+        loadTeams(db),
+        loadFeaturedSeriesCandidates(db, definition.leagueId),
+      ]);
+
       if (!payload) {
         return res.status(404).json({ error: 'Featured tournament not found' });
       }
-      return res.status(200).json(payload);
+
+      return res.status(200).json(
+        enrichFeaturedPayload(payload, definition, teams, teamMap, seriesCandidates, req)
+      );
     }
 
     if (!tournamentId) {
@@ -272,9 +749,9 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Tournament not found' });
     }
 
-    const [{ total, pageSeries }, teamMap] = await Promise.all([
+    const [{ total, pageSeries }, { teamMap }] = await Promise.all([
       loadSeriesPage(db, tournament, limit, offset),
-      loadTeamMap(db)
+      loadTeams(db)
     ]);
 
     const matchesBySeries = {};
