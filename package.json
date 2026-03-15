@@ -31,7 +31,8 @@
     "ops:refresh-derived-data": "node scripts/ops/refresh-derived-data.mjs",
     "ops:cron-refresh-hourly": "node scripts/ops/hourly-cron-refresh.mjs",
     "ops:monitor-live-hero-tg": "node --env-file=.env.local scripts/ops/monitor-live-hero-score.mjs",
-    "ops:mirror-assets": "node scripts/mirror-assets-to-public.mjs"
+    "ops:mirror-assets": "node scripts/mirror-assets-to-public.mjs",
+    "ops:post-news-xhs": "node --env-file=.env.vercel scripts/post-news-to-xhs.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

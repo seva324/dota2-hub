@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { spawnSync } from 'node:child_process';
 
 const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const API_KEY = process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
@@ -46,6 +47,27 @@ const TOTAL_LIMIT = Math.max(1, Number(arg('limit', '120')) || 120);
 const BATCH_SIZE = Math.max(1, Math.min(30, Number(arg('batch', '12')) || 12));
 const CHUNK_MAX = Math.max(800, Number(arg('chunkMax', '1300')) || 1300);
 const FORCE = ['1', 'true', 'yes', 'on'].includes(String(arg('force', 'false')).toLowerCase());
+const XHS_AUTO_POST = ['1', 'true', 'yes', 'on'].includes(String(process.env.XHS_AUTO_POST || '').toLowerCase());
+
+function maybeAutoPostXhs(row) {
+  if (!XHS_AUTO_POST || !row?.id) return;
+  const scriptPath = new URL('./post-news-to-xhs.mjs', import.meta.url);
+  const result = spawnSync(
+    process.execPath,
+    [scriptPath, '--id', String(row.id)],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024 * 8,
+    }
+  );
+  if (result.status !== 0) {
+    console.warn(`[xhs] auto post failed for ${row.id}: ${(result.stderr || result.stdout || '').trim()}`);
+    return;
+  }
+  console.log(`[xhs] auto post done for ${row.id}`);
+}
 
 function looksChinese(text) {
   return /[\u4e00-\u9fff]/.test(String(text || ''));
@@ -404,6 +426,7 @@ async function translateOne(row, force = false) {
   const content_zh = content_markdown_zh ? stripMarkdown(content_markdown_zh) : (row.content_en || null);
 
   await updateRow(row, { title_zh, summary_zh, content_markdown_zh, content_zh });
+  maybeAutoPostXhs(row);
 }
 
 async function main() {
