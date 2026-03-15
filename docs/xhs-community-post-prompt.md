@@ -65,11 +65,12 @@
 - `--template event`
 - `--template transfer`
 - `--template ranking`
-- `--template auto`（默认自动判断）
+- `--template auto`（默认；不激进套模板，按通用新闻快讯方式生成）
 
 建议：
 
 - 自动化翻译后发帖默认走：`--preset concise-news`
+- 如果没有明确分类，把 `--template` 留在默认值即可，不要强行套模板
 - 赛后复盘 / 选手发言：`postmatch`
 - 赛事预告 / 赛程 / 奖金池：`event`
 - 转会 / 合同 / 阵容动态：`transfer`

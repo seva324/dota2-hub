@@ -133,7 +133,7 @@ function detectPostType(row) {
 
 function resolveTemplate(row) {
   if (TEMPLATE && TEMPLATE !== 'auto') return TEMPLATE;
-  return detectPostType(row);
+  return 'news';
 }
 
 function resolvePreset() {
