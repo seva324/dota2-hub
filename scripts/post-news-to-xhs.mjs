@@ -62,6 +62,7 @@ const CUSTOM_TITLE_FILE = getArg('title-file', null);
 const CUSTOM_BODY_FILE = getArg('body-file', null);
 const CUSTOM_TOPIC = getArg('topic', null);
 const TEMPLATE = getArg('template', 'auto');
+const PRESET = getArg('preset', process.env.XHS_POST_PRESET || 'default');
 
 const sql = neon(DB_URL);
 
@@ -133,6 +134,10 @@ function detectPostType(row) {
 function resolveTemplate(row) {
   if (TEMPLATE && TEMPLATE !== 'auto') return TEMPLATE;
   return detectPostType(row);
+}
+
+function resolvePreset() {
+  return PRESET || 'default';
 }
 
 function extractSentences(text = '') {
@@ -323,7 +328,9 @@ function buildBody(row) {
   const overrideBody = CUSTOM_BODY || readOptionalFile(CUSTOM_BODY_FILE);
   if (overrideBody) return normalizeWhitespace(overrideBody);
   const template = resolveTemplate(row);
-  return clipText(buildBodyFromTemplate(row, template), 220);
+  const preset = resolvePreset();
+  const limit = preset === 'concise-news' ? 220 : 260;
+  return clipText(buildBodyFromTemplate(row, template), limit);
 }
 
 function buildTitle(row) {

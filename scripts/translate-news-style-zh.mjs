@@ -52,9 +52,10 @@ const XHS_AUTO_POST = ['1', 'true', 'yes', 'on'].includes(String(process.env.XHS
 function maybeAutoPostXhs(row) {
   if (!XHS_AUTO_POST || !row?.id) return;
   const scriptPath = new URL('./post-news-to-xhs.mjs', import.meta.url);
+  const preset = process.env.XHS_POST_PRESET || 'concise-news';
   const result = spawnSync(
     process.execPath,
-    [scriptPath, '--id', String(row.id)],
+    [scriptPath, '--id', String(row.id), '--preset', preset],
     {
       cwd: process.cwd(),
       env: process.env,
