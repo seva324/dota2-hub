@@ -120,31 +120,75 @@ function sanitizeArticleBody(row) {
   return text;
 }
 
-function pickCommunityHook(row, articleBody) {
-  const summary = normalizeWhitespace(row.summary_zh || '');
-  if (summary) return summary;
-  const firstSentence = String(articleBody || '').split(/[。！？!?]/)[0]?.trim();
-  if (firstSentence) return `${firstSentence}。`;
-  return '这条消息看完之后，第一反应就是后续讨论肯定不会少。';
+function detectPostType(row) {
+  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
+  if (/赛程|schedule|standings|results|开打|奖金池|grand final|group stage/i.test(text)) return 'event';
+  if (/回应|谈|表示|explained|spoke|said|commented|发声/i.test(text)) return 'postmatch';
+  if (/离开|离队|转会|合同|inactive|return|didn.?t leave/i.test(text)) return 'transfer';
+  return 'news';
 }
 
-function pickExcerptParagraphs(articleBody) {
-  const paragraphs = normalizeWhitespace(articleBody)
-    .split('\n')
-    .map((line) => line.trim())
+function extractSentences(text = '') {
+  return normalizeWhitespace(text)
+    .replace(/\n/g, ' ')
+    .split(/(?<=[。！？!?])/)
+    .map((item) => item.trim())
     .filter(Boolean);
+}
 
-  const picked = [];
-  let total = 0;
-  for (const paragraph of paragraphs) {
-    if (total >= 360) break;
-    if (paragraph.length < 18) continue;
-    const clipped = paragraph.length > 180 ? `${paragraph.slice(0, 179).trim()}…` : paragraph;
-    picked.push(clipped);
-    total += clipped.length;
-    if (picked.length >= 3) break;
+function toBulletLines(sentences, limit = 3, maxLen = 34) {
+  const items = [];
+  for (const sentence of sentences) {
+    const plain = normalizeWhitespace(sentence).replace(/[。！？!?]+$/, '');
+    if (!plain || plain.length < 8) continue;
+    const clipped = plain.length > maxLen ? `${plain.slice(0, maxLen - 1).trim()}…` : plain;
+    items.push(`- ${clipped}`);
+    if (items.length >= limit) break;
   }
-  return picked;
+  return items;
+}
+
+function buildLead(row, articleBody, postType) {
+  const summary = normalizeWhitespace(row.summary_zh || '');
+  if (summary) return clipText(summary, 52);
+  const firstSentence = extractSentences(articleBody)[0];
+  if (firstSentence) return clipText(firstSentence, 52);
+  if (postType === 'event') return '这站比赛信息已经出来了，先看重点。';
+  if (postType === 'transfer') return '这条阵容动态和外界之前的判断不太一样。';
+  if (postType === 'postmatch') return '这场赛后复盘已经把问题点得很直接。';
+  return '这条新闻的重点，先直接放前面。';
+}
+
+function buildInfoBullets(row, articleBody, postType) {
+  const sentences = extractSentences(articleBody);
+  const withoutLead = sentences.slice(1);
+  const bullets = toBulletLines(withoutLead, postType === 'event' ? 4 : 3, 32);
+  if (bullets.length) return bullets;
+
+  if (postType === 'event') {
+    return [
+      '- 比赛时间和赛制已经确定',
+      '- 热门队伍基本都在',
+      '- 这站前期就会有高强度对局',
+    ];
+  }
+  return ['- 关键信息已经明确', '- 后续走势还值得继续看'];
+}
+
+function buildImpactLine(row, postType) {
+  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.content_zh || ''}`;
+  if (postType === 'event') return '看点基本集中在赛制、热门队状态和强强对话。';
+  if (postType === 'transfer') return '这说明他和现有队伍的关系还没有真正画上句号。';
+  if (postType === 'postmatch') return '这场最可惜的不是完全打不过，而是关键决策把机会送掉了。';
+  if (/版本|patch/i.test(text)) return '真正有讨论度的还是版本变化会不会影响后面比赛。';
+  return '这条消息本身不算长，但后续讨论空间还挺大。';
+}
+
+function buildCommentLine(postType) {
+  if (postType === 'event') return '最近只想追一站比赛的，可以先把这站记上。';
+  if (postType === 'transfer') return '后面会不会再有新动向，估计还得继续看。';
+  if (postType === 'postmatch') return '上限还在，但关键局稳定性确实得再观察。';
+  return '这条先记下，后面大概率还会有后续。';
 }
 
 function buildBody(row) {
@@ -152,22 +196,27 @@ function buildBody(row) {
   if (overrideBody) return normalizeWhitespace(overrideBody);
 
   const articleBody = sanitizeArticleBody(row);
-  const hook = pickCommunityHook(row, articleBody);
-  const paragraphs = pickExcerptParagraphs(articleBody);
+  const postType = detectPostType(row);
+  const lead = buildLead(row, articleBody, postType);
+  const bullets = buildInfoBullets(row, articleBody, postType);
+  const impact = buildImpactLine(row, postType);
+  const comment = buildCommentLine(postType);
   const lines = [
-    hook,
+    lead,
     '',
-    ...paragraphs,
+    ...bullets,
     '',
-    '这条我先记一笔，后面如果还有队伍/选手回应，应该还会继续发酵。',
+    impact,
+    '',
+    comment,
   ];
-  return normalizeWhitespace(lines.filter(Boolean).join('\n'));
+  return clipText(normalizeWhitespace(lines.filter(Boolean).join('\n')), 220);
 }
 
 function buildTitle(row) {
   const overrideTitle = CUSTOM_TITLE || readOptionalFile(CUSTOM_TITLE_FILE);
   const raw = normalizeWhitespace(overrideTitle || row.title_zh || row.title_en || 'DOTA2 新闻速递');
-  return raw.length <= 80 ? raw : `${raw.slice(0, 79).trim()}…`;
+  return raw.length <= 26 ? raw : `${raw.slice(0, 25).trim()}…`;
 }
 
 function buildTopic(row) {
