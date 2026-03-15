@@ -56,6 +56,23 @@
 如果原文是赛事预告/赛程类新闻，优先把“时间、赛制、看点”说清楚，最后补一句“值得追/可以收藏”。
 ```
 
+## 脚本模板参数
+
+发布脚本支持：
+
+- `--template postmatch`
+- `--template event`
+- `--template transfer`
+- `--template ranking`
+- `--template auto`（默认自动判断）
+
+建议：
+
+- 赛后复盘 / 选手发言：`postmatch`
+- 赛事预告 / 赛程 / 奖金池：`event`
+- 转会 / 合同 / 阵容动态：`transfer`
+- 排名 / 榜单 / 评选：`ranking`
+
 ## 已确认可用的快讯风示例
 
 ### 模板 1：选手/教练/队长赛后发言类
