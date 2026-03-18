@@ -914,7 +914,7 @@ function FeaturedTournamentPanel({
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
+        <section className="hidden rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
           <div className="mb-3 md:mb-4">
             <h5 className="text-sm font-semibold text-white md:text-base">{payload.matches.title}</h5>
             <p className="text-xs text-slate-400">Upcoming 和 finished 比赛</p>
@@ -1032,6 +1032,7 @@ export function TournamentSection({
 }: TournamentSectionProps) {
   const [showT1Only, setShowT1Only] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [expandedFeaturedTournamentId, setExpandedFeaturedTournamentId] = useState<string | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
@@ -1335,11 +1336,16 @@ export function TournamentSection({
   }, [fetchTournamentSeries, isInView, selectedTournament?.id, seriesStateByTournament]);
 
   useEffect(() => {
-    if (!isInView || !selectedTournament || !isFeaturedTournament(selectedTournament)) return;
+    if (
+      !isInView
+      || !selectedTournament
+      || !isFeaturedTournament(selectedTournament)
+      || expandedFeaturedTournamentId !== selectedTournament.id
+    ) return;
     const currentFeaturedState = featuredStateByTournament[selectedTournament.id];
     if (currentFeaturedState?.data || currentFeaturedState?.loading || currentFeaturedState?.error) return;
     void fetchFeaturedTournament(selectedTournament);
-  }, [fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
+  }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
 
   // Load heroes data on mount
   useEffect(() => {
@@ -1397,6 +1403,11 @@ export function TournamentSection({
   const currentFeaturedData = currentFeaturedState?.data || null;
   const currentFeaturedLoading = Boolean(currentFeaturedState?.loading);
   const currentFeaturedError = currentFeaturedState?.error || '';
+  const isFeaturedSelectedTournamentExpanded = Boolean(
+    selectedTournament
+    && isFeaturedTournament(selectedTournament)
+    && expandedFeaturedTournamentId === selectedTournament.id
+  );
   const seriesByStageKind = useMemo(() => {
     const map = new Map<StageFilterKey, Series[]>();
     for (const s of currentSeries) {
@@ -1430,6 +1441,16 @@ export function TournamentSection({
       setStageFilter('all');
     }
   }, [stageFilterOptions, stageFilter]);
+
+  useEffect(() => {
+    if (!selectedTournament || !isFeaturedTournament(selectedTournament)) {
+      setExpandedFeaturedTournamentId(null);
+      return;
+    }
+    if (expandedFeaturedTournamentId && expandedFeaturedTournamentId !== selectedTournament.id) {
+      setExpandedFeaturedTournamentId(null);
+    }
+  }, [expandedFeaturedTournamentId, selectedTournament]);
 
   if (!sortedTournaments.length) {
     return (
@@ -1591,7 +1612,17 @@ export function TournamentSection({
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-xl sm:text-2xl font-bold text-white truncate">{selectedTournament.name}</h3>
+                    {isFeaturedTournament(selectedTournament) ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedFeaturedTournamentId((current) => current === selectedTournament.id ? null : selectedTournament.id)}
+                        className="truncate text-left text-xl font-bold text-white underline-offset-4 transition hover:text-amber-200 hover:underline sm:text-2xl"
+                      >
+                        {selectedTournament.name}
+                      </button>
+                    ) : (
+                      <h3 className="text-xl sm:text-2xl font-bold text-white truncate">{selectedTournament.name}</h3>
+                    )}
                     <Badge className={statusMap[selectedTournament.status]?.color || statusMap.upcoming.color}>
                       {selectedTournament.status === 'ongoing' && (
                         <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
@@ -1609,17 +1640,22 @@ export function TournamentSection({
                       <Calendar className="w-4 h-4" />
                       <span>{formatDate(selectedTournament.start_time || selectedTournament.start_date)} ~ {formatDate(selectedTournament.end_time || selectedTournament.end_date)}</span>
                     </div>
-                    <div className="flex items-center gap-2 min-w-0 text-amber-400">
+                      <div className="flex items-center gap-2 min-w-0 text-amber-400">
                         <Award className="w-4 h-4" />
                         <span className="font-bold">{formatPrizeUsd(selectedTournament.prize_pool_usd, selectedTournament.prize_pool)}</span>
                       </div>
                   </div>
+                  {isFeaturedTournament(selectedTournament) ? (
+                    <div className="mt-3 text-xs text-amber-200/80">
+                      点击赛事标题可{isFeaturedSelectedTournamentExpanded ? '收起' : '展开'}主赛事定制视图
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="p-6">
-              {isFeaturedTournament(selectedTournament) ? (
+              {isFeaturedSelectedTournamentExpanded ? (
                 <FeaturedTournamentPanel
                   payload={currentFeaturedData}
                   loading={currentFeaturedLoading}
