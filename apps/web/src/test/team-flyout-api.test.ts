@@ -120,8 +120,50 @@ describe('/api/team-flyout', () => {
     expect((res.payload as any).team).toEqual(expect.objectContaining({ team_id: '1', name: 'Team Alpha' }));
     expect((res.payload as any).recentMatches).toHaveLength(5);
     expect((res.payload as any).recentMatches[0].team_hero_ids).toEqual([1, 2, 3, 4, 5]);
-    expect((res.payload as any).activeSquad).toEqual([{ account_id: '11', name: 'Player 11' }]);
+    expect((res.payload as any).activeSquad).toEqual([{ account_id: '11', name: 'Player 11', avatar_url: null }]);
     expect((res.payload as any).topHeroes).toEqual([{ hero_id: 99, matches: 4 }]);
     expect((res.payload as any).pagination).toEqual(expect.objectContaining({ hasMore: true, nextCursor: 5 }));
+  });
+
+  it('rehydrates mirrored squad avatar urls against the current request host', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: '1', name: 'Team Alpha', tag: 'ALP', logo_url: null, region: 'China', is_cn_team: 1 },
+        ];
+      }
+      if (sql.includes('SELECT COUNT(*)::int AS count FROM matches')) return [{ count: 0 }];
+      if (sql.includes('SELECT radiant_team_id, dire_team_id, radiant_win FROM matches')) return [];
+      if (sql.includes('FROM matches m')) return [];
+      if (sql.includes('FROM upcoming_series')) return [];
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+    getTeamFlyoutCachePayloadMock.mockResolvedValue({
+      active_squad: [{
+        account_id: '11',
+        name: 'Player 11',
+        avatar_url: 'https://dota2-hub.vercel.app/images/mirror/players/9403474.png',
+      }],
+      top_heroes_90d: [],
+    });
+    enrichRecentMatchesWithTeamHeroesMock.mockResolvedValue([]);
+
+    const { default: handler } = await import('../../../../api/team-flyout.js');
+    const req = {
+      method: 'GET',
+      query: { teamId: '1', limit: '5', offset: '0' },
+      headers: { host: 'prod.example.com', 'x-forwarded-proto': 'https' },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).activeSquad).toEqual([{
+      account_id: '11',
+      name: 'Player 11',
+      avatar_url: 'https://prod.example.com/images/mirror/players/9403474.png',
+    }]);
   });
 });

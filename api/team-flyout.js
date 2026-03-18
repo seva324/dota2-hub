@@ -3,7 +3,7 @@
  * Returns team summary, next match, and paginated recent matches for a team.
  */
 import { neon } from '@neondatabase/serverless';
-import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { getMirroredAssetUrl, rebaseMirroredAssetUrl } from '../lib/asset-mirror.js';
 import {
   enrichRecentMatchesWithTeamHeroes,
   getTeamFlyoutCachePayload,
@@ -102,6 +102,14 @@ function formatMatchRow(match, teamMap, req) {
     tournament_name_cn: match.tournament_name_cn || null,
     tournament_tier: match.tournament_tier || null,
   };
+}
+
+function rehydrateActiveSquad(activeSquad, req) {
+  if (!Array.isArray(activeSquad)) return [];
+  return activeSquad.map((player) => ({
+    ...player,
+    avatar_url: rebaseMirroredAssetUrl(player?.avatar_url || null, req),
+  }));
 }
 
 export default async function handler(req, res) {
@@ -222,7 +230,7 @@ export default async function handler(req, res) {
       team: formatTeam(selectedTeam, req),
       recentMatches,
       nextMatch,
-      activeSquad: Array.isArray(teamCachePayload?.active_squad) ? teamCachePayload.active_squad : [],
+      activeSquad: rehydrateActiveSquad(teamCachePayload?.active_squad, req),
       topHeroes: Array.isArray(teamCachePayload?.top_heroes_90d) ? teamCachePayload.top_heroes_90d : [],
       stats: {
         wins,
