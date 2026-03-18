@@ -160,7 +160,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                   <span className="inline-flex min-w-0 items-center gap-2">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
                       {playerTeamLogoUrl ? (
-                        <img src={playerTeamLogoUrl} alt={player.teamName || 'Team'} className="h-full w-full object-cover" />
+                        <img src={playerTeamLogoUrl} alt={player?.teamName || 'Team'} className="h-full w-full object-cover" />
                       ) : (
                         <span className="text-[10px] text-slate-500">队</span>
                       )}
@@ -170,8 +170,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                         type="button"
                         className="truncate transition hover:text-white hover:underline underline-offset-2"
                         onClick={() => onTeamSelect?.({
-                          team_id: player.teamId || null,
-                          name: player.teamName || null,
+                          team_id: player?.teamId || null,
+                          name: player?.teamName || null,
                           logo_url: playerTeamLogoUrl || null,
                         })}
                       >
