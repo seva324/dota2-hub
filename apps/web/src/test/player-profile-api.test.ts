@@ -76,6 +76,12 @@ describe('/api/player-profile account_id filter regression', () => {
       {
         match_id: 999,
         start_time: now - 3600,
+        league_id: 19435,
+        tournament_name: 'PGL Wallachia Season 7',
+        radiant_team_id: '10',
+        dire_team_id: '20',
+        radiant_team_name: 'Team A',
+        dire_team_name: 'Team B',
         radiant_score: 2,
         dire_score: 1,
         radiant_win: true,
@@ -99,6 +105,8 @@ describe('/api/player-profile account_id filter regression', () => {
             { hero_id: '12', team: 'radiant', is_pick: true, order: 3 },
             { hero_id: '2', team: 'radiant', is_pick: true, order: 9 },
           ],
+          radiant_team: { team_id: '10', name: 'Team A' },
+          dire_team: { team_id: '20', name: 'Team B' },
         },
       },
     ]);
@@ -126,6 +134,106 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(sql).toContain('LEFT JOIN teams dt');
     expect(sql).toContain(`jsonb_build_object('players'`);
     expect(params).toEqual([9001, 240]);
+  });
+
+  it('supplements recent professional matches from match details when player stats rows miss current team matches', async () => {
+    const now = Math.floor(Date.now() / 1000);
+
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM player_profile_cache')) {
+        return [];
+      }
+      if (sql.includes('FROM pro_players') && sql.includes('LIMIT 1')) {
+        return [{ account_id: 9001, name: 'Player 9001', team_id: 10, team_name: 'Team A' }];
+      }
+      if (sql.includes('FROM upcoming_series')) {
+        return [];
+      }
+      return [];
+    });
+
+    queryMock.mockImplementation(async (sql: string) => {
+      if (sql.includes('FROM player_stats ps')) {
+        return [
+          {
+            match_id: 700,
+            start_time: now - 7200,
+            league_id: 0,
+            tournament_name: null,
+            radiant_score: 10,
+            dire_score: 20,
+            radiant_win: false,
+            payload: {
+              players: [
+                { account_id: '9001', player_slot: '0', hero_id: '12' },
+                { account_id: '1', player_slot: '1', hero_id: '1' },
+                { account_id: '2', player_slot: '2', hero_id: '2' },
+                { account_id: '3', player_slot: '3', hero_id: '3' },
+                { account_id: '4', player_slot: '4', hero_id: '4' },
+                { account_id: '5', player_slot: '128', hero_id: '5' },
+                { account_id: '6', player_slot: '129', hero_id: '6' },
+                { account_id: '7', player_slot: '130', hero_id: '7' },
+                { account_id: '8', player_slot: '131', hero_id: '8' },
+                { account_id: '9', player_slot: '132', hero_id: '9' },
+              ],
+            },
+          },
+        ];
+      }
+
+      if (sql.includes('JOIN match_details md ON md.match_id = m.match_id')) {
+        return [
+          {
+            match_id: 701,
+            start_time: now - 1800,
+            series_type: 'BO3',
+            radiant_team_id: '20',
+            dire_team_id: '10',
+            radiant_team_name: 'Team B',
+            dire_team_name: 'Team A',
+            radiant_team_logo: null,
+            dire_team_logo: null,
+            radiant_score: 1,
+            dire_score: 2,
+            radiant_win: false,
+            league_id: 19435,
+            tournament_name: 'PGL Wallachia Season 7',
+            payload: {
+              players: [
+                { account_id: '5', player_slot: '0', hero_id: '5' },
+                { account_id: '6', player_slot: '1', hero_id: '6' },
+                { account_id: '7', player_slot: '2', hero_id: '7' },
+                { account_id: '8', player_slot: '3', hero_id: '8' },
+                { account_id: '9', player_slot: '4', hero_id: '9' },
+                { account_id: '9001', player_slot: '128', hero_id: '12' },
+                { account_id: '1', player_slot: '129', hero_id: '1' },
+                { account_id: '2', player_slot: '130', hero_id: '2' },
+                { account_id: '3', player_slot: '131', hero_id: '3' },
+                { account_id: '4', player_slot: '132', hero_id: '4' },
+              ],
+              radiant_team: { team_id: '20', name: 'Team B' },
+              dire_team: { team_id: '10', name: 'Team A' },
+            },
+          },
+        ];
+      }
+
+      return [];
+    });
+
+    const { default: handler } = await import('../../../../api/player-profile.js');
+    const req = { method: 'GET', query: { account_id: '9001', refresh: '1' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any)?.recent_matches).toHaveLength(1);
+    expect((res.payload as any)?.recent_matches?.[0]).toMatchObject({
+      match_id: '701',
+      tournament_name: 'PGL Wallachia Season 7',
+    });
   });
 
   it('returns cached payload directly when cache is fresh', async () => {
