@@ -278,7 +278,7 @@ describe('TournamentSection', () => {
     expect(fetchMock).not.toHaveBeenCalledWith('/api/tournaments?tournamentId=epl-world-series&limit=10&offset=0');
   });
 
-  it('renders the featured main event panel for configured majors', async () => {
+  it('reveals the featured main event panel only after clicking the tournament title', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/heroes') {
@@ -403,13 +403,15 @@ describe('TournamentSection', () => {
       />
     );
 
+    expect(screen.queryByText('Bracket rounds and pairings')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 7' })[1]);
     expect(await screen.findByText('Bracket rounds and pairings')).toBeInTheDocument();
-    expect(screen.getByText('Upcoming and finished matches')).toBeInTheDocument();
+    expect(screen.getByText('Upcoming and finished matches').closest('section')).toHaveClass('hidden');
     expect(screen.getAllByText('BetBoom Team').length).toBeGreaterThan(0);
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
   });
 
-  it('opens internal match details for finished featured matches instead of linking out', async () => {
+  it('does not render the featured matches and scores block after the title is expanded', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/heroes') {
@@ -483,15 +485,9 @@ describe('TournamentSection', () => {
       />
     );
 
-    await screen.findByText('Upcoming and finished matches');
-    fireEvent.click(screen.getByRole('button', { name: /Team Liquid/i }));
-
-    await waitFor(() => {
-      expect(matchDetailModalSpy).toHaveBeenLastCalledWith(expect.objectContaining({
-        matchId: 8720834598,
-        open: true,
-      }));
-    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 7' })[1]);
+    await screen.findByText('Main Event');
+    expect(screen.getByText('Upcoming and finished matches').closest('section')).toHaveClass('hidden');
   });
 
   it('does not render tournaments whose tier is empty', async () => {
