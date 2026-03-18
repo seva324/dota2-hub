@@ -149,8 +149,68 @@ describe('/api/player-profile account_id filter regression', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['X-Player-Profile-Cache']).toBe('cache');
-    expect(res.payload).toEqual({ account_id: '9001', player: { name: 'Cached Player' } });
+    expect(res.payload).toEqual(expect.objectContaining({
+      account_id: '9001',
+      player: expect.objectContaining({ name: 'Cached Player', avatar_url: null }),
+    }));
     expect(queryMock.mock.calls.find((call) => String(call[0]).includes('FROM matches m'))).toBeUndefined();
+  });
+
+  it('rehydrates mirrored asset urls in cached payloads against the current request host', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM player_profile_cache')) {
+        return [{
+          account_id: 9001,
+          payload: {
+            account_id: '9001',
+            player: {
+              name: 'Cached Player',
+              avatar_url: 'https://dota2-hub.vercel.app/images/mirror/players/9403474.png',
+            },
+            recent_matches: [{
+              match_id: '99',
+              selected_team: {
+                name: 'Team A',
+                logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png',
+              },
+              opponent: {
+                name: 'Team B',
+                logo_url: '/images/mirror/teams/7119388.png',
+              },
+            }],
+            next_match: {
+              selected_team: {
+                name: 'Team A',
+                logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png',
+              },
+              opponent: {
+                name: 'Team B',
+                logo_url: '/images/mirror/teams/7119388.png',
+              },
+            },
+          },
+          updated_at: new Date().toISOString(),
+        }];
+      }
+      return [];
+    });
+
+    const { default: handler } = await import('../../../../api/player-profile.js');
+    const req = {
+      method: 'GET',
+      query: { account_id: '9001' },
+      headers: { host: 'prod.example.com', 'x-forwarded-proto': 'https' },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any)?.player?.avatar_url).toBe('https://prod.example.com/images/mirror/players/9403474.png');
+    expect((res.payload as any)?.recent_matches?.[0]?.selected_team?.logo_url).toBe('https://prod.example.com/images/mirror/teams/8261500.png');
+    expect((res.payload as any)?.recent_matches?.[0]?.opponent?.logo_url).toBe('https://prod.example.com/images/mirror/teams/7119388.png');
+    expect((res.payload as any)?.next_match?.selected_team?.logo_url).toBe('https://prod.example.com/images/mirror/teams/8261500.png');
   });
 
   it('returns a live uncached payload for fast mode when direct reads succeed, even if no cache exists', async () => {
