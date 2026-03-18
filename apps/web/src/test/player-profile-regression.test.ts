@@ -114,6 +114,10 @@ describe('player profile regression coverage', () => {
       {
         match_id: 401,
         start_time: 1741100000,
+        radiant_team_id: '10',
+        dire_team_id: '20',
+        radiant_team_name: 'Team A',
+        dire_team_name: 'Team B',
         radiant_win: true,
         payload: {
           players: [
@@ -128,11 +132,17 @@ describe('player profile regression coverage', () => {
             { account_id: 8894, player_slot: 131, hero_id: 9 },
             { account_id: 8895, player_slot: 132, hero_id: 10 },
           ],
+          radiant_team: { team_id: '10', name: 'Team A' },
+          dire_team: { team_id: '20', name: 'Team B' },
         },
       },
       {
         match_id: 400,
         start_time: 1740900000,
+        radiant_team_id: '20',
+        dire_team_id: '10',
+        radiant_team_name: 'Team B',
+        dire_team_name: 'Team A',
         radiant_win: false,
         payload: {
           players: [
@@ -147,6 +157,8 @@ describe('player profile regression coverage', () => {
             { account_id: 9903, player_slot: 131, hero_id: 18 },
             { account_id: 9904, player_slot: 132, hero_id: 19 },
           ],
+          radiant_team: { team_id: '20', name: 'Team B' },
+          dire_team: { team_id: '10', name: 'Team A' },
         },
       },
     ];
@@ -162,5 +174,69 @@ describe('player profile regression coverage', () => {
     expect(summary.mostPlayedHeroes).toHaveLength(1);
     expect(summary.mostPlayedHeroes[0]).toMatchObject({ hero_id: 23, matches: 1 });
     expect(summary.signatureHero).toMatchObject({ hero_id: 23 });
+  });
+
+  it('filters unofficial recent matches without league or team identity', () => {
+    const rows = [
+      {
+        match_id: 501,
+        start_time: 1741100000,
+        league_id: 19435,
+        tournament_name: 'PGL Wallachia Season 7',
+        radiant_team_id: '10',
+        dire_team_id: '20',
+        radiant_team_name: 'Team A',
+        dire_team_name: 'Team B',
+        radiant_win: true,
+        payload: {
+          players: [
+            { account_id: 7777, player_slot: 0, hero_id: 99 },
+            { account_id: 1, player_slot: 1, hero_id: 2 },
+            { account_id: 2, player_slot: 2, hero_id: 3 },
+            { account_id: 3, player_slot: 3, hero_id: 4 },
+            { account_id: 4, player_slot: 4, hero_id: 5 },
+            { account_id: 5, player_slot: 128, hero_id: 6 },
+            { account_id: 6, player_slot: 129, hero_id: 7 },
+            { account_id: 7, player_slot: 130, hero_id: 8 },
+            { account_id: 8, player_slot: 131, hero_id: 9 },
+            { account_id: 9, player_slot: 132, hero_id: 10 },
+          ],
+          radiant_team: { team_id: '10', name: 'Team A' },
+          dire_team: { team_id: '20', name: 'Team B' },
+        },
+      },
+      {
+        match_id: 500,
+        start_time: 1741000000,
+        league_id: 0,
+        tournament_name: null,
+        radiant_win: true,
+        payload: {
+          players: [
+            { account_id: 7777, player_slot: 0, hero_id: 42 },
+            { account_id: 11, player_slot: 1, hero_id: 2 },
+            { account_id: 12, player_slot: 2, hero_id: 3 },
+            { account_id: 13, player_slot: 3, hero_id: 4 },
+            { account_id: 14, player_slot: 4, hero_id: 5 },
+            { account_id: 15, player_slot: 128, hero_id: 6 },
+            { account_id: 16, player_slot: 129, hero_id: 7 },
+            { account_id: 17, player_slot: 130, hero_id: 8 },
+            { account_id: 18, player_slot: 131, hero_id: 9 },
+            { account_id: 19, player_slot: 132, hero_id: 10 },
+          ],
+        },
+      },
+    ];
+
+    const summary = summarizePlayerMatches(rows, 7777, {
+      nowTs: 1741200000,
+      windowDays: 90,
+      signatureMinMatchesExclusive: 0,
+      recentLimit: 15,
+    });
+
+    expect(summary.recentMatches).toHaveLength(1);
+    expect(summary.recentMatches[0]).toMatchObject({ match_id: '501', tournament_name: 'PGL Wallachia Season 7' });
+    expect(summary.winRate).toBe(100);
   });
 });
