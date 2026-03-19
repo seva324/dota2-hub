@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { getPlayerProfilePayload } from '../lib/server/player-profile-cache.js';
+import { rebaseMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -30,6 +31,42 @@ function toBool(value) {
     return normalized === '1' || normalized === 'true' || normalized === 'yes';
   }
   return value === true || value === 1;
+}
+
+function rehydrateTeamRef(team, req) {
+  if (!team || typeof team !== 'object') return team;
+  return {
+    ...team,
+    logo_url: rebaseMirroredAssetUrl(team.logo_url || null, req),
+  };
+}
+
+function rehydratePlayerProfilePayload(payload, req) {
+  if (!payload || typeof payload !== 'object') return payload;
+
+  return {
+    ...payload,
+    player: payload.player && typeof payload.player === 'object'
+      ? {
+          ...payload.player,
+          avatar_url: rebaseMirroredAssetUrl(payload.player.avatar_url || null, req),
+        }
+      : payload.player,
+    recent_matches: Array.isArray(payload.recent_matches)
+      ? payload.recent_matches.map((match) => ({
+          ...match,
+          selected_team: rehydrateTeamRef(match?.selected_team, req),
+          opponent: rehydrateTeamRef(match?.opponent, req),
+        }))
+      : payload.recent_matches,
+    next_match: payload.next_match && typeof payload.next_match === 'object'
+      ? {
+          ...payload.next_match,
+          selected_team: rehydrateTeamRef(payload.next_match.selected_team, req),
+          opponent: rehydrateTeamRef(payload.next_match.opponent, req),
+        }
+      : payload.next_match,
+  };
 }
 
 export default async function handler(req, res) {
@@ -73,7 +110,7 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('X-Player-Profile-Cache', source);
-    return res.status(200).json(result.payload);
+    return res.status(200).json(rehydratePlayerProfilePayload(result.payload, req));
   } catch (error) {
     console.error('[PlayerProfile API] Error:', error.message);
     return res.status(500).json({ error: error.message });

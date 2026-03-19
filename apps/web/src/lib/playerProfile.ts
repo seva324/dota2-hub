@@ -1,3 +1,5 @@
+import { resolveTeamLogo } from '@/lib/teams';
+
 export interface SignatureHeroStat {
   hero_id: number;
   games: number;
@@ -104,6 +106,26 @@ export interface PlayerFlyoutModel {
   mostPlayedHeroes?: PlayerFlyoutMostPlayedHero[];
   nextMatch?: PlayerFlyoutNextMatch | null;
   recentMatches?: PlayerFlyoutRecentMatch[];
+}
+
+function resolvePlayerTeamLogo(
+  teamId?: string | null,
+  teamName?: string | null,
+  explicitLogo?: string | null,
+  recentMatches?: any[]
+): string | null {
+  const recentLogo = Array.isArray(recentMatches)
+    ? recentMatches
+        .map((match) => match?.selected_team?.logo_url || null)
+        .find(Boolean) || null
+    : null;
+
+  const resolved = resolveTeamLogo(
+    { teamId: teamId || undefined, name: teamName || undefined },
+    [],
+    explicitLogo || recentLogo
+  );
+  return resolved || null;
 }
 
 type ProPlayersSnapshotRow = {
@@ -262,7 +284,12 @@ export function mapPlayerProfileApiToFlyoutModel(data: any): PlayerFlyoutModel |
     nationality,
     teamId: player.team_id ? String(player.team_id) : (next?.selected_team?.team_id ? String(next.selected_team.team_id) : null),
     teamName: player.team_name || null,
-    teamLogoUrl: next?.selected_team?.logo_url || null,
+    teamLogoUrl: resolvePlayerTeamLogo(
+      player.team_id ? String(player.team_id) : (next?.selected_team?.team_id ? String(next.selected_team.team_id) : null),
+      player.team_name || next?.selected_team?.name || null,
+      next?.selected_team?.logo_url || null,
+      recent
+    ),
     avatarUrl: player.avatar_url || null,
     birthDate: player.birth_date || null,
     birthMonth: toNumber(player.birth_month),
@@ -348,6 +375,12 @@ function buildFallbackFlyoutModel(accountId: number, row: ProPlayersSnapshotRow 
     nationality,
     teamId: row?.team_id !== null && row?.team_id !== undefined ? String(row.team_id) : null,
     teamName: row?.team_name || null,
+    teamLogoUrl: resolvePlayerTeamLogo(
+      row?.team_id !== null && row?.team_id !== undefined ? String(row.team_id) : null,
+      row?.team_name || null,
+      null,
+      []
+    ),
     avatarUrl: row?.avatar_url || null,
     birthMonth: toNumber(row?.birth_month),
     birthYear: toNumber(row?.birth_year),
@@ -382,17 +415,31 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+async function fetchHydratedProfile(accountId: number, query = ''): Promise<PlayerFlyoutModel | null> {
+  try {
+    const res = await fetch(`/api/player-profile?account_id=${accountId}${query}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return mapPlayerProfileApiToFlyoutModel(data);
+  } catch {
+    return null;
+  }
+}
+
 async function pollFastHydratedProfile(accountId: number, maxAttempts = 3): Promise<PlayerFlyoutModel | null> {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     if (attempt > 0) {
       await sleep(1200);
     }
     try {
+      const mapped = await fetchHydratedProfile(accountId, '&fast=1');
+      if (!mapped) continue;
+      const full = await fetchHydratedProfile(accountId, '&refresh=1');
+      if (full) return full;
+
       const res = await fetch(`/api/player-profile?account_id=${accountId}&fast=1`);
       if (!res.ok) continue;
       const data = await res.json();
-      const mapped = mapPlayerProfileApiToFlyoutModel(data);
-      if (!mapped) continue;
       const partial = isFastResponsePartial(res.headers.get('X-Player-Profile-Cache'), data);
       if (!partial) return mapped;
     } catch {
@@ -412,7 +459,7 @@ export async function fetchPlayerProfileFlyoutModel(accountId: number, options: 
       const data = await res.json();
       const mapped = mapPlayerProfileApiToFlyoutModel(data);
       if (mapped) {
-        if (options.onHydrated && isFastResponsePartial(res.headers.get('X-Player-Profile-Cache'), data)) {
+        if (options.onHydrated) {
           void pollFastHydratedProfile(id).then((fullModel) => {
             if (fullModel) options.onHydrated?.(fullModel);
           });

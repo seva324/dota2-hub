@@ -7,6 +7,7 @@ import {
   formatBirthDisplay,
   toFlagImageUrl,
 } from '@/lib/playerProfile';
+import { resolveTeamLogo } from '@/lib/teams';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 
 type HeroMeta = {
@@ -121,6 +122,11 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const recentRows = useMemo(() => buildRecentMatchDraftRows(player?.recentMatches || []), [player?.recentMatches]);
   const flagImageUrl = toFlagImageUrl(player?.nationality, 40);
   const birthDisplay = formatBirthDisplay(player?.birthDate, player?.birthMonth, player?.birthYear);
+  const playerTeamLogoUrl = resolveTeamLogo(
+    { teamId: player?.teamId || undefined, name: player?.teamName || undefined },
+    [],
+    player?.teamLogoUrl || null
+  ) || null;
   const signatureHeroes = player?.signatureHeroes?.length
     ? player.signatureHeroes.slice(0, 3)
     : (player?.signatureHero ? [player.signatureHero] : []);
@@ -153,8 +159,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                 <SheetDescription className="mt-1 text-slate-300">
                   <span className="inline-flex min-w-0 items-center gap-2">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
-                      {player?.teamLogoUrl ? (
-                        <img src={player.teamLogoUrl} alt={player.teamName || 'Team'} className="h-full w-full object-cover" />
+                      {playerTeamLogoUrl ? (
+                        <img src={playerTeamLogoUrl} alt={player?.teamName || 'Team'} className="h-full w-full object-cover" />
                       ) : (
                         <span className="text-[10px] text-slate-500">队</span>
                       )}
@@ -164,9 +170,9 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                         type="button"
                         className="truncate transition hover:text-white hover:underline underline-offset-2"
                         onClick={() => onTeamSelect?.({
-                          team_id: player.teamId || null,
-                          name: player.teamName || null,
-                          logo_url: player.teamLogoUrl || null,
+                          team_id: player?.teamId || null,
+                          name: player?.teamName || null,
+                          logo_url: playerTeamLogoUrl || null,
                         })}
                       >
                         {player.teamName}
@@ -224,11 +230,11 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm text-slate-200">
                     <TeamInline
                       name={player.teamName || player.playerName}
-                      logoUrl={player.nextMatch.selectedTeamLogoUrl || player.teamLogoUrl}
+                      logoUrl={player.nextMatch.selectedTeamLogoUrl || playerTeamLogoUrl}
                       onNameClick={() => onTeamSelect?.({
                         team_id: player.nextMatch?.selectedTeamId || player.teamId || null,
                         name: player.teamName || null,
-                        logo_url: player.nextMatch?.selectedTeamLogoUrl || player.teamLogoUrl || null,
+                        logo_url: player.nextMatch?.selectedTeamLogoUrl || playerTeamLogoUrl || null,
                       })}
                     />
                     <div className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-300">VS</div>
