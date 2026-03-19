@@ -118,6 +118,16 @@ describe('player profile helpers', () => {
         start_time: 1741000000,
         radiant_win: true,
         payload: {
+          radiant_team: {
+            team_id: 101,
+            name: 'Team Radiant',
+            logo_url: '/images/mirror/team-radiant.png',
+          },
+          dire_team: {
+            team_id: 202,
+            name: 'Team Dire',
+            logo_url: '/images/mirror/team-dire.png',
+          },
           players: [
             { account_id: 1001, player_slot: 0, hero_id: 1 },
             { account_id: 2001, player_slot: 1, hero_id: 2 },
