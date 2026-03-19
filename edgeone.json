@@ -1,0 +1,66 @@
+{
+  "installCommand": "npm install",
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "apps/web/dist",
+  "nodeVersion": "22.11.0",
+  "nodeFunctionsConfig": {
+    "maxDuration": 60
+  },
+  "cloudFunctions": {
+    "nodejs": {
+      "includeFiles": [
+        "public/images/mirror/manifest.json",
+        "apps/web/public/images/mirror/manifest.json",
+        "apps/web/dist/images/mirror/manifest.json"
+      ]
+    }
+  },
+  "node-functions": {
+    "included_files": [
+      "public/images/mirror/manifest.json",
+      "apps/web/public/images/mirror/manifest.json",
+      "apps/web/dist/images/mirror/manifest.json"
+    ]
+  },
+  "redirects": [],
+  "rewrites": [
+    {
+      "source": "/api/sync-news",
+      "destination": "/api/cron?action=sync-news"
+    },
+    {
+      "source": "/api/sync-liquipedia",
+      "destination": "/api/cron?action=sync-liquipedia"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/images/mirror/*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/assets/*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "caches": [
+    {
+      "source": "/images/mirror/*",
+      "cacheTtl": 86400
+    },
+    {
+      "source": "/assets/*",
+      "cacheTtl": 31536000
+    }
+  ]
+}

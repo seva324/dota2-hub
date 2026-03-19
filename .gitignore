@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.env.vercel
 *.log
 data/players.db
 memory/
@@ -11,6 +12,7 @@ dist/docs/
 *.exe
 !public/data/
 .vercel
+.edgeone/
 .env*.local
 apps/web/public/images/mirror/
 
