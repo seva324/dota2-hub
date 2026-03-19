@@ -1,0 +1,70 @@
+name: Deploy to EdgeOne
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: edgeone-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build:web
+
+      - name: Run web tests
+        run: npm run test:web
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs:
+      - build-and-test
+    runs-on: ubuntu-latest
+    env:
+      EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+      EDGEONE_PROJECT_NAME: ${{ secrets.EDGEONE_PROJECT_NAME }}
+      EDGEONE_DEPLOY_ENV: ${{ vars.EDGEONE_DEPLOY_ENV || 'production' }}
+      EDGEONE_DEPLOY_AREA: ${{ vars.EDGEONE_DEPLOY_AREA || 'global' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify required secrets
+        run: |
+          test -n "$EDGEONE_API_TOKEN"
+          test -n "$EDGEONE_PROJECT_NAME"
+
+      - name: Deploy to EdgeOne Pages
+        run: |
+          npm exec --yes edgeone@1.3.0 -- pages deploy \
+            -n "$EDGEONE_PROJECT_NAME" \
+            -t "$EDGEONE_API_TOKEN" \
+            -e "$EDGEONE_DEPLOY_ENV" \
+            -a "$EDGEONE_DEPLOY_AREA"
