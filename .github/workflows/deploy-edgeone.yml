@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build web app
+        run: npm run build:web
+
       - name: Verify required secrets
         run: |
           test -n "$EDGEONE_API_TOKEN"
