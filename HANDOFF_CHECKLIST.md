@@ -1,0 +1,30 @@
+# Handoff Checklist
+
+- Log in to Tencent Cloud / EdgeOne Pages.
+- Confirm the existing EdgeOne Pages project name is `dota2-hub`.
+- Create an EdgeOne API token.
+- Add GitHub Secrets:
+  - `EDGEONE_API_TOKEN`
+  - `EDGEONE_PROJECT_NAME`
+  - `EDGEONE_SITE_URL`
+- Add GitHub Variables if needed:
+  - `EDGEONE_DEPLOY_ENV`
+  - `EDGEONE_DEPLOY_AREA`
+- In EdgeOne Pages, fill runtime environment variables:
+  - `DATABASE_URL` or `POSTGRES_URL`
+  - `SITE_BASE_URL`
+  - `PUBLIC_SITE_URL`
+  - `OPENDOTA_API_KEY`
+  - `MINIMAX_API_KEY`
+  - any optional integration keys you actually use
+- Run the `Deploy to EdgeOne` workflow once manually.
+- Confirm the deployed site can load the homepage.
+- Confirm `/api/tournaments`, `/api/upcoming`, `/api/news`, `/api/live-hero`, `/api/cron`, and `/api/mp/home` work.
+- Run the `EdgeOne Scheduled API Jobs` workflow manually for one dry run.
+- Configure the production domain in EdgeOne.
+- Complete ICP filing for the mainland-facing domain.
+- Add the custom domain to EdgeOne Pages.
+- Update DNS records to the EdgeOne target.
+- If you use the WeChat Mini Program, update `TARO_APP_API_BASE_URL` to the new production domain.
+- Validate homepage, API responses, database-backed pages, image assets, rewrites, redirects, and scheduled jobs.
+- Observe EdgeOne logs and GitHub Actions results during the first production window.

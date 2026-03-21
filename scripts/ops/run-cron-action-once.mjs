@@ -19,6 +19,22 @@ function parseArgs(argv) {
   return result;
 }
 
+function pickNonNegativeInt(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.trunc(parsed);
+}
+
+function pickBoolean(value, fallback = false) {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return fallback;
+}
+
 function ensureDir(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
@@ -37,6 +53,22 @@ function summarizeResult(payload) {
     .slice(0, 8)
     .map(([k, v]) => `${k}=${typeof v === 'object' ? '[obj]' : v}`)
     .join(', ') || 'ok';
+}
+
+function readLastJsonLine(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const lines = raw.trim().split('\n');
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    try {
+      return JSON.parse(line);
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 async function invokeEndpoint(url, timeoutMs) {
@@ -76,8 +108,36 @@ async function main() {
   const timeoutMs = Number(args['timeout-ms'] || 120000);
   const logPath = args.log || `/tmp/d2hub-${action}.jsonl`;
   const notify = args.notify !== '0';
+  const force = pickBoolean(args.force, false);
+  const defaultMinInterval =
+    (action === 'sync-news' || action === 'sync-liquipedia')
+      ? 180
+      : (action === 'sync-opendota' ? 60 : 0);
+  const envMinInterval = pickNonNegativeInt(process.env.D2HUB_CRON_MIN_INTERVAL_MIN || process.env.CRON_MIN_INTERVAL_MIN, null);
+  const argMinInterval = pickNonNegativeInt(args['min-interval-min'], null);
+  const minIntervalMin = argMinInterval ?? envMinInterval ?? defaultMinInterval;
   const startedAt = new Date().toISOString();
   const url = `${base}/api/cron?action=${encodeURIComponent(action)}`;
+
+  if (!force && minIntervalMin > 0) {
+    const lastRecord = readLastJsonLine(logPath);
+    const lastTs = lastRecord?.ts ? Date.parse(lastRecord.ts) : null;
+    if (Number.isFinite(lastTs)) {
+      const elapsedMs = Date.now() - lastTs;
+      if (elapsedMs >= 0 && elapsedMs < minIntervalMin * 60 * 1000) {
+        appendJsonLine(logPath, {
+          ts: startedAt,
+          action,
+          url,
+          ok: true,
+          skipped: true,
+          skipReason: `min_interval_${minIntervalMin}m`,
+          lastTs: lastRecord.ts,
+        });
+        return;
+      }
+    }
+  }
 
   if (notify) {
     await sendTelegramMessage([`🚀 d2hub ${action}`, `状态: 已启动`, `时间: ${startedAt}`].join('\n')).catch(() => {});

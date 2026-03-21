@@ -1,0 +1,29 @@
+# Go Live Checklist
+
+- Static assets load without 404s.
+- `/images/mirror/*` assets resolve from the production domain.
+- Main web app loads on desktop.
+- Main web app loads on mobile.
+- CSR sections fetch `/api/*` successfully.
+- `/api/tournaments` returns data.
+- `/api/upcoming` returns data.
+- `/api/team-flyout` returns data for a known team.
+- `/api/player-profile` returns data for a known account id.
+- `/api/news` returns data or the documented fallback payload.
+- `/api/live-hero` returns a valid payload shape.
+- `/api/mp/home` returns the mini-program response envelope.
+- `/api/cron?action=sync-opendota` is callable by scheduled workflow.
+- `/api/sync-news` alias works.
+- `/api/sync-liquipedia` alias works.
+- Database reads succeed from production runtime.
+- Any write or refresh endpoints behave as expected.
+- Cookie and header behavior is acceptable for your production domain.
+- Rewrites and redirects behave as expected.
+- Cache headers are present on static assets.
+- 404 behavior is acceptable.
+- 500 behavior is observable in logs.
+- Core SEO elements still exist on the static app shell.
+- GitHub Actions deploy succeeds from `main`.
+- GitHub Actions scheduled jobs succeed against the production site.
+- EdgeOne runtime environment variables are present.
+- ICP filing, custom domain binding, and DNS cutover are complete.

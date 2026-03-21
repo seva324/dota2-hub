@@ -30,3 +30,6 @@ Thumbs.db
 .idea/
 .swc/
 *.tsbuildinfo
+
+# Local agent state
+.omx/

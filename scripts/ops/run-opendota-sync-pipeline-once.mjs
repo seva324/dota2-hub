@@ -27,6 +27,22 @@ function parseArgs(argv) {
   return result;
 }
 
+function pickNonNegativeInt(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.trunc(parsed);
+}
+
+function pickBoolean(value, fallback = false) {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return fallback;
+}
+
 function ensureDir(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
@@ -34,6 +50,22 @@ function ensureDir(filePath) {
 function appendJsonLine(filePath, value) {
   ensureDir(filePath);
   fs.appendFileSync(filePath, `${JSON.stringify(value)}\n`);
+}
+
+function readLastJsonLine(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const lines = raw.trim().split('\n');
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    try {
+      return JSON.parse(line);
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 function sleep(ms) {
@@ -359,10 +391,33 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const logPath = args.log || '/tmp/d2hub-opendota-pipeline.jsonl';
   const notify = args.notify !== '0';
+  const force = pickBoolean(args.force, false);
+  const defaultMinInterval = 60;
+  const envMinInterval = pickNonNegativeInt(process.env.D2HUB_OPENDOTA_PIPELINE_MIN_INTERVAL_MIN || process.env.D2HUB_CRON_MIN_INTERVAL_MIN || process.env.CRON_MIN_INTERVAL_MIN, null);
+  const argMinInterval = pickNonNegativeInt(args['min-interval-min'], null);
+  const minIntervalMin = argMinInterval ?? envMinInterval ?? defaultMinInterval;
   const backfillLimit = Number(args['backfill-limit'] || 10);
   const backfillRounds = Number(args['backfill-rounds'] || 3);
   const backfillDelayMs = Number(args['backfill-delay-ms'] || 1100);
   const startedAt = new Date().toISOString();
+
+  if (!force && minIntervalMin > 0) {
+    const lastRecord = readLastJsonLine(logPath);
+    const lastTs = lastRecord?.ts ? Date.parse(lastRecord.ts) : null;
+    if (Number.isFinite(lastTs)) {
+      const elapsedMs = Date.now() - lastTs;
+      if (elapsedMs >= 0 && elapsedMs < minIntervalMin * 60 * 1000) {
+        appendJsonLine(logPath, {
+          ts: startedAt,
+          ok: true,
+          skipped: true,
+          skipReason: `min_interval_${minIntervalMin}m`,
+          lastTs: lastRecord.ts,
+        });
+        return;
+      }
+    }
+  }
 
   if (notify) {
     await sendTelegramMessage([`🚀 d2hub sync-opendota pipeline`, `状态: 已启动`, `时间: ${startedAt}`].join('\n')).catch(() => {});
