@@ -63,6 +63,18 @@ const CUSTOM_BODY_FILE = getArg('body-file', null);
 const CUSTOM_TOPIC = getArg('topic', null);
 const TEMPLATE = getArg('template', 'auto');
 const PRESET = getArg('preset', process.env.XHS_POST_PRESET || 'default');
+const AI_REWRITE = !['0', 'false', 'no', 'off'].includes(String(getArg('ai-rewrite', process.env.XHS_AI_REWRITE || 'true')).toLowerCase());
+const CODEX_BIN = getArg('codex-bin', process.env.XHS_CODEX_BIN || 'codex');
+const CODEX_MODEL = getArg('codex-model', process.env.XHS_CODEX_MODEL || 'gpt-5.4-mini');
+const CODEX_TIMEOUT_MS = Math.max(5000, Number(getArg('ai-timeout-ms', process.env.XHS_REWRITE_TIMEOUT_MS || '45000')) || 45000);
+const XHS_POST_TIMEOUT_MS = Math.max(10000, Number(getArg('post-timeout-ms', process.env.XHS_POST_TIMEOUT_MS || '180000')) || 180000);
+const LOCK_STALE_MS = Math.max(60000, Number(getArg('lock-stale-ms', process.env.XHS_POST_LOCK_STALE_MS || '900000')) || 900000);
+const LOCK_FILE = getArg('lock-file', process.env.XHS_POST_LOCK_FILE || path.join(os.homedir(), '.dota2-hub', 'xhs-post.lock'));
+const WECHAT_AUTO_DRAFT = !['0', 'false', 'no', 'off'].includes(String(getArg('wechat-auto-draft', process.env.WECHAT_AUTO_DRAFT || 'true')).toLowerCase());
+const REWRITE_PROMPT_FILE = getArg(
+  'prompt-file',
+  process.env.XHS_REWRITE_PROMPT_FILE || path.resolve(process.cwd(), 'docs/xhs-community-post-prompt.md')
+);
 
 const sql = neon(DB_URL);
 
@@ -95,6 +107,58 @@ function clipText(text = '', maxLen = 420) {
   const plain = normalizeWhitespace(stripMarkdown(text));
   if (plain.length <= maxLen) return plain;
   return `${plain.slice(0, maxLen - 1).trim()}…`;
+}
+
+function trimTrailingPunctuation(text = '') {
+  return String(text || '').replace(/[\s，。！？、；：,.!?;:]+$/g, '').trim();
+}
+
+function clipTextComplete(text = '', maxLen = 420) {
+  const plain = normalizeWhitespace(stripMarkdown(text));
+  if (plain.length <= maxLen) return plain;
+
+  const slice = plain.slice(0, maxLen).trim();
+  const breakpoints = ['\n\n', '。', '！', '？', '；', '\n', '，', '、', ' '];
+  for (const breakpoint of breakpoints) {
+    const idx = slice.lastIndexOf(breakpoint);
+    if (idx >= Math.max(8, Math.floor(maxLen * 0.45))) {
+      const candidate = trimTrailingPunctuation(slice.slice(0, idx));
+      if (candidate) return candidate;
+    }
+  }
+
+  return trimTrailingPunctuation(slice);
+}
+
+function maybeReadText(filePath) {
+  if (!filePath) return '';
+  try {
+    return fs.readFileSync(filePath, 'utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
+function removeCodeFence(text = '') {
+  const trimmed = String(text || '').trim();
+  if (!trimmed.startsWith('```')) return trimmed;
+  return trimmed.replace(/^```[a-zA-Z0-9_-]*\n?/, '').replace(/\n?```$/, '').trim();
+}
+
+function extractJsonObject(text = '') {
+  const cleaned = removeCodeFence(text);
+  const direct = cleaned.match(/\{[\s\S]*\}/);
+  return direct ? direct[0] : cleaned;
+}
+
+function cleanTopicToken(value = '') {
+  return normalizeWhitespace(String(value || '').replace(/^#+/, '').trim());
+}
+
+function safeUnlink(filePath) {
+  try {
+    fs.unlinkSync(filePath);
+  } catch {}
 }
 
 function readOptionalFile(filePath) {
@@ -162,9 +226,9 @@ function toBulletLines(sentences, limit = 3, maxLen = 34) {
 
 function buildLead(row, articleBody, postType) {
   const summary = normalizeWhitespace(row.summary_zh || '');
-  if (summary) return clipText(summary, 52);
+  if (summary) return clipTextComplete(summary, 52);
   const firstSentence = extractSentences(articleBody)[0];
-  if (firstSentence) return clipText(firstSentence, 52);
+  if (firstSentence) return clipTextComplete(firstSentence, 52);
   if (postType === 'event') return '这站比赛信息已经出来了，先看重点。';
   if (postType === 'transfer') return '这条阵容动态和外界之前的判断不太一样。';
   if (postType === 'postmatch') return '这场赛后复盘已经把问题点得很直接。';
@@ -281,7 +345,7 @@ function buildBodyFromTemplate(row, template) {
   if (template === 'postmatch') {
     const lead = summary || '赛后复盘已经把问题点得比较直接。';
     return normalizeWhitespace([
-      clipText(lead, 52),
+      clipTextComplete(lead, 52),
       '',
       '- 主要问题集中在BP处理',
       '- 系列赛中段一度还能咬住局势',
@@ -330,13 +394,13 @@ function buildBody(row) {
   const template = resolveTemplate(row);
   const preset = resolvePreset();
   const limit = preset === 'concise-news' ? 220 : 260;
-  return clipText(buildBodyFromTemplate(row, template), limit);
+  return clipTextComplete(buildBodyFromTemplate(row, template), limit);
 }
 
 function buildTitle(row) {
   const overrideTitle = CUSTOM_TITLE || readOptionalFile(CUSTOM_TITLE_FILE);
-  if (overrideTitle) return clipText(normalizeWhitespace(overrideTitle), 32);
-  return buildTemplateTitle(row, resolveTemplate(row));
+  if (overrideTitle) return clipTextComplete(normalizeWhitespace(overrideTitle), 20);
+  return clipTextComplete(buildTemplateTitle(row, resolveTemplate(row)), 20);
 }
 
 function buildTopic(row) {
@@ -346,6 +410,157 @@ function buildTopic(row) {
   if (/Team Spirit/i.test(sourceText)) return 'Team Spirit';
   if (/Dota 2|DOTA2|刀塔/i.test(sourceText)) return 'DOTA2';
   return null;
+}
+
+const REWRITE_PROMPT_REFERENCE = maybeReadText(REWRITE_PROMPT_FILE);
+const REWRITE_PROMPT_CORE = [
+  '你要把 Dota2 新闻改写成可以直接发小红书的中文正文。',
+  '不要输出固定格式，不要分“标题/正文/快评/总结/标签/简评”这些模块。',
+  '默认只输出一篇可以直接发的正文，像真人在复述，不像模板机。',
+  '风格要求：论坛复述风，像长期看比赛的人在讲这条新闻。不要新闻稿腔，不要翻译腔，不要摘要器口吻。不要“他表示、值得一提的是、此外、同时、综上”这些词。主观想法、吐槽、判断要自然穿插。可以有“说白了、这波、最难绷的是、你会感觉、其实问题就在这”这种表达，但不能低俗，不能造谣，不能把传闻写成实锤。',
+  '内容要求：先抓最值得聊的点开头。不要按原文顺序逐段翻。保留事实，但表达必须彻底中文化。允许省略不重要的背景废话。更像把新闻讲给懂 Dota2 的人听，而不是翻译给人看。',
+  '重要：最终成品必须像真人临场写出来的，不要像排版工整的 AI 成稿。不要在结尾补“总的来说”“简评”“快评”“一句话看法”之类的收尾模板。结尾要自然收住。',
+  '如果原文信息很少，可以写短一点；如果信息多，可以自然展开，不需要统一长度。',
+  '输出必须严格是 JSON：{"title":"...","body":"...","topics":["#DOTA2","#电竞新闻"]}',
+  '标题必须是完整中文标题，最多 20 个中文字，不能为了压字数输出省略号。可以适当使用 emoji。',
+].join('\n');
+
+function buildRewritePrompt(row, draft) {
+  const template = resolveTemplate(row);
+  const articleBody = clipText(sanitizeArticleBody(row), 1800);
+  return [
+    REWRITE_PROMPT_CORE,
+    REWRITE_PROMPT_REFERENCE ? `补充参考：${clipText(REWRITE_PROMPT_REFERENCE.replace(/\s+/g, ' '), 400)}` : '',
+    '',
+    '现在请基于下面这条新闻，输出最终发帖 JSON。',
+    '输出格式必须严格是 JSON，不要加解释，不要加 Markdown 代码块：',
+    '{"title":"...","body":"...","topics":["#DOTA2","#电竞新闻"]}',
+    '',
+    '要求补充：',
+    '- 标题最多只能 20 个字',
+    '- 正文 90 到 220 字，短句、短段、留空行',
+    '- 可以适当使用 emoji，但不要堆砌',
+    '- topics 输出 3 到 5 个话题',
+    '- 不要带原文链接',
+    '- 所有事实必须忠于输入新闻',
+    '',
+    `建议模板: ${template}`,
+    `草稿标题: ${draft.title}`,
+    `草稿正文: ${draft.body}`,
+    '',
+    `中文标题: ${normalizeWhitespace(row.title_zh || '')}`,
+    `中文摘要: ${clipText(row.summary_zh || '', 240)}`,
+    `中文正文: ${articleBody}`,
+    `英文标题: ${normalizeWhitespace(row.title_en || '')}`,
+    `英文摘要: ${clipText(row.summary_en || '', 240)}`,
+  ].join('\n');
+}
+
+function callRewriteModel(prompt) {
+  const tempBase = path.join(os.tmpdir(), `d2hub-xhs-codex-${process.pid}-${Date.now()}`);
+  const schemaPath = `${tempBase}.schema.json`;
+  const outputPath = `${tempBase}.out.json`;
+  const schema = {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      body: { type: 'string' },
+      topics: {
+        type: 'array',
+        items: { type: 'string' },
+      },
+    },
+    required: ['title', 'body', 'topics'],
+    additionalProperties: false,
+  };
+
+  fs.writeFileSync(schemaPath, `${JSON.stringify(schema, null, 2)}\n`, 'utf8');
+  const argv = [
+    'exec',
+    '--skip-git-repo-check',
+    '--ephemeral',
+    '--sandbox',
+    'read-only',
+    '--output-schema',
+    schemaPath,
+    '-o',
+    outputPath,
+  ];
+  if (CODEX_MODEL) {
+    argv.push('-m', CODEX_MODEL);
+  }
+  argv.push('-');
+
+  const result = spawnSync(
+    CODEX_BIN,
+    argv,
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      input: prompt,
+      encoding: 'utf8',
+      timeout: CODEX_TIMEOUT_MS,
+      maxBuffer: 1024 * 1024 * 8,
+    }
+  );
+
+  const stderr = String(result.stderr || '').trim();
+  const stdout = String(result.stdout || '').trim();
+  let output = '';
+  try {
+    output = fs.readFileSync(outputPath, 'utf8').trim();
+  } catch {}
+  safeUnlink(schemaPath);
+  safeUnlink(outputPath);
+
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw new Error(stderr || stdout || `codex exited with status ${result.status}`);
+  }
+  if (!output) {
+    throw new Error(stderr || 'codex returned empty output');
+  }
+  return output;
+}
+
+function parseRewritePayload(rawText, fallback) {
+  const candidate = extractJsonObject(rawText);
+  let parsed = null;
+  try {
+    parsed = JSON.parse(candidate);
+  } catch (error) {
+    throw new Error(`Invalid rewrite JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const title = clipText(normalizeWhitespace(parsed?.title || fallback.title), 20);
+  const body = clipText(normalizeWhitespace(parsed?.body || fallback.body), 240);
+  const topics = Array.isArray(parsed?.topics)
+    ? parsed.topics.map((item) => cleanTopicToken(item)).filter(Boolean)
+    : [];
+
+  return {
+    title: title || fallback.title,
+    body: body || fallback.body,
+    topic: topics[0] || fallback.topic,
+    topics,
+  };
+}
+
+async function maybeRewriteDraft(row, draft) {
+  if (!AI_REWRITE) return { ...draft, rewritten: false };
+  if (CUSTOM_TITLE || CUSTOM_BODY || CUSTOM_TITLE_FILE || CUSTOM_BODY_FILE) {
+    return { ...draft, rewritten: false };
+  }
+
+  try {
+    const output = await callRewriteModel(buildRewritePrompt(row, draft));
+    return { ...parseRewritePayload(output, draft), rewritten: true };
+  } catch (error) {
+    console.warn(`[xhs] rewrite fallback for ${row.id}: ${error instanceof Error ? error.message : String(error)}`);
+    return { ...draft, rewritten: false };
+  }
 }
 
 async function loadState() {
@@ -362,24 +577,74 @@ async function saveState(state) {
   await writeFile(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 }
 
+function pidLooksAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readLockFile(filePath) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function removeLockFile(filePath, token) {
+  const current = readLockFile(filePath);
+  if (current?.token !== token) return;
+  safeUnlink(filePath);
+}
+
+function acquireProcessLock(filePath) {
+  ensureDir(filePath);
+  const startedAt = Date.now();
+  const token = `${process.pid}-${startedAt}`;
+  const payload = { pid: process.pid, startedAt, token };
+
+  while (true) {
+    try {
+      fs.writeFileSync(filePath, `${JSON.stringify(payload)}\n`, { encoding: 'utf8', flag: 'wx' });
+      return { filePath, token };
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+
+    const existing = readLockFile(filePath);
+    const ageMs = existing?.startedAt ? Date.now() - Number(existing.startedAt) : Number.POSITIVE_INFINITY;
+    const stale = !existing || !pidLooksAlive(Number(existing.pid)) || ageMs > LOCK_STALE_MS;
+    if (!stale) {
+      return null;
+    }
+    safeUnlink(filePath);
+  }
+}
+
 function detectReverseXhsCli() {
+  const which = spawnSync('bash', ['-lc', 'command -v xhs || true'], { encoding: 'utf8' });
+  const onPath = String(which.stdout || '').trim();
   const candidates = [
     PREFERRED_XHS_CLI,
+    path.join(os.homedir(), '.local', 'bin', 'xhs'),
+    onPath,
     path.join(os.homedir(), '.local', 'share', 'xhs-api-cli-venv', 'bin', 'xhs'),
     path.join(os.tmpdir(), 'xhs-api-venv', 'bin', 'xhs'),
   ].filter(Boolean);
 
   for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return candidate;
+    if (!fs.existsSync(candidate)) continue;
+    const probe = spawnSync(candidate, ['--help'], { encoding: 'utf8' });
+    const text = `${probe.stdout || ''}\n${probe.stderr || ''}`;
+    if (/xiaohongshu cli|reverse-engineered api/i.test(text)) return candidate;
   }
 
-  const which = spawnSync('bash', ['-lc', 'command -v xhs || true'], { encoding: 'utf8' });
-  const onPath = String(which.stdout || '').trim();
-  if (!onPath) return null;
-
-  const probe = spawnSync(onPath, ['--help'], { encoding: 'utf8' });
-  const text = `${probe.stdout || ''}\n${probe.stderr || ''}`;
-  if (/reverse-engineered API/i.test(text)) return onPath;
   return null;
 }
 
@@ -408,6 +673,10 @@ function rowNeedsZh(row) {
   return Boolean(row?.title_zh || row?.summary_zh || row?.content_zh || row?.content_markdown_zh);
 }
 
+function rowHasEnglishSource(row) {
+  return Boolean(row?.title_en || row?.summary_en || row?.content_en || row?.content_markdown_en);
+}
+
 function downloadImage(url, outPath) {
   const res = spawnSync('curl', ['-Lk', url, '-o', outPath], { encoding: 'utf8' });
   if (res.status !== 0) {
@@ -415,84 +684,149 @@ function downloadImage(url, outPath) {
   }
 }
 
-function publishViaXhs(xhsCli, row, imagePath) {
-  const title = buildTitle(row);
-  const body = buildBody(row);
-  const topic = buildTopic(row);
-  const argv = ['post', '--title', title, '--body', body, '--images', imagePath, '--json'];
-  if (topic) argv.push('--topic', topic);
+function parseXhsJson(stdout = '') {
+  try {
+    return JSON.parse(stdout || '{}');
+  } catch {
+    return null;
+  }
+}
+
+function runXhsPublish(xhsCli, argv) {
   const res = spawnSync(
     xhsCli,
     argv,
-    { encoding: 'utf8', maxBuffer: 1024 * 1024 * 8 }
+    { encoding: 'utf8', maxBuffer: 1024 * 1024 * 8, timeout: XHS_POST_TIMEOUT_MS }
   );
   const combined = `${res.stdout || ''}\n${res.stderr || ''}`.trim();
-  let payload = null;
-  try {
-    payload = JSON.parse(res.stdout || '{}');
-  } catch {}
-  if (res.status !== 0 || !payload?.ok) {
-    throw new Error(combined || `xhs exited with status ${res.status}`);
+  const responsePayload = parseXhsJson(res.stdout);
+  return { res, combined, responsePayload };
+}
+
+function publishViaXhs(xhsCli, payload, imagePath) {
+  const { title, body, topic } = payload;
+  const standardArgv = ['post', '--title', title, '--body', body, '--images', imagePath, '--json'];
+  if (topic) standardArgv.push('--topic', topic);
+  const standardResult = runXhsPublish(xhsCli, standardArgv);
+  if (standardResult.res.status === 0 && standardResult.responsePayload?.ok) {
+    return { payload: standardResult.responsePayload, title, body, topic, method: 'post' };
   }
-  return { payload, title, body, topic };
+  throw new Error(standardResult.combined || `xhs exited with status ${standardResult.res.status}`);
+}
+
+function syncWeChatDrafts(ids = []) {
+  if (!WECHAT_AUTO_DRAFT || !ids.length) return null;
+  const hasWechatCreds = Boolean(process.env.WECHAT_APP_ID && process.env.WECHAT_APP_SECRET);
+  if (!hasWechatCreds) {
+    console.warn('[wechat] skip draft sync: missing WECHAT_APP_ID/WECHAT_APP_SECRET');
+    return null;
+  }
+
+  const scriptPath = path.resolve(process.cwd(), 'scripts', 'post-news-to-wechat-drafts.mjs');
+  const argv = [scriptPath];
+  for (const id of ids) {
+    argv.push('--id', String(id));
+  }
+  const result = spawnSync(process.execPath, argv, {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024 * 8,
+  });
+  if (result.status !== 0) {
+    console.warn(`[wechat] draft sync failed: ${(result.stderr || result.stdout || '').trim()}`);
+    return { ok: false, error: (result.stderr || result.stdout || '').trim() };
+  }
+
+  try {
+    return JSON.parse(result.stdout || '{}');
+  } catch {
+    return { ok: true, raw: (result.stdout || '').trim() };
+  }
 }
 
 async function main() {
-  const xhsCli = detectReverseXhsCli();
-  if (!xhsCli) {
-    console.error('Could not find reverse-api xhs CLI. Set XHS_REVERSE_CLI or install xiaohongshu-cli into ~/.local/share/xhs-api-cli-venv.');
-    process.exit(1);
+  const lock = acquireProcessLock(LOCK_FILE);
+  if (!lock) {
+    console.log(JSON.stringify({ ok: true, skipped: true, reason: 'busy', lock_file: LOCK_FILE }, null, 2));
+    return;
   }
-
-  const rows = await fetchRows();
-  const state = await loadState();
-  const tempDir = await mkdtemp(TEMP_PREFIX);
-  const results = [];
 
   try {
-    for (const row of rows) {
-      const already = state[row.id];
-      if (!FORCE && already) {
-        results.push({ id: row.id, status: 'skipped', reason: 'already_posted', note_id: already.note_id || '' });
-        continue;
-      }
-      if (!rowNeedsZh(row)) {
-        results.push({ id: row.id, status: 'skipped', reason: 'missing_zh_translation' });
-        continue;
-      }
-      if (!row.image_url) {
-        results.push({ id: row.id, status: 'skipped', reason: 'missing_image_url' });
-        continue;
-      }
-
-      const imagePath = path.join(tempDir, `${row.id}.jpg`);
-      downloadImage(row.image_url, imagePath);
-      const title = buildTitle(row);
-      const body = buildBody(row);
-
-      if (DRY_RUN) {
-        results.push({ id: row.id, status: 'dry_run', title, body, image_url: row.image_url, url: row.url });
-        continue;
-      }
-
-      const { payload, topic } = publishViaXhs(xhsCli, row, imagePath);
-      const noteId = String(payload?.data?.id || '');
-      state[row.id] = {
-        note_id: noteId,
-        posted_at: new Date().toISOString(),
-        url: row.url,
-        title: title,
-        topic: topic || '',
-      };
-      await saveState(state);
-      results.push({ id: row.id, status: 'posted', note_id: noteId, title });
-      console.log(`posted id=${row.id} note_id=${noteId}`);
+    const xhsCli = detectReverseXhsCli();
+    if (!xhsCli) {
+      throw new Error('Could not find reverse-api xhs CLI. Set XHS_REVERSE_CLI or install xiaohongshu-cli into ~/.local/share/xhs-api-cli-venv.');
     }
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
 
-  console.log(JSON.stringify({ ok: true, count: results.length, results }, null, 2));
+    const rows = await fetchRows();
+    const state = await loadState();
+    const tempDir = await mkdtemp(TEMP_PREFIX);
+    const results = [];
+    const postedIds = [];
+
+    try {
+      for (const row of rows) {
+        const already = state[row.id];
+        if (!FORCE && already) {
+          results.push({ id: row.id, status: 'skipped', reason: 'already_posted', note_id: already.note_id || '' });
+          continue;
+        }
+        if (!rowNeedsZh(row)) {
+          results.push({ id: row.id, status: 'skipped', reason: 'missing_zh_translation' });
+          continue;
+        }
+        if (!row.image_url) {
+          results.push({ id: row.id, status: 'skipped', reason: 'missing_image_url' });
+          continue;
+        }
+
+        const imagePath = path.join(tempDir, `${row.id}.jpg`);
+        downloadImage(row.image_url, imagePath);
+        const draft = {
+          title: buildTitle(row),
+          body: buildBody(row),
+          topic: buildTopic(row),
+        };
+        const rewritten = await maybeRewriteDraft(row, draft);
+
+        if (DRY_RUN) {
+          results.push({
+            id: row.id,
+            status: 'dry_run',
+            title: rewritten.title,
+            body: rewritten.body,
+            topic: rewritten.topic || '',
+            rewritten: Boolean(rewritten.rewritten),
+            image_url: row.image_url,
+            url: row.url,
+          });
+          continue;
+        }
+
+        const { payload, topic, method } = publishViaXhs(xhsCli, rewritten, imagePath);
+        const noteId = String(payload?.data?.id || '');
+        state[row.id] = {
+          note_id: noteId,
+          posted_at: new Date().toISOString(),
+          url: row.url,
+          title: rewritten.title,
+          topic: topic || '',
+          method,
+        };
+        await saveState(state);
+        results.push({ id: row.id, status: 'posted', note_id: noteId, title: rewritten.title, rewritten: Boolean(rewritten.rewritten), method });
+        postedIds.push(row.id);
+        console.log(`posted id=${row.id} note_id=${noteId} method=${method}`);
+      }
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+
+    const wechat = DRY_RUN ? null : syncWeChatDrafts(postedIds);
+    console.log(JSON.stringify({ ok: true, count: results.length, results, wechat }, null, 2));
+  } finally {
+    removeLockFile(lock.filePath, lock.token);
+  }
 }
 
 main().catch((error) => {
