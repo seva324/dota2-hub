@@ -13,6 +13,7 @@ const HAWK_LIST_SCAN_LIMIT = 40;
 const MAX_CONTENT_LENGTH = 5000;
 const NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
+const BO3_API_BASE = 'https://api.bo3.gg/api/v1';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 const MINIMAX_API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
@@ -194,6 +195,144 @@ function htmlInlineToMarkdown(input = '', baseUrl = '') {
     return `[${label}](${normalized})`;
   });
   return stripHtmlWithParagraphs(withLinks);
+}
+
+function getBo3SlugFromUrl(rawUrl = '', baseUrl = 'https://bo3.gg') {
+  const normalized = normalizeBo3NewsUrl(rawUrl, baseUrl);
+  if (!normalized) return null;
+  try {
+    const pathname = new URL(normalized).pathname;
+    return pathname.split('/').filter(Boolean).pop() || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractBo3ApiBodyData(body, baseUrl) {
+  const blocks = Array.isArray(body?.blocks) ? body.blocks : [];
+  const markdownBlocks = [];
+  const imageUrls = [];
+
+  for (const block of blocks) {
+    const type = String(block?.type || '');
+    const data = block?.data || {};
+
+    if (type === 'paragraph') {
+      const text = htmlInlineToMarkdown(data.text || '', baseUrl).trim();
+      if (text) markdownBlocks.push(text);
+      continue;
+    }
+
+    if (type === 'header') {
+      const level = Math.min(6, Math.max(2, Number(data.level) || 2));
+      const text = htmlInlineToMarkdown(data.text || '', baseUrl).trim();
+      if (text) markdownBlocks.push(`${'#'.repeat(level)} ${text}`);
+      continue;
+    }
+
+    if (type === 'quote') {
+      const text = htmlInlineToMarkdown(data.text || '', baseUrl).trim();
+      if (text) markdownBlocks.push(`> ${text}`);
+      continue;
+    }
+
+    if (type === 'list') {
+      const style = data.style === 'ordered' ? 'ordered' : 'unordered';
+      const items = Array.isArray(data.items) ? data.items : [];
+      const lines = items
+        .map((item, idx) => {
+          const text = htmlInlineToMarkdown(typeof item === 'string' ? item : '', baseUrl).trim();
+          if (!text) return null;
+          return style === 'ordered' ? `${idx + 1}. ${text}` : `- ${text}`;
+        })
+        .filter(Boolean);
+      if (lines.length > 0) markdownBlocks.push(lines.join('\n'));
+      continue;
+    }
+
+    if (type === 'image') {
+      const src = normalizeUrl(data?.file?.url || '', baseUrl) || data?.file?.url || '';
+      if (src && !imageUrls.includes(src)) imageUrls.push(src);
+      continue;
+    }
+  }
+
+  const contentMarkdown = sanitizeStoredMarkdown(
+    normalizeBo3ContentMarkdown(markdownBlocks.join('\n\n').trim())
+  );
+  return {
+    contentMarkdown,
+    content: truncateText(markdownToText(contentMarkdown)),
+    imageUrls,
+  };
+}
+
+async function fetchBo3ApiList() {
+  const params = new URLSearchParams({
+    scope: 'widget-news-infinity-list',
+    'page[offset]': '0',
+    'page[limit]': String(DETAIL_FETCH_LIMIT),
+    sort: '-published_at',
+    'filter[news.rank][in]': '0,1,2',
+    'filter[news.locale][eq]': 'en',
+    'filter[base_news.discipline_id][in]': '4',
+    'filter[base_news.section][in]': '1',
+  });
+
+  const res = await fetchWithTimeout(`${BO3_API_BASE}/base_news?${params.toString()}`, {
+    headers: {
+      Accept: 'application/json',
+      Origin: 'https://bo3.gg',
+      Referer: 'https://bo3.gg/dota2/news',
+    },
+  }, 12000);
+  if (!res.ok) throw new Error(`BO3 list API HTTP ${res.status}`);
+
+  const data = await res.json();
+  const results = Array.isArray(data?.results) ? data.results : [];
+  return results
+    .map((item) => ({
+      slug: typeof item?.slug === 'string' ? item.slug : null,
+      publishedAt: parseDate(item?.published_at) || null,
+    }))
+    .filter((item) => item.slug);
+}
+
+async function fetchBo3ApiDetail(slug, baseUrl) {
+  const res = await fetchWithTimeout(`${BO3_API_BASE}/base_news/${encodeURIComponent(slug)}?locale=en`, {
+    headers: {
+      Accept: 'application/json',
+      Origin: 'https://bo3.gg',
+      Referer: `https://bo3.gg/dota2/news/${slug}`,
+    },
+  }, 15000);
+  if (!res.ok) throw new Error(`BO3 detail API HTTP ${res.status}`);
+
+  const item = await res.json();
+  const url = normalizeBo3NewsUrl(`/dota2/news/${slug}`, baseUrl);
+  if (!url) return null;
+
+  const bodyData = extractBo3ApiBodyData(item?.body, baseUrl);
+  const summary = bodyData.content.split('\n\n')[0]?.trim() || undefined;
+  const titleImage =
+    normalizeUrl(item?.title_image_url || item?.title_image_square_url || '', baseUrl) ||
+    item?.title_image_url ||
+    item?.title_image_square_url ||
+    undefined;
+  const preferredImage = titleImage || bodyData.imageUrls[0];
+
+  return {
+    id: generateId(url, 'bo3'),
+    title: String(item?.title || '').trim() || titleFromSlug(url),
+    summary: summary ? truncateText(summary, 220) : undefined,
+    content: bodyData.content || undefined,
+    content_markdown: bodyData.contentMarkdown || undefined,
+    url,
+    imageUrl: preferredImage,
+    source: 'BO3.gg',
+    publishedAt: parseDate(item?.published_at) || parseDate(item?.created_at) || new Date(),
+    category: String(item?.news_category?.title || '').trim().toLowerCase() || 'tournament',
+  };
 }
 
 function extractDivByClass(html = '', className = '') {
@@ -928,6 +1067,29 @@ async function scrapeBO3(options = {}) {
       ? options.urls.map((u) => normalizeBo3NewsUrl(u, baseUrl)).filter(Boolean)
       : [];
     let urls = Array.from(new Set(targetUrls));
+
+    try {
+      const targetSlugs = targetUrls
+        .map((url) => getBo3SlugFromUrl(url, baseUrl))
+        .filter(Boolean);
+      const apiList = targetSlugs.length > 0
+        ? targetSlugs.map((slug) => ({ slug, publishedAt: null }))
+        : await fetchBo3ApiList();
+      const apiDetailTasks = apiList.slice(0, DETAIL_FETCH_LIMIT).map(async ({ slug }) => {
+        try {
+          return await fetchBo3ApiDetail(slug, baseUrl);
+        } catch {
+          return null;
+        }
+      });
+      const apiItems = (await Promise.all(apiDetailTasks)).filter(Boolean).filter((x) => !isBettingNews(x));
+      if (apiItems.length > 0) {
+        console.log(`[News API] BO3 API items: ${apiItems.length}`);
+        return { items: apiItems, source, success: true };
+      }
+    } catch {
+      // Fall back to legacy strategies below.
+    }
 
     if (urls.length === 0) {
       // Strategy 1: RSS
@@ -1669,6 +1831,9 @@ export async function syncNewsToDb(options = {}) {
   if (!db) {
     throw new Error('DATABASE_URL not configured');
   }
+  const windowSeconds = Number.isFinite(Number(options?.windowSeconds))
+    ? Math.max(60, Number(options.windowSeconds))
+    : NEWS_INCREMENTAL_WINDOW_SECONDS;
 
   await ensureNewsTable(db);
   let purgedBo3Count = 0;
@@ -1711,11 +1876,12 @@ export async function syncNewsToDb(options = {}) {
       translatedCount: 0,
       purgedBo3Count,
       onlySource: onlySource || 'all',
-      cutoffSeconds: Math.floor(Date.now() / 1000) - NEWS_INCREMENTAL_WINDOW_SECONDS,
+      cutoffSeconds: Math.floor(Date.now() / 1000) - windowSeconds,
+      windowSeconds,
     };
   }
 
-  const cutoffSeconds = Math.floor(Date.now() / 1000) - NEWS_INCREMENTAL_WINDOW_SECONDS;
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - windowSeconds;
   news = news.filter((x) => Number(x.published_at) >= cutoffSeconds);
   const windowFilteredCount = news.length;
   if (news.length === 0) {
@@ -1729,6 +1895,7 @@ export async function syncNewsToDb(options = {}) {
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds,
+      windowSeconds,
     };
   }
 
@@ -1772,6 +1939,7 @@ export async function syncNewsToDb(options = {}) {
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds,
+      windowSeconds,
     };
   }
 
@@ -1900,6 +2068,7 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count,
     onlySource: onlySource || 'all',
     cutoffSeconds,
+    windowSeconds,
   };
 }
 
