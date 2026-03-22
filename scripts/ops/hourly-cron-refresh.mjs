@@ -26,6 +26,28 @@ function appendJsonLine(filePath, value) {
   fs.appendFileSync(filePath, `${JSON.stringify(value)}\n`);
 }
 
+function pickNonNegativeInt(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.trunc(parsed);
+}
+
+function readLastJsonLine(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const lines = raw.trim().split('\n');
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    try {
+      return JSON.parse(line);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -105,11 +127,35 @@ async function run() {
   const once = Boolean(args.once);
   const quiet = Boolean(args.quiet);
   const timeoutMs = Number(args['timeout-ms'] || 120000);
+  const minIntervalMin = pickNonNegativeInt(args['min-interval-min'], 0);
 
   let iteration = 0;
   do {
     iteration += 1;
     const startedAt = new Date().toISOString();
+
+    if (minIntervalMin > 0) {
+      const lastRecord = readLastJsonLine(logPath);
+      const lastTs = lastRecord?.ts ? Date.parse(lastRecord.ts) : null;
+      if (Number.isFinite(lastTs)) {
+        const elapsedMs = Date.now() - lastTs;
+        if (elapsedMs >= 0 && elapsedMs < minIntervalMin * 60 * 1000) {
+          appendJsonLine(logPath, {
+            ts: startedAt,
+            iteration,
+            endpoints,
+            ok: true,
+            skipped: true,
+            skipReason: `min_interval_${minIntervalMin}m`,
+            lastTs: lastRecord.ts,
+          });
+          if (once) break;
+          await sleep(intervalMs);
+          continue;
+        }
+      }
+    }
+
     const results = [];
     for (const endpoint of endpoints) {
       results.push(await invokeEndpoint(endpoint, timeoutMs));

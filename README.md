@@ -1,8 +1,15 @@
 # DOTA2 Hub Workspace
 
-This repository uses a workspace layout so the existing web app and the new WeChat Mini Program can live together while still sharing backend APIs, DTOs, and helper logic.
+`dota2-hub` is a workspace repository containing:
 
-## Repository Layout
+- a React + Vite web app in `apps/web`
+- a Taro + React WeChat Mini Program in `apps/mp-wechat`
+- shared API contracts in `packages/*`
+- a backend API surface preserved under `/api/*`
+
+The repository is now prepared for deployment on Tencent EdgeOne Pages, while keeping Neon Postgres and the existing backend logic.
+
+## Project Structure
 
 ```text
 /apps/web
@@ -11,60 +18,20 @@ This repository uses a workspace layout so the existing web app and the new WeCh
 /packages/api-client
 /api
 /lib
+/node-functions
 /scripts
 ```
 
-## Architecture
+## Runtime Shape
 
-- `apps/web`
-  - Existing browser-facing React + Vite app
-- `apps/mp-wechat`
-  - WeChat-native page-based app built with Taro + React
-- `api`
-  - Shared Vercel backend for both frontends
-- `lib/server`
-  - Shared backend aggregation, cache, and derived-data logic
-- `packages/shared-types`
-  - Cross-frontend DTOs and schemas
-- `packages/api-client`
-  - Shared request client factory for backend routes
+- Web frontend: Vite static build from `apps/web`
+- Server-side API: existing `api/*.js` handlers, executed through EdgeOne Node Functions
+- Database: Neon Postgres via `@neondatabase/serverless`
+- Deployment: GitHub Actions -> EdgeOne Pages
 
-## Workspace Structure
+## Local Development
 
-### What lives where
-
-- `apps/web`
-  - Existing React + TypeScript + Vite frontend
-  - All current UI sections, tests, and web build config
-- `apps/mp-wechat`
-  - Taro + React WeChat Mini Program frontend
-  - Main-package list pages + subpackaged detail pages
-- `packages/shared-types`
-  - Shared DTOs
-  - Shared response schemas
-  - Shared constants
-  - Shared formatting helpers
-- `packages/api-client`
-  - Shared API client factory for existing backend endpoints
-  - Designed for both web and mini program callers
-- `api`
-  - Existing Vercel Serverless Functions
-- `lib`
-  - Shared backend and server-side data logic
-- `scripts`
-  - Manual ops, migration, and refresh scripts
-
-## Design Goals
-
-- Preserve the existing web app with minimal disruption
-- Keep backend behavior under `/api` as the source of truth
-- Add a WeChat Mini Program app without rewriting the backend
-- Extract shared contracts and API calling logic only where it reduces duplication
-- Prefer incremental, reviewable changes over broad churn
-
-## Workspace Commands
-
-Install dependencies from the repository root:
+Install dependencies from the repo root:
 
 ```bash
 npm install
@@ -88,74 +55,50 @@ Run web tests:
 npm run test:web
 ```
 
-Type-check the WeChat Mini Program app:
+## EdgeOne Deployment
 
-```bash
-npm run typecheck:mp-wechat
-```
+Primary deployment workflow:
 
-Build the WeChat Mini Program app:
+- `.github/workflows/deploy-edgeone.yml`
 
-```bash
-npm run build:mp-wechat
-```
+Scheduled API jobs replacing Vercel cron:
 
-Run the WeChat Mini Program in watch mode:
+- `.github/workflows/edgeone-cron.yml`
 
-```bash
-npm run dev:weapp -w @dota2hub/mp-wechat
-```
+Key repo files for EdgeOne:
 
-Then open [apps/mp-wechat/dist](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/dist) with WeChat DevTools.
+- `edgeone.json`
+- `node-functions/api/[[route]].js`
+- `lib/server/edgeone-node-handler.js`
+- `lib/server/edgeone-api-router.js`
 
-## Mini Program Packaging
+Detailed operator instructions:
 
-Main package:
+- `DEPLOYMENT.md`
+- `HANDOFF_CHECKLIST.md`
+- `GO_LIVE_CHECKLIST.md`
 
-- `pages/home/index`
-- `pages/upcoming/index`
-- `pages/tournaments/index`
-- `pages/settings/index`
+## Environment Variables
 
-Subpackages:
+Use `.env.example` as the template for local development and runtime configuration.
 
-- `packages/tournament/pages/detail/index`
-- `packages/team/pages/detail/index`
-- `packages/match/pages/detail/index`
+Operator-facing details:
 
-This keeps startup-critical navigation in the main package and pushes heavier detail pages into on-demand bundles.
+- `ENVIRONMENT_VARIABLES.md`
+- `DB_CONNECTIVITY_NOTES.md`
 
-## Shared Packages
+Important runtime variables:
 
-### `@dota2hub/shared-types`
+- `DATABASE_URL` or `POSTGRES_URL`
+- `SITE_BASE_URL`
+- `PUBLIC_SITE_URL`
+- `OPENDOTA_API_KEY`
+- `MINIMAX_API_KEY`
+- `TARO_APP_API_BASE_URL` for the mini program
 
-Contains:
+## API Compatibility
 
-- Legacy front-end type exports used by the existing web app
-- Shared API DTO contracts
-- Zod schemas for core backend responses
-- Shared page-size constants
-- Reusable display formatting helpers
-
-### `@dota2hub/api-client`
-
-Contains:
-
-- URL joining helpers
-- A generic request-based API client factory
-- Endpoint helpers for:
-  - upcoming matches
-  - tournament list
-  - tournament detail
-  - team detail
-  - match detail
-  - mini-program `/api/mp/*` endpoints
-
-## API Layers
-
-The backend remains centered on the existing Vercel functions under [api](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/api).
-
-Current source-of-truth endpoints:
+The following paths remain the primary backend contract:
 
 - `/api/tournaments`
 - `/api/upcoming`
@@ -166,50 +109,49 @@ Current source-of-truth endpoints:
 - `/api/player-profile`
 - `/api/heroes`
 - `/api/live-hero`
+- `/api/cron`
+- `/api/mp/*`
 
-New mini-program-oriented endpoints:
+Also preserved as aliases for scheduled jobs:
 
-- `/api/mp/home`
-- `/api/mp/tournaments`
-- `/api/mp/tournament/:id`
-- `/api/mp/upcoming`
-- `/api/mp/team/:id`
-- `/api/mp/match/:id`
+- `/api/sync-news`
+- `/api/sync-liquipedia`
 
-These new routes keep the old APIs intact and add:
+Function-by-function migration notes:
 
-- Stable response envelopes with `ok`, `data`, `error`, and `meta`
-- Explicit pagination fields: `items`, `total`, `offset`, `limit`, `hasMore`, `nextCursor`
-- Aggregated home payloads for the mini program
-- Backend-side shaping so the mini program stays thin
+- `FUNCTION_MIGRATION_MATRIX.md`
 
-Detailed endpoint notes live in [docs/api-mini-program.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/api-mini-program.md).
-Migration notes live in [docs/mp-migration-notes.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/docs/mp-migration-notes.md).
+## Common Questions
 
-## Deployment Notes
+### Does this migration move the database?
 
-- Backend deployment continues to use Vercel
-- Database remains Neon Postgres
-- Mini program build output is generated under `apps/mp-wechat/dist`
-- WeChat upload/review is completed from WeChat DevTools after building
+No. Neon stays in place for phase 1.
 
-## WeChat-Specific Notes
+### Does this migration split the frontend and backend into two repos?
 
-- See [apps/mp-wechat/README.md](/C:/Users/MOGEEEEEE/WeChatProjects/dota2-hub/apps/mp-wechat/README.md) for environment variables, local setup, build flow, and WeChat DevTools steps.
+No. The repo remains intact and deploys as one EdgeOne Pages project.
 
-## Notes
+### What still needs to be done manually?
 
-- The web app remains buildable from `apps/web`.
-- The WeChat Mini Program currently builds from `apps/mp-wechat`.
-- Mini-program-ready DTOs and response envelopes now live in `@dota2hub/shared-types`.
-- The shared API client now includes both legacy web endpoints and the new `/api/mp/*` routes.
-- The mini program request layer includes lightweight caching, retry, and error normalization for deployment-readiness.
+- create or confirm EdgeOne project settings
+- fill secrets
+- fill EdgeOne runtime env vars
+- bind the production domain
+- complete ICP filing
+- switch DNS after validation
 
-## Validation
+See `HANDOFF_CHECKLIST.md` for the exact operator steps.
 
-The current workspace refactor has been validated with:
+## Rollback
 
-- `npm run build:web`
-- `npm run test:web`
-- `npm run typecheck:mp-wechat`
-- `npm run build:mp-wechat`
+- Keep the current Vercel deployment available until EdgeOne production passes acceptance checks.
+- If the EdgeOne deployment fails, do not switch DNS.
+- Because the database is unchanged, rollback is operational only and does not require data migration reversal.
+
+## Migration Documents
+
+- `MIGRATION_AUDIT.md`
+- `MIGRATION_PLAN.md`
+- `EDGEONE_MAPPING_NOTES.md`
+- `DB_CONNECTIVITY_NOTES.md`
+- `CHANGELOG_EDGEONE_MIGRATION.md`

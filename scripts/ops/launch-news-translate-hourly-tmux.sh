@@ -30,6 +30,7 @@ done
 [[ "$translate_limit" =~ ^[0-9]+$ ]] || { echo "limit must be numeric" >&2; exit 1; }
 [[ "$translate_batch" =~ ^[0-9]+$ ]] || { echo "batch must be numeric" >&2; exit 1; }
 [[ "$recent_days" =~ ^[0-9]+$ ]] || { echo "recent-days must be numeric" >&2; exit 1; }
+[[ -n "$codex_model" ]] || { echo "codex-model must be non-empty" >&2; exit 1; }
 
 resolved_env_file=""
 if [[ -n "$env_file" ]]; then
@@ -50,14 +51,12 @@ fi
 
 mkdir -p "$(dirname "$log_file")"
 
-env_prefix=""
+node_cmd="node"
 if [[ -n "$resolved_env_file" ]]; then
-  env_prefix="node --env-file=$(printf '%q' "$resolved_env_file")"
-else
-  env_prefix="node"
+  node_cmd="node --env-file=$(printf '%q' "$resolved_env_file")"
 fi
 
-runner_cmd="cd $(printf '%q' "$ROOT_DIR") && export XHS_AUTO_POST=0 && export NEWS_TRANSLATE_CODEX_MODEL=$(printf '%q' "$codex_model") && while true; do printf '\n===== %s local translate start =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" >> $(printf '%q' "$log_file"); ${env_prefix} scripts/translate-news-style-zh.mjs --limit $(printf '%q' "$translate_limit") --batch $(printf '%q' "$translate_batch") --recentDays $(printf '%q' "$recent_days") >> $(printf '%q' "$log_file") 2>&1; status=\$?; printf '===== %s local translate exit:%s =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"\$status\" >> $(printf '%q' "$log_file"); sleep $(printf '%q' "$(( interval_min * 60 ))"); done"
+runner_cmd="cd $(printf '%q' "$ROOT_DIR") && export XHS_AUTO_POST=0 && export NEWS_TRANSLATE_CODEX_MODEL=$(printf '%q' "$codex_model") && while true; do printf '\n===== %s local translate start =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" >> $(printf '%q' "$log_file"); ${node_cmd} scripts/translate-news-style-zh.mjs --limit $(printf '%q' "$translate_limit") --batch $(printf '%q' "$translate_batch") --recentDays $(printf '%q' "$recent_days") >> $(printf '%q' "$log_file") 2>&1; status=\$?; printf '===== %s local translate exit:%s =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"\$status\" >> $(printf '%q' "$log_file"); sleep $(printf '%q' "$(( interval_min * 60 ))"); done"
 
 tmux kill-session -t "$session" 2>/dev/null || true
 tmux new-session -d -s "$session" "bash -lc $(printf '%q' "$runner_cmd")"
