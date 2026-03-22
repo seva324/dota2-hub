@@ -10,7 +10,7 @@ const definition = {
 
 const fixture = `
 <section class="group__stage">
-  <div class="table__head-item width-80 width-m-70 big-text">Group A</div>
+  <div class="table__head-item width-70 width-m-55 big-text">Group A</div>
   <a href="https://dltv.org/teams/yakult-brothers" class="table__body-row">
     <div class="cell__coloured">1</div>
     <div class="cell__logo" data-theme-light="https://cdn.example/yb.png"></div>
@@ -31,7 +31,7 @@ const fixture = `
     <div class="cell__text"><strong>3 - 2 - 2</strong></div>
     <div class="cell__text">8 - 7</div>
   </a>
-  <div class="table__head-item width-80 width-m-70 big-text">Group B</div>
+  <div class="table__head-item width-70 width-m-55 big-text">Group B</div>
   <a href="https://dltv.org/teams/xtreme-gaming" class="table__body-row">
     <div class="cell__coloured">2</div>
     <div class="cell__logo" data-theme-light="https://cdn.example/xg.png"></div>

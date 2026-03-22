@@ -227,6 +227,7 @@ const FEATURED_TOURNAMENT_KEYS = new Set([
   '19435',
   'pgl wallachia season 7',
   'esl-one-birmingham-2026',
+  '19422',
   '19669',
   'esl one birmingham 2026',
   'esl one season birmingham',
@@ -458,7 +459,8 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
   }
 
   if (
-    normalizedLeagueId === '19669'
+    normalizedLeagueId === '19422'
+    || normalizedLeagueId === '19669'
     || normalizedName === 'esl one birmingham 2026'
     || normalizedName === 'esl one season birmingham'
   ) {
@@ -477,6 +479,8 @@ function FeaturedTeamChip({
   teams,
   emphasize = false,
   preferFullName = false,
+  abbreviate = false,
+  className,
 }: {
   teamId?: string | null;
   name: string;
@@ -486,6 +490,8 @@ function FeaturedTeamChip({
   teams: NonNullable<TournamentSectionProps['teams']>;
   emphasize?: boolean;
   preferFullName?: boolean;
+  abbreviate?: boolean;
+  className?: string;
 }) {
   const resolvedLogo = resolveTeamLogo({ teamId, name }, teams, logoUrl);
   const highlighted = isCnTeam || isChineseTeamFromTeams({ teamId, name }, teams);
@@ -503,8 +509,8 @@ function FeaturedTeamChip({
           {getTeamAbbrev(name, aliasToTag)}
         </div>
       )}
-      <span className={`min-w-0 truncate text-sm ${highlighted ? 'font-semibold text-red-100' : emphasize ? 'font-semibold text-white' : 'text-slate-300'}`}>
-        {preferFullName ? name : renderTeamName(name, aliasToTag)}
+      <span className={`min-w-0 truncate ${className || 'text-sm'} ${highlighted ? 'font-semibold text-red-100' : emphasize ? 'font-semibold text-white' : 'text-slate-300'}`}>
+        {preferFullName ? name : abbreviate ? getTeamAbbrev(name, aliasToTag) : renderTeamName(name, aliasToTag)}
       </span>
       {highlighted ? (
         <span className="rounded-full border border-red-400/30 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-200">
@@ -698,9 +704,9 @@ function FeaturedCompactPlayoffMatch({
       href={match.href}
       matchId={match.matchId}
       onOpenMatch={onOpenMatch}
-      className={`block rounded-xl border p-3 text-left transition-colors hover:border-white/20 ${className}`}
+      className={`block rounded-xl border p-2.5 text-left transition-colors hover:border-white/20 ${className}`}
     >
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {resolvedTeams.map((team, index) => (
           <div key={`${team.name}-${index}`} className="flex items-center justify-between gap-3">
             <FeaturedTeamChip
@@ -710,7 +716,8 @@ function FeaturedCompactPlayoffMatch({
               isCnTeam={team.isCnTeam}
               aliasToTag={aliasToTag}
               teams={teams}
-              preferFullName
+              className="text-sm"
+              abbreviate
             />
             <span className="min-w-[18px] text-right text-sm font-semibold text-white">{team.score ?? '-'}</span>
           </div>
@@ -738,7 +745,7 @@ function FeaturedCompactPlayoffRound({
 
   return (
     <div className="space-y-2">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{round.roundName}</div>
+      <div className="text-sm font-medium uppercase tracking-[0.08em] text-slate-300">{round.roundName}</div>
       <div className="space-y-2">
         {matches.map((match, index) => (
           <FeaturedCompactPlayoffMatch
@@ -906,17 +913,15 @@ function FeaturedDltvPlayoffMatch({
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                {renderTeamName(
-                  team.name || 'TBD',
-                  aliasToTag,
-                  `block truncate text-[13px] leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`
-                )}
+                <span className={`block truncate text-sm leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`}>
+                  {team.name === 'TBD' ? 'TBD' : getTeamAbbrev(team.name, aliasToTag)}
+                </span>
               </div>
-              <span className="min-w-[16px] text-right text-lg font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
+              <span className="min-w-[16px] text-right text-base font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
             </div>
           );
         })}
-        <div className="pointer-events-none absolute left-[61px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1.5 text-base font-black tracking-tight text-white">
+        <div className="pointer-events-none absolute left-[61px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1.5 text-sm font-black tracking-tight text-white">
           VS
         </div>
       </div>
@@ -930,7 +935,7 @@ function FeaturedPlayoffColumnHeader({ title }: { title: string }) {
     .replace('Lower Bracket ', 'Lower Bracket\n')
     .replace('Grand Finals', 'Grand Finals');
   return (
-    <div className="mb-7 inline-flex h-[54px] min-w-[144px] items-center justify-center border border-white/10 bg-slate-900/82 px-5 py-2 text-center text-[16px] font-medium leading-[1.15] text-slate-100">
+    <div className="mb-7 inline-flex h-[50px] min-w-[144px] items-center justify-center border border-white/10 bg-slate-900/82 px-4 py-2 text-center text-sm font-medium leading-[1.15] text-slate-100">
       <span className="whitespace-pre-line">{displayTitle}</span>
     </div>
   );
