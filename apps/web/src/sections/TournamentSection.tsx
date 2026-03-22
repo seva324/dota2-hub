@@ -822,37 +822,37 @@ function FeaturedDltvPlayoffMatch({
       href={match.href}
       matchId={match.matchId}
       onOpenMatch={onOpenMatch}
-      className="relative block rounded-none border border-white/10 bg-slate-900/90 text-left shadow-[0_8px_18px_rgba(2,6,23,0.24)] transition-colors hover:border-white/20 hover:bg-slate-900"
+      className="relative block rounded-none border border-white/10 bg-slate-900/90 text-left shadow-[0_8px_18px_rgba(2,6,23,0.2)] transition-colors hover:border-white/20 hover:bg-slate-900"
     >
-      <div className="absolute inset-y-0 left-[34px] w-px bg-white/10" />
-      <div className="absolute inset-y-0 left-0 flex w-[34px] flex-col items-center justify-center border-r border-white/10 bg-slate-950/30 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-300">
+      <div className="absolute inset-y-0 left-[30px] w-px bg-white/10" />
+      <div className="absolute inset-y-0 left-0 flex w-[30px] flex-col items-center justify-center border-r border-white/10 bg-slate-950/30 text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-300">
         {(() => {
           const { month, day } = formatBracketDateLabel(match.startTime);
           return month && day ? (
             <>
               <span>{month}</span>
-              <span className="text-[11px] font-bold text-white">{day}</span>
+              <span className="text-[10px] font-bold text-white">{day}</span>
             </>
           ) : null;
         })()}
       </div>
-      <div className="relative min-h-[120px] pl-9">
+      <div className="relative min-h-[102px] pl-[30px]">
         {resolvedTeams.map((team, index) => {
           const logoUrl = resolveTeamLogo({ teamId: team.teamId, name: team.name }, teams, team.logoUrl);
           const isTop = index === 0;
           return (
             <div
               key={`${team.name}-${index}`}
-              className={`flex h-[59px] items-center gap-3 px-3 ${isTop ? 'border-b border-white/10' : ''}`}
+              className={`flex h-[50px] items-center gap-2.5 px-2.5 ${isTop ? 'border-b border-white/10' : ''}`}
             >
               {logoUrl ? (
                 <img
                   src={logoUrl}
                   alt={team.name || 'Team'}
-                  className={`h-8 w-8 shrink-0 object-contain opacity-90 ${team.isCnTeam ? 'border border-red-400/35 bg-red-500/10 p-0.5' : 'border border-white/10 bg-slate-950/80 p-0.5'}`}
+                  className={`h-7 w-7 shrink-0 object-contain opacity-90 ${team.isCnTeam ? 'border border-red-400/35 bg-red-500/10 p-0.5' : 'border border-white/10 bg-slate-950/80 p-0.5'}`}
                 />
               ) : (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/10 bg-slate-950/80 text-[10px] font-semibold text-slate-300">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-white/10 bg-slate-950/80 text-[9px] font-semibold text-slate-300">
                   {team.name === 'TBD' ? '' : getTeamAbbrev(team.name, aliasToTag)}
                 </div>
               )}
@@ -860,14 +860,14 @@ function FeaturedDltvPlayoffMatch({
                 {renderTeamName(
                   team.name || 'TBD',
                   aliasToTag,
-                  `block truncate text-base leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`
+                  `block truncate text-[13px] leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`
                 )}
               </div>
-              <span className="min-w-[18px] text-right text-xl font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
+              <span className="min-w-[16px] text-right text-lg font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
             </div>
           );
         })}
-        <div className="pointer-events-none absolute left-[73px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-2 text-xl font-black tracking-tight text-white">
+        <div className="pointer-events-none absolute left-[61px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1.5 text-base font-black tracking-tight text-white">
           VS
         </div>
       </div>
@@ -994,10 +994,10 @@ function FeaturedESLBirminghamPlayoffBracket({
               {renderMatch(grandFinals, 0)}
             </div>
 
-            <FeaturedPlayoffConnector className="left-[373px] top-[60px] h-[118px] w-[145px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[373px] top-[222px] h-[46px] w-[145px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[773px] top-[138px] h-[188px] w-[166px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[939px] top-[326px] h-[82px] w-[0px] border-r" />
+            <FeaturedPlayoffConnector className="left-[373px] top-[51px] h-[104px] w-[145px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[373px] top-[197px] h-[42px] w-[145px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[773px] top-[120px] h-[170px] w-[166px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[939px] top-[290px] h-[70px] w-[0px] border-r" />
           </div>
 
           <div className="mt-14 grid grid-cols-[184px_184px_184px_184px_184px] gap-x-32">
@@ -1023,13 +1023,13 @@ function FeaturedESLBirminghamPlayoffBracket({
               {renderMatch(lowerFinals, 0)}
             </div>
 
-            <FeaturedPlayoffConnector className="left-[0px] top-[113px] h-[60px] w-[144px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[0px] top-[281px] h-[60px] w-[144px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[373px] top-[113px] h-[110px] w-[144px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[373px] top-[281px] h-[54px] w-[144px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[746px] top-[196px] h-[112px] w-[144px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[746px] top-[308px] h-[54px] w-[144px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[1117px] top-[118px] h-[74px] w-[0px] border-r" />
+            <FeaturedPlayoffConnector className="left-[0px] top-[103px] h-[53px] w-[144px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[0px] top-[255px] h-[52px] w-[144px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[373px] top-[103px] h-[100px] w-[144px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[373px] top-[255px] h-[46px] w-[144px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[746px] top-[179px] h-[100px] w-[144px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[746px] top-[279px] h-[46px] w-[144px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[1117px] top-[111px] h-[62px] w-[0px] border-r" />
           </div>
         </div>
       </div>
@@ -1128,13 +1128,13 @@ function FeaturedPglWallachiaPlayoffBracket({
               {renderMatch(grandFinals, 0)}
             </div>
 
-            <FeaturedPlayoffConnector className="left-[170px] top-[88px] h-[48px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[245px] h-[48px] w-[107px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[406px] h-[48px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[563px] h-[48px] w-[107px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[447px] top-[166px] h-[126px] w-[228px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[447px] top-[486px] h-[46px] w-[228px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[903px] top-[309px] h-[311px] w-[168px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[170px] top-[80px] h-[42px] w-[107px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[170px] top-[218px] h-[42px] w-[107px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[170px] top-[360px] h-[42px] w-[107px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[170px] top-[498px] h-[42px] w-[107px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[447px] top-[149px] h-[112px] w-[228px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[447px] top-[429px] h-[42px] w-[228px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[903px] top-[274px] h-[273px] w-[168px] border-r border-b" />
           </div>
 
           <div className="mt-16 grid grid-cols-[170px_170px_170px_170px_170px] gap-x-24">
@@ -1160,12 +1160,12 @@ function FeaturedPglWallachiaPlayoffBracket({
               {renderMatch(lowerFinals, 0)}
             </div>
 
-            <FeaturedPlayoffConnector className="left-[170px] top-[166px] h-[46px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[486px] h-[46px] w-[107px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[447px] top-[330px] h-[46px] w-[108px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[725px] top-[330px] h-[46px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[1002px] top-[330px] h-[64px] w-[69px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[1002px] top-[643px] h-[46px] w-[69px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[170px] top-[149px] h-[42px] w-[107px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[170px] top-[429px] h-[42px] w-[107px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[447px] top-[289px] h-[42px] w-[108px] border-r border-b" />
+            <FeaturedPlayoffConnector className="left-[725px] top-[289px] h-[42px] w-[107px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[1002px] top-[289px] h-[58px] w-[69px] border-r border-t" />
+            <FeaturedPlayoffConnector className="left-[1002px] top-[565px] h-[42px] w-[69px] border-r border-b" />
           </div>
 
           <FeaturedPlacementBadge placement="1st Place" prize="$300,000" className="left-[1270px] top-[888px]" />
