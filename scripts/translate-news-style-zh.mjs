@@ -1,11 +1,14 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { neon } from '@neondatabase/serverless';
 import { spawnSync } from 'node:child_process';
 
 const DB_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const API_KEY = process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
-const API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
-const MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
-const TRANSLATION_PROVIDER = 'minimax';
+const CODEX_BIN = process.env.NEWS_TRANSLATE_CODEX_BIN || process.env.CODEX_BIN || 'codex';
+const MODEL = process.env.NEWS_TRANSLATE_CODEX_MODEL || 'gpt-5.4-mini';
+const CODEX_TIMEOUT_MS = Math.max(5000, Number(process.env.NEWS_TRANSLATE_CODEX_TIMEOUT_MS || '45000') || 45000);
+const TRANSLATION_PROVIDER = 'codex';
 const TRANSLATION_STATUS_PENDING = 'pending';
 const TRANSLATION_STATUS_PARTIAL = 'partial';
 const TRANSLATION_STATUS_COMPLETED = 'completed';
@@ -28,10 +31,6 @@ const NEWS_TRANSLATION_GUIDANCE = [
 
 if (!DB_URL) {
   console.error('Missing DATABASE_URL/POSTGRES_URL');
-  process.exit(1);
-}
-if (!API_KEY) {
-  console.error('Missing MINIMAX_API_KEY/MINIMAX_TEXT_API_KEY');
   process.exit(1);
 }
 
@@ -153,33 +152,6 @@ function detectTone(item) {
   return gossipKeys.some((k) => text.includes(k)) ? 'gossip' : 'news';
 }
 
-function extractText(data) {
-  if (Array.isArray(data?.content)) {
-    return data.content
-      .filter((x) => x?.type === 'text' && typeof x?.text === 'string')
-      .map((x) => x.text)
-      .join('\n')
-      .trim();
-  }
-  if (typeof data?.output_text === 'string') return data.output_text.trim();
-  const txt = data?.choices?.[0]?.message?.content;
-  if (Array.isArray(txt)) {
-    return txt.map((x) => (typeof x?.text === 'string' ? x.text : '')).join('').trim();
-  }
-  if (typeof txt === 'string') return txt.trim();
-  return '';
-}
-
-async function fetchWithTimeout(url, init, timeoutMs) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: ctrl.signal });
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 function shortPrompt(text, tone) {
   const style = tone === 'gossip'
     ? '语气偏电竞八卦，轻松有梗但克制，不夸张不造谣。'
@@ -208,50 +180,92 @@ function markdownPrompt(text, tone) {
   ].join('\n');
 }
 
-async function callMiniMax(prompt, maxTokens = 1400, timeoutMs = 25000) {
-  const res = await fetchWithTimeout(
-    API_URL,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
-      }),
+function safeUnlink(filePath) {
+  try {
+    fs.unlinkSync(filePath);
+  } catch {}
+}
+
+function callCodex(prompt, schema, timeoutMs = CODEX_TIMEOUT_MS) {
+  const tempBase = path.join(os.tmpdir(), `d2hub-translate-codex-${process.pid}-${Date.now()}`);
+  const schemaPath = `${tempBase}.schema.json`;
+  const outputPath = `${tempBase}.out.json`;
+
+  fs.writeFileSync(schemaPath, `${JSON.stringify(schema, null, 2)}\n`, 'utf8');
+  const argv = [
+    'exec',
+    '--skip-git-repo-check',
+    '--ephemeral',
+    '--sandbox',
+    'read-only',
+    '--output-schema',
+    schemaPath,
+    '-o',
+    outputPath,
+  ];
+  if (MODEL) argv.push('-m', MODEL);
+  argv.push('-');
+
+  const result = spawnSync(CODEX_BIN, argv, {
+    cwd: process.cwd(),
+    env: process.env,
+    input: prompt,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    maxBuffer: 1024 * 1024 * 8,
+  });
+
+  const stderr = String(result.stderr || '').trim();
+  const stdout = String(result.stdout || '').trim();
+  let output = '';
+  try {
+    output = fs.readFileSync(outputPath, 'utf8').trim();
+  } catch {}
+  safeUnlink(schemaPath);
+  safeUnlink(outputPath);
+
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(stderr || stdout || `codex exited with status ${result.status}`);
+  if (!output) throw new Error(stderr || 'codex returned empty output');
+
+  return JSON.parse(output);
+}
+
+function callCodexText(prompt, timeoutMs = CODEX_TIMEOUT_MS) {
+  const payload = callCodex(prompt, {
+    type: 'object',
+    properties: {
+      text: { type: 'string' },
     },
-    timeoutMs
-  );
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`MiniMax ${res.status}: ${body.slice(0, 300)}`);
-  }
-  const data = await res.json();
-  const out = extractText(data);
-  if (!out) throw new Error('MiniMax empty response');
+    required: ['text'],
+    additionalProperties: false,
+  }, timeoutMs);
+  const out = String(payload?.text || '').trim();
+  if (!out) throw new Error('codex returned empty text');
   return out;
 }
 
 async function translateTitle(row, tone) {
   if (!row?.title_en || looksChinese(row.title_en)) return row?.title_en || null;
   try {
-    let out = await callMiniMax(shortPrompt(`${row.title_en}\n${row.summary_en || ''}`, tone), 700, 18000);
+    let out = callCodexText([
+      shortPrompt(`${row.title_en}\n${row.summary_en || ''}`, tone),
+      '',
+      '请严格输出 JSON 对象，字段为 text。text 只能是一行中文标题。',
+    ].join('\n'), 18000);
     if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
-      out = await callMiniMax([
+      out = callCodexText([
         '把下面英文 Dota2 新闻标题改写成一个中文社区传播标题。',
         '要求：必须输出简体中文；保留专有名词原文；不能输出英文整句；不能输出标题/正文/总结标签；只输出一行标题。',
         row.title_en,
-      ].join('\n'), 400, 15000);
+      ].join('\n'), 15000);
     }
     if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
-      out = await callMiniMax([
+      out = callCodexText([
         '将下面英文 Dota2 新闻标题直接翻译为简体中文标题。',
         '要求：必须输出中文；保留专有名词原文；只输出一行标题；不要解释。',
         row.title_en,
-      ].join('\n'), 400, 15000);
+      ].join('\n'), 15000);
     }
     return out;
   } catch {
@@ -263,7 +277,7 @@ async function translateSummary(row) {
   const seed = row?.summary_en || row?.content_en || row?.content_markdown_en || row?.title_en;
   if (!seed || looksChinese(seed)) return row?.summary_en || seed || null;
   try {
-    let out = await callMiniMax([
+    let out = callCodexText([
       NEWS_TRANSLATION_GUIDANCE,
       '',
       '请基于下面英文 Dota2 新闻信息，写一句简短点评/总结。',
@@ -275,24 +289,24 @@ async function translateSummary(row) {
       `英文标题：${row.title_en || ''}`,
       row.summary_en ? `英文摘要：${row.summary_en}` : '',
       row.content_en ? `英文正文：${String(row.content_en).slice(0, 1600)}` : '',
-    ].join('\n'), 800, 18000);
+    ].join('\n'), 18000);
     if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
-      out = await callMiniMax([
+      out = callCodexText([
         '基于下面英文 Dota2 新闻信息，写一句中文总结。',
         '要求：必须输出简体中文；20到50字；不能道歉；不能要求补充材料；不能输出标题/正文/总结标签；只输出一句话。',
         `标题：${row.title_en || ''}`,
         row.summary_en ? `摘要：${row.summary_en}` : '',
         row.content_en ? `正文：${String(row.content_en).slice(0, 1200)}` : '',
-      ].join('\n'), 400, 15000);
+      ].join('\n'), 15000);
     }
     if (!looksChinese(out) || looksLikeStructuredArticle(out) || looksLikeTranslationRefusal(out)) {
-      out = await callMiniMax([
+      out = callCodexText([
         '把下面英文 Dota2 新闻摘要翻译并压缩成一句简体中文总结。',
         '要求：必须输出中文；20到50字；只输出一句话；不要解释。',
         `标题：${row.title_en || ''}`,
         row.summary_en ? `摘要：${row.summary_en}` : '',
         row.content_en ? `正文：${String(row.content_en).slice(0, 1200)}` : '',
-      ].join('\n'), 400, 15000);
+      ].join('\n'), 15000);
     }
     return out;
   } catch {
@@ -306,20 +320,24 @@ async function translateMarkdown(text, tone) {
   const out = [];
   for (const chunk of chunks) {
     try {
-      let translated = await callMiniMax(markdownPrompt(chunk, tone), 1800, 26000);
+      let translated = callCodexText([
+        markdownPrompt(chunk, tone),
+        '',
+        '请严格输出 JSON 对象，字段为 text。text 只能是中文 markdown 正文。',
+      ].join('\n'), 26000);
       if (!looksChinese(translated) || looksLikeTranslationRefusal(translated)) {
-        translated = await callMiniMax([
+        translated = callCodexText([
           '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
           '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
           chunk,
-        ].join('\n'), 1800, 22000);
+        ].join('\n'), 22000);
       }
       if (!looksChinese(translated) || looksLikeTranslationRefusal(translated)) {
-        translated = await callMiniMax([
+        translated = callCodexText([
           '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
           '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释。',
           chunk,
-        ].join('\n'), 1800, 22000);
+        ].join('\n'), 22000);
       }
       out.push(translated);
     } catch {
@@ -356,9 +374,7 @@ async function loadPending(limit, force = false) {
     )
     AND (
       COALESCE(translation_status, ${TRANSLATION_STATUS_PENDING}) <> ${TRANSLATION_STATUS_COMPLETED}
-      OR translation_provider = ${TRANSLATION_PROVIDER}
-      OR
-      COALESCE(title_zh, '') = ''
+      OR COALESCE(title_zh, '') = ''
       OR COALESCE(summary_zh, '') = ''
       OR COALESCE(content_zh, '') = ''
       OR COALESCE(content_markdown_zh, '') = ''

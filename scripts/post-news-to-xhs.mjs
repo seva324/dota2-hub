@@ -166,9 +166,19 @@ function readOptionalFile(filePath) {
   return fs.readFileSync(path.resolve(filePath), 'utf8').trim();
 }
 
+function pickFirstText(...values) {
+  for (const value of values) {
+    const normalized = normalizeWhitespace(value || '');
+    if (normalized) return normalized;
+  }
+  return '';
+}
+
 function sanitizeArticleBody(row) {
   const title = normalizeWhitespace(row.title_zh || row.title_en || '');
-  let text = normalizeWhitespace(stripMarkdown(row.content_zh || row.content_markdown_zh || row.summary_zh || row.content_en || ''));
+  let text = normalizeWhitespace(stripMarkdown(
+    row.content_zh || row.content_markdown_zh || row.summary_zh || row.content_en || row.content_markdown_en || row.summary_en || ''
+  ));
   const lines = text
     .split('\n')
     .map((line) => line.trim())
@@ -187,7 +197,7 @@ function sanitizeArticleBody(row) {
 }
 
 function detectPostType(row) {
-  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
+  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.summary_en || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
   if (/赛程|schedule|standings|results|开打|奖金池|grand final|group stage/i.test(text)) return 'event';
   if (/回应|谈|表示|explained|spoke|said|commented|发声/i.test(text)) return 'postmatch';
   if (/离开|离队|转会|合同|inactive|return|didn.?t leave/i.test(text)) return 'transfer';
@@ -197,7 +207,7 @@ function detectPostType(row) {
 
 function resolveTemplate(row) {
   if (TEMPLATE && TEMPLATE !== 'auto') return TEMPLATE;
-  return 'news';
+  return detectPostType(row);
 }
 
 function resolvePreset() {
@@ -215,7 +225,7 @@ function extractSentences(text = '') {
 function toBulletLines(sentences, limit = 3, maxLen = 34) {
   const items = [];
   for (const sentence of sentences) {
-    const plain = normalizeWhitespace(sentence).replace(/[。！？!?]+$/, '');
+    const plain = normalizeWhitespace(sentence).replace(/[。！？!?]+$/g, '');
     if (!plain || plain.length < 8) continue;
     const clipped = plain.length > maxLen ? `${plain.slice(0, maxLen - 1).trim()}…` : plain;
     items.push(`- ${clipped}`);
@@ -225,7 +235,7 @@ function toBulletLines(sentences, limit = 3, maxLen = 34) {
 }
 
 function buildLead(row, articleBody, postType) {
-  const summary = normalizeWhitespace(row.summary_zh || '');
+  const summary = normalizeWhitespace(row.summary_zh || row.summary_en || '');
   if (summary) return clipTextComplete(summary, 52);
   const firstSentence = extractSentences(articleBody)[0];
   if (firstSentence) return clipTextComplete(firstSentence, 52);
@@ -260,7 +270,7 @@ function buildInfoBullets(row, articleBody, postType) {
 }
 
 function buildImpactLine(row, postType) {
-  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.content_zh || ''}`;
+  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.summary_en || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
   if (postType === 'event') return '看点基本集中在赛制、热门队状态和强强对话。';
   if (postType === 'transfer') return '这说明他和现有队伍的关系还没有真正画上句号。';
   if (postType === 'postmatch') return '这场最可惜的不是完全打不过，而是关键决策把机会送掉了。';
@@ -310,7 +320,7 @@ function buildTemplateTitle(row, template) {
 
 function buildBodyFromTemplate(row, template) {
   const articleBody = sanitizeArticleBody(row);
-  const summary = normalizeWhitespace(row.summary_zh || '');
+  const summary = normalizeWhitespace(row.summary_zh || row.summary_en || '');
   const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${articleBody}`;
   if (template === 'event') {
     const lead = summary || '这站比赛信息已经出来了，先看最核心的部分。';
@@ -405,7 +415,7 @@ function buildTitle(row) {
 
 function buildTopic(row) {
   if (CUSTOM_TOPIC) return CUSTOM_TOPIC;
-  const sourceText = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.content_zh || ''}`;
+  const sourceText = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.summary_en || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
   if (/PGL Wallachia/i.test(sourceText)) return 'PGL Wallachia';
   if (/Team Spirit/i.test(sourceText)) return 'Team Spirit';
   if (/Dota 2|DOTA2|刀塔/i.test(sourceText)) return 'DOTA2';
@@ -415,6 +425,7 @@ function buildTopic(row) {
 const REWRITE_PROMPT_REFERENCE = maybeReadText(REWRITE_PROMPT_FILE);
 const REWRITE_PROMPT_CORE = [
   '你要把 Dota2 新闻改写成可以直接发小红书的中文正文。',
+  '你可能拿到的是中文素材，也可能拿到的是英文素材。无论输入语言是什么，最终都必须写成自然的中文成稿。',
   '不要输出固定格式，不要分“标题/正文/快评/总结/标签/简评”这些模块。',
   '默认只输出一篇可以直接发的正文，像真人在复述，不像模板机。',
   '风格要求：论坛复述风，像长期看比赛的人在讲这条新闻。不要新闻稿腔，不要翻译腔，不要摘要器口吻。不要“他表示、值得一提的是、此外、同时、综上”这些词。主观想法、吐槽、判断要自然穿插。可以有“说白了、这波、最难绷的是、你会感觉、其实问题就在这”这种表达，但不能低俗，不能造谣，不能把传闻写成实锤。',
@@ -443,6 +454,7 @@ function buildRewritePrompt(row, draft) {
     '- topics 输出 3 到 5 个话题',
     '- 不要带原文链接',
     '- 所有事实必须忠于输入新闻',
+    '- 如果中文素材缺失，必须直接基于英文素材完成中文创作，不要要求补料',
     '',
     `建议模板: ${template}`,
     `草稿标题: ${draft.title}`,
@@ -453,6 +465,7 @@ function buildRewritePrompt(row, draft) {
     `中文正文: ${articleBody}`,
     `英文标题: ${normalizeWhitespace(row.title_en || '')}`,
     `英文摘要: ${clipText(row.summary_en || '', 240)}`,
+    `英文正文: ${clipText(stripMarkdown(row.content_en || row.content_markdown_en || ''), 1800)}`,
   ].join('\n');
 }
 
@@ -669,12 +682,14 @@ async function fetchRows() {
   `;
 }
 
-function rowNeedsZh(row) {
-  return Boolean(row?.title_zh || row?.summary_zh || row?.content_zh || row?.content_markdown_zh);
-}
-
 function rowHasEnglishSource(row) {
   return Boolean(row?.title_en || row?.summary_en || row?.content_en || row?.content_markdown_en);
+}
+
+function rowHasAnySource(row) {
+  return Boolean(
+    row?.title_zh || row?.summary_zh || row?.content_zh || row?.content_markdown_zh || rowHasEnglishSource(row)
+  );
 }
 
 function downloadImage(url, outPath) {
@@ -714,6 +729,16 @@ function publishViaXhs(xhsCli, payload, imagePath) {
   throw new Error(standardResult.combined || `xhs exited with status ${standardResult.res.status}`);
 }
 
+function resolveWeChatDraftScript() {
+  const candidates = [
+    path.resolve(process.cwd(), 'scripts', 'post-news-to-wechat-drafts.mjs'),
+    path.resolve(process.cwd(), 'scripts', 'post-news-to-wechat-drafts.js'),
+    path.resolve(process.cwd(), 'scripts', 'post-news-to-wechat-draft.mjs'),
+    path.resolve(process.cwd(), 'scripts', 'post-news-to-wechat-draft.js'),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
 function syncWeChatDrafts(ids = []) {
   if (!WECHAT_AUTO_DRAFT || !ids.length) return null;
   const hasWechatCreds = Boolean(process.env.WECHAT_APP_ID && process.env.WECHAT_APP_SECRET);
@@ -722,7 +747,12 @@ function syncWeChatDrafts(ids = []) {
     return null;
   }
 
-  const scriptPath = path.resolve(process.cwd(), 'scripts', 'post-news-to-wechat-drafts.mjs');
+  const scriptPath = resolveWeChatDraftScript();
+  if (!scriptPath) {
+    console.warn('[wechat] skip draft sync: draft script not found');
+    return { ok: false, skipped: true, reason: 'missing_draft_script' };
+  }
+
   const argv = [scriptPath];
   for (const id of ids) {
     argv.push('--id', String(id));
@@ -771,8 +801,8 @@ async function main() {
           results.push({ id: row.id, status: 'skipped', reason: 'already_posted', note_id: already.note_id || '' });
           continue;
         }
-        if (!rowNeedsZh(row)) {
-          results.push({ id: row.id, status: 'skipped', reason: 'missing_zh_translation' });
+        if (!rowHasAnySource(row)) {
+          results.push({ id: row.id, status: 'skipped', reason: 'missing_source_content' });
           continue;
         }
         if (!row.image_url) {
