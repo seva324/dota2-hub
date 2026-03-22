@@ -173,10 +173,12 @@ describe('parseDltvFeaturedTournamentPage', () => {
 
     expect(payload.playoffs.rounds[0]).toEqual(expect.objectContaining({
       roundName: 'Upper Bracket R1 (bo3)',
+      roundKey: 'upper-r1',
     }));
     expect(payload.playoffs.rounds[0]?.matches[0]?.teams[1]?.name).toBe('BetBoom Team');
     expect(payload.playoffs.rounds[1]).toEqual(expect.objectContaining({
       roundName: 'Grand Final (bo5)',
+      roundKey: 'grand-finals',
     }));
     expect(payload.playoffs.rounds[1]?.matches[0]).toEqual(expect.objectContaining({
       href: 'https://dltv.org/matches/425461/team-yandex-vs-team-liquid-pgl-wallachia-season-7',
@@ -186,6 +188,11 @@ describe('parseDltvFeaturedTournamentPage', () => {
     expect(payload.playoffs.rounds[1]?.matches[0]?.teams[0]?.score).toBe('3');
     expect(payload.playoffs.rounds[1]?.matches[0]?.teams[1]?.name).toBe('Team Liquid');
     expect(payload.playoffs.rounds[1]?.matches[0]?.teams[1]?.score).toBe('2');
+    expect(payload.playoffs.placementPrizes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ placement: '1st Place', prize: '$300,000' }),
+      expect.objectContaining({ placement: '2nd Place', prize: '$175,000' }),
+      expect.objectContaining({ placement: '3rd Place', prize: '$120,000' }),
+    ]));
 
     expect(payload.matches.upcoming[0]).toEqual(expect.objectContaining({
       startTime: '2026-03-12 08:00:00',
