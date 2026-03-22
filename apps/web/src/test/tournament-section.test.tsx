@@ -494,6 +494,173 @@ describe('TournamentSection', () => {
     expect(screen.getByText('Upcoming and finished matches').closest('section')).toHaveClass('hidden');
   });
 
+  it('renders ESL One Birmingham playoff rounds in the original DLTV lane order', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=esl-one-birmingham-2026&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(1, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=esl-one-birmingham-2026&featured=1') {
+        return createJsonResponse({
+          tournamentId: 'esl-one-birmingham-2026',
+          title: 'Main Event',
+          sourceLabel: 'DLTV',
+          sourceUrl: 'https://dltv.org/events/esl-one-birmingham-2026',
+          fetchedAt: '2026-03-22T08:00:00.000Z',
+          groupStage: {
+            title: 'Group Stage',
+            format: 'round-robin',
+            rounds: [],
+            groups: [],
+            standings: [],
+          },
+          playoffs: {
+            title: 'Playoffs',
+            rounds: [
+              { roundName: 'Lower Bracket R2', matches: [] },
+              { roundName: 'Grand Finals', matches: [] },
+              { roundName: 'Upper Bracket Finals', matches: [] },
+              { roundName: 'Lower Bracket Finals', matches: [] },
+              { roundName: 'Upper Bracket R1', matches: [] },
+              { roundName: 'Lower Bracket R1', matches: [] },
+              { roundName: 'Lower Bracket R3', matches: [] },
+            ],
+          },
+          matches: {
+            title: 'Matches & Scores',
+            upcoming: [],
+            finished: [],
+          },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'esl-one-birmingham-2026',
+            league_id: 19669,
+            name: 'ESL One Season Birmingham',
+            status: 'ongoing',
+            tier: 'S',
+            location: 'United Kingdom',
+            start_time: 1_776_614_400,
+            end_time: 1_777_305_600,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'ESL One Season Birmingham' })[1]);
+    expect(await screen.findByText('Compact view')).toBeInTheDocument();
+
+    const upperR1 = screen.getAllByText('Upper Bracket R1')[1];
+    const upperFinals = screen.getAllByText('Upper Bracket Finals')[1];
+    const grandFinals = screen.getAllByText('Grand Finals')[1];
+    const lowerR1 = screen.getAllByText('Lower Bracket R1')[1];
+    const lowerR2 = screen.getAllByText('Lower Bracket R2')[1];
+    const lowerR3 = screen.getAllByText('Lower Bracket R3')[1];
+    const lowerFinals = screen.getAllByText('Lower Bracket Finals')[1];
+
+    expect(upperR1.compareDocumentPosition(upperFinals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(upperFinals.compareDocumentPosition(grandFinals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(grandFinals.compareDocumentPosition(lowerR1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(lowerR1.compareDocumentPosition(lowerR2) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(lowerR2.compareDocumentPosition(lowerR3) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(lowerR3.compareDocumentPosition(lowerFinals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=esl-one-birmingham-2026&featured=1');
+  });
+
+  it('renders PGL Wallachia playoff compact structure with upper semis and prize placements', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(1, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1') {
+        return createJsonResponse({
+          tournamentId: 'pgl-wallachia-s7',
+          title: 'Main Event',
+          sourceLabel: 'DLTV',
+          sourceUrl: 'https://dltv.org/events/pgl-wallachia-season-7',
+          fetchedAt: '2026-03-12T08:00:00.000Z',
+          groupStage: {
+            title: 'Group Stage',
+            rounds: [],
+            standings: [],
+          },
+          playoffs: {
+            title: 'Playoffs',
+            rounds: [
+              { roundName: 'Lower Bracket Final (bo3)', matches: [] },
+              { roundName: 'Upper Bracket Final (bo3)', matches: [] },
+              { roundName: 'Grand Final (bo5)', matches: [] },
+              { roundName: 'Upper Bracket Semifinal (bo3)', matches: [] },
+              { roundName: 'Lower Bracket R2 (bo3)', matches: [] },
+              { roundName: 'Lower Bracket R3 (bo3)', matches: [] },
+              { roundName: 'Lower Bracket R1 (bo3)', matches: [] },
+              { roundName: 'Upper Bracket R1 (bo3)', matches: [] },
+            ],
+          },
+          matches: {
+            title: 'Matches & Scores',
+            upcoming: [],
+            finished: [],
+          },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'pgl-wallachia-s7',
+            league_id: 19435,
+            name: 'PGL Wallachia Season 7',
+            status: 'ongoing',
+            tier: 'S',
+            location: 'Romania',
+            start_time: 1_772_841_600,
+            end_time: 1_773_532_800,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 7' })[1]);
+    expect((await screen.findAllByText('Upper Bracket Semifinal (bo3)')).length).toBeGreaterThan(0);
+    expect(screen.getByText('$300,000')).toBeInTheDocument();
+    expect(screen.getByText('$175,000')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
+  });
+
   it('does not render tournaments whose tier is empty', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
