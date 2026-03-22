@@ -101,12 +101,16 @@ describe('TournamentSection', () => {
     await screen.findByText('Radiant 1');
     expect(screen.getByText('Radiant 10')).toBeInTheDocument();
     expect(screen.queryByText('Radiant 11')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '加载更多' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '加载更多' }));
+    const loadMoreButton = await screen.findByRole('button', { name: '加载更多' });
+    expect(loadMoreButton).toBeInTheDocument();
 
-    await screen.findByText('Radiant 11');
-    expect(screen.getByText('Dire 12')).toBeInTheDocument();
+    fireEvent.click(loadMoreButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Radiant 11')).toBeInTheDocument();
+      expect(screen.getByText('Dire 12')).toBeInTheDocument();
+    });
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=0');
