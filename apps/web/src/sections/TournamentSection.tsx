@@ -656,36 +656,46 @@ function FeaturedGroupCards({
   );
 }
 
-function FeaturedBracketMatchCard({
+function getFeaturedPlayoffTone(roundName: string) {
+  if (/Upper Bracket/i.test(roundName)) {
+    return 'border-emerald-400/20 bg-emerald-500/[0.06]';
+  }
+  if (/Lower Bracket/i.test(roundName)) {
+    return 'border-amber-400/20 bg-amber-500/[0.06]';
+  }
+  return 'border-fuchsia-400/20 bg-fuchsia-500/[0.06]';
+}
+
+function FeaturedCompactPlayoffMatch({
   match,
   aliasToTag,
   teams,
   onOpenMatch,
-  tone,
+  className,
 }: {
   match: FeaturedEventPlayoffMatch;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
   onOpenMatch: (matchId: string) => void;
-  tone: 'upper' | 'lower' | 'final';
+  className: string;
 }) {
-  const toneClass = tone === 'upper'
-    ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
-    : tone === 'lower'
-      ? 'border-amber-400/20 bg-amber-500/5 hover:border-amber-300/40'
-      : 'border-fuchsia-400/20 bg-fuchsia-500/5 hover:border-fuchsia-300/40';
+  const resolvedTeams = match.teams.length
+    ? match.teams
+    : [
+        { name: 'TBD', score: '-', teamId: null, logoUrl: null, isCnTeam: false },
+        { name: 'TBD', score: '-', teamId: null, logoUrl: null, isCnTeam: false },
+      ];
 
   return (
     <FeaturedMatchSurface
       href={match.href}
       matchId={match.matchId}
       onOpenMatch={onOpenMatch}
-      className={`block rounded-xl border p-3 text-left transition-colors ${toneClass}`}
+      className={`block rounded-xl border p-3 text-left transition-colors hover:border-white/20 ${className}`}
     >
-      <div className="mb-2 text-[11px] text-slate-400">{formatEventDateTime(match.startTime) || 'TBD'}</div>
       <div className="space-y-2">
-        {match.teams.map((team, index) => (
-          <div key={`${team.name}-${index}`} className="flex items-center justify-between gap-2">
+        {resolvedTeams.map((team, index) => (
+          <div key={`${team.name}-${index}`} className="flex items-center justify-between gap-3">
             <FeaturedTeamChip
               teamId={team.teamId}
               name={team.name}
@@ -695,7 +705,7 @@ function FeaturedBracketMatchCard({
               teams={teams}
               preferFullName
             />
-            <span className="text-sm font-semibold text-white">{team.score ?? '-'}</span>
+            <span className="min-w-[18px] text-right text-sm font-semibold text-white">{team.score ?? '-'}</span>
           </div>
         ))}
       </div>
@@ -703,56 +713,35 @@ function FeaturedBracketMatchCard({
   );
 }
 
-function FeaturedBracketFlowColumn({
-  title,
-  rounds,
+function FeaturedCompactPlayoffRound({
+  round,
   aliasToTag,
   teams,
   onOpenMatch,
-  tone,
 }: {
-  title: string;
-  rounds: FeaturedEventPlayoffRound[];
+  round: FeaturedEventPlayoffRound;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
   onOpenMatch: (matchId: string) => void;
-  tone: 'upper' | 'lower' | 'final';
 }) {
-  const badgeClass = tone === 'upper'
-    ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
-    : tone === 'lower'
-      ? 'border-amber-400/20 bg-amber-500/10 text-amber-100'
-      : 'border-fuchsia-400/20 bg-fuchsia-500/10 text-fuchsia-100';
+  const toneClass = getFeaturedPlayoffTone(round.roundName);
+  const matches = round.matches.length
+    ? round.matches
+    : [{ href: null, matchId: null, startTime: null, teams: [] }];
 
   return (
-    <div className="min-w-[240px] shrink-0 rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h6 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-200">{title}</h6>
-        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${badgeClass}`}>
-          Flow
-        </span>
-      </div>
-      <div className="space-y-4">
-        {rounds.map((round) => (
-          <div key={round.roundName} className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{round.roundName}</div>
-            <div className="space-y-3">
-              {round.matches.length ? round.matches.map((match) => (
-                <FeaturedBracketMatchCard
-                  key={`${round.roundName}-${match.href}-${match.startTime}-${match.teams.map((t) => t.name).join('-')}`}
-                  match={match}
-                  aliasToTag={aliasToTag}
-                  teams={teams}
-                  onOpenMatch={onOpenMatch}
-                  tone={tone}
-                />
-              )) : (
-                <div className="rounded-xl border border-dashed border-white/10 bg-slate-900/40 px-3 py-6 text-center text-xs text-slate-500">
-                  Slot pending
-                </div>
-              )}
-            </div>
-          </div>
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{round.roundName}</div>
+      <div className="space-y-2">
+        {matches.map((match, index) => (
+          <FeaturedCompactPlayoffMatch
+            key={`${round.roundName}-${match.href || match.matchId || index}`}
+            match={match}
+            aliasToTag={aliasToTag}
+            teams={teams}
+            onOpenMatch={onOpenMatch}
+            className={toneClass}
+          />
         ))}
       </div>
     </div>
@@ -770,89 +759,44 @@ function FeaturedPlayoffBracket({
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
 }) {
-  const upperRounds = payload.playoffs.rounds.filter((round) => /Upper Bracket/i.test(round.roundName));
-  const lowerRounds = payload.playoffs.rounds.filter((round) => /Lower Bracket/i.test(round.roundName));
-  const finalRounds = payload.playoffs.rounds.filter((round) => /Grand Final/i.test(round.roundName));
+  const rounds = payload.playoffs.rounds.length
+    ? payload.playoffs.rounds
+    : [{ roundName: 'Grand Finals', matches: [] }];
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.08),rgba(2,6,23,0.98)_58%)] p-3 md:p-4">
-      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h6 className="text-sm font-semibold text-white md:text-base">Single bracket flow</h6>
-          <p className="text-[11px] text-slate-400 md:text-xs">把 Upper Bracket、Lower Bracket 和 Grand Final 放在同一张流程图里展示流向。</p>
-        </div>
-        <div className="flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.14em]">
-          <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-100">Upper winner → GF</span>
-          <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100">Lower survivor → GF</span>
-          <span className="rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-2.5 py-1 text-fuchsia-100">Final meeting</span>
+    <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
+          <span className="rounded-md border border-white/10 px-2 py-1">No</span>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="min-w-[1000px] space-y-5 pb-1">
-          <div className="flex items-stretch gap-4">
-            <FeaturedBracketFlowColumn
-              title="Upper Bracket"
-              rounds={upperRounds}
-              aliasToTag={aliasToTag}
-              teams={teams}
-              onOpenMatch={onOpenMatch}
-              tone="upper"
-            />
+      <div className="grid gap-3 md:hidden">
+        {rounds.map((round) => (
+          <FeaturedCompactPlayoffRound
+            key={round.roundName}
+            round={round}
+            aliasToTag={aliasToTag}
+            teams={teams}
+            onOpenMatch={onOpenMatch}
+          />
+        ))}
+      </div>
 
-            <div className="flex min-w-[88px] items-center justify-center">
-              <div className="flex w-full items-center gap-2">
-                <div className="h-px flex-1 bg-emerald-400/40" />
-                <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-100">
-                  winner
-                </div>
-                <div className="h-px flex-1 bg-emerald-400/40" />
-              </div>
+      <div className="hidden md:block overflow-x-auto">
+        <div className="flex min-w-max items-start gap-3 pb-1">
+          {rounds.map((round) => (
+            <div key={round.roundName} className="w-[240px] shrink-0">
+              <FeaturedCompactPlayoffRound
+                round={round}
+                aliasToTag={aliasToTag}
+                teams={teams}
+                onOpenMatch={onOpenMatch}
+              />
             </div>
-
-            <FeaturedBracketFlowColumn
-              title="Grand Final"
-              rounds={finalRounds.length ? finalRounds : [{ roundName: 'Grand Finals', matches: [] }]}
-              aliasToTag={aliasToTag}
-              teams={teams}
-              onOpenMatch={onOpenMatch}
-              tone="final"
-            />
-          </div>
-
-          <div className="flex items-start gap-4">
-            <FeaturedBracketFlowColumn
-              title="Lower Bracket"
-              rounds={lowerRounds}
-              aliasToTag={aliasToTag}
-              teams={teams}
-              onOpenMatch={onOpenMatch}
-              tone="lower"
-            />
-
-            <div className="flex min-w-[88px] items-center justify-center self-stretch">
-              <div className="flex h-full min-h-[160px] items-center gap-2">
-                <div className="h-px w-8 bg-amber-400/40" />
-                <div className="flex h-full flex-col items-center justify-center gap-2">
-                  <div className="h-full min-h-[104px] w-px bg-amber-400/25" />
-                  <div className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-100">
-                    survivor
-                  </div>
-                  <div className="h-full min-h-[104px] w-px bg-fuchsia-400/20" />
-                </div>
-                <div className="h-px w-8 bg-fuchsia-400/40" />
-              </div>
-            </div>
-
-            <div className="min-w-[240px] shrink-0 rounded-2xl border border-white/10 bg-slate-950/50 p-3">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Bracket logic</div>
-              <div className="space-y-2 text-xs leading-5 text-slate-400">
-                <p><span className="font-semibold text-emerald-100">Upper Bracket</span> 决出直通 Grand Final 的队伍。</p>
-                <p><span className="font-semibold text-amber-100">Lower Bracket</span> 逐轮淘汰，最终留下唯一幸存者。</p>
-                <p><span className="font-semibold text-fuchsia-100">Grand Final</span> 由胜者组冠军对阵败者组幸存者。</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
