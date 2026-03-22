@@ -137,11 +137,17 @@ interface FeaturedEventStandingRow {
   teamName: string;
   country?: string | null;
   record?: string | null;
+  mapRecord?: string | null;
   logoUrl?: string | null;
   teamHref?: string | null;
   isCnTeam?: boolean;
-  advancement?: 'playoff' | 'eliminated' | string | null;
+  advancement?: 'playoff' | 'upper' | 'lower' | 'eliminated' | string | null;
   rounds: FeaturedEventRoundCell[];
+}
+
+interface FeaturedEventGroup {
+  name: string;
+  standings: FeaturedEventStandingRow[];
 }
 
 interface FeaturedEventPlayoffMatch {
@@ -186,7 +192,9 @@ interface FeaturedTournamentPayload {
   fetchedAt: string;
   groupStage: {
     title: string;
+    format?: 'swiss' | 'round-robin' | string;
     rounds: string[];
+    groups?: FeaturedEventGroup[];
     standings: FeaturedEventStandingRow[];
   };
   playoffs: {
@@ -207,7 +215,15 @@ interface FeaturedTournamentState {
 }
 
 const DEFAULT_SERIES_PAGE_SIZE = 10;
-const FEATURED_TOURNAMENT_KEYS = new Set(['pgl-wallachia-s7', '19435', 'pgl wallachia season 7']);
+const FEATURED_TOURNAMENT_KEYS = new Set([
+  'pgl-wallachia-s7',
+  '19435',
+  'pgl wallachia season 7',
+  'esl-one-birmingham-2026',
+  '19669',
+  'esl one birmingham 2026',
+  'esl one season birmingham',
+]);
 
 // Team data type for team abbreviations
 const FALLBACK_TEAM_ABBR: Record<string, string> = {
@@ -513,11 +529,19 @@ function FeaturedMatchSurface({
 }
 
 function getFeaturedAdvancementTone(advancement?: string | null) {
-  if (advancement === 'playoff') {
+  if (advancement === 'playoff' || advancement === 'upper') {
     return {
       row: 'bg-emerald-500/[0.08]',
       sticky: 'bg-slate-950/96',
       badge: 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100',
+    };
+  }
+
+  if (advancement === 'lower') {
+    return {
+      row: 'bg-amber-500/[0.08]',
+      sticky: 'bg-slate-950/96',
+      badge: 'border-amber-400/20 bg-amber-500/10 text-amber-100',
     };
   }
 
@@ -538,6 +562,203 @@ function getFeaturedRoundTone(round: FeaturedEventRoundCell) {
   }
 
   return 'border-white/10 bg-slate-900/70 text-white';
+}
+
+function getFeaturedAdvancementLabel(advancement?: string | null) {
+  if (advancement === 'playoff') return 'Playoffs';
+  if (advancement === 'upper') return 'UB Seed';
+  if (advancement === 'lower') return 'LB Seed';
+  return 'Out';
+}
+
+function FeaturedGroupCards({
+  groups,
+  aliasToTag,
+  teams,
+}: {
+  groups: FeaturedEventGroup[];
+  aliasToTag: Map<string, string>;
+  teams: NonNullable<TournamentSectionProps['teams']>;
+}) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-2">
+      {groups.map((group) => (
+        <div key={group.name} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+          <div className="flex items-center justify-between border-b border-white/10 bg-[linear-gradient(135deg,rgba(245,158,11,0.12),rgba(15,23,42,0.94))] px-4 py-3">
+            <div>
+              <div className="text-sm font-semibold text-white">{group.name}</div>
+              <div className="text-[11px] text-slate-400">Round-robin standings</div>
+            </div>
+            <div className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
+              BO2 League
+            </div>
+          </div>
+          <div className="grid grid-cols-[52px_minmax(0,1fr)_88px_80px_86px] border-b border-white/10 px-4 py-2 text-[11px] uppercase tracking-wide text-slate-400">
+            <span>Rank</span>
+            <span>Team</span>
+            <span className="text-center">Series</span>
+            <span className="text-center">Maps</span>
+            <span className="text-right">Seed</span>
+          </div>
+          <div className="divide-y divide-white/10">
+            {group.standings.map((row) => {
+              const tone = getFeaturedAdvancementTone(row.advancement);
+              return (
+                <div key={`${group.name}-${row.rank}-${row.teamName}`} className={`grid grid-cols-[52px_minmax(0,1fr)_88px_80px_86px] items-center gap-2 px-4 py-3 ${tone.row}`}>
+                  <div className="text-sm font-semibold text-white">#{row.rank}</div>
+                  <div className="min-w-0">
+                    <FeaturedTeamChip
+                      teamId={row.teamId}
+                      name={row.teamName}
+                      logoUrl={row.logoUrl}
+                      isCnTeam={row.isCnTeam}
+                      aliasToTag={aliasToTag}
+                      teams={teams}
+                      emphasize
+                    />
+                    {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
+                  </div>
+                  <div className="text-center text-sm font-semibold text-white">{row.record || 'TBD'}</div>
+                  <div className="text-center text-sm text-slate-300">{row.mapRecord || '—'}</div>
+                  <div className="text-right">
+                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${tone.badge}`}>
+                      {getFeaturedAdvancementLabel(row.advancement)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FeaturedBracketLane({
+  title,
+  subtitle,
+  rounds,
+  aliasToTag,
+  teams,
+  onOpenMatch,
+  accent,
+}: {
+  title: string;
+  subtitle: string;
+  rounds: FeaturedEventPlayoffRound[];
+  aliasToTag: Map<string, string>;
+  teams: NonNullable<TournamentSectionProps['teams']>;
+  onOpenMatch: (matchId: string) => void;
+  accent: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 md:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h6 className="text-sm font-semibold text-white md:text-base">{title}</h6>
+          <p className="text-[11px] text-slate-400 md:text-xs">{subtitle}</p>
+        </div>
+        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${accent}`}>
+          Flow
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="flex min-w-max gap-3 pb-1">
+          {rounds.map((round) => (
+            <div key={round.roundName} className="w-[240px] shrink-0 rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">{round.roundName}</div>
+              <div className="space-y-3">
+                {round.matches.length ? round.matches.map((match) => (
+                  <FeaturedMatchSurface
+                    key={`${round.roundName}-${match.href}-${match.startTime}-${match.teams.map((t) => t.name).join('-')}`}
+                    href={match.href}
+                    matchId={match.matchId}
+                    onOpenMatch={onOpenMatch}
+                    className={`block rounded-xl border p-3 text-left transition-colors ${
+                      match.matchId
+                        ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
+                        : 'border-white/10 bg-slate-900/80 hover:border-amber-400/30'
+                    }`}
+                  >
+                    <div className="mb-2 text-[11px] text-slate-400">{formatEventDateTime(match.startTime) || 'TBD'}</div>
+                    <div className="space-y-2">
+                      {match.teams.map((team, index) => (
+                        <div key={`${team.name}-${index}`} className="flex items-center justify-between gap-2">
+                          <FeaturedTeamChip
+                            teamId={team.teamId}
+                            name={team.name}
+                            logoUrl={team.logoUrl}
+                            isCnTeam={team.isCnTeam}
+                            aliasToTag={aliasToTag}
+                            teams={teams}
+                            preferFullName
+                          />
+                          <span className="text-sm font-semibold text-white">{team.score ?? '-'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </FeaturedMatchSurface>
+                )) : (
+                  <div className="rounded-xl border border-dashed border-white/10 bg-slate-900/40 px-3 py-6 text-center text-xs text-slate-500">
+                    Slot pending
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeaturedPlayoffBracket({
+  payload,
+  onOpenMatch,
+  aliasToTag,
+  teams,
+}: {
+  payload: FeaturedTournamentPayload;
+  onOpenMatch: (matchId: string) => void;
+  aliasToTag: Map<string, string>;
+  teams: NonNullable<TournamentSectionProps['teams']>;
+}) {
+  const upperRounds = payload.playoffs.rounds.filter((round) => /Upper Bracket/i.test(round.roundName));
+  const lowerRounds = payload.playoffs.rounds.filter((round) => /Lower Bracket/i.test(round.roundName));
+  const finalRounds = payload.playoffs.rounds.filter((round) => /Grand Final/i.test(round.roundName));
+
+  return (
+    <div className="space-y-4">
+      <FeaturedBracketLane
+        title="Upper Bracket"
+        subtitle="小组前二从这里开始，胜者直通总决赛。"
+        rounds={upperRounds}
+        aliasToTag={aliasToTag}
+        teams={teams}
+        onOpenMatch={onOpenMatch}
+        accent="border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+      />
+      <FeaturedBracketLane
+        title="Lower Bracket"
+        subtitle="小组第三、第四落位败者组，单场失败即淘汰。"
+        rounds={lowerRounds}
+        aliasToTag={aliasToTag}
+        teams={teams}
+        onOpenMatch={onOpenMatch}
+        accent="border-amber-400/20 bg-amber-500/10 text-amber-100"
+      />
+      <FeaturedBracketLane
+        title="Grand Final"
+        subtitle="胜者组冠军等待败者组突围者。"
+        rounds={finalRounds.length ? finalRounds : [{ roundName: 'Grand Finals', matches: [] }]}
+        aliasToTag={aliasToTag}
+        teams={teams}
+        onOpenMatch={onOpenMatch}
+        accent="border-fuchsia-400/20 bg-fuchsia-500/10 text-fuchsia-100"
+      />
+    </div>
+  );
 }
 
 function FeaturedMobileStageTable({
@@ -733,137 +954,154 @@ function FeaturedTournamentPanel({
       </div>
 
       <div className="space-y-4 md:space-y-5">
-        <section className="rounded-xl border border-white/10 bg-slate-950/70 md:rounded-2xl md:bg-slate-950/60 md:p-4">
-          <FeaturedMobileStageTable
-            payload={payload}
-            onOpenMatch={onOpenMatch}
-            aliasToTag={aliasToTag}
-            teams={teams}
-          />
-          <div className="hidden md:block">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h5 className="text-base font-semibold text-white">{payload.groupStage.title}</h5>
-              <p className="text-xs text-slate-400">小组排名和轮次对阵</p>
-            </div>
-            <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
-              Top 8 advance
-            </div>
-          </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
-              <div className="grid grid-cols-[56px_minmax(0,1fr)_88px_86px] border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400">
-                <span>Rank</span>
-                <span>Team</span>
-                <span className="text-center">Record</span>
-                <span className="text-right">Status</span>
+        <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
+          {payload.groupStage.format === 'round-robin' ? (
+            <>
+              <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h5 className="text-sm font-semibold text-white md:text-base">{payload.groupStage.title}</h5>
+                  <p className="text-xs text-slate-400">双小组循环赛排名 · 前二进胜者组，三四名进败者组</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-100">Top 2 → Upper Bracket</span>
+                  <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100">3rd-4th → Lower Bracket</span>
+                  <span className="rounded-full border border-rose-400/20 bg-rose-500/10 px-2.5 py-1 text-rose-100">5th-8th Out</span>
+                </div>
               </div>
-              <div className="divide-y divide-white/10">
-                {payload.groupStage.standings.map((row) => (
-                  <div
-                    key={`${row.rank}-${row.teamName}`}
-                    className={`grid grid-cols-[56px_minmax(0,1fr)_88px_86px] items-center gap-2 px-3 py-2.5 ${row.isCnTeam ? 'bg-red-500/5' : ''}`}
-                  >
-                    <div className="text-sm font-semibold text-white">#{row.rank}</div>
-                    <div className="min-w-0">
-                      <FeaturedTeamChip
-                        teamId={row.teamId}
-                        name={row.teamName}
-                        logoUrl={row.logoUrl}
-                        isCnTeam={row.isCnTeam}
-                        aliasToTag={aliasToTag}
-                        teams={teams}
-                        emphasize
-                      />
-                      {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
+              <FeaturedGroupCards groups={payload.groupStage.groups || []} aliasToTag={aliasToTag} teams={teams} />
+            </>
+          ) : (
+            <>
+              <FeaturedMobileStageTable
+                payload={payload}
+                onOpenMatch={onOpenMatch}
+                aliasToTag={aliasToTag}
+                teams={teams}
+              />
+              <div className="hidden md:block">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h5 className="text-base font-semibold text-white">{payload.groupStage.title}</h5>
+                    <p className="text-xs text-slate-400">小组排名和轮次对阵</p>
+                  </div>
+                  <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+                    Top 8 advance
+                  </div>
+                </div>
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+                    <div className="grid grid-cols-[56px_minmax(0,1fr)_88px_86px] border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400">
+                      <span>Rank</span>
+                      <span>Team</span>
+                      <span className="text-center">Record</span>
+                      <span className="text-right">Status</span>
                     </div>
-                    <div className="text-center text-sm font-medium text-slate-200">{row.record || 'TBD'}</div>
-                    <div className="text-right">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          row.advancement === 'playoff'
-                            ? 'bg-emerald-500/15 text-emerald-200'
-                            : 'bg-red-500/15 text-red-200'
-                        }`}
-                      >
-                        {row.advancement === 'playoff' ? 'Playoffs' : 'Out'}
-                      </span>
+                    <div className="divide-y divide-white/10">
+                      {payload.groupStage.standings.map((row) => (
+                        <div
+                          key={`${row.rank}-${row.teamName}`}
+                          className={`grid grid-cols-[56px_minmax(0,1fr)_88px_86px] items-center gap-2 px-3 py-2.5 ${row.isCnTeam ? 'bg-red-500/5' : ''}`}
+                        >
+                          <div className="text-sm font-semibold text-white">#{row.rank}</div>
+                          <div className="min-w-0">
+                            <FeaturedTeamChip
+                              teamId={row.teamId}
+                              name={row.teamName}
+                              logoUrl={row.logoUrl}
+                              isCnTeam={row.isCnTeam}
+                              aliasToTag={aliasToTag}
+                              teams={teams}
+                              emphasize
+                            />
+                            {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
+                          </div>
+                          <div className="text-center text-sm font-medium text-slate-200">{row.record || 'TBD'}</div>
+                          <div className="text-right">
+                            <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              row.advancement === 'playoff'
+                                ? 'bg-emerald-500/15 text-emerald-200'
+                                : 'bg-red-500/15 text-red-200'
+                            }`}>
+                              {row.advancement === 'playoff' ? 'Playoffs' : 'Out'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
-              <div className="overflow-x-auto">
-                <div className="min-w-[720px]">
-                  <div
-                    className="grid border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400"
-                    style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
-                  >
-                    <span>Team</span>
-                    {payload.groupStage.rounds.map((round) => (
-                      <span key={round} className="text-center">{round}</span>
-                    ))}
-                  </div>
-                  <div className="divide-y divide-white/10">
-                    {payload.groupStage.standings.map((row) => (
-                      <div
-                        key={`rounds-${row.rank}-${row.teamName}`}
-                        className="grid items-center gap-2 px-3 py-2.5"
-                        style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
-                      >
-                        <FeaturedTeamChip
-                          teamId={row.teamId}
-                          name={row.teamName}
-                          logoUrl={row.logoUrl}
-                          isCnTeam={row.isCnTeam}
-                          aliasToTag={aliasToTag}
-                          teams={teams}
-                        />
-                        {row.rounds.map((round) => (
-                          <FeaturedMatchSurface
-                            key={`${row.teamName}-${round.roundLabel}`}
-                            href={round.href}
-                            matchId={round.matchId}
-                            onOpenMatch={onOpenMatch}
-                            className={`rounded-xl border px-2 py-2 text-center transition-colors ${
-                              round.pending
-                                ? 'cursor-default border-dashed border-white/10 bg-slate-950/40 text-slate-500'
-                                : round.matchId
-                                  ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40 hover:bg-emerald-500/10'
-                                  : 'border-white/10 bg-slate-950/60 hover:border-amber-400/30 hover:bg-slate-900'
-                            }`}
-                          >
-                            {round.pending ? (
-                              <div className="text-xs text-slate-500">TBD</div>
-                            ) : (
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-center gap-1">
-                                  {resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl) ? (
-                                    <img
-                                      src={resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl)}
-                                      alt={round.opponentName || 'Opponent'}
-                                      className={`h-5 w-5 rounded-full object-contain ${round.opponentIsCnTeam ? 'border border-red-400/50 bg-red-500/10 p-0.5' : ''}`}
-                                    />
-                                  ) : null}
-                                  <span className={`max-w-[54px] truncate text-xs ${round.opponentIsCnTeam ? 'font-semibold text-red-100' : 'text-slate-200'}`}>
-                                    {getTeamAbbrev(round.opponentName, aliasToTag)}
-                                  </span>
-                                </div>
-                                <div className="text-xs font-semibold text-white">{round.score || 'TBD'}</div>
-                              </div>
-                            )}
-                          </FeaturedMatchSurface>
-                        ))}
+                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[720px]">
+                        <div
+                          className="grid border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400"
+                          style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
+                        >
+                          <span>Team</span>
+                          {payload.groupStage.rounds.map((round) => (
+                            <span key={round} className="text-center">{round}</span>
+                          ))}
+                        </div>
+                        <div className="divide-y divide-white/10">
+                          {payload.groupStage.standings.map((row) => (
+                            <div
+                              key={`rounds-${row.rank}-${row.teamName}`}
+                              className="grid items-center gap-2 px-3 py-2.5"
+                              style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
+                            >
+                              <FeaturedTeamChip
+                                teamId={row.teamId}
+                                name={row.teamName}
+                                logoUrl={row.logoUrl}
+                                isCnTeam={row.isCnTeam}
+                                aliasToTag={aliasToTag}
+                                teams={teams}
+                              />
+                              {row.rounds.map((round) => (
+                                <FeaturedMatchSurface
+                                  key={`${row.teamName}-${round.roundLabel}`}
+                                  href={round.href}
+                                  matchId={round.matchId}
+                                  onOpenMatch={onOpenMatch}
+                                  className={`rounded-xl border px-2 py-2 text-center transition-colors ${
+                                    round.pending
+                                      ? 'cursor-default border-dashed border-white/10 bg-slate-950/40 text-slate-500'
+                                      : round.matchId
+                                        ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40 hover:bg-emerald-500/10'
+                                        : 'border-white/10 bg-slate-950/60 hover:border-amber-400/30 hover:bg-slate-900'
+                                  }`}
+                                >
+                                  {round.pending ? (
+                                    <div className="text-xs text-slate-500">TBD</div>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-center gap-1">
+                                        {resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl) ? (
+                                          <img
+                                            src={resolveTeamLogo({ teamId: round.opponentTeamId, name: round.opponentName }, teams, round.opponentLogoUrl)}
+                                            alt={round.opponentName || 'Opponent'}
+                                            className={`h-5 w-5 rounded-full object-contain ${round.opponentIsCnTeam ? 'border border-red-400/50 bg-red-500/10 p-0.5' : ''}`}
+                                          />
+                                        ) : null}
+                                        <span className={`max-w-[54px] truncate text-xs ${round.opponentIsCnTeam ? 'font-semibold text-red-100' : 'text-slate-200'}`}>
+                                          {getTeamAbbrev(round.opponentName, aliasToTag)}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs font-semibold text-white">{round.score || 'TBD'}</div>
+                                    </div>
+                                  )}
+                                </FeaturedMatchSurface>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          </div>
+            </>
+          )}
         </section>
 
         <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
@@ -872,46 +1110,7 @@ function FeaturedTournamentPanel({
             <p className="text-xs text-slate-400">淘汰赛对阵信息</p>
             <p className="text-[11px] text-slate-400 md:text-xs">Bracket rounds and pairings</p>
           </div>
-          <div className="grid gap-2.5 md:gap-3 lg:grid-cols-2 2xl:grid-cols-4">
-            {payload.playoffs.rounds.map((round) => (
-              <div key={round.roundName} className="rounded-lg border border-white/10 bg-slate-900/60 p-2.5 md:rounded-2xl md:bg-slate-900/70 md:p-3">
-                <div className="mb-2 text-xs font-semibold text-white md:mb-3 md:text-sm">{round.roundName}</div>
-                <div className="space-y-2 md:space-y-3">
-                  {round.matches.map((match) => (
-                    <FeaturedMatchSurface
-                      key={`${round.roundName}-${match.href}-${match.startTime}`}
-                      href={match.href}
-                      matchId={match.matchId}
-                      onOpenMatch={onOpenMatch}
-                      className={`block rounded-lg border p-2.5 text-left transition-colors md:rounded-xl md:p-3 ${
-                        match.matchId
-                          ? 'border-emerald-400/20 bg-emerald-500/5 hover:border-emerald-300/40'
-                          : 'border-white/10 bg-slate-950/70 hover:border-amber-400/30'
-                      }`}
-                    >
-                      <div className="mb-1.5 text-[11px] text-slate-400 md:mb-2 md:text-xs">{formatEventDateTime(match.startTime)}</div>
-                      <div className="space-y-1.5 md:space-y-2">
-                        {match.teams.map((team, index) => (
-                          <div key={`${match.href}-${team.name}-${index}`} className="flex items-center justify-between gap-2">
-                            <FeaturedTeamChip
-                              teamId={team.teamId}
-                              name={team.name}
-                              logoUrl={team.logoUrl}
-                              isCnTeam={team.isCnTeam}
-                              aliasToTag={aliasToTag}
-                              teams={teams}
-                              preferFullName
-                            />
-                            <span className="text-sm font-semibold text-white">{team.score ?? '0'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </FeaturedMatchSurface>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <FeaturedPlayoffBracket payload={payload} onOpenMatch={onOpenMatch} aliasToTag={aliasToTag} teams={teams} />
         </section>
 
         <section className="hidden rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">

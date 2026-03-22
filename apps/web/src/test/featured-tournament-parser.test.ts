@@ -113,6 +113,7 @@ describe('parseDltvFeaturedTournamentPage', () => {
       country: 'Sweden',
       record: '3 - 0',
     }));
+    expect(payload.groupStage.format).toBe('swiss');
     expect(payload.groupStage.standings[0]?.rounds[0]).toEqual(expect.objectContaining({
       opponentName: 'BetBoom Team',
       score: '2 - 1',

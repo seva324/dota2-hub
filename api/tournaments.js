@@ -31,6 +31,26 @@ const FEATURED_TEAM_ALIAS_OVERRIDES = {
     yb: 'yakultbrothers',
     yakult: 'yakultbrothers',
   },
+  'esl-one-birmingham-2026': {
+    bb: 'betboomteam',
+    betboom: 'betboomteam',
+    falcons: 'teamfalcons',
+    gg: 'gaimingladiators',
+    gl: 'gamerlegion',
+    liquid: 'teamliquid',
+    mouz: 'mouz',
+    nigma: 'nigmagalaxy',
+    pari: 'parivision',
+    spirit: 'teamspirit',
+    tidebound: 'tidebound',
+    tundra: 'tundraesports',
+    vp: 'virtuspro',
+    xg: 'xtremegaming',
+    xtreme: 'xtremegaming',
+    yandex: 'teamyandex',
+    yb: 'yakultbrothers',
+    yakult: 'yakultbrothers',
+  },
 };
 
 let sql = null;
