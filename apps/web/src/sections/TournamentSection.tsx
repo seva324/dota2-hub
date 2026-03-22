@@ -440,6 +440,27 @@ function isFeaturedTournament(tournament: Tournament | null): boolean {
   return keys.some((key) => FEATURED_TOURNAMENT_KEYS.has(key));
 }
 
+function getFeaturedTournamentRequestId(tournament: Tournament | null): string | null {
+  if (!tournament) return null;
+
+  const normalizedName = String(tournament.name || '').trim().toLowerCase();
+  const normalizedLeagueId = String(tournament.league_id || '').trim().toLowerCase();
+
+  if (normalizedLeagueId === '19435' || normalizedName === 'pgl wallachia season 7') {
+    return 'pgl-wallachia-s7';
+  }
+
+  if (
+    normalizedLeagueId === '19669'
+    || normalizedName === 'esl one birmingham 2026'
+    || normalizedName === 'esl one season birmingham'
+  ) {
+    return 'esl-one-birmingham-2026';
+  }
+
+  return String(tournament.id || tournament.league_id || tournament.name || '').trim() || null;
+}
+
 function FeaturedTeamChip({
   teamId,
   name,
@@ -1414,7 +1435,12 @@ export function TournamentSection({
     }));
 
     try {
-      const response = await fetch(`/api/tournaments?tournamentId=${encodeURIComponent(tournament.id)}&featured=1`);
+      const featuredRequestId = getFeaturedTournamentRequestId(tournament);
+      if (!featuredRequestId) {
+        throw new Error('featured_tournament_missing_request_id');
+      }
+
+      const response = await fetch(`/api/tournaments?tournamentId=${encodeURIComponent(featuredRequestId)}&featured=1`);
       const payload = await response.json();
 
       if (!response.ok) {
