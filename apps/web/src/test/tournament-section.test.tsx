@@ -548,7 +548,7 @@ describe('TournamentSection', () => {
         tournaments={[
           {
             id: 'esl-one-birmingham-2026',
-            league_id: 19669,
+            league_id: 19422,
             name: 'ESL One Season Birmingham',
             status: 'ongoing',
             tier: 'S',
@@ -673,8 +673,8 @@ describe('TournamentSection', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 7' })[1]);
     expect((await screen.findAllByText('Upper Bracket Semifinal (bo3)')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Team Yandex').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Team Liquid').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Yandex').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Liquid').length).toBeGreaterThan(0);
     expect(screen.getByText('$300,000')).toBeInTheDocument();
     expect(screen.getByText('$175,000')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
