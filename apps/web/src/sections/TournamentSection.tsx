@@ -166,7 +166,13 @@ interface FeaturedEventPlayoffMatch {
 
 interface FeaturedEventPlayoffRound {
   roundName: string;
+  roundKey?: string | null;
   matches: FeaturedEventPlayoffMatch[];
+}
+
+interface FeaturedEventPlayoffPlacement {
+  placement: string;
+  prize: string;
 }
 
 interface FeaturedEventMatchRow {
@@ -200,6 +206,7 @@ interface FeaturedTournamentPayload {
   playoffs: {
     title: string;
     rounds: FeaturedEventPlayoffRound[];
+    placementPrizes?: FeaturedEventPlayoffPlacement[];
   };
   matches: {
     title: string;
@@ -748,7 +755,7 @@ function FeaturedCompactPlayoffRound({
   );
 }
 
-const ESL_BIRMINGHAM_PLAYOFF_ORDER = [
+const FEATURED_PLAYOFF_ORDER = [
   'upper-r1',
   'upper-semis',
   'upper-finals',
@@ -758,6 +765,48 @@ const ESL_BIRMINGHAM_PLAYOFF_ORDER = [
   'lower-r3',
   'lower-finals',
 ] as const;
+
+type FeaturedBracketSection = 'upper' | 'lower';
+
+interface FeaturedBracketLaneSchema {
+  roundKey: string;
+  fallbackTitle: string;
+  column: number;
+  headerRow: number;
+  slotRows: number[];
+  section: FeaturedBracketSection;
+}
+
+interface FeaturedBracketConnectionSchema {
+  fromLane: string;
+  fromSlot: number;
+  toLane: string;
+  toSlot: number;
+}
+
+interface FeaturedBracketPlacementSchema {
+  placement: string;
+  fallbackPrize: string;
+  laneKey: string;
+  slot: number;
+  dx: number;
+  dy: number;
+}
+
+interface FeaturedBracketSchema {
+  minWidth: number;
+  columns: number;
+  columnWidth: number;
+  columnGap: number;
+  headerWidth: number;
+  headerHeight: number;
+  matchWidth: number;
+  matchHeight: number;
+  rowUnit: number;
+  lanes: FeaturedBracketLaneSchema[];
+  connections: FeaturedBracketConnectionSchema[];
+  placements?: FeaturedBracketPlacementSchema[];
+}
 
 function normalizeFeaturedPlayoffRoundKey(roundName: string) {
   const normalized = String(roundName || '').trim().toLowerCase();
@@ -772,10 +821,10 @@ function normalizeFeaturedPlayoffRoundKey(roundName: string) {
   return normalized;
 }
 
-function getFeaturedPlayoffRoundOrder(roundName: string) {
-  const key = normalizeFeaturedPlayoffRoundKey(roundName);
-  const index = ESL_BIRMINGHAM_PLAYOFF_ORDER.indexOf(key as typeof ESL_BIRMINGHAM_PLAYOFF_ORDER[number]);
-  return index === -1 ? ESL_BIRMINGHAM_PLAYOFF_ORDER.length + 1 : index;
+function getFeaturedPlayoffRoundOrder(roundName: string, roundKey?: string | null) {
+  const key = roundKey || normalizeFeaturedPlayoffRoundKey(roundName);
+  const index = FEATURED_PLAYOFF_ORDER.indexOf(key as typeof FEATURED_PLAYOFF_ORDER[number]);
+  return index === -1 ? FEATURED_PLAYOFF_ORDER.length + 1 : index;
 }
 
 function formatBracketDateLabel(startTime?: string | null) {
@@ -887,10 +936,6 @@ function FeaturedPlayoffColumnHeader({ title }: { title: string }) {
   );
 }
 
-function FeaturedPlayoffConnector({ className }: { className: string }) {
-  return <div className={`pointer-events-none absolute border-white/10 ${className}`} />;
-}
-
 function FeaturedPlacementBadge({
   placement,
   prize,
@@ -901,7 +946,7 @@ function FeaturedPlacementBadge({
   className: string;
 }) {
   return (
-    <div className={`absolute flex items-start gap-2 text-slate-300 ${className}`}>
+    <div className={`flex items-start gap-2 text-slate-300 ${className}`}>
       <Trophy className="mt-0.5 h-5 w-5 text-amber-300/80" />
       <div className="leading-none">
         <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">{placement}</div>
@@ -911,274 +956,261 @@ function FeaturedPlacementBadge({
   );
 }
 
-function FeaturedESLBirminghamPlayoffBracket({
+function getFeaturedRoundMap(payload: FeaturedTournamentPayload) {
+  return new Map(
+    payload.playoffs.rounds.map((round) => [
+      round.roundKey || normalizeFeaturedPlayoffRoundKey(round.roundName),
+      round,
+    ])
+  );
+}
+
+function getFeaturedSortedRounds(payload: FeaturedTournamentPayload) {
+  return payload.playoffs.rounds.length
+    ? [...payload.playoffs.rounds].sort((a, b) => getFeaturedPlayoffRoundOrder(a.roundName, a.roundKey) - getFeaturedPlayoffRoundOrder(b.roundName, b.roundKey))
+    : [{ roundName: 'Grand Finals', roundKey: 'grand-finals', matches: [] }];
+}
+
+function getPlacementPrizeMap(payload: FeaturedTournamentPayload) {
+  return new Map(
+    (payload.playoffs.placementPrizes || []).map((entry) => [
+      String(entry.placement || '').trim().toLowerCase(),
+      entry.prize,
+    ])
+  );
+}
+
+function getBracketLaneLeft(schema: FeaturedBracketSchema, lane: FeaturedBracketLaneSchema) {
+  return lane.column * (schema.columnWidth + schema.columnGap);
+}
+
+function getBracketSlotTop(schema: FeaturedBracketSchema, row: number) {
+  return Math.round(row * schema.rowUnit);
+}
+
+function getBracketCenterY(schema: FeaturedBracketSchema, row: number) {
+  return getBracketSlotTop(schema, row) + schema.matchHeight / 2;
+}
+
+function getBracketCanvasHeight(schema: FeaturedBracketSchema) {
+  const laneHeight = schema.lanes.reduce((max, lane) => {
+    const laneBottom = Math.max(
+      getBracketSlotTop(schema, lane.headerRow) + schema.headerHeight,
+      ...lane.slotRows.map((row) => getBracketSlotTop(schema, row) + schema.matchHeight)
+    );
+    return Math.max(max, laneBottom);
+  }, 0);
+
+  const placementHeight = (schema.placements || []).reduce((max, placement) => {
+    const lane = schema.lanes.find((item) => item.roundKey === placement.laneKey);
+    if (!lane) return max;
+    return Math.max(max, getBracketSlotTop(schema, lane.slotRows[placement.slot] || 0) + placement.dy + 56);
+  }, 0);
+
+  return Math.max(laneHeight, placementHeight) + 24;
+}
+
+function FeaturedBracketConnector({
+  startX,
+  startY,
+  endX,
+  endY,
+}: {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}) {
+  const pivotX = Math.round(startX + (endX - startX) / 2);
+  const top = Math.min(startY, endY);
+  const height = Math.abs(endY - startY);
+  const left = Math.min(pivotX, endX);
+  const width = Math.abs(endX - pivotX);
+
+  return (
+    <>
+      <div className="pointer-events-none absolute h-px bg-white/12" style={{ left: startX, top: startY, width: Math.max(pivotX - startX, 0) }} />
+      <div className="pointer-events-none absolute w-px bg-white/12" style={{ left: pivotX, top, height }} />
+      <div className="pointer-events-none absolute h-px bg-white/12" style={{ left, top: endY, width }} />
+    </>
+  );
+}
+
+function FeaturedDesktopCompactBracket({
   payload,
+  schema,
   onOpenMatch,
   aliasToTag,
   teams,
 }: {
   payload: FeaturedTournamentPayload;
+  schema: FeaturedBracketSchema;
   onOpenMatch: (matchId: string) => void;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
 }) {
-  const sortedRounds = payload.playoffs.rounds.length
-    ? [...payload.playoffs.rounds].sort((a, b) => getFeaturedPlayoffRoundOrder(a.roundName) - getFeaturedPlayoffRoundOrder(b.roundName))
-    : [{ roundName: 'Grand Finals', matches: [] }];
-  const roundByKey = new Map(sortedRounds.map((round) => [normalizeFeaturedPlayoffRoundKey(round.roundName), round]));
-  const upperR1 = roundByKey.get('upper-r1') || { roundName: 'Upper Bracket R1', matches: [] };
-  const upperFinals = roundByKey.get('upper-finals') || { roundName: 'Upper Bracket Finals', matches: [] };
-  const grandFinals = roundByKey.get('grand-finals') || { roundName: 'Grand Finals', matches: [] };
-  const lowerR1 = roundByKey.get('lower-r1') || { roundName: 'Lower Bracket R1', matches: [] };
-  const lowerR2 = roundByKey.get('lower-r2') || { roundName: 'Lower Bracket R2', matches: [] };
-  const lowerR3 = roundByKey.get('lower-r3') || { roundName: 'Lower Bracket R3', matches: [] };
-  const lowerFinals = roundByKey.get('lower-finals') || { roundName: 'Lower Bracket Finals', matches: [] };
-
-  const renderMatch = (round: FeaturedEventPlayoffRound, index: number) => (
-    <FeaturedDltvPlayoffMatch
-      key={`${round.roundName}-${round.matches[index]?.href || round.matches[index]?.matchId || index}`}
-      match={round.matches[index] || { href: null, matchId: null, startTime: null, teams: [] }}
-      aliasToTag={aliasToTag}
-      teams={teams}
-      onOpenMatch={onOpenMatch}
-    />
-  );
+  const roundByKey = getFeaturedRoundMap(payload);
+  const placementByLabel = getPlacementPrizeMap(payload);
+  const canvasHeight = getBracketCanvasHeight(schema);
+  const lanes = schema.lanes.map((lane) => ({
+    ...lane,
+    round: roundByKey.get(lane.roundKey) || { roundName: lane.fallbackTitle, roundKey: lane.roundKey, matches: [] },
+    left: getBracketLaneLeft(schema, lane),
+  }));
+  const laneMap = new Map(lanes.map((lane) => [lane.roundKey, lane]));
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
-      <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
-          <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
-          <span className="rounded-md border border-white/10 px-2 py-1">No</span>
-        </div>
-      </div>
+    <div className="hidden overflow-x-auto md:block">
+      <div className="pb-3" style={{ minWidth: schema.minWidth }}>
+        <div className="relative" style={{ height: canvasHeight }}>
+          {lanes.map((lane) => (
+            <div
+              key={`${lane.roundKey}-header`}
+              className="absolute"
+              style={{ left: lane.left, top: getBracketSlotTop(schema, lane.headerRow), width: schema.headerWidth }}
+            >
+              <FeaturedPlayoffColumnHeader title={lane.round.roundName || lane.fallbackTitle} />
+            </div>
+          ))}
 
-      <div className="grid gap-3 md:hidden">
-        {sortedRounds.map((round) => (
-          <div key={round.roundName} className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{round.roundName}</div>
-            <div className="space-y-2">
-              {(round.matches.length ? round.matches : [{ href: null, matchId: null, startTime: null, teams: [] }]).map((match, index) => (
+          {schema.connections.map((connection, index) => {
+            const fromLane = laneMap.get(connection.fromLane);
+            const toLane = laneMap.get(connection.toLane);
+            if (!fromLane || !toLane) return null;
+
+            return (
+              <FeaturedBracketConnector
+                key={`connector-${index}`}
+                startX={fromLane.left + schema.matchWidth}
+                startY={getBracketCenterY(schema, fromLane.slotRows[connection.fromSlot] ?? 0)}
+                endX={toLane.left}
+                endY={getBracketCenterY(schema, toLane.slotRows[connection.toSlot] ?? 0)}
+              />
+            );
+          })}
+
+          {lanes.flatMap((lane) => {
+            const matches = lane.round.matches.length
+              ? lane.round.matches
+              : Array.from({ length: lane.slotRows.length }, () => ({ href: null, matchId: null, startTime: null, teams: [] }));
+
+            return lane.slotRows.map((row, slotIndex) => (
+              <div
+                key={`${lane.roundKey}-${slotIndex}`}
+                className="absolute"
+                style={{ left: lane.left, top: getBracketSlotTop(schema, row), width: schema.matchWidth }}
+              >
                 <FeaturedDltvPlayoffMatch
-                  key={`${round.roundName}-${match.href || match.matchId || index}`}
-                  match={match}
+                  match={matches[slotIndex] || { href: null, matchId: null, startTime: null, teams: [] }}
                   aliasToTag={aliasToTag}
                   teams={teams}
                   onOpenMatch={onOpenMatch}
                 />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+              </div>
+            ));
+          })}
 
-      <div className="hidden overflow-x-auto md:block">
-        <div className="min-w-[1336px] pb-2">
-          <div className="grid grid-cols-[184px_184px_184px_184px_184px] gap-x-32">
-            <div className="col-start-2"><FeaturedPlayoffColumnHeader title={upperR1.roundName} /></div>
-            <div className="col-start-4"><FeaturedPlayoffColumnHeader title={upperFinals.roundName} /></div>
-            <div className="col-start-5"><FeaturedPlayoffColumnHeader title={grandFinals.roundName} /></div>
-          </div>
+          {(schema.placements || []).map((placement) => {
+            const lane = laneMap.get(placement.laneKey);
+            if (!lane) return null;
+            const prize = placementByLabel.get(placement.placement.toLowerCase()) || placement.fallbackPrize;
 
-          <div className="relative mt-0 grid grid-cols-[184px_184px_184px_184px_184px] gap-x-32">
-            <div className="col-start-2 space-y-10">
-              {renderMatch(upperR1, 0)}
-              {renderMatch(upperR1, 1)}
-            </div>
-            <div className="col-start-4 pt-[78px]">
-              {renderMatch(upperFinals, 0)}
-            </div>
-            <div className="col-start-5 pt-[288px]">
-              {renderMatch(grandFinals, 0)}
-            </div>
-
-            <FeaturedPlayoffConnector className="left-[373px] top-[51px] h-[104px] w-[145px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[373px] top-[197px] h-[42px] w-[145px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[773px] top-[120px] h-[170px] w-[166px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[939px] top-[290px] h-[70px] w-[0px] border-r" />
-          </div>
-
-          <div className="mt-14 grid grid-cols-[184px_184px_184px_184px_184px] gap-x-32">
-            <div className="col-start-1"><FeaturedPlayoffColumnHeader title={lowerR1.roundName} /></div>
-            <div className="col-start-2"><FeaturedPlayoffColumnHeader title={lowerR2.roundName} /></div>
-            <div className="col-start-3"><FeaturedPlayoffColumnHeader title={lowerR3.roundName} /></div>
-            <div className="col-start-4"><FeaturedPlayoffColumnHeader title={lowerFinals.roundName} /></div>
-          </div>
-
-          <div className="relative mt-0 grid grid-cols-[184px_184px_184px_184px_184px] gap-x-32">
-            <div className="col-start-1 space-y-10 pt-[34px]">
-              {renderMatch(lowerR1, 0)}
-              {renderMatch(lowerR1, 1)}
-            </div>
-            <div className="col-start-2 space-y-10">
-              {renderMatch(lowerR2, 0)}
-              {renderMatch(lowerR2, 1)}
-            </div>
-            <div className="col-start-3 pt-[84px]">
-              {renderMatch(lowerR3, 0)}
-            </div>
-            <div className="col-start-4 pt-[34px]">
-              {renderMatch(lowerFinals, 0)}
-            </div>
-
-            <FeaturedPlayoffConnector className="left-[0px] top-[103px] h-[53px] w-[144px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[0px] top-[255px] h-[52px] w-[144px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[373px] top-[103px] h-[100px] w-[144px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[373px] top-[255px] h-[46px] w-[144px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[746px] top-[179px] h-[100px] w-[144px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[746px] top-[279px] h-[46px] w-[144px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[1117px] top-[111px] h-[62px] w-[0px] border-r" />
-          </div>
+            return (
+              <div
+                key={`placement-${placement.placement}`}
+                className="absolute"
+                style={{
+                  left: lane.left + schema.matchWidth + placement.dx,
+                  top: getBracketSlotTop(schema, lane.slotRows[placement.slot] || 0) + placement.dy,
+                }}
+              >
+                <FeaturedPlacementBadge placement={placement.placement} prize={prize} className="" />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }
 
-function FeaturedPglWallachiaPlayoffBracket({
-  payload,
-  onOpenMatch,
-  aliasToTag,
-  teams,
-}: {
-  payload: FeaturedTournamentPayload;
-  onOpenMatch: (matchId: string) => void;
-  aliasToTag: Map<string, string>;
-  teams: NonNullable<TournamentSectionProps['teams']>;
-}) {
-  const sortedRounds = payload.playoffs.rounds.length
-    ? [...payload.playoffs.rounds].sort((a, b) => getFeaturedPlayoffRoundOrder(a.roundName) - getFeaturedPlayoffRoundOrder(b.roundName))
-    : [{ roundName: 'Grand Final (bo5)', matches: [] }];
-  const roundByKey = new Map(sortedRounds.map((round) => [normalizeFeaturedPlayoffRoundKey(round.roundName), round]));
-  const upperR1 = roundByKey.get('upper-r1') || { roundName: 'Upper Bracket R1 (bo3)', matches: [] };
-  const upperSemis = roundByKey.get('upper-semis') || { roundName: 'Upper Bracket Semifinal (bo3)', matches: [] };
-  const upperFinals = roundByKey.get('upper-finals') || { roundName: 'Upper Bracket Final (bo3)', matches: [] };
-  const grandFinals = roundByKey.get('grand-finals') || { roundName: 'Grand Final (bo5)', matches: [] };
-  const lowerR1 = roundByKey.get('lower-r1') || { roundName: 'Lower Bracket R1 (bo3)', matches: [] };
-  const lowerR2 = roundByKey.get('lower-r2') || { roundName: 'Lower Bracket R2 (bo3)', matches: [] };
-  const lowerR3 = roundByKey.get('lower-r3') || { roundName: 'Lower Bracket R3 (bo3)', matches: [] };
-  const lowerFinals = roundByKey.get('lower-finals') || { roundName: 'Lower Bracket Final (bo3)', matches: [] };
+const ESL_BIRMINGHAM_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  minWidth: 1220,
+  columns: 5,
+  columnWidth: 172,
+  columnGap: 56,
+  headerWidth: 172,
+  headerHeight: 54,
+  matchWidth: 172,
+  matchHeight: 102,
+  rowUnit: 28,
+  lanes: [
+    { roundKey: 'upper-r1', fallbackTitle: 'Upper Bracket R1', column: 1, headerRow: 0, slotRows: [2.3, 8.0], section: 'upper' },
+    { roundKey: 'upper-finals', fallbackTitle: 'Upper Bracket Finals', column: 3, headerRow: 0, slotRows: [5.15], section: 'upper' },
+    { roundKey: 'grand-finals', fallbackTitle: 'Grand Finals', column: 4, headerRow: 0, slotRows: [13.0], section: 'upper' },
+    { roundKey: 'lower-r1', fallbackTitle: 'Lower Bracket R1', column: 0, headerRow: 16.0, slotRows: [18.6, 24.0], section: 'lower' },
+    { roundKey: 'lower-r2', fallbackTitle: 'Lower Bracket R2', column: 1, headerRow: 16.0, slotRows: [17.4, 22.8], section: 'lower' },
+    { roundKey: 'lower-r3', fallbackTitle: 'Lower Bracket R3', column: 2, headerRow: 16.0, slotRows: [20.1], section: 'lower' },
+    { roundKey: 'lower-finals', fallbackTitle: 'Lower Bracket Finals', column: 3, headerRow: 16.0, slotRows: [17.4], section: 'lower' },
+  ],
+  connections: [
+    { fromLane: 'upper-r1', fromSlot: 0, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 1, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 0, toLane: 'lower-r2', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 1, toLane: 'lower-r2', toSlot: 1 },
+    { fromLane: 'lower-r2', fromSlot: 0, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r2', fromSlot: 1, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r3', fromSlot: 0, toLane: 'lower-finals', toSlot: 0 },
+    { fromLane: 'lower-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+  ],
+};
 
-  const renderMatch = (round: FeaturedEventPlayoffRound, index: number) => (
-    <FeaturedDltvPlayoffMatch
-      key={`${round.roundName}-${round.matches[index]?.href || round.matches[index]?.matchId || index}`}
-      match={round.matches[index] || { href: null, matchId: null, startTime: null, teams: [] }}
-      aliasToTag={aliasToTag}
-      teams={teams}
-      onOpenMatch={onOpenMatch}
-    />
-  );
+const PGL_WALLACHIA_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  minWidth: 1420,
+  columns: 5,
+  columnWidth: 172,
+  columnGap: 60,
+  headerWidth: 172,
+  headerHeight: 54,
+  matchWidth: 172,
+  matchHeight: 102,
+  rowUnit: 28,
+  lanes: [
+    { roundKey: 'upper-r1', fallbackTitle: 'Upper Bracket R1 (bo3)', column: 0, headerRow: 0, slotRows: [2.2, 7.1, 12.0, 16.9], section: 'upper' },
+    { roundKey: 'upper-semis', fallbackTitle: 'Upper Bracket Semifinal (bo3)', column: 1, headerRow: 0, slotRows: [4.65, 14.45], section: 'upper' },
+    { roundKey: 'upper-finals', fallbackTitle: 'Upper Bracket Final (bo3)', column: 3, headerRow: 0, slotRows: [9.55], section: 'upper' },
+    { roundKey: 'grand-finals', fallbackTitle: 'Grand Final (bo5)', column: 4, headerRow: 0, slotRows: [18.7], section: 'upper' },
+    { roundKey: 'lower-r1', fallbackTitle: 'Lower Bracket R1 (bo3)', column: 0, headerRow: 23.0, slotRows: [25.3, 30.2], section: 'lower' },
+    { roundKey: 'lower-r2', fallbackTitle: 'Lower Bracket R2 (bo3)', column: 1, headerRow: 23.0, slotRows: [24.1, 29.0], section: 'lower' },
+    { roundKey: 'lower-r3', fallbackTitle: 'Lower Bracket R3 (bo3)', column: 2, headerRow: 23.0, slotRows: [26.55], section: 'lower' },
+    { roundKey: 'lower-finals', fallbackTitle: 'Lower Bracket Final (bo3)', column: 3, headerRow: 23.0, slotRows: [24.1], section: 'lower' },
+  ],
+  connections: [
+    { fromLane: 'upper-r1', fromSlot: 0, toLane: 'upper-semis', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 1, toLane: 'upper-semis', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 2, toLane: 'upper-semis', toSlot: 1 },
+    { fromLane: 'upper-r1', fromSlot: 3, toLane: 'upper-semis', toSlot: 1 },
+    { fromLane: 'upper-semis', fromSlot: 0, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-semis', fromSlot: 1, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 0, toLane: 'lower-r2', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 1, toLane: 'lower-r2', toSlot: 1 },
+    { fromLane: 'lower-r2', fromSlot: 0, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r2', fromSlot: 1, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r3', fromSlot: 0, toLane: 'lower-finals', toSlot: 0 },
+    { fromLane: 'lower-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+  ],
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$300,000', laneKey: 'grand-finals', slot: 0, dx: 28, dy: 108 },
+    { placement: '2nd Place', fallbackPrize: '$175,000', laneKey: 'grand-finals', slot: 0, dx: 28, dy: 152 },
+    { placement: '3rd Place', fallbackPrize: '$120,000', laneKey: 'lower-finals', slot: 0, dx: -6, dy: 128 },
+    { placement: '4th Place', fallbackPrize: '$80,000', laneKey: 'lower-r3', slot: 0, dx: -6, dy: 128 },
+    { placement: '5th - 6th Place', fallbackPrize: '$60,000', laneKey: 'lower-r2', slot: 1, dx: -18, dy: 152 },
+    { placement: '7th - 8th Place', fallbackPrize: '$40,000', laneKey: 'lower-r1', slot: 1, dx: -8, dy: 168 },
+  ],
+};
 
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
-      <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
-          <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
-          <span className="rounded-md border border-white/10 px-2 py-1">No</span>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:hidden">
-        {sortedRounds.map((round) => (
-          <div key={round.roundName} className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{round.roundName}</div>
-            <div className="space-y-2">
-              {(round.matches.length ? round.matches : [{ href: null, matchId: null, startTime: null, teams: [] }]).map((match, index) => (
-                <FeaturedDltvPlayoffMatch
-                  key={`${round.roundName}-${match.href || match.matchId || index}`}
-                  match={match}
-                  aliasToTag={aliasToTag}
-                  teams={teams}
-                  onOpenMatch={onOpenMatch}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="hidden overflow-x-auto md:block">
-        <div className="relative min-w-[1510px] pb-6">
-          <div className="grid grid-cols-[170px_170px_170px_170px_170px] gap-x-24">
-            <div className="col-start-1"><FeaturedPlayoffColumnHeader title={upperR1.roundName} /></div>
-            <div className="col-start-2"><FeaturedPlayoffColumnHeader title={upperSemis.roundName} /></div>
-            <div className="col-start-4"><FeaturedPlayoffColumnHeader title={upperFinals.roundName} /></div>
-            <div className="col-start-5"><FeaturedPlayoffColumnHeader title={grandFinals.roundName} /></div>
-          </div>
-
-          <div className="relative mt-0 grid grid-cols-[170px_170px_170px_170px_170px] gap-x-24">
-            <div className="col-start-1 space-y-9 pt-[12px]">
-              {renderMatch(upperR1, 0)}
-              {renderMatch(upperR1, 1)}
-              {renderMatch(upperR1, 2)}
-              {renderMatch(upperR1, 3)}
-            </div>
-            <div className="col-start-2 space-y-9 pt-[91px]">
-              {renderMatch(upperSemis, 0)}
-              {renderMatch(upperSemis, 1)}
-            </div>
-            <div className="col-start-4 pt-[249px]">
-              {renderMatch(upperFinals, 0)}
-            </div>
-            <div className="col-start-5 pt-[560px]">
-              {renderMatch(grandFinals, 0)}
-            </div>
-
-            <FeaturedPlayoffConnector className="left-[170px] top-[80px] h-[42px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[218px] h-[42px] w-[107px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[360px] h-[42px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[498px] h-[42px] w-[107px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[447px] top-[149px] h-[112px] w-[228px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[447px] top-[429px] h-[42px] w-[228px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[903px] top-[274px] h-[273px] w-[168px] border-r border-b" />
-          </div>
-
-          <div className="mt-16 grid grid-cols-[170px_170px_170px_170px_170px] gap-x-24">
-            <div className="col-start-1"><FeaturedPlayoffColumnHeader title={lowerR1.roundName} /></div>
-            <div className="col-start-2"><FeaturedPlayoffColumnHeader title={lowerR2.roundName} /></div>
-            <div className="col-start-3"><FeaturedPlayoffColumnHeader title={lowerR3.roundName} /></div>
-            <div className="col-start-4"><FeaturedPlayoffColumnHeader title={lowerFinals.roundName} /></div>
-          </div>
-
-          <div className="relative mt-0 grid grid-cols-[170px_170px_170px_170px_170px] gap-x-24">
-            <div className="col-start-1 space-y-9 pt-[12px]">
-              {renderMatch(lowerR1, 0)}
-              {renderMatch(lowerR1, 1)}
-            </div>
-            <div className="col-start-2 space-y-9 pt-[91px]">
-              {renderMatch(lowerR2, 0)}
-              {renderMatch(lowerR2, 1)}
-            </div>
-            <div className="col-start-3 pt-[251px]">
-              {renderMatch(lowerR3, 0)}
-            </div>
-            <div className="col-start-4 pt-[251px]">
-              {renderMatch(lowerFinals, 0)}
-            </div>
-
-            <FeaturedPlayoffConnector className="left-[170px] top-[149px] h-[42px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[170px] top-[429px] h-[42px] w-[107px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[447px] top-[289px] h-[42px] w-[108px] border-r border-b" />
-            <FeaturedPlayoffConnector className="left-[725px] top-[289px] h-[42px] w-[107px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[1002px] top-[289px] h-[58px] w-[69px] border-r border-t" />
-            <FeaturedPlayoffConnector className="left-[1002px] top-[565px] h-[42px] w-[69px] border-r border-b" />
-          </div>
-
-          <FeaturedPlacementBadge placement="1st Place" prize="$300,000" className="left-[1270px] top-[888px]" />
-          <FeaturedPlacementBadge placement="2nd Place" prize="$175,000" className="left-[1270px] top-[936px]" />
-          <FeaturedPlacementBadge placement="3rd Place" prize="$120,000" className="left-[690px] top-[1002px]" />
-          <FeaturedPlacementBadge placement="4th Place" prize="$80,000" className="left-[510px] top-[1046px]" />
-          <FeaturedPlacementBadge placement="5th - 6th Place" prize="$60,000" className="left-[273px] top-[1136px]" />
-          <FeaturedPlacementBadge placement="7th - 8th Place" prize="$40,000" className="left-[0px] top-[1182px]" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FeaturedPlayoffBracket({
   payload,
@@ -1192,24 +1224,70 @@ function FeaturedPlayoffBracket({
   teams: NonNullable<TournamentSectionProps['teams']>;
 }) {
   if (payload.tournamentId === 'esl-one-birmingham-2026') {
+    const rounds = getFeaturedSortedRounds(payload);
     return (
-      <FeaturedESLBirminghamPlayoffBracket
-        payload={payload}
-        onOpenMatch={onOpenMatch}
-        aliasToTag={aliasToTag}
-        teams={teams}
-      />
+      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
+            <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
+            <span className="rounded-md border border-white/10 px-2 py-1">No</span>
+          </div>
+        </div>
+        <div className="grid gap-3 md:hidden">
+          {rounds.map((round) => (
+            <FeaturedCompactPlayoffRound
+              key={round.roundName}
+              round={round}
+              aliasToTag={aliasToTag}
+              teams={teams}
+              onOpenMatch={onOpenMatch}
+            />
+          ))}
+        </div>
+        <FeaturedDesktopCompactBracket
+          payload={payload}
+          schema={ESL_BIRMINGHAM_BRACKET_SCHEMA}
+          onOpenMatch={onOpenMatch}
+          aliasToTag={aliasToTag}
+          teams={teams}
+        />
+      </div>
     );
   }
 
   if (payload.tournamentId === 'pgl-wallachia-s7') {
+    const rounds = getFeaturedSortedRounds(payload);
     return (
-      <FeaturedPglWallachiaPlayoffBracket
-        payload={payload}
-        onOpenMatch={onOpenMatch}
-        aliasToTag={aliasToTag}
-        teams={teams}
-      />
+      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
+            <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
+            <span className="rounded-md border border-white/10 px-2 py-1">No</span>
+          </div>
+        </div>
+        <div className="grid gap-3 md:hidden">
+          {rounds.map((round) => (
+            <FeaturedCompactPlayoffRound
+              key={round.roundName}
+              round={round}
+              aliasToTag={aliasToTag}
+              teams={teams}
+              onOpenMatch={onOpenMatch}
+            />
+          ))}
+        </div>
+        <FeaturedDesktopCompactBracket
+          payload={payload}
+          schema={PGL_WALLACHIA_BRACKET_SCHEMA}
+          onOpenMatch={onOpenMatch}
+          aliasToTag={aliasToTag}
+          teams={teams}
+        />
+      </div>
     );
   }
 

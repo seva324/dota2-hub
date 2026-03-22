@@ -614,12 +614,29 @@ describe('TournamentSection', () => {
             rounds: [
               { roundName: 'Lower Bracket Final (bo3)', matches: [] },
               { roundName: 'Upper Bracket Final (bo3)', matches: [] },
-              { roundName: 'Grand Final (bo5)', matches: [] },
+              {
+                roundName: 'Grand Final (bo5)',
+                roundKey: 'grand-finals',
+                matches: [
+                  {
+                    href: 'https://dltv.org/matches/425461/team-yandex-vs-team-liquid-pgl-wallachia-season-7',
+                    startTime: '2026-03-15 15:02:54',
+                    teams: [
+                      { name: 'Team Yandex', logoUrl: null, score: '3' },
+                      { name: 'Team Liquid', logoUrl: null, score: '2' },
+                    ],
+                  },
+                ],
+              },
               { roundName: 'Upper Bracket Semifinal (bo3)', matches: [] },
               { roundName: 'Lower Bracket R2 (bo3)', matches: [] },
               { roundName: 'Lower Bracket R3 (bo3)', matches: [] },
               { roundName: 'Lower Bracket R1 (bo3)', matches: [] },
               { roundName: 'Upper Bracket R1 (bo3)', matches: [] },
+            ],
+            placementPrizes: [
+              { placement: '1st Place', prize: '$300,000' },
+              { placement: '2nd Place', prize: '$175,000' },
             ],
           },
           matches: {
@@ -656,6 +673,8 @@ describe('TournamentSection', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 7' })[1]);
     expect((await screen.findAllByText('Upper Bracket Semifinal (bo3)')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Team Yandex').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Team Liquid').length).toBeGreaterThan(0);
     expect(screen.getByText('$300,000')).toBeInTheDocument();
     expect(screen.getByText('$175,000')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
