@@ -716,10 +716,10 @@ function FeaturedCompactPlayoffMatch({
               isCnTeam={team.isCnTeam}
               aliasToTag={aliasToTag}
               teams={teams}
-              className="text-sm"
+              className="text-xs"
               abbreviate
             />
-            <span className="min-w-[18px] text-right text-sm font-semibold text-white">{team.score ?? '-'}</span>
+            <span className="min-w-[16px] text-right text-xs font-semibold text-white">{team.score ?? '-'}</span>
           </div>
         ))}
       </div>
@@ -745,7 +745,7 @@ function FeaturedCompactPlayoffRound({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium uppercase tracking-[0.08em] text-slate-300">{round.roundName}</div>
+      <div className="text-xs font-medium uppercase tracking-[0.06em] text-slate-300">{round.roundName}</div>
       <div className="space-y-2">
         {matches.map((match, index) => (
           <FeaturedCompactPlayoffMatch
@@ -913,15 +913,15 @@ function FeaturedDltvPlayoffMatch({
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <span className={`block truncate text-sm leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`}>
+                <span className={`block truncate text-xs leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`}>
                   {team.name === 'TBD' ? 'TBD' : getTeamAbbrev(team.name, aliasToTag)}
                 </span>
               </div>
-              <span className="min-w-[16px] text-right text-base font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
+              <span className="min-w-[14px] text-right text-sm font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
             </div>
           );
         })}
-        <div className="pointer-events-none absolute left-[61px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1.5 text-sm font-black tracking-tight text-white">
+        <div className="pointer-events-none absolute left-[61px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1 text-[11px] font-black tracking-tight text-white">
           VS
         </div>
       </div>
@@ -935,7 +935,7 @@ function FeaturedPlayoffColumnHeader({ title }: { title: string }) {
     .replace('Lower Bracket ', 'Lower Bracket\n')
     .replace('Grand Finals', 'Grand Finals');
   return (
-    <div className="mb-7 inline-flex h-[50px] min-w-[144px] items-center justify-center border border-white/10 bg-slate-900/82 px-4 py-2 text-center text-sm font-medium leading-[1.15] text-slate-100">
+    <div className="mb-7 inline-flex h-[46px] min-w-[144px] items-center justify-center border border-white/10 bg-slate-900/82 px-3 py-1.5 text-center text-xs font-medium leading-[1.1] text-slate-100">
       <span className="whitespace-pre-line">{displayTitle}</span>
     </div>
   );
