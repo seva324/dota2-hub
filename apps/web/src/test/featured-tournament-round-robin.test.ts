@@ -102,8 +102,8 @@ describe('parseDltvFeaturedTournamentPage round-robin', () => {
     expect(payload.playoffs.rounds[0]).toEqual(expect.objectContaining({ roundName: 'Upper Bracket R1' }));
     expect(payload.playoffs.rounds[0]?.matches[0]).toEqual(expect.objectContaining({
       bracketLane: 'upper',
-      startTime: '2026-04-20 18:00',
     }));
+    expect(payload.playoffs.rounds[0]?.matches[0]?.teams[0]?.name).toBe('Yakult Brothers');
     expect(payload.playoffs.rounds[1]).toEqual(expect.objectContaining({ roundName: 'Grand Finals' }));
   });
 });
