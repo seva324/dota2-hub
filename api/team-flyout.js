@@ -8,6 +8,7 @@ import {
   enrichRecentMatchesWithTeamHeroes,
   getTeamFlyoutCachePayload,
 } from '../lib/server/team-flyout-cache.js';
+import { ensureUpcomingSeriesColumns } from '../lib/server/upcoming-series-columns.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_LIMIT = 5;
@@ -134,6 +135,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    try {
+      await ensureUpcomingSeriesColumns(db);
+    } catch {
+      // Best-effort schema repair for older databases.
+    }
     const teams = await db`SELECT * FROM teams`;
     const teamMap = new Map();
     teams.forEach((team) => {
@@ -190,9 +196,8 @@ export default async function handler(req, res) {
           AND start_time >= ${minStartTime}
       `,
       db`
-        SELECT u.*, t.name AS tournament_name, t.name_cn AS tournament_name_cn, t.tier AS tournament_tier
+        SELECT u.*
         FROM upcoming_series u
-        LEFT JOIN tournaments t ON u.league_id = t.league_id
         WHERE (u.radiant_team_id = ${selectedTeamId} OR u.dire_team_id = ${selectedTeamId})
           AND u.start_time > ${now}
         ORDER BY u.start_time ASC
