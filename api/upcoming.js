@@ -5,6 +5,7 @@
 
 import { neon } from '@neondatabase/serverless';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { ensureUpcomingSeriesColumns } from '../lib/server/upcoming-series-columns.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -20,13 +21,6 @@ function getDb() {
     }
   }
   return sql;
-}
-
-async function ensureUpcomingSeriesFallbackColumns(db) {
-  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS radiant_team_name TEXT`;
-  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS radiant_team_name_cn TEXT`;
-  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS dire_team_name TEXT`;
-  await db`ALTER TABLE upcoming_series ADD COLUMN IF NOT EXISTS dire_team_name_cn TEXT`;
 }
 
 // Normalize logo URL
@@ -69,7 +63,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await ensureUpcomingSeriesFallbackColumns(db);
+    await ensureUpcomingSeriesColumns(db);
 
     // Get upcoming series (status = 'upcoming' and start_time > now)
     const now = Math.floor(Date.now() / 1000);
@@ -78,9 +72,8 @@ export default async function handler(req, res) {
     const maxStartTime = now + days * 86400;
 
     const upcoming = await db`
-      SELECT s.*, t.name as tournament_name, t.name_cn as tournament_name_cn, t.tier as tournament_tier
+      SELECT s.*
       FROM upcoming_series s
-      LEFT JOIN tournaments t ON s.league_id = t.league_id
       WHERE s.start_time > ${now}
         AND s.start_time <= ${maxStartTime}
       ORDER BY s.start_time ASC
