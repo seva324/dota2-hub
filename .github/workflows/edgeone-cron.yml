@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EDGEONE_SITE_URL: ${{ secrets.EDGEONE_SITE_URL }}
+      EDGEONE_CRON_TOKEN: ${{ secrets.EDGEONE_CRON_TOKEN }}
     steps:
       - name: Validate base URL
         run: test -n "$EDGEONE_SITE_URL"
@@ -42,4 +43,8 @@ jobs:
         run: |
           URL="${EDGEONE_SITE_URL%/}${{ steps.target.outputs.target_path }}"
           echo "Calling $URL"
-          curl --fail --show-error --silent "$URL"
+          if [ -n "$EDGEONE_CRON_TOKEN" ]; then
+            curl --fail --show-error --silent -H "x-cron-token: $EDGEONE_CRON_TOKEN" "$URL"
+          else
+            curl --fail --show-error --silent "$URL"
+          fi

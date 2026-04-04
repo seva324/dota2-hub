@@ -61,6 +61,10 @@ describe('/api/cron incremental refresh actions', () => {
   beforeEach(() => {
     vi.resetModules();
     process.env.DATABASE_URL = 'postgres://example.test/db';
+    delete process.env.D2HUB_CRON_TOKEN;
+    delete process.env.CRON_SECRET;
+    delete process.env.D2HUB_CRON_MIN_INTERVAL_MIN;
+    delete process.env.CRON_MIN_INTERVAL_MIN;
     neonMock.mockClear();
     warmPlayerProfileCacheMock.mockReset();
     warmTeamFlyoutCacheMock.mockReset();
@@ -247,5 +251,49 @@ describe('/api/cron incremental refresh actions', () => {
       limit: 15,
     });
     expect((res.payload as any)?.result?.provider).toBe('minimax');
+  });
+
+  it('rejects cron requests without token when D2HUB_CRON_TOKEN is configured', async () => {
+    process.env.D2HUB_CRON_TOKEN = 'expected-token';
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'sync-opendota',
+      },
+      headers: {},
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(401);
+    expect((res.payload as any)?.ok).toBe(false);
+    expect(runSyncOpenDotaMock).not.toHaveBeenCalled();
+  });
+
+  it('skips duplicate runs within min-interval window', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'sync-opendota',
+        minIntervalMin: '60',
+      },
+      headers: {},
+    };
+    const firstRes = createRes();
+    const secondRes = createRes();
+
+    await handler(req as never, firstRes as never);
+    await handler(req as never, secondRes as never);
+
+    expect(firstRes.statusCode).toBe(200);
+    expect((firstRes.payload as any)?.ok).toBe(true);
+    expect(secondRes.statusCode).toBe(200);
+    expect((secondRes.payload as any)?.ok).toBe(true);
+    expect((secondRes.payload as any)?.skipped).toBe(true);
+    expect((secondRes.payload as any)?.reason).toBe('min_interval_60m');
+    expect(runSyncOpenDotaMock).toHaveBeenCalledTimes(1);
   });
 });

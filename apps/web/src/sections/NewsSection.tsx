@@ -26,15 +26,19 @@ interface NewsItem {
 
 const categoryColors: Record<string, string> = {
   transfer: 'bg-purple-500/20 text-purple-400',
-  patch: 'bg-green-500/20 text-green-400',
+  drama: 'bg-rose-500/20 text-rose-400',
+  gameplay: 'bg-green-500/20 text-green-400',
   tournament: 'bg-blue-500/20 text-blue-400',
+  community: 'bg-amber-500/20 text-amber-400',
   default: 'bg-slate-500/20 text-slate-400',
 };
 
 const categoryLabels: Record<string, string> = {
   transfer: '转会',
-  patch: '更新',
+  drama: '八卦',
+  gameplay: '游戏内容',
   tournament: '赛事',
+  community: '社区',
   default: '资讯',
 };
 
