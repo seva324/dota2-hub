@@ -1,4 +1,6 @@
 import { neon } from '@neondatabase/serverless';
+import { createHash } from 'node:crypto';
+import { classifyNewsCategory } from '../lib/server/news-category.js';
 
 /**
  * News API
@@ -10,10 +12,37 @@ import { neon } from '@neondatabase/serverless';
 const MAX_ITEMS = 30;
 const DETAIL_FETCH_LIMIT = 10;
 const HAWK_LIST_SCAN_LIMIT = 40;
+const CYBERSCORE_LIST_SCAN_LIMIT = 24;
 const MAX_CONTENT_LENGTH = 5000;
-const NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
+const DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const CYBERSCORE_CATEGORIES = [
+  {
+    key: 'competitive',
+    label: 'Competitive Dota 2',
+    url: 'https://cyberscore.live/en/news/category/dota-2-pro-scene/',
+    category: 'esports',
+  },
+  {
+    key: 'interviews',
+    label: 'Interviews and comments',
+    url: 'https://cyberscore.live/en/news/category/interviews-and-comments/',
+    category: 'takes',
+  },
+  {
+    key: 'other',
+    label: 'Other news',
+    url: 'https://cyberscore.live/en/news/category/other/',
+    category: 'community',
+  },
+  {
+    key: 'patches',
+    label: 'Patches and game meta',
+    url: 'https://cyberscore.live/en/news/category/dota-2-patches-game-meta/',
+    category: 'patch',
+  },
+];
 
 const MINIMAX_API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
@@ -178,11 +207,25 @@ function markdownToText(text = '') {
     .trim();
 }
 
-function sanitizeStoredMarkdown(markdown = '') {
-  return String(markdown || '')
-    .replace(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi, '')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, '$1')
-    .replace(/https?:\/\/[^\s)]+/gi, '')
+function sanitizeStoredMarkdown(markdown = '', options = {}) {
+  const keepImages = Boolean(options?.keepImages);
+  let content = String(markdown || '');
+
+  if (!keepImages) {
+    return content
+      .replace(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi, '')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, '$1')
+      .replace(/https?:\/\/[^\s)]+/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  content = content.replace(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi, (_, imageUrl) => {
+    const normalized = normalizeCyberScoreImageUrl(imageUrl);
+    return `![](${normalized || imageUrl})`;
+  });
+
+  return content
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -528,6 +571,14 @@ function parseDate(input) {
   return date;
 }
 
+function resolveNewsIncrementalWindowSeconds(options = {}) {
+  const recentDays = Number(options?.recentDays);
+  if (!Number.isFinite(recentDays) || recentDays <= 0) {
+    return DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS;
+  }
+  return Math.trunc(recentDays * 24 * 60 * 60);
+}
+
 function normalizeUrl(rawUrl, baseUrl) {
   try {
     const url = new URL(rawUrl, baseUrl);
@@ -647,6 +698,342 @@ function normalizeBo3NewsUrl(rawUrl, baseUrl) {
   } catch {
     return null;
   }
+}
+
+function normalizeCyberScoreNewsUrl(rawUrl, baseUrl) {
+  const normalized = normalizeUrl(rawUrl, baseUrl);
+  if (!normalized) return null;
+
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    if (host !== 'cyberscore.live' && host !== 'www.cyberscore.live') return null;
+
+    const path = String(url.pathname || '').toLowerCase();
+    if (!path.includes('/news/')) return null;
+    if (path.includes('/news/category/')) return null;
+    if (path.endsWith('/news') || path.endsWith('/news/')) return null;
+    if (path === '/en/news' || path === '/en/news/') return null;
+    if (path === '/news' || path === '/news/') return null;
+
+    return `https://cyberscore.live${url.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+function parseCyberScoreDateText(input = '', now = new Date()) {
+  const text = String(input || '').trim();
+  if (!text) return null;
+
+  if (/^today$/i.test(text)) {
+    const date = new Date(now);
+    date.setHours(12, 0, 0, 0);
+    return date;
+  }
+
+  if (/^yesterday$/i.test(text)) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - 1);
+    date.setHours(12, 0, 0, 0);
+    return date;
+  }
+
+  const match = text.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+  if (match) {
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    if ([day, month, year].every((x) => Number.isFinite(x))) {
+      return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+    }
+  }
+
+  return parseDate(text);
+}
+
+function parseCyberScorePublishedAt(detailHtml = '') {
+  const metaDate =
+    parseDate(getMetaContent(detailHtml, 'article:published_time')) ||
+    parseDate(getMetaContent(detailHtml, 'datePublished'));
+  if (metaDate) return metaDate;
+
+  const textWindow = String(detailHtml || '').slice(0, 12000);
+  const textDate = textWindow.match(/>\s*(Today|Yesterday|\d{2}\.\d{2}\.\d{4})\s*</i)?.[1];
+  return parseCyberScoreDateText(textDate);
+}
+
+function trimCyberScoreContent(content = '') {
+  let result = String(content || '').trim();
+  if (!result) return result;
+
+  const stopPatterns = [
+    /\nShare\b/i,
+    /\nComments?\b/i,
+    /\nNo comments found\b/i,
+    /\nLeave your comment\b/i,
+    /\nPost Author\b/i,
+    /\nOther news\b/i,
+  ];
+
+  for (const pattern of stopPatterns) {
+    const matched = result.match(pattern);
+    if (!matched || typeof matched.index !== 'number') continue;
+    result = result.slice(0, matched.index).trim();
+  }
+
+  return result;
+}
+
+function extractCyberScoreNewsUrls(html, baseUrl) {
+  const urls = new Set();
+
+  const hrefRegex = /href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi;
+  let hrefMatch;
+  while ((hrefMatch = hrefRegex.exec(html)) !== null) {
+    const raw = hrefMatch[1] || hrefMatch[2] || hrefMatch[3];
+    if (!raw) continue;
+    const normalized = normalizeCyberScoreNewsUrl(raw, baseUrl);
+    if (normalized) urls.add(normalized);
+  }
+
+  const absoluteUrlRegex = /https?:\/\/(?:www\.)?cyberscore\.live\/(?:en\/)?news\/[^)\s"'<>]+/gi;
+  let absMatch;
+  while ((absMatch = absoluteUrlRegex.exec(html)) !== null) {
+    const normalized = normalizeCyberScoreNewsUrl(absMatch[0], baseUrl);
+    if (normalized) urls.add(normalized);
+  }
+
+  return Array.from(urls).slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
+}
+
+function extractCyberScoreUrlsFromJinaText(text, baseUrl) {
+  const matches = String(text || '').match(/https?:\/\/(?:www\.)?cyberscore\.live\/(?:en\/)?news\/[^)\s"'<>]+/gi) || [];
+  return Array.from(new Set(matches
+    .map((raw) => normalizeCyberScoreNewsUrl(raw, baseUrl))
+    .filter(Boolean))).slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
+}
+
+function extractCyberScoreItemsFromJinaCategory(text = '', categoryDef = {}, source = 'cyberscore') {
+  const items = [];
+  const seen = new Set();
+  const body = String(text || '');
+  const urlRegex = /https?:\/\/(?:www\.)?cyberscore\.live\/(?:en\/)?news\/[^)\s"'<>]+/gi;
+  let match;
+
+  while ((match = urlRegex.exec(body)) !== null) {
+    const normalizedUrl = normalizeCyberScoreNewsUrl(match[0], 'https://cyberscore.live');
+    if (!normalizedUrl || seen.has(normalizedUrl)) continue;
+
+    const contextStart = Math.max(0, match.index - 900);
+    const context = body.slice(contextStart, match.index);
+    const contextTail = context.slice(-600);
+    const headerMatches = Array.from(contextTail.matchAll(/##\s+(.+?)\s+(Today|Yesterday|\d{2}\.\d{2}\.\d{4})\s+\d[\d\s\u00A0]*/gim));
+    const headerTitle = headerMatches.length > 0 ? headerMatches[headerMatches.length - 1]?.[1] : '';
+    const headerDate = headerMatches.length > 0 ? headerMatches[headerMatches.length - 1]?.[2] : '';
+    const titleMatches = Array.from(context.matchAll(/\*\*([^*]{6,240})\*\*/g));
+    const rawTitle = headerTitle || (titleMatches.length > 0 ? titleMatches[titleMatches.length - 1]?.[1] : '');
+    const title = stripHtml(rawTitle || '')
+      .replace(/\\+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!title || /^(Language|News|Articles|Search input field)$/i.test(title)) continue;
+
+    seen.add(normalizedUrl);
+    const dateMatches = Array.from(context.matchAll(/\b(Today|Yesterday|\d{2}\.\d{2}\.\d{4})\b/gi));
+    const dateText = headerDate || (dateMatches.length > 0 ? dateMatches[dateMatches.length - 1]?.[1] : '');
+    const imageMatches = Array.from(context.matchAll(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi));
+    const imageUrl = imageMatches.length > 0 ? imageMatches[imageMatches.length - 1]?.[1] : '';
+    const publishedAt = parseCyberScoreDateText(dateText) || new Date();
+    const fallbackSummary = `${categoryDef?.label || 'CyberScore'} · ${dateText || 'Latest'}`;
+    const fallbackContent = '正文抓取受限，请点击原文查看完整内容。';
+
+    items.push({
+      id: generateId(normalizedUrl, source),
+      title: stripHtml(title).replace(/\s*\|\s*CyberScore\s*$/i, '').trim(),
+      summary: fallbackSummary,
+      content: fallbackContent,
+      content_markdown: fallbackContent,
+      url: normalizedUrl,
+      imageUrl: imageUrl ? decodeHtmlEntities(imageUrl).replace(/&amp;/g, '&') : undefined,
+      source: 'CyberScore',
+      publishedAt,
+      category: categoryDef?.category || 'community',
+    });
+  }
+
+  return items.slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
+}
+
+function normalizeCyberScoreImageUrl(rawUrl = '') {
+  if (!rawUrl) return undefined;
+  const decoded = decodeHtmlEntities(String(rawUrl)).replace(/&amp;/g, '&').trim();
+  if (!decoded) return undefined;
+  return normalizeUrl(decoded, 'https://cyberscore.live') || decoded;
+}
+
+function pickCyberScoreCoverImage(detailImages = [], fallbackImage) {
+  const normalizedFallback = normalizeCyberScoreImageUrl(fallbackImage);
+  if (normalizedFallback) return normalizedFallback;
+
+  const normalizedDetail = detailImages
+    .map((x) => normalizeCyberScoreImageUrl(x))
+    .filter(Boolean);
+  if (normalizedDetail.length === 0) return undefined;
+
+  const coverLike = normalizedDetail.find((x) => /\/static\/posts\//i.test(x));
+  if (coverLike) return coverLike;
+
+  const nonAd = normalizedDetail.find((x) => !/\/images\/bnrk-res\/|\/images\/logo|\/favicon/i.test(x));
+  return nonAd || normalizedDetail[0];
+}
+
+function isCyberScoreArticleBodyImage(url = '') {
+  const normalized = String(url || '').toLowerCase();
+  if (!normalized) return false;
+  // Keep only article in-body assets, drop player/team/author cards and recommendation/ad images.
+  return /\/static\/content\//i.test(normalized);
+}
+
+function sanitizeCyberScoreBodyMarkdown(markdown = '', coverImageUrl = '') {
+  const cover = normalizeCyberScoreImageUrl(coverImageUrl);
+  const lines = String(markdown || '').split('\n');
+  const cleaned = [];
+
+  for (const rawLine of lines) {
+    let line = rawLine;
+    const imageMatches = Array.from(line.matchAll(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi));
+    if (imageMatches.length === 0) {
+      cleaned.push(line);
+      continue;
+    }
+
+    const urls = imageMatches.map((m) => normalizeCyberScoreImageUrl(m[1])).filter(Boolean);
+    const hasAllowed = urls.some((url) => isCyberScoreArticleBodyImage(url) && url !== cover);
+    if (!hasAllowed) {
+      continue;
+    }
+
+    line = line.replace(/!\[[^\]]*]\((https?:\/\/[^)\s]+)\)/gi, (matched, imageUrl) => {
+      const normalized = normalizeCyberScoreImageUrl(imageUrl);
+      if (!normalized) return '';
+      if (normalized === cover) return '';
+      if (!isCyberScoreArticleBodyImage(normalized)) return '';
+      return `![](${normalized})`;
+    }).trim();
+
+    if (!line) continue;
+    cleaned.push(line);
+  }
+
+  return cleaned.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function pickCyberScoreTitleFromJinaText(text = '', fallbackTitle = '') {
+  const headingMatches = Array.from(String(text || '').matchAll(/^#\s+(.+)$/gim))
+    .map((m) => String(m[1] || '').trim())
+    .filter(Boolean);
+  const heading = headingMatches.find((x) => !/\|\s*CyberScore\s*$/i.test(x));
+  const fromHeader = titleFromJinaText(text, '');
+  const picked = heading || fromHeader || fallbackTitle;
+  return stripHtml(String(picked || '').replace(/\s*\|\s*CyberScore\s*$/i, '').trim());
+}
+
+function extractCyberScoreDetailFromJina(text = '', fallback = {}) {
+  const raw = cleanJinaBoilerplate(String(text || ''));
+  if (!raw) return null;
+
+  const title = pickCyberScoreTitleFromJinaText(raw, fallback.title || titleFromSlug(fallback.url || ''));
+  const headingMatches = Array.from(raw.matchAll(/^#\s+(.+)$/gim));
+  let startIndex = 0;
+  const articleHeadingMatch = headingMatches.find((m) => !/\|\s*CyberScore\s*$/i.test(String(m[1] || '')));
+  if (articleHeadingMatch && typeof articleHeadingMatch.index === 'number') {
+    startIndex = articleHeadingMatch.index;
+  } else if (headingMatches.length > 1 && typeof headingMatches[1].index === 'number') {
+    startIndex = headingMatches[1].index;
+  }
+
+  let markdown = raw.slice(startIndex).trim();
+  const stopPatterns = [
+    /\nShare\b/i,
+    /\nComments?\b/i,
+    /\nNo comments found\b/i,
+    /\nLeave your comment\b/i,
+    /\nOther news\b/i,
+    /\n\[Show all]/i,
+    /\n###\s+Chat\b/i,
+    /\n25\+\s*\n/i,
+  ];
+
+  for (const pattern of stopPatterns) {
+    const matched = markdown.match(pattern);
+    if (!matched || typeof matched.index !== 'number') continue;
+    markdown = markdown.slice(0, matched.index).trim();
+  }
+
+  markdown = sanitizeCyberScoreBodyMarkdown(markdown, fallback.imageUrl);
+
+  if (!markdown) return null;
+  const markdownLines = markdown.split('\n').map((x) => x.trim()).filter(Boolean);
+  const summary = markdownLines.find((line) => {
+    if (/^#/.test(line)) return false;
+    if (/^(Today|Yesterday|\d{2}\.\d{2}\.\d{4}|\d+\s*min\.?|\d+)$/.test(line)) return false;
+    if (/^\*\s+\[/.test(line)) return false;
+    if (/^!\[/.test(line)) return false;
+    return line.length >= 40;
+  }) || fallback.summary || '';
+
+  const imageCandidates = extractMarkdownImageUrls(markdown);
+  const contentMarkdown = truncateText(markdown);
+  const content = truncateText(markdownToText(contentMarkdown));
+
+  return {
+    ...fallback,
+    title: title || fallback.title,
+    summary: summary || fallback.summary,
+    content,
+    content_markdown: contentMarkdown,
+    imageUrl: pickCyberScoreCoverImage(imageCandidates, fallback.imageUrl),
+    publishedAt: parseJinaPublishedDate(text) || fallback.publishedAt || new Date(),
+  };
+}
+
+async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays = 3) {
+  const dayCount = Number.isFinite(Number(recentDays)) && Number(recentDays) > 0
+    ? Math.trunc(Number(recentDays))
+    : 3;
+  const cutoffMs = Date.now() - (dayCount * 24 * 60 * 60 * 1000);
+  const filtered = listFallbackItems
+    .filter((item) => (item?.publishedAt instanceof Date ? item.publishedAt.getTime() >= cutoffMs : true))
+    .sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0))
+    .slice(0, Math.max(8, MAX_ITEMS));
+
+  const uniqueTargets = [];
+  const seen = new Set();
+  for (const item of filtered) {
+    if (!item?.url || seen.has(item.url)) continue;
+    seen.add(item.url);
+    uniqueTargets.push(item);
+  }
+
+  const enriched = [];
+  for (const item of uniqueTargets) {
+    try {
+      const detailUrl = `${JINA_PROXY}${String(item.url || '').replace(/^https?:\/\//, '')}`;
+      const response = await fetchWithTimeout(detailUrl, {}, 12000);
+      if (!response.ok) {
+        enriched.push(item);
+        continue;
+      }
+      const text = await response.text();
+      const parsed = extractCyberScoreDetailFromJina(text, item);
+      enriched.push(parsed || item);
+    } catch {
+      enriched.push(item);
+    }
+  }
+
+  return enriched;
 }
 
 function extractBo3NewsUrls(html, baseUrl) {
@@ -870,6 +1257,123 @@ async function scrapeHawkLive() {
   }
 }
 
+async function scrapeCyberScore(options = {}) {
+  const source = 'cyberscore';
+  const sourceName = 'CyberScore';
+  const baseUrl = 'https://cyberscore.live';
+
+  try {
+    const recentDays = Number.isFinite(Number(options?.recentDays)) && Number(options?.recentDays) > 0
+      ? Math.trunc(Number(options.recentDays))
+      : 3;
+    const urlToCategory = new Map();
+    const listFallbackItems = [];
+
+    for (const categoryDef of CYBERSCORE_CATEGORIES) {
+      try {
+        let urls = [];
+        let canUseDirectDetail = false;
+        const response = await fetchWithTimeout(categoryDef.url, {}, 15000);
+        if (response.ok) {
+          canUseDirectDetail = true;
+          const html = await response.text();
+          urls = extractCyberScoreNewsUrls(html, baseUrl);
+        }
+
+        if (urls.length === 0) {
+          const jinaListUrl = `${JINA_PROXY}${categoryDef.url.replace(/^https?:\/\//, '')}`;
+          const jinaResponse = await fetchWithTimeout(jinaListUrl, {}, 12000);
+          if (jinaResponse.ok) {
+            const jinaText = await jinaResponse.text();
+            urls = extractCyberScoreUrlsFromJinaText(jinaText, baseUrl);
+            const fallbackItems = extractCyberScoreItemsFromJinaCategory(jinaText, categoryDef, source);
+            listFallbackItems.push(...fallbackItems);
+          }
+        }
+
+        if (canUseDirectDetail) {
+          for (const url of urls) {
+            if (!urlToCategory.has(url)) {
+              urlToCategory.set(url, categoryDef.category);
+            }
+          }
+        }
+      } catch {
+        // Skip category page on fetch/parse failure
+      }
+    }
+
+    const urls = Array.from(urlToCategory.keys());
+    console.log(`[News API] CyberScore list URLs: ${urls.length}, fallback items: ${listFallbackItems.length}`);
+    if (urls.length === 0 && listFallbackItems.length === 0) {
+      return { items: [], source, success: false, error: 'No CyberScore article URLs found' };
+    }
+
+    const detailTasks = urls.map(async (url) => {
+      const detailResponse = await fetchWithTimeout(url, {}, 12000);
+      if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
+      const detailHtml = await detailResponse.text();
+      const detailLd = parseJsonLdBlocks(detailHtml);
+      const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
+
+      const titleRaw = article.headline || getMetaContent(detailHtml, 'og:title') || getTitleFromHtml(detailHtml);
+      const title = stripHtml(titleRaw || '').replace(/\s*\|\s*CyberScore\s*$/i, '').trim();
+      if (!title) return null;
+
+      const publishedAt =
+        parseDate(article.datePublished) ||
+        parseCyberScorePublishedAt(detailHtml) ||
+        new Date();
+
+      const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
+      const content = trimCyberScoreContent(extractArticleContent(detailHtml, article));
+
+      return {
+        id: generateId(url, source),
+        title,
+        summary: summary || undefined,
+        content: truncateText(content || summary || ''),
+        url,
+        imageUrl: normalizeUrl(
+          getArticleImage(article) || getMetaContent(detailHtml, 'og:image') || '',
+          baseUrl
+        ) || undefined,
+        source: sourceName,
+        publishedAt,
+        category: urlToCategory.get(url) || 'community',
+      };
+    });
+
+    const settled = await Promise.allSettled(detailTasks);
+    const detailItems = settled.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
+    const enrichedFallbackItems = urls.length === 0
+      ? await enrichCyberScoreFallbackItems(listFallbackItems, recentDays)
+      : listFallbackItems;
+    const merged = [...detailItems, ...enrichedFallbackItems];
+    const uniqueByUrl = new Map();
+    for (const item of merged) {
+      if (!item?.url) continue;
+      if (!uniqueByUrl.has(item.url)) {
+        uniqueByUrl.set(item.url, item);
+      }
+    }
+    const items = Array.from(uniqueByUrl.values());
+
+    if (items.length === 0) {
+      return { items: [], source, success: false, error: 'No CyberScore article details parsed' };
+    }
+
+    return { items, source, success: true };
+  } catch (error) {
+    return {
+      items: [],
+      source,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 async function collectBo3FallbackUrls(baseUrl) {
   const urls = new Set();
 
@@ -900,15 +1404,27 @@ async function collectBo3UrlsViaJina(baseUrl) {
   try {
     const url = `${JINA_PROXY}${baseUrl.replace(/^https?:\/\//, '')}/dota2/news`;
     const res = await fetchWithTimeout(url, {}, 9000);
-    if (!res.ok) return [];
+    if (!res.ok) return { urls: [], imageHints: new Map() };
     const text = await res.text();
     const matches = text.match(/https?:\/\/bo3\.gg\/dota2\/news\/[a-z0-9-]+/gi) || [];
     const normalized = matches
       .map((x) => normalizeBo3NewsUrl(x, baseUrl))
       .filter(Boolean);
-    return Array.from(new Set(normalized)).slice(0, DETAIL_FETCH_LIMIT);
+    const imageHints = new Map();
+    const cardRegex = /\[!\[[^\]]*]\((https?:\/\/[^)\s]+)\)\s*[^\]]*]\((https?:\/\/bo3\.gg\/dota2\/news\/[a-z0-9-]+)\)/gi;
+    let cardMatch;
+    while ((cardMatch = cardRegex.exec(text)) !== null) {
+      const imageUrlRaw = decodeHtmlEntities(cardMatch[1] || '').replace(/&amp;/g, '&').trim();
+      const articleUrl = normalizeBo3NewsUrl(cardMatch[2], baseUrl);
+      if (!imageUrlRaw || !articleUrl) continue;
+      imageHints.set(articleUrl, imageUrlRaw);
+    }
+    return {
+      urls: Array.from(new Set(normalized)).slice(0, DETAIL_FETCH_LIMIT),
+      imageHints,
+    };
   } catch {
-    return [];
+    return { urls: [], imageHints: new Map() };
   }
 }
 
@@ -928,6 +1444,7 @@ async function scrapeBO3(options = {}) {
       ? options.urls.map((u) => normalizeBo3NewsUrl(u, baseUrl)).filter(Boolean)
       : [];
     let urls = Array.from(new Set(targetUrls));
+    let bo3ImageHints = new Map();
 
     if (urls.length === 0) {
       // Strategy 1: RSS
@@ -970,8 +1487,15 @@ async function scrapeBO3(options = {}) {
 
       // Strategy 4: jina.ai fallback for anti-bot pages
       if (urls.length === 0) {
-        urls = await collectBo3UrlsViaJina(baseUrl);
+        const jinaList = await collectBo3UrlsViaJina(baseUrl);
+        urls = jinaList.urls;
+        bo3ImageHints = jinaList.imageHints;
       }
+    }
+
+    if (urls.length > 0 && bo3ImageHints.size === 0) {
+      const jinaList = await collectBo3UrlsViaJina(baseUrl);
+      bo3ImageHints = jinaList.imageHints;
     }
 
     console.log(`[News API] BO3 list URLs: ${urls.length}`);
@@ -1020,7 +1544,7 @@ async function scrapeBO3(options = {}) {
           content,
           content_markdown: contentMarkdown,
           url,
-          imageUrl: images[0],
+          imageUrl: images[0] || bo3ImageHints.get(url),
           source: 'BO3.gg',
           publishedAt: fallbackPublishedAt,
           category: 'tournament',
@@ -1081,7 +1605,8 @@ async function scrapeBO3(options = {}) {
       contentMarkdown = sanitizeStoredMarkdown(normalizeBo3ContentMarkdown(contentMarkdown || ''));
       const content = truncateText(markdownToText(contentMarkdown || ''));
       const fallbackImage = imageUrl && !imageUrl.includes('/img/logo-og') ? imageUrl : undefined;
-      const preferredImage = htmlImages[0] || jinaImageUrl || fallbackImage || imageUrl;
+      const hintedImage = bo3ImageHints.get(url);
+      const preferredImage = htmlImages[0] || jinaImageUrl || hintedImage || fallbackImage || imageUrl;
 
       const resultItem = {
         id: generateId(url, source),
@@ -1134,6 +1659,17 @@ function makeFallbackNews() {
   const now = Math.floor(Date.now() / 1000);
   return [
     {
+      id: 'fallback-cyberscore-news',
+      title: 'CyberScore Dota 2 News',
+      summary: '新闻源暂时不可用，已切换到来源页兜底展示。',
+      content: '当前新闻源可能处于限流或反爬状态，已返回保底聚合入口。',
+      source: 'CyberScore',
+      url: 'https://cyberscore.live/en/news/',
+      image_url: 'https://cyberscore.live/images/opengraph.webp',
+      published_at: now - 30,
+      category: 'community',
+    },
+    {
       id: 'fallback-hawk-news',
       title: 'Hawk Live Dota 2 新闻聚合',
       summary: '新闻源暂时不可用，已切换到来源页兜底展示。',
@@ -1176,7 +1712,8 @@ function normalizeAndSortNews(items) {
     const rawMarkdown = item.content_markdown
       ? cleanJinaBoilerplate(String(item.content_markdown))
       : (item.content ? cleanJinaBoilerplate(String(item.content)) : '');
-    const sanitizedMarkdown = sanitizeStoredMarkdown(rawMarkdown);
+    const keepImagesInMarkdown = String(item.source || '').toLowerCase() === 'cyberscore';
+    const sanitizedMarkdown = sanitizeStoredMarkdown(rawMarkdown, { keepImages: keepImagesInMarkdown });
     const rawContent = item.content ? String(item.content) : markdownToText(stripHtmlWithParagraphs(rawMarkdown));
     const normalizedSummary = item.summary ? stripHtml(item.summary).slice(0, 320) : undefined;
     const normalizedContent = rawContent
@@ -1194,7 +1731,13 @@ function normalizeAndSortNews(items) {
       url: normalizedUrl,
       image_url: item.imageUrl ? normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl : undefined,
       published_at: publishedAt,
-      category: item.category || 'tournament',
+      category: classifyNewsCategory({
+        category: item.category || null,
+        title_en: stripHtml(item.title),
+        summary_en: normalizedSummary,
+        content_en: normalizedContent,
+        content_markdown_en: normalizedMarkdown,
+      }),
     });
   }
 
@@ -1214,6 +1757,129 @@ function hasBo3NavNoise(text = '') {
     /Home[\s\S]{0,120}Matches[\s\S]{0,160}Schedule and Live/i.test(t) ||
     /\[\]\(\)\s*[\s\S]{0,80}\*\s*CS2/i.test(t)
   );
+}
+
+function hasBo3JinaTailNoise(text = '') {
+  return /Additional content available|Go to Twitter bo3\.gg|By date|Cookies settings|Limited Time Offer|DINAH HOLDINGS LIMITED/i.test(String(text || ''));
+}
+
+function tokenizeEnglish(text = '') {
+  const words = String(text || '').toLowerCase().match(/[a-z0-9]{4,}/g) || [];
+  const stop = new Set([
+    'dota', 'news', 'with', 'from', 'this', 'that', 'have', 'will', 'were', 'been', 'into', 'after',
+    'before', 'their', 'your', 'for', 'the', 'and', 'said', 'says', 'about', 'misses', 'season',
+  ]);
+  return Array.from(new Set(words.filter((w) => !stop.has(w))));
+}
+
+function countTitleTokenHits(title = '', body = '') {
+  const titleTokens = tokenizeEnglish(title);
+  if (titleTokens.length === 0) return { total: 0, hits: 0, tokens: [] };
+  const haystack = String(body || '').toLowerCase().slice(0, 1800);
+  const hits = titleTokens.filter((token) => haystack.includes(token)).length;
+  return { total: titleTokens.length, hits, tokens: titleTokens };
+}
+
+function hasBo3TitleBodyMismatch(title = '', body = '') {
+  const t = String(title || '');
+  const b = String(body || '');
+  if (!t || !b) return false;
+
+  const stat = countTitleTokenHits(t, b);
+  if (stat.total >= 2 && stat.hits === 0) return true;
+  if (stat.total >= 4 && stat.hits <= 1) return true;
+
+  // A recurring wrong-body signature currently seen on BO3 fallback pages.
+  if (/Álvaro\s+"?Avo\+/.test(b) && !/(organizer|birmingham|avo\+)/i.test(t)) {
+    return true;
+  }
+
+  return false;
+}
+
+function getItemEnglishBody(item = {}) {
+  return String(item?.content_markdown || item?.content || '').trim();
+}
+
+function getStoredEnglishBody(row = {}) {
+  return String(row?.content_markdown_en || row?.content_en || '').trim();
+}
+
+function getBodyHash(text = '') {
+  const normalized = String(text || '').trim();
+  if (!normalized) return '';
+  return createHash('sha1').update(normalized).digest('hex');
+}
+
+function countMarkdownH1(text = '') {
+  return String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => /^#\s+\S/.test(line))
+    .length;
+}
+
+function hasStrongEnglishBody(text = '', title = '') {
+  const body = String(text || '').trim();
+  if (!body || body.length < 220) return false;
+  if (hasBo3NavNoise(body)) return false;
+  if (hasBo3JinaTailNoise(body)) return false;
+  if (hasBo3TitleBodyMismatch(title, body)) return false;
+  return true;
+}
+
+function collectBo3DuplicateBodyHashes(items = []) {
+  const groups = new Map();
+  for (const item of items) {
+    if (String(item?.source || '') !== 'BO3.gg') continue;
+    const body = getItemEnglishBody(item);
+    if (!body || body.length < 320) continue;
+    const hash = getBodyHash(body);
+    if (!hash) continue;
+    if (!groups.has(hash)) groups.set(hash, []);
+    groups.get(hash).push(item.url);
+  }
+
+  const duplicateHashes = new Set();
+  for (const [hash, urls] of groups.entries()) {
+    if (urls.length > 1) duplicateHashes.add(hash);
+  }
+  return duplicateHashes;
+}
+
+function inspectBo3BodyQuality(item, duplicateBodyHashes = new Set()) {
+  if (String(item?.source || '') !== 'BO3.gg') return [];
+  const reasons = [];
+  const body = getItemEnglishBody(item);
+  const summary = String(item?.summary || '');
+  const content = String(item?.content || '');
+  const merged = `${summary}\n${content}\n${body}`;
+
+  if (/抓取失败|正文暂不可读/i.test(merged)) {
+    reasons.push('fallback_placeholder');
+  }
+  if (!body || body.length < 140) {
+    reasons.push('too_short');
+  }
+  if (hasBo3NavNoise(body)) {
+    reasons.push('nav_noise');
+  }
+  if (hasBo3JinaTailNoise(body)) {
+    reasons.push('tail_noise');
+  }
+  if (countMarkdownH1(body) > 1) {
+    reasons.push('multiple_h1');
+  }
+  if (hasBo3TitleBodyMismatch(item?.title || '', body)) {
+    reasons.push('title_body_mismatch');
+  }
+
+  const hash = getBodyHash(body);
+  if (hash && duplicateBodyHashes.has(hash) && body.length >= 320 && hasBo3TitleBodyMismatch(item?.title || '', body)) {
+    reasons.push('duplicate_body_batch');
+  }
+
+  return reasons;
 }
 
 function normalizeTitleForDedupe(title = '') {
@@ -1649,7 +2315,7 @@ async function getStoredNews(db, limit = 20) {
       id: row.id,
       source: row.source,
       url: row.url,
-      category: row.category || 'tournament',
+      category: row.category || 'community',
       image_url: row.image_url,
       published_at: Number(row.published_at),
       title: row.title_zh || row.title_en,
@@ -1677,10 +2343,13 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count = removed.length;
   }
 
-  const onlySource = options?.onlySource === 'bo3' || options?.onlySource === 'hawk'
+  const onlySource = ['bo3', 'hawk', 'cyberscore'].includes(options?.onlySource)
     ? options.onlySource
     : null;
   const sourceTasks = [];
+  if (!onlySource || onlySource === 'cyberscore') {
+    sourceTasks.push(scrapeCyberScore({ recentDays: options?.recentDays }));
+  }
   if (!onlySource || onlySource === 'hawk') {
     sourceTasks.push(scrapeHawkLive());
   }
@@ -1709,13 +2378,14 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      skippedSuspiciousBo3Count: 0,
       purgedBo3Count,
       onlySource: onlySource || 'all',
-      cutoffSeconds: Math.floor(Date.now() / 1000) - NEWS_INCREMENTAL_WINDOW_SECONDS,
+      cutoffSeconds: Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options),
     };
   }
 
-  const cutoffSeconds = Math.floor(Date.now() / 1000) - NEWS_INCREMENTAL_WINDOW_SECONDS;
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
   news = news.filter((x) => Number(x.published_at) >= cutoffSeconds);
   const windowFilteredCount = news.length;
   if (news.length === 0) {
@@ -1726,6 +2396,7 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      skippedSuspiciousBo3Count: 0,
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds,
@@ -1769,6 +2440,7 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      skippedSuspiciousBo3Count: 0,
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds,
@@ -1780,13 +2452,30 @@ export async function syncNewsToDb(options = {}) {
     ? await db`SELECT url, title_en, summary_en, content_en, content_markdown_en, title_zh, summary_zh, content_zh, content_markdown_zh, translation_status, translation_provider, title_zh_provider, summary_zh_provider, content_zh_provider FROM news_articles WHERE url = ANY(${urls})`
     : [];
   const existingMap = new Map(existingRows.map((r) => [r.url, r]));
+  const duplicateBo3BodyHashes = collectBo3DuplicateBodyHashes(news);
   const apiKey = getTranslationApiKey();
 
   let translatedCount = 0;
   let insertedCount = 0;
+  let skippedSuspiciousBo3Count = 0;
   const pendingTranslateItems = [];
   for (const item of news) {
     const existing = existingMap.get(item.url);
+    const bo3QualityIssues = inspectBo3BodyQuality(item, duplicateBo3BodyHashes);
+    if (bo3QualityIssues.length > 0) {
+      const reasonText = bo3QualityIssues.join(',');
+      const existingBody = getStoredEnglishBody(existing || {});
+      const existingTitle = String(existing?.title_en || item.title || '');
+      if (hasStrongEnglishBody(existingBody, existingTitle)) {
+        skippedSuspiciousBo3Count += 1;
+        console.warn(`[News API] Skip BO3 overwrite for ${item.url} reasons=${reasonText}`);
+        continue;
+      }
+      skippedSuspiciousBo3Count += 1;
+      console.warn(`[News API] Skip BO3 insert/update for ${item.url} reasons=${reasonText}`);
+      continue;
+    }
+
     const isFallbackPlaceholder =
       String(item.summary || '').includes('抓取失败') ||
       String(item.content || '').includes('正文暂不可读');
@@ -1810,17 +2499,20 @@ export async function syncNewsToDb(options = {}) {
     const needTranslate = enChanged || missingCoreZh;
     const hasChineseBody = hasCompleteChineseBody(existing?.content_markdown_zh || existing?.content_zh || '', englishBody);
     const shouldTranslate = needTranslate || !hasChineseBody;
+    const shouldResetZh = item.source === 'BO3.gg' && enChanged;
 
     const existingZh = {
-      title_zh: existing?.title_zh || null,
-      summary_zh: existing?.summary_zh || null,
-      content_zh: existing?.content_zh || null,
-      content_markdown_zh: existing?.content_markdown_zh || null,
-      translation_status: existing?.translation_status || TRANSLATION_STATUS_PENDING,
-      translation_provider: existing?.translation_provider || null,
-      title_zh_provider: existing?.title_zh_provider || null,
-      summary_zh_provider: existing?.summary_zh_provider || null,
-      content_zh_provider: existing?.content_zh_provider || null,
+      title_zh: shouldResetZh ? null : (existing?.title_zh || null),
+      summary_zh: shouldResetZh ? null : (existing?.summary_zh || null),
+      content_zh: shouldResetZh ? null : (existing?.content_zh || null),
+      content_markdown_zh: shouldResetZh ? null : (existing?.content_markdown_zh || null),
+      translation_status: shouldResetZh
+        ? TRANSLATION_STATUS_PENDING
+        : (existing?.translation_status || TRANSLATION_STATUS_PENDING),
+      translation_provider: shouldResetZh ? null : (existing?.translation_provider || null),
+      title_zh_provider: shouldResetZh ? null : (existing?.title_zh_provider || null),
+      summary_zh_provider: shouldResetZh ? null : (existing?.summary_zh_provider || null),
+      content_zh_provider: shouldResetZh ? null : (existing?.content_zh_provider || null),
     };
 
     await db`
@@ -1840,7 +2532,11 @@ export async function syncNewsToDb(options = {}) {
       ON CONFLICT (url) DO UPDATE SET
         id = EXCLUDED.id,
         source = EXCLUDED.source,
-        category = EXCLUDED.category,
+        category = CASE
+          WHEN news_articles.category IS NULL OR news_articles.category IN ('', 'tournament', 'news', 'results')
+            THEN EXCLUDED.category
+          ELSE news_articles.category
+        END,
         image_url = EXCLUDED.image_url,
         published_at = EXCLUDED.published_at,
         title_en = EXCLUDED.title_en,
@@ -1897,6 +2593,7 @@ export async function syncNewsToDb(options = {}) {
     insertedCount,
     pendingTranslate: Math.max(0, pendingTranslateItems.length - translatedCount),
     translatedCount,
+    skippedSuspiciousBo3Count,
     purgedBo3Count,
     onlySource: onlySource || 'all',
     cutoffSeconds,

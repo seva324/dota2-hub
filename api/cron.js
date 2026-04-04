@@ -8,6 +8,8 @@ import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 let sql = null;
+let cronActionGateReady = false;
+const inMemoryCronActionGate = new Map();
 
 function getDb() {
   if (!sql && DATABASE_URL) {
@@ -33,12 +35,106 @@ function pickPositiveInt(value, fallback) {
   return Math.trunc(parsed);
 }
 
+function pickNonNegativeInt(value, fallback) {
+  const parsed = Number(pickParam(value, ''));
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.trunc(parsed);
+}
+
+function pickOptionalPositiveInt(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(pickParam(value, ''));
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return Math.trunc(parsed);
+}
+
 function pickBoolean(value, fallback = false) {
   const normalized = pickParam(value, '').trim().toLowerCase();
   if (!normalized) return fallback;
   if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
   if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   return fallback;
+}
+
+function readHeader(req, key) {
+  if (!req?.headers) return '';
+  const direct = req.headers[key];
+  if (direct !== undefined && direct !== null) return pickParam(direct, '').trim();
+  const lower = req.headers[key.toLowerCase()];
+  if (lower !== undefined && lower !== null) return pickParam(lower, '').trim();
+  return '';
+}
+
+function isCronTokenAuthorized(req, query = {}, body = {}) {
+  const expectedToken = pickParam(process.env.D2HUB_CRON_TOKEN || process.env.CRON_SECRET, '').trim();
+  if (!expectedToken) return true;
+  const headerToken = readHeader(req, 'x-cron-token');
+  const authHeader = readHeader(req, 'authorization');
+  const bearerToken = authHeader.toLowerCase().startsWith('bearer ')
+    ? authHeader.slice(7).trim()
+    : '';
+  const token = pickParam(
+    headerToken || bearerToken || query.token || body.token,
+    ''
+  ).trim();
+  return token === expectedToken;
+}
+
+async function ensureCronActionGateTable(db) {
+  if (cronActionGateReady || !db || typeof db.query !== 'function') return;
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS cron_action_gate (
+      action TEXT PRIMARY KEY,
+      window_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  cronActionGateReady = true;
+}
+
+function acquireInMemoryCronGate(action, minIntervalMin) {
+  if (minIntervalMin <= 0) return { allowed: true };
+  const now = Date.now();
+  const key = String(action || '').trim().toLowerCase() || 'all';
+  const last = inMemoryCronActionGate.get(key) || 0;
+  if (now - last < minIntervalMin * 60 * 1000) {
+    return {
+      allowed: false,
+      reason: `min_interval_${minIntervalMin}m`,
+      lastStartedAt: new Date(last).toISOString(),
+    };
+  }
+  inMemoryCronActionGate.set(key, now);
+  return { allowed: true, lastStartedAt: new Date(now).toISOString() };
+}
+
+async function acquireCronActionGate(db, action, minIntervalMin) {
+  if (minIntervalMin <= 0) return { allowed: true };
+  if (!db || typeof db.query !== 'function') {
+    return acquireInMemoryCronGate(action, minIntervalMin);
+  }
+  await ensureCronActionGateTable(db);
+  const rows = await db.query(
+    `
+      INSERT INTO cron_action_gate (action, window_started_at, updated_at)
+      VALUES ($1, NOW(), NOW())
+      ON CONFLICT (action) DO UPDATE
+      SET window_started_at = EXCLUDED.window_started_at,
+          updated_at = NOW()
+      WHERE cron_action_gate.window_started_at <= NOW() - ($2::INT * INTERVAL '1 minute')
+      RETURNING window_started_at
+    `,
+    [action, minIntervalMin]
+  );
+  if (rows.length > 0) {
+    return {
+      allowed: true,
+      lastStartedAt: rows[0]?.window_started_at
+        ? new Date(rows[0].window_started_at).toISOString()
+        : new Date().toISOString(),
+    };
+  }
+  return { allowed: false, reason: `min_interval_${minIntervalMin}m` };
 }
 
 function buildRefreshOptions(raw = {}) {
@@ -57,7 +153,37 @@ function buildRefreshOptions(raw = {}) {
   };
 }
 
-async function runAction(action, refreshOptions = buildRefreshOptions()) {
+function buildSyncNewsOptions(raw = {}) {
+  const onlySource = pickParam(raw.onlySource, '').trim().toLowerCase();
+  const options = {};
+
+  if (['bo3', 'hawk', 'cyberscore'].includes(onlySource)) {
+    options.onlySource = onlySource;
+  }
+
+  const recentDays = pickOptionalPositiveInt(raw.recentDays);
+  if (recentDays !== undefined) {
+    options.recentDays = recentDays;
+  }
+
+  const translateLimit = pickOptionalPositiveInt(raw.translateLimit);
+  if (translateLimit !== undefined) {
+    options.translateLimit = translateLimit;
+  }
+
+  const bo3TestUrl = pickParam(raw.bo3TestUrl, '').trim();
+  if (bo3TestUrl) {
+    options.bo3TestUrl = bo3TestUrl;
+  }
+
+  if (pickBoolean(raw.purgeBo3, false)) {
+    options.purgeBo3 = true;
+  }
+
+  return options;
+}
+
+async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {}) {
   const playerRefreshOptions = {
     mode: refreshOptions.mode,
     incremental: refreshOptions.incremental,
@@ -104,7 +230,7 @@ async function runAction(action, refreshOptions = buildRefreshOptions()) {
     return { action, result: await runSyncLiquipedia() };
   }
   if (action === 'sync-news') {
-    return { action, result: await syncNewsToDb() };
+    return { action, result: await syncNewsToDb(buildSyncNewsOptions(raw)) };
   }
   if (action === 'translate-news-backfill') {
     return {
@@ -139,7 +265,7 @@ async function runAction(action, refreshOptions = buildRefreshOptions()) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Cron-Token');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (!['GET', 'POST'].includes(req.method)) {
@@ -149,7 +275,35 @@ export default async function handler(req, res) {
   try {
     const query = req.query || {};
     const body = typeof req.body === 'object' && req.body ? req.body : {};
+
+    if (!isCronTokenAuthorized(req, query, body)) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
+
     const action = pickParam(query.action || body.action, 'all').trim().toLowerCase();
+    const force = pickBoolean(query.force || body.force, false);
+    const defaultMinIntervalMin = pickNonNegativeInt(
+      process.env.D2HUB_CRON_MIN_INTERVAL_MIN || process.env.CRON_MIN_INTERVAL_MIN,
+      0
+    );
+    const minIntervalMin = pickNonNegativeInt(
+      query.minIntervalMin || body.minIntervalMin,
+      defaultMinIntervalMin
+    );
+    const gate = (!force && minIntervalMin > 0)
+      ? await acquireCronActionGate(getDb(), action || 'all', minIntervalMin)
+      : { allowed: true };
+    if (!gate.allowed) {
+      return res.status(200).json({
+        ok: true,
+        skipped: true,
+        action,
+        reason: gate.reason || 'min_interval_guard',
+        minIntervalMin,
+        force,
+      });
+    }
+
     const refreshOptions = buildRefreshOptions({
       mode: query.mode || body.mode,
       recentDays: query.recentDays || body.recentDays,
@@ -162,7 +316,10 @@ export default async function handler(req, res) {
       teamConcurrency: query.teamConcurrency || body.teamConcurrency,
       teamOnly: query.teamOnly || body.teamOnly,
     });
-    const payload = await runAction(action || 'all', refreshOptions);
+    const payload = await runAction(action || 'all', refreshOptions, {
+      ...body,
+      ...query,
+    });
     return res.status(200).json({ ok: true, ...payload });
   } catch (error) {
     return res.status(500).json({

@@ -9,7 +9,7 @@ translate_limit="24"
 translate_batch="6"
 recent_days="3"
 env_file=".env.vercel"
-codex_model="gpt-5.4-mini"
+translate_model="gemma4"
 
 for arg in "$@"; do
   case "$arg" in
@@ -20,7 +20,8 @@ for arg in "$@"; do
     --batch=*) translate_batch="${arg#*=}" ;;
     --recent-days=*) recent_days="${arg#*=}" ;;
     --env-file=*) env_file="${arg#*=}" ;;
-    --codex-model=*) codex_model="${arg#*=}" ;;
+    --translate-model=*) translate_model="${arg#*=}" ;;
+    --codex-model=*) translate_model="${arg#*=}" ;;
     *) echo "Unknown arg: $arg" >&2; exit 1 ;;
   esac
 done
@@ -30,7 +31,7 @@ done
 [[ "$translate_limit" =~ ^[0-9]+$ ]] || { echo "limit must be numeric" >&2; exit 1; }
 [[ "$translate_batch" =~ ^[0-9]+$ ]] || { echo "batch must be numeric" >&2; exit 1; }
 [[ "$recent_days" =~ ^[0-9]+$ ]] || { echo "recent-days must be numeric" >&2; exit 1; }
-[[ -n "$codex_model" ]] || { echo "codex-model must be non-empty" >&2; exit 1; }
+[[ -n "$translate_model" ]] || { echo "translate-model must be non-empty" >&2; exit 1; }
 
 resolved_env_file=""
 if [[ -n "$env_file" ]]; then
@@ -56,7 +57,7 @@ if [[ -n "$resolved_env_file" ]]; then
   node_cmd="node --env-file=$(printf '%q' "$resolved_env_file")"
 fi
 
-runner_cmd="cd $(printf '%q' "$ROOT_DIR") && export XHS_AUTO_POST=0 && export NEWS_TRANSLATE_CODEX_MODEL=$(printf '%q' "$codex_model") && while true; do printf '\n===== %s local translate start =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" >> $(printf '%q' "$log_file"); ${node_cmd} scripts/translate-news-style-zh.mjs --limit $(printf '%q' "$translate_limit") --batch $(printf '%q' "$translate_batch") --recentDays $(printf '%q' "$recent_days") >> $(printf '%q' "$log_file") 2>&1; status=\$?; printf '===== %s local translate exit:%s =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"\$status\" >> $(printf '%q' "$log_file"); sleep $(printf '%q' "$(( interval_min * 60 ))"); done"
+runner_cmd="cd $(printf '%q' "$ROOT_DIR") && export XHS_AUTO_POST=1 && export NEWS_TRANSLATE_MODEL=$(printf '%q' "$translate_model") && while true; do printf '\n===== %s local translate start =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" >> $(printf '%q' "$log_file"); ${node_cmd} scripts/translate-news-style-zh.mjs --limit $(printf '%q' "$translate_limit") --batch $(printf '%q' "$translate_batch") --recentDays $(printf '%q' "$recent_days") >> $(printf '%q' "$log_file") 2>&1; status=\$?; printf '===== %s local translate exit:%s =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"\$status\" >> $(printf '%q' "$log_file"); sleep $(printf '%q' "$(( interval_min * 60 ))"); done"
 
 tmux kill-session -t "$session" 2>/dev/null || true
 tmux new-session -d -s "$session" "bash -lc $(printf '%q' "$runner_cmd")"
@@ -66,7 +67,7 @@ echo "translate_limit=$translate_limit"
 echo "translate_batch=$translate_batch"
 echo "recent_days=$recent_days"
 echo "env_file=${resolved_env_file:-<process-env>}"
-echo "codex_model=$codex_model"
+echo "translate_model=$translate_model"
 echo "log=$log_file"
 echo "attach=tmux attach -t $session"
 echo "stop=tmux kill-session -t $session"

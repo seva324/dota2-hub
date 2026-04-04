@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { sendTelegramMessage } from './telegram-util.mjs';
 
 function parseArgs(argv) {
@@ -71,7 +72,30 @@ function readLastJsonLine(filePath) {
   return null;
 }
 
-async function invokeEndpoint(url, timeoutMs) {
+function runLocalScript(scriptPath, scriptArgs = [], timeoutMs = 300000) {
+  const result = spawnSync(process.execPath, [scriptPath, ...scriptArgs], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024 * 12,
+    timeout: timeoutMs,
+  });
+  const stdout = String(result.stdout || '').trim();
+  const stderr = String(result.stderr || '').trim();
+  let payload = null;
+  try {
+    payload = JSON.parse(stdout || '{}');
+  } catch {}
+  return {
+    ok: result.status === 0,
+    status: result.status,
+    stdout,
+    stderr,
+    payload,
+  };
+}
+
+async function invokeEndpoint(url, timeoutMs, extraHeaders = {}) {
   let payload = null;
   let ok = false;
   let errorMessage = '';
@@ -81,7 +105,10 @@ async function invokeEndpoint(url, timeoutMs) {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        ...extraHeaders,
+      },
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -116,8 +143,13 @@ async function main() {
   const envMinInterval = pickNonNegativeInt(process.env.D2HUB_CRON_MIN_INTERVAL_MIN || process.env.CRON_MIN_INTERVAL_MIN, null);
   const argMinInterval = pickNonNegativeInt(args['min-interval-min'], null);
   const minIntervalMin = argMinInterval ?? envMinInterval ?? defaultMinInterval;
+  const token = String(args.token || process.env.D2HUB_CRON_TOKEN || process.env.CRON_SECRET || '').trim();
   const startedAt = new Date().toISOString();
-  const url = `${base}/api/cron?action=${encodeURIComponent(action)}`;
+  const qs = new URLSearchParams();
+  qs.set('action', action);
+  if (force) qs.set('force', '1');
+  if (minIntervalMin > 0) qs.set('minIntervalMin', String(minIntervalMin));
+  const url = `${base}/api/cron?${qs.toString()}`;
 
   if (!force && minIntervalMin > 0) {
     const lastRecord = readLastJsonLine(logPath);
@@ -143,7 +175,38 @@ async function main() {
     await sendTelegramMessage([`🚀 d2hub ${action}`, `状态: 已启动`, `时间: ${startedAt}`].join('\n')).catch(() => {});
   }
 
-  const result = await invokeEndpoint(url, timeoutMs);
+  const result = await invokeEndpoint(
+    url,
+    timeoutMs,
+    token ? { 'x-cron-token': token } : {}
+  );
+  let redditForward = null;
+  if (result.ok && action === 'sync-news') {
+    const redditForwardEnabled = pickBoolean(args['reddit-forward'] ?? process.env.D2HUB_REDDIT_FORWARD ?? '1', true);
+    if (redditForwardEnabled) {
+      const scriptPath = path.resolve(process.cwd(), 'scripts', 'post-reddit-to-xhs.mjs');
+      if (fs.existsSync(scriptPath)) {
+        const redditArgs = [];
+        if (args['reddit-limit']) redditArgs.push('--limit', String(args['reddit-limit']));
+        if (args['reddit-days']) redditArgs.push('--days', String(args['reddit-days']));
+        if (args['reddit-fetch-limit']) redditArgs.push('--fetch-limit', String(args['reddit-fetch-limit']));
+        if (args['reddit-comment-limit']) redditArgs.push('--comment-limit', String(args['reddit-comment-limit']));
+        if (args['reddit-model']) redditArgs.push('--model', String(args['reddit-model']));
+        if (args['reddit-prompt-file']) redditArgs.push('--prompt-file', String(args['reddit-prompt-file']));
+        if (args['reddit-state-file']) redditArgs.push('--state-file', String(args['reddit-state-file']));
+        if (args['reddit-xhs-cli']) redditArgs.push('--xhs-cli', String(args['reddit-xhs-cli']));
+        if (args['reddit-cdp-url']) redditArgs.push('--cdp-url', String(args['reddit-cdp-url']));
+        if (pickBoolean(args['reddit-force'], false)) redditArgs.push('--force');
+        if (pickBoolean(args['reddit-dry-run'], false)) redditArgs.push('--dry-run');
+        redditForward = runLocalScript(scriptPath, redditArgs, timeoutMs);
+      } else {
+        redditForward = { ok: false, status: null, stderr: `missing script: ${scriptPath}`, stdout: '', payload: null };
+      }
+    } else {
+      redditForward = { ok: true, status: 0, stdout: '', stderr: '', payload: { skipped: true, reason: 'disabled' } };
+    }
+  }
+
   const record = {
     ts: startedAt,
     action,
@@ -151,16 +214,24 @@ async function main() {
     ok: result.ok,
     errorMessage: result.errorMessage,
     payload: result.payload,
+    redditForward,
   };
   appendJsonLine(logPath, record);
 
   if (notify || !result.ok) {
     const status = result.ok ? '✅ 已完成' : '❌ 失败';
+    const redditSummary = redditForward
+      ? `\nReddit转发: ${
+        redditForward.ok
+          ? summarizeResult(redditForward.payload || { ok: true })
+          : (redditForward.stderr || 'failed')
+      }`
+      : '';
     await sendTelegramMessage([
       `🕐 d2hub ${action}`,
       `状态: ${status}`,
       `时间: ${startedAt}`,
-      `详情: ${result.ok ? summarizeResult(result.payload) : (result.errorMessage || summarizeResult(result.payload))}`,
+      `详情: ${result.ok ? summarizeResult(result.payload) : (result.errorMessage || summarizeResult(result.payload))}${redditSummary}`,
     ].join('\n')).catch((error) => {
       console.error(`[run-cron-action-once] Telegram notify failed: ${error instanceof Error ? error.message : String(error)}`);
     });

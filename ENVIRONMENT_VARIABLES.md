@@ -4,6 +4,10 @@
 | --- | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | Primary Neon connection string | yes for APIs/scripts | yes | yes | `postgres://user:pass@host/db?sslmode=require` |
 | `POSTGRES_URL` | Backward-compatible Neon connection alias | optional if `DATABASE_URL` exists | optional if `DATABASE_URL` exists | yes | `postgres://user:pass@host/db?sslmode=require` |
+| `NEON_API_KEY` | Neon management API key for branch audit tooling | optional | optional | yes | `napi_...` |
+| `NEON_PROJECT_ID` | Neon project id for branch audit tooling | optional | optional | no | `silent-sky-123456` |
+| `NEON_INCLUDED_BRANCHES` | Included branch quota used by branch-cost estimate script | optional | optional | no | `10` |
+| `NEON_PROTECTED_BRANCHES` | Comma-separated protected branch names for audit script | optional | optional | no | `main,production,dev` |
 | `SITE_BASE_URL` | Canonical site URL used by asset mirror helpers | optional | recommended | no | `https://example.com` |
 | `PUBLIC_SITE_URL` | Alternative canonical site URL override | optional | recommended | no | `https://example.com` |
 | `NEXT_PUBLIC_SITE_URL` | Legacy fallback for base URL resolution | optional | optional | no | `https://example.com` |
@@ -30,7 +34,9 @@
 | `XHS_REWRITE_TIMEOUT_MS` | XHS AI rewrite timeout | optional | optional | no | `45000` |
 | `XHS_REWRITE_PROMPT_FILE` | Prompt file path for XHS rewrite | optional | optional | no | `docs/xhs-community-post-prompt.md` |
 | `NEWS_TRANSLATE_CODEX_MODEL` | Codex model override for news translation | optional | optional | no | `gpt-5.4-mini` |
+| `D2HUB_CRON_TOKEN` | Optional cron endpoint shared token (`x-cron-token`/Bearer) to prevent anonymous expensive runs | optional | recommended for public deployments | yes | `random-long-token` |
 | `D2HUB_CRON_MIN_INTERVAL_MIN` | Minimum cron interval guardrail | optional | optional | no | `0` |
 | `D2HUB_OPENDOTA_PIPELINE_MIN_INTERVAL_MIN` | Minimum OpenDota pipeline interval guardrail | optional | optional | no | `0` |
+| `CRON_SECRET` | Legacy alias for `D2HUB_CRON_TOKEN` | optional | optional | yes | `random-long-token` |
 | `CRON_MIN_INTERVAL_MIN` | Legacy cron interval guardrail | optional | optional | no | `0` |
 | `TARO_APP_API_BASE_URL` | Mini program backend base URL | yes for production mini program builds | yes for mini program production | no | `https://example.com` |

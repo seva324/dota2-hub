@@ -4,6 +4,7 @@ import path from 'node:path';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { neon } from '@neondatabase/serverless';
+import { callLlmJson } from '../lib/openrouter.mjs';
 
 function loadEnvFile(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return;
@@ -64,9 +65,8 @@ const CUSTOM_TOPIC = getArg('topic', null);
 const TEMPLATE = getArg('template', 'auto');
 const PRESET = getArg('preset', process.env.XHS_POST_PRESET || 'default');
 const AI_REWRITE = !['0', 'false', 'no', 'off'].includes(String(getArg('ai-rewrite', process.env.XHS_AI_REWRITE || 'true')).toLowerCase());
-const CODEX_BIN = getArg('codex-bin', process.env.XHS_CODEX_BIN || 'codex');
-const CODEX_MODEL = getArg('codex-model', process.env.XHS_CODEX_MODEL || 'gpt-5.4-mini');
-const CODEX_TIMEOUT_MS = Math.max(5000, Number(getArg('ai-timeout-ms', process.env.XHS_REWRITE_TIMEOUT_MS || '45000')) || 45000);
+const REWRITE_MODEL = getArg('rewrite-model', process.env.XHS_REWRITE_MODEL || process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash');
+const REWRITE_TIMEOUT_MS = Math.max(5000, Number(getArg('ai-timeout-ms', process.env.XHS_REWRITE_TIMEOUT_MS || '60000')) || 60000);
 const XHS_POST_TIMEOUT_MS = Math.max(10000, Number(getArg('post-timeout-ms', process.env.XHS_POST_TIMEOUT_MS || '180000')) || 180000);
 const LOCK_STALE_MS = Math.max(60000, Number(getArg('lock-stale-ms', process.env.XHS_POST_LOCK_STALE_MS || '900000')) || 900000);
 const LOCK_FILE = getArg('lock-file', process.env.XHS_POST_LOCK_FILE || path.join(os.homedir(), '.dota2-hub', 'xhs-post.lock'));
@@ -127,6 +127,40 @@ function clipTextComplete(text = '', maxLen = 420) {
     }
   }
 
+  return trimTrailingPunctuation(slice);
+}
+
+function countHanChars(text = '') {
+  const matches = String(text || '').match(/[\u4e00-\u9fff]/g);
+  return matches ? matches.length : 0;
+}
+
+function truncateTitle(text = '', maxHanChars = 20, maxTotalChars = 60) {
+  const clean = normalizeWhitespace(text);
+  if (!clean) return '';
+  if (countHanChars(clean) <= maxHanChars && clean.length <= maxTotalChars) return clean;
+
+  let han = 0;
+  let total = 0;
+  let slice = '';
+  for (const ch of clean) {
+    const nextHan = /[\u4e00-\u9fff]/.test(ch) ? han + 1 : han;
+    const nextTotal = total + 1;
+    if (nextHan > maxHanChars || nextTotal > maxTotalChars) break;
+    slice += ch;
+    han = nextHan;
+    total = nextTotal;
+  }
+  if (!slice) return clean.slice(0, Math.min(clean.length, maxTotalChars));
+
+  // Break at natural points instead of mid-word
+  const breakpoints = ['：', ':', '，', ',', '。', ' '];
+  for (const bp of breakpoints) {
+    const idx = slice.lastIndexOf(bp);
+    if (idx >= Math.floor(slice.length * 0.5)) {
+      return trimTrailingPunctuation(slice.slice(0, idx));
+    }
+  }
   return trimTrailingPunctuation(slice);
 }
 
@@ -345,7 +379,7 @@ function buildBodyFromTemplate(row, template) {
       '- 选手目前仍在原队合同期内',
       '- 当前处于不活跃 / 预备名单状态',
       '- 工资或合同关系没有完全中断',
-      '- 外界此前对“已经离队”的判断并不准确',
+      '- 外界此前对"已经离队"的判断并不准确',
       '',
       '这说明他和现有队伍的关系还没有真正画上句号。',
       '',
@@ -403,14 +437,14 @@ function buildBody(row) {
   if (overrideBody) return normalizeWhitespace(overrideBody);
   const template = resolveTemplate(row);
   const preset = resolvePreset();
-  const limit = preset === 'concise-news' ? 220 : 260;
+  const limit = preset === 'concise-news' ? 300 : 400;
   return clipTextComplete(buildBodyFromTemplate(row, template), limit);
 }
 
 function buildTitle(row) {
   const overrideTitle = CUSTOM_TITLE || readOptionalFile(CUSTOM_TITLE_FILE);
-  if (overrideTitle) return clipTextComplete(normalizeWhitespace(overrideTitle), 20);
-  return clipTextComplete(buildTemplateTitle(row, resolveTemplate(row)), 20);
+  if (overrideTitle) return truncateTitle(normalizeWhitespace(overrideTitle), 20, 60);
+  return truncateTitle(buildTemplateTitle(row, resolveTemplate(row)), 20, 60);
 }
 
 function buildTopic(row) {
@@ -423,43 +457,17 @@ function buildTopic(row) {
 }
 
 const REWRITE_PROMPT_REFERENCE = maybeReadText(REWRITE_PROMPT_FILE);
-const REWRITE_PROMPT_CORE = [
-  '你要把 Dota2 新闻改写成可以直接发小红书的中文正文。',
-  '你可能拿到的是中文素材，也可能拿到的是英文素材。无论输入语言是什么，最终都必须写成自然的中文成稿。',
-  '不要输出固定格式，不要分“标题/正文/快评/总结/标签/简评”这些模块。',
-  '默认只输出一篇可以直接发的正文，像真人在复述，不像模板机。',
-  '风格要求：论坛复述风，像长期看比赛的人在讲这条新闻。不要新闻稿腔，不要翻译腔，不要摘要器口吻。不要“他表示、值得一提的是、此外、同时、综上”这些词。主观想法、吐槽、判断要自然穿插。可以有“说白了、这波、最难绷的是、你会感觉、其实问题就在这”这种表达，但不能低俗，不能造谣，不能把传闻写成实锤。',
-  '内容要求：先抓最值得聊的点开头。不要按原文顺序逐段翻。保留事实，但表达必须彻底中文化。允许省略不重要的背景废话。更像把新闻讲给懂 Dota2 的人听，而不是翻译给人看。',
-  '重要：最终成品必须像真人临场写出来的，不要像排版工整的 AI 成稿。不要在结尾补“总的来说”“简评”“快评”“一句话看法”之类的收尾模板。结尾要自然收住。',
-  '如果原文信息很少，可以写短一点；如果信息多，可以自然展开，不需要统一长度。',
-  '输出必须严格是 JSON：{"title":"...","body":"...","topics":["#DOTA2","#电竞新闻"]}',
-  '标题必须是完整中文标题，最多 20 个中文字，不能为了压字数输出省略号。可以适当使用 emoji。',
-].join('\n');
 
 function buildRewritePrompt(row, draft) {
-  const template = resolveTemplate(row);
   const articleBody = clipText(sanitizeArticleBody(row), 1800);
   return [
-    REWRITE_PROMPT_CORE,
-    REWRITE_PROMPT_REFERENCE ? `补充参考：${clipText(REWRITE_PROMPT_REFERENCE.replace(/\s+/g, ' '), 400)}` : '',
+    REWRITE_PROMPT_REFERENCE,
     '',
-    '现在请基于下面这条新闻，输出最终发帖 JSON。',
-    '输出格式必须严格是 JSON，不要加解释，不要加 Markdown 代码块：',
-    '{"title":"...","body":"...","topics":["#DOTA2","#电竞新闻"]}',
+    '请基于下面新闻素材直接输出最终 JSON。',
+    '只输出 JSON，不要解释，不要 Markdown 代码块。',
     '',
-    '要求补充：',
-    '- 标题最多只能 20 个字',
-    '- 正文 90 到 220 字，短句、短段、留空行',
-    '- 可以适当使用 emoji，但不要堆砌',
-    '- topics 输出 3 到 5 个话题',
-    '- 不要带原文链接',
-    '- 所有事实必须忠于输入新闻',
-    '- 如果中文素材缺失，必须直接基于英文素材完成中文创作，不要要求补料',
-    '',
-    `建议模板: ${template}`,
-    `草稿标题: ${draft.title}`,
-    `草稿正文: ${draft.body}`,
-    '',
+    `草稿标题（仅供参考）: ${draft.title}`,
+    `草稿正文（仅供参考）: ${draft.body}`,
     `中文标题: ${normalizeWhitespace(row.title_zh || '')}`,
     `中文摘要: ${clipText(row.summary_zh || '', 240)}`,
     `中文正文: ${articleBody}`,
@@ -469,10 +477,7 @@ function buildRewritePrompt(row, draft) {
   ].join('\n');
 }
 
-function callRewriteModel(prompt) {
-  const tempBase = path.join(os.tmpdir(), `d2hub-xhs-codex-${process.pid}-${Date.now()}`);
-  const schemaPath = `${tempBase}.schema.json`;
-  const outputPath = `${tempBase}.out.json`;
+async function callRewriteModel(prompt) {
   const schema = {
     type: 'object',
     properties: {
@@ -486,56 +491,8 @@ function callRewriteModel(prompt) {
     required: ['title', 'body', 'topics'],
     additionalProperties: false,
   };
-
-  fs.writeFileSync(schemaPath, `${JSON.stringify(schema, null, 2)}\n`, 'utf8');
-  const argv = [
-    'exec',
-    '--skip-git-repo-check',
-    '--ephemeral',
-    '--sandbox',
-    'read-only',
-    '--output-schema',
-    schemaPath,
-    '-o',
-    outputPath,
-  ];
-  if (CODEX_MODEL) {
-    argv.push('-m', CODEX_MODEL);
-  }
-  argv.push('-');
-
-  const result = spawnSync(
-    CODEX_BIN,
-    argv,
-    {
-      cwd: process.cwd(),
-      env: process.env,
-      input: prompt,
-      encoding: 'utf8',
-      timeout: CODEX_TIMEOUT_MS,
-      maxBuffer: 1024 * 1024 * 8,
-    }
-  );
-
-  const stderr = String(result.stderr || '').trim();
-  const stdout = String(result.stdout || '').trim();
-  let output = '';
-  try {
-    output = fs.readFileSync(outputPath, 'utf8').trim();
-  } catch {}
-  safeUnlink(schemaPath);
-  safeUnlink(outputPath);
-
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(stderr || stdout || `codex exited with status ${result.status}`);
-  }
-  if (!output) {
-    throw new Error(stderr || 'codex returned empty output');
-  }
-  return output;
+  const result = await callLlmJson(prompt, schema, { model: REWRITE_MODEL, timeoutMs: REWRITE_TIMEOUT_MS });
+  return JSON.stringify(result);
 }
 
 function parseRewritePayload(rawText, fallback) {
@@ -547,8 +504,8 @@ function parseRewritePayload(rawText, fallback) {
     throw new Error(`Invalid rewrite JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const title = clipText(normalizeWhitespace(parsed?.title || fallback.title), 20);
-  const body = clipText(normalizeWhitespace(parsed?.body || fallback.body), 240);
+  const title = truncateTitle(normalizeWhitespace(parsed?.title || fallback.title), 20, 60);
+  const body = normalizeWhitespace(parsed?.body || fallback.body) || fallback.body;
   const topics = Array.isArray(parsed?.topics)
     ? parsed.topics.map((item) => cleanTopicToken(item)).filter(Boolean)
     : [];
@@ -566,10 +523,14 @@ async function maybeRewriteDraft(row, draft) {
   if (CUSTOM_TITLE || CUSTOM_BODY || CUSTOM_TITLE_FILE || CUSTOM_BODY_FILE) {
     return { ...draft, rewritten: false };
   }
+  if (!REWRITE_PROMPT_REFERENCE) {
+    throw new Error(`Missing rewrite prompt file: ${REWRITE_PROMPT_FILE}`);
+  }
 
   try {
     const output = await callRewriteModel(buildRewritePrompt(row, draft));
-    return { ...parseRewritePayload(output, draft), rewritten: true };
+    const result = parseRewritePayload(output, draft);
+    return { ...result, rewritten: true };
   } catch (error) {
     console.warn(`[xhs] rewrite fallback for ${row.id}: ${error instanceof Error ? error.message : String(error)}`);
     return { ...draft, rewritten: false };
@@ -677,6 +638,7 @@ async function fetchRows() {
            title_zh, summary_zh, content_zh, content_markdown_zh
     FROM news_articles
     WHERE COALESCE(title_zh, title_en, '') <> ''
+      AND COALESCE(translation_status, '') <> 'xhs_skip'
     ORDER BY published_at DESC NULLS LAST
     LIMIT ${LIMIT}
   `;
