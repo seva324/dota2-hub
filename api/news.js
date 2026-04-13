@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
+import { mapWithConcurrency } from '../lib/server/derived-refresh-utils.js';
 import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
 
 /**
@@ -14,6 +15,9 @@ const MAX_ITEMS = 30;
 const DETAIL_FETCH_LIMIT = 10;
 const HAWK_LIST_SCAN_LIMIT = 40;
 const CYBERSCORE_LIST_SCAN_LIMIT = 24;
+const CYBERSCORE_DETAIL_CONCURRENCY = 2;
+const CYBERSCORE_JINA_RETRY_ATTEMPTS = 4;
+const CYBERSCORE_JINA_TIMEOUT_MS = 25000;
 const MAX_CONTENT_LENGTH = 5000;
 const DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
@@ -114,6 +118,48 @@ async function fetchWithTimeout(url, options = {}, timeout = 15000) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+function sleep(ms = 0) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function fetchTextWithRetries(url, options = {}) {
+  const timeout = Number.isFinite(Number(options?.timeout))
+    ? Math.max(1000, Math.trunc(Number(options.timeout)))
+    : 15000;
+  const attempts = Number.isFinite(Number(options?.attempts))
+    ? Math.max(1, Math.trunc(Number(options.attempts)))
+    : 1;
+  const retryDelayMs = Number.isFinite(Number(options?.retryDelayMs))
+    ? Math.max(0, Math.trunc(Number(options.retryDelayMs)))
+    : 600;
+  const label = String(options?.label || url);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, { headers: options?.headers || {} }, timeout);
+      if (!response.ok) {
+        throw new Error(`${label} failed: HTTP ${response.status}`);
+      }
+      const text = await response.text();
+      if (!String(text || '').trim()) {
+        throw new Error(`${label} failed: empty body`);
+      }
+      return text;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts) break;
+      const message = error instanceof Error ? error.message : String(error || '');
+      const delay = /\b429\b/.test(message)
+        ? Math.max(retryDelayMs, 2500) * attempt
+        : retryDelayMs * attempt;
+      await sleep(delay);
+    }
+  }
+
+  throw lastError || new Error(`${label} failed`);
 }
 
 function parseJsonLdBlocks(html) {
@@ -1188,6 +1234,122 @@ function extractCyberScoreDetailFromJina(text = '', fallback = {}) {
   };
 }
 
+function hasCyberScoreUsableBody(item = {}) {
+  const markdown = String(item?.content_markdown || item?.content || '').trim();
+  if (!markdown) return false;
+  if (/正文抓取受限|正文暂不可读|请点击原文/i.test(markdown)) return false;
+  return markdown.length >= 260;
+}
+
+function mergeCyberScoreDetail(primary = {}, secondary = {}) {
+  if (!secondary?.url) return primary;
+  if (!primary?.url) return secondary;
+
+  const primaryBody = String(primary.content_markdown || primary.content || '');
+  const secondaryBody = String(secondary.content_markdown || secondary.content || '');
+  const useSecondaryBody =
+    hasCyberScoreUsableBody(secondary) &&
+    (!hasCyberScoreUsableBody(primary) || secondaryBody.length > primaryBody.length);
+
+  return {
+    ...primary,
+    title: primary.title || secondary.title,
+    summary: (useSecondaryBody ? secondary.summary : primary.summary) || secondary.summary || primary.summary,
+    content: useSecondaryBody ? secondary.content : (primary.content || secondary.content),
+    content_markdown: useSecondaryBody ? secondary.content_markdown : (primary.content_markdown || secondary.content_markdown),
+    imageUrl: primary.imageUrl || secondary.imageUrl,
+    publishedAt: primary.publishedAt || secondary.publishedAt,
+    category: primary.category || secondary.category,
+  };
+}
+
+async function fetchCyberScoreDetailFromJina(url, fallback = {}) {
+  const jinaUrl = `${JINA_PROXY}${String(url || '').replace(/^https?:\/\//, '')}`;
+  const jinaText = await fetchTextWithRetries(jinaUrl, {
+    attempts: CYBERSCORE_JINA_RETRY_ATTEMPTS,
+    timeout: CYBERSCORE_JINA_TIMEOUT_MS,
+    retryDelayMs: 800,
+    label: `CyberScore Jina detail ${url}`,
+  });
+  const parsed = extractCyberScoreDetailFromJina(jinaText, fallback);
+  if (!parsed) {
+    throw new Error(`CyberScore Jina detail parse failed for ${url}`);
+  }
+  return parsed;
+}
+
+async function fetchCyberScoreDetail(url, context = {}) {
+  const fallback = {
+    id: context.id || generateId(url, 'cyberscore'),
+    title: context.title || titleFromSlug(url),
+    summary: context.summary || 'CyberScore · latest',
+    content: context.content || '正文抓取受限，请点击原文查看完整内容。',
+    content_markdown: context.content_markdown || '正文抓取受限，请点击原文查看完整内容。',
+    url,
+    imageUrl: context.imageUrl,
+    source: context.source || 'CyberScore',
+    publishedAt: context.publishedAt || new Date(),
+    category: context.category || 'community',
+  };
+
+  const detailResponse = await fetchWithTimeout(url, {}, 12000);
+  const detailHtml = await detailResponse.text();
+  if (isCloudflareChallengePage(detailHtml) || !detailResponse.ok) {
+    return fetchCyberScoreDetailFromJina(url, fallback);
+  }
+
+  const detailLd = parseJsonLdBlocks(detailHtml);
+  const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
+
+  const titleRaw = article.headline || getMetaContent(detailHtml, 'og:title') || getTitleFromHtml(detailHtml);
+  const title = stripHtml(titleRaw || '').replace(/\s*\|\s*CyberScore\s*$/i, '').trim();
+  if (!title) {
+    return fetchCyberScoreDetailFromJina(url, fallback);
+  }
+
+  const publishedAt =
+    parseDate(article.datePublished) ||
+    parseCyberScorePublishedAt(detailHtml) ||
+    fallback.publishedAt ||
+    new Date();
+
+  const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
+  const content = trimCyberScoreContent(extractArticleContent(detailHtml, article));
+
+  const directItem = {
+    ...fallback,
+    title,
+    summary: summary || fallback.summary,
+    content: truncateText(content || summary || ''),
+    url,
+    imageUrl: normalizeUrl(
+      getArticleImage(article) || getMetaContent(detailHtml, 'og:image') || '',
+      'https://cyberscore.live'
+    ) || fallback.imageUrl,
+    source: fallback.source,
+    publishedAt,
+    category: context.category || fallback.category,
+  };
+
+  if (hasCyberScoreUsableBody(directItem)) {
+    return directItem;
+  }
+
+  try {
+    const jinaItem = await fetchCyberScoreDetailFromJina(url, {
+      ...fallback,
+      title,
+      summary: summary || fallback.summary,
+      publishedAt,
+      category: context.category || fallback.category,
+      imageUrl: directItem.imageUrl || fallback.imageUrl,
+    });
+    return mergeCyberScoreDetail(directItem, jinaItem);
+  } catch {
+    return directItem;
+  }
+}
+
 async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays = 3) {
   const dayCount = Number.isFinite(Number(recentDays)) && Number(recentDays) > 0
     ? Math.trunc(Number(recentDays))
@@ -1207,23 +1369,15 @@ async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays 
   }
 
   const enriched = [];
-  for (const item of uniqueTargets) {
+  await mapWithConcurrency(uniqueTargets, CYBERSCORE_DETAIL_CONCURRENCY, async (item) => {
     try {
-      const detailUrl = `${JINA_PROXY}${String(item.url || '').replace(/^https?:\/\//, '')}`;
-      const response = await fetchWithTimeout(detailUrl, {}, 12000);
-      if (!response.ok) {
-        enriched.push(item);
-        continue;
-      }
-      const text = await response.text();
-      const parsed = extractCyberScoreDetailFromJina(text, item);
-      enriched.push(parsed || item);
+      enriched.push(await fetchCyberScoreDetailFromJina(item.url, item));
     } catch {
       enriched.push(item);
     }
-  }
+  });
 
-  return enriched;
+  return enriched.sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0));
 }
 
 function extractBo3NewsUrls(html, baseUrl) {
@@ -1497,60 +1651,24 @@ async function scrapeCyberScore(options = {}) {
       return { items: [], source, success: false, error: 'No CyberScore article URLs found' };
     }
 
-    const detailTasks = urls.map(async (url) => {
-      const detailResponse = await fetchWithTimeout(url, {}, 12000);
-      const detailHtml = await detailResponse.text();
-      if (isCloudflareChallengePage(detailHtml)) {
-        const jinaResponse = await fetchWithTimeout(`${JINA_PROXY}${url.replace(/^https?:\/\//, '')}`, {}, 12000);
-        if (!jinaResponse.ok) throw new Error(`CyberScore Jina detail failed: HTTP ${jinaResponse.status}`);
-        const jinaText = await jinaResponse.text();
-        return extractCyberScoreDetailFromJina(jinaText, {
+    const detailItems = [];
+    await mapWithConcurrency(urls, CYBERSCORE_DETAIL_CONCURRENCY, async (url) => {
+      try {
+        const item = await fetchCyberScoreDetail(url, {
           id: generateId(url, source),
           title: titleFromSlug(url),
           summary: `${sourceName} · latest`,
           content: '正文抓取受限，请点击原文查看完整内容。',
           content_markdown: '正文抓取受限，请点击原文查看完整内容。',
-          url,
-          imageUrl: undefined,
           source: sourceName,
           publishedAt: new Date(),
           category: urlToCategory.get(url) || 'community',
         });
+        if (item) detailItems.push(item);
+      } catch (error) {
+        console.warn(`[News API] CyberScore detail failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
       }
-      if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
-      const detailLd = parseJsonLdBlocks(detailHtml);
-      const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
-
-      const titleRaw = article.headline || getMetaContent(detailHtml, 'og:title') || getTitleFromHtml(detailHtml);
-      const title = stripHtml(titleRaw || '').replace(/\s*\|\s*CyberScore\s*$/i, '').trim();
-      if (!title) return null;
-
-      const publishedAt =
-        parseDate(article.datePublished) ||
-        parseCyberScorePublishedAt(detailHtml) ||
-        new Date();
-
-      const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
-      const content = trimCyberScoreContent(extractArticleContent(detailHtml, article));
-
-      return {
-        id: generateId(url, source),
-        title,
-        summary: summary || undefined,
-        content: truncateText(content || summary || ''),
-        url,
-        imageUrl: normalizeUrl(
-          getArticleImage(article) || getMetaContent(detailHtml, 'og:image') || '',
-          baseUrl
-        ) || undefined,
-        source: sourceName,
-        publishedAt,
-        category: urlToCategory.get(url) || 'community',
-      };
     });
-
-    const settled = await Promise.allSettled(detailTasks);
-    const detailItems = settled.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
     const detailUrlSet = new Set(detailItems.map((item) => item?.url).filter(Boolean));
     const fallbackNeedingDetail = listFallbackItems.filter((item) => !detailUrlSet.has(item?.url));
     const enrichedFallbackItems = await enrichCyberScoreFallbackItems(fallbackNeedingDetail, recentDays);
