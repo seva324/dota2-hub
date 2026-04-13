@@ -4,8 +4,14 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "apps/web/dist",
   "rewrites": [
-    { "source": "/api/mp/:route*", "destination": "/api/matches?__mp=:route*" },
-    { "source": "/api/:path*", "destination": "/api/:path*" }
+    {
+      "source": "/api/mp/:route*",
+      "destination": "/api/matches?__mp=:route*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
   ],
   "crons": [
     {
@@ -13,8 +19,16 @@
       "schedule": "0 8 * * *"
     },
     {
-      "path": "/api/sync-news",
+      "path": "/api/cron?action=sync-news&onlySource=hawk",
       "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/cron?action=sync-news&onlySource=bo3",
+      "schedule": "35 9 * * *"
+    },
+    {
+      "path": "/api/cron?action=sync-news&onlySource=cyberscore",
+      "schedule": "40 9 * * *"
     },
     {
       "path": "/api/sync-liquipedia",

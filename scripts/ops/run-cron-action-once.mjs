@@ -72,10 +72,10 @@ function readLastJsonLine(filePath) {
   return null;
 }
 
-function runLocalScript(scriptPath, scriptArgs = [], timeoutMs = 300000) {
+function runLocalScript(scriptPath, scriptArgs = [], timeoutMs = 300000, envOverrides = {}) {
   const result = spawnSync(process.execPath, [scriptPath, ...scriptArgs], {
     cwd: process.cwd(),
-    env: process.env,
+    env: { ...process.env, ...envOverrides },
     encoding: 'utf8',
     maxBuffer: 1024 * 1024 * 12,
     timeout: timeoutMs,
@@ -137,9 +137,9 @@ async function main() {
   const notify = args.notify !== '0';
   const force = pickBoolean(args.force, false);
   const defaultMinInterval =
-    (action === 'sync-news' || action === 'sync-liquipedia')
-      ? 180
-      : (action === 'sync-opendota' ? 60 : 0);
+    (action === 'sync-news')
+      ? 60
+      : (action === 'sync-liquipedia' ? 180 : (action === 'sync-opendota' ? 60 : 0));
   const envMinInterval = pickNonNegativeInt(process.env.D2HUB_CRON_MIN_INTERVAL_MIN || process.env.CRON_MIN_INTERVAL_MIN, null);
   const argMinInterval = pickNonNegativeInt(args['min-interval-min'], null);
   const minIntervalMin = argMinInterval ?? envMinInterval ?? defaultMinInterval;
@@ -147,6 +147,8 @@ async function main() {
   const startedAt = new Date().toISOString();
   const qs = new URLSearchParams();
   qs.set('action', action);
+  const onlySource = String(args['only-source'] || args.onlySource || '').trim().toLowerCase();
+  if (['bo3', 'hawk', 'cyberscore'].includes(onlySource)) qs.set('onlySource', onlySource);
   if (force) qs.set('force', '1');
   if (minIntervalMin > 0) qs.set('minIntervalMin', String(minIntervalMin));
   const url = `${base}/api/cron?${qs.toString()}`;
@@ -181,13 +183,15 @@ async function main() {
     token ? { 'x-cron-token': token } : {}
   );
   let redditForward = null;
+  let newsTranslate = null;
   if (result.ok && action === 'sync-news') {
     const redditForwardEnabled = pickBoolean(args['reddit-forward'] ?? process.env.D2HUB_REDDIT_FORWARD ?? '1', true);
     if (redditForwardEnabled) {
       const scriptPath = path.resolve(process.cwd(), 'scripts', 'post-reddit-to-xhs.mjs');
       if (fs.existsSync(scriptPath)) {
         const redditArgs = [];
-        if (args['reddit-limit']) redditArgs.push('--limit', String(args['reddit-limit']));
+        // sync-news 场景下，Reddit 每次最多只发 1 篇（小时任务即每小时最多 1 篇）
+        redditArgs.push('--limit', '1');
         if (args['reddit-days']) redditArgs.push('--days', String(args['reddit-days']));
         if (args['reddit-fetch-limit']) redditArgs.push('--fetch-limit', String(args['reddit-fetch-limit']));
         if (args['reddit-comment-limit']) redditArgs.push('--comment-limit', String(args['reddit-comment-limit']));
@@ -205,6 +209,55 @@ async function main() {
     } else {
       redditForward = { ok: true, status: 0, stdout: '', stderr: '', payload: { skipped: true, reason: 'disabled' } };
     }
+
+    const triggerTranslate = pickBoolean(
+      args['trigger-translate'] ?? process.env.D2HUB_SYNC_NEWS_TRIGGER_TRANSLATE ?? '1',
+      true
+    );
+    if (triggerTranslate) {
+      const translateScriptPath = path.resolve(process.cwd(), 'scripts', 'translate-news-style-zh.mjs');
+      if (fs.existsSync(translateScriptPath)) {
+        const translateLimit = Math.max(1, pickNonNegativeInt(args['translate-limit'] ?? process.env.D2HUB_TRANSLATE_LIMIT, 24));
+        const translateBatch = Math.max(1, pickNonNegativeInt(args['translate-batch'] ?? process.env.D2HUB_TRANSLATE_BATCH, 6));
+        const translateRecentDays = Math.max(1, pickNonNegativeInt(args['translate-recent-days'] ?? process.env.D2HUB_TRANSLATE_RECENT_DAYS, 3));
+        const translateTimeoutMs = Math.max(10000, pickNonNegativeInt(args['translate-timeout-ms'] ?? process.env.D2HUB_TRANSLATE_TIMEOUT_MS, 420000));
+        const translateForce = pickBoolean(args['translate-force'] ?? process.env.D2HUB_TRANSLATE_FORCE ?? '0', false);
+        const translateXhsAutoPost = pickBoolean(
+          args['translate-xhs-auto-post'] ?? process.env.D2HUB_TRANSLATE_XHS_AUTO_POST ?? process.env.XHS_AUTO_POST ?? '1',
+          true
+        );
+        const translateModel = String(
+          args['translate-model'] ??
+          process.env.D2HUB_TRANSLATE_MODEL ??
+          process.env.NEWS_TRANSLATE_MODEL ??
+          process.env.NEWS_TRANSLATE_CODEX_MODEL ??
+          ''
+        ).trim();
+
+        const translateArgs = [
+          '--limit', String(translateLimit),
+          '--batch', String(translateBatch),
+          '--recentDays', String(translateRecentDays),
+        ];
+        if (translateForce) {
+          translateArgs.push('--force', 'true');
+        }
+
+        const translateEnv = {
+          XHS_AUTO_POST: translateXhsAutoPost ? '1' : '0',
+        };
+        if (translateModel) {
+          translateEnv.NEWS_TRANSLATE_MODEL = translateModel;
+          translateEnv.NEWS_TRANSLATE_CODEX_MODEL = translateModel;
+        }
+
+        newsTranslate = runLocalScript(translateScriptPath, translateArgs, translateTimeoutMs, translateEnv);
+      } else {
+        newsTranslate = { ok: false, status: null, stderr: `missing script: ${translateScriptPath}`, stdout: '', payload: null };
+      }
+    } else {
+      newsTranslate = { ok: true, status: 0, stdout: '', stderr: '', payload: { skipped: true, reason: 'disabled' } };
+    }
   }
 
   const record = {
@@ -215,6 +268,7 @@ async function main() {
     errorMessage: result.errorMessage,
     payload: result.payload,
     redditForward,
+    newsTranslate,
   };
   appendJsonLine(logPath, record);
 
@@ -227,11 +281,18 @@ async function main() {
           : (redditForward.stderr || 'failed')
       }`
       : '';
+    const translateSummary = newsTranslate
+      ? `\nNews翻译: ${
+        newsTranslate.ok
+          ? summarizeResult(newsTranslate.payload || { ok: true })
+          : (newsTranslate.stderr || 'failed')
+      }`
+      : '';
     await sendTelegramMessage([
       `🕐 d2hub ${action}`,
       `状态: ${status}`,
       `时间: ${startedAt}`,
-      `详情: ${result.ok ? summarizeResult(result.payload) : (result.errorMessage || summarizeResult(result.payload))}${redditSummary}`,
+      `详情: ${result.ok ? summarizeResult(result.payload) : (result.errorMessage || summarizeResult(result.payload))}${redditSummary}${translateSummary}`,
     ].join('\n')).catch((error) => {
       console.error(`[run-cron-action-once] Telegram notify failed: ${error instanceof Error ? error.message : String(error)}`);
     });

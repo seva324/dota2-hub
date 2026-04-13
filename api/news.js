@@ -1,6 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
+import { callLlmText } from '../lib/openrouter.mjs';
+import { mapWithConcurrency } from '../lib/server/derived-refresh-utils.js';
+import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
 
 /**
  * News API
@@ -13,10 +16,20 @@ const MAX_ITEMS = 30;
 const DETAIL_FETCH_LIMIT = 10;
 const HAWK_LIST_SCAN_LIMIT = 40;
 const CYBERSCORE_LIST_SCAN_LIMIT = 24;
+const CYBERSCORE_DETAIL_SCAN_LIMIT = 10;
+const CYBERSCORE_FALLBACK_ENRICH_LIMIT = 6;
+const CYBERSCORE_DETAIL_CONCURRENCY = 2;
+const CYBERSCORE_JINA_RETRY_ATTEMPTS = 2;
+const CYBERSCORE_JINA_TIMEOUT_MS = 15000;
 const MAX_CONTENT_LENGTH = 5000;
 const DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const BO3_API_BASE = 'https://api.bo3.gg/api/v1';
+const DATABASE_URL =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
 const CYBERSCORE_CATEGORIES = [
   {
     key: 'competitive',
@@ -46,7 +59,13 @@ const CYBERSCORE_CATEGORIES = [
 
 const MINIMAX_API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
+const OPENROUTER_TRANSLATION_MODEL =
+  process.env.NEWS_TRANSLATE_OPENROUTER_MODEL ||
+  process.env.NEWS_TRANSLATE_MODEL ||
+  process.env.OPENROUTER_MODEL ||
+  'google/gemini-2.5-flash';
 const NEWS_TRANSLATION_PROVIDER = 'minimax';
+const OPENROUTER_TRANSLATION_PROVIDER = 'openrouter';
 const TRANSLATION_STATUS_PENDING = 'pending';
 const TRANSLATION_STATUS_PARTIAL = 'partial';
 const TRANSLATION_STATUS_COMPLETED = 'completed';
@@ -67,6 +86,14 @@ const NEWS_TRANSLATION_GUIDANCE = [
   '2. 一段自然流畅的正文',
   '3. 一句简短点评/总结',
 ].join('\n');
+
+function glossaryPromptForItem(item = {}) {
+  return buildTranslationGlossaryPrompt({
+    title: item?.title || item?.title_en || '',
+    summary: item?.summary || item?.summary_en || '',
+    content: item?.content_markdown || item?.content_en || item?.content || '',
+  });
+}
 
 function getDb() {
   if (!sql && DATABASE_URL) {
@@ -100,6 +127,48 @@ async function fetchWithTimeout(url, options = {}, timeout = 15000) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+function sleep(ms = 0) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function fetchTextWithRetries(url, options = {}) {
+  const timeout = Number.isFinite(Number(options?.timeout))
+    ? Math.max(1000, Math.trunc(Number(options.timeout)))
+    : 15000;
+  const attempts = Number.isFinite(Number(options?.attempts))
+    ? Math.max(1, Math.trunc(Number(options.attempts)))
+    : 1;
+  const retryDelayMs = Number.isFinite(Number(options?.retryDelayMs))
+    ? Math.max(0, Math.trunc(Number(options.retryDelayMs)))
+    : 600;
+  const label = String(options?.label || url);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, { headers: options?.headers || {} }, timeout);
+      if (!response.ok) {
+        throw new Error(`${label} failed: HTTP ${response.status}`);
+      }
+      const text = await response.text();
+      if (!String(text || '').trim()) {
+        throw new Error(`${label} failed: empty body`);
+      }
+      return text;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts) break;
+      const message = error instanceof Error ? error.message : String(error || '');
+      const delay = /\b429\b/.test(message)
+        ? Math.max(retryDelayMs, 2500) * attempt
+        : retryDelayMs * attempt;
+      await sleep(delay);
+    }
+  }
+
+  throw lastError || new Error(`${label} failed`);
 }
 
 function parseJsonLdBlocks(html) {
@@ -309,10 +378,181 @@ function parseBo3DateTimeString(input = '') {
 }
 
 function parseJinaPublishedDate(text = '') {
-  const m = String(text).match(/Published Time:\s*(\d{4}-\d{2}-\d{2})/i);
-  if (!m) return null;
-  const date = new Date(`${m[1]}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const matchedLine = String(text).match(/Published Time:\s*([^\n\r]+)/i)?.[1]?.trim();
+  if (!matchedLine) return null;
+
+  const direct = parseDate(matchedLine);
+  if (direct) return direct;
+
+  const dateOnly = matchedLine.match(/(\d{4}-\d{2}-\d{2})/)?.[1];
+  if (!dateOnly) return null;
+  const fallback = new Date(`${dateOnly}T00:00:00Z`);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function slugFromBo3NewsUrl(rawUrl = '') {
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname !== 'bo3.gg' && url.hostname !== 'www.bo3.gg') return '';
+    const parts = url.pathname.split('/').filter(Boolean);
+    const newsIndex = parts.lastIndexOf('news');
+    if (newsIndex === -1 || !parts[newsIndex + 1]) return '';
+    return parts[newsIndex + 1];
+  } catch {
+    return '';
+  }
+}
+
+function bo3NewsUrlFromSlug(slug = '') {
+  const clean = String(slug || '').trim();
+  if (!clean) return '';
+  return `https://bo3.gg/dota2/news/${clean}`;
+}
+
+async function fetchBo3ApiJson(pathname, searchParams = null) {
+  const url = new URL(`${BO3_API_BASE}${pathname}`);
+  if (searchParams) {
+    for (const [key, value] of searchParams.entries()) {
+      url.searchParams.set(key, value);
+    }
+  }
+  const response = await fetchWithTimeout(url.toString(), {
+    headers: {
+      Accept: 'application/json',
+      Origin: 'https://bo3.gg',
+      Referer: 'https://bo3.gg/dota2/news',
+    },
+  }, 12000);
+  if (!response.ok) throw new Error(`BO3 API HTTP ${response.status}`);
+  return response.json();
+}
+
+function bo3ApiListParams(limit = DETAIL_FETCH_LIMIT) {
+  const params = new URLSearchParams();
+  params.set('filter[base_news.discipline_id][eq]', '4');
+  params.set('filter[news.locale][eq]', 'en');
+  params.set('filter[base_news.section][in]', '1');
+  params.set('page[offset]', '0');
+  params.set('page[limit]', String(Math.max(1, limit)));
+  params.set('sort', '-published_at');
+  return params;
+}
+
+async function collectBo3UrlsViaApi() {
+  try {
+    const data = await fetchBo3ApiJson('/base_news', bo3ApiListParams(DETAIL_FETCH_LIMIT * 3));
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const urls = [];
+    const imageHints = new Map();
+    for (const item of results) {
+      const slug = item?.slug;
+      const url = bo3NewsUrlFromSlug(slug);
+      if (!url) continue;
+      urls.push(url);
+      const imageUrl = item.title_image_url || item.title_image_square_url || item.image;
+      if (imageUrl) imageHints.set(url, imageUrl);
+    }
+    return {
+      urls: Array.from(new Set(urls)).slice(0, DETAIL_FETCH_LIMIT),
+      imageHints,
+    };
+  } catch (error) {
+    console.warn(`[News API] BO3 API list failed: ${error instanceof Error ? error.message : String(error)}`);
+    return { urls: [], imageHints: new Map() };
+  }
+}
+
+function editorJsInlineMarkdown(input = '') {
+  return htmlInlineToMarkdown(String(input || ''), 'https://bo3.gg')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function editorJsBlocksToMarkdown(body = {}) {
+  const blocks = Array.isArray(body?.blocks) ? body.blocks : [];
+  const out = [];
+  const images = [];
+
+  for (const block of blocks) {
+    const type = String(block?.type || '').toLowerCase();
+    const data = block?.data || {};
+
+    if (type === 'paragraph') {
+      const text = editorJsInlineMarkdown(data.text);
+      if (text) out.push(text);
+      continue;
+    }
+
+    if (type === 'header') {
+      const text = editorJsInlineMarkdown(data.text);
+      if (text) out.push(`## ${text}`);
+      continue;
+    }
+
+    if (type === 'quote') {
+      const text = editorJsInlineMarkdown(data.text);
+      const caption = editorJsInlineMarkdown(data.caption);
+      if (text) {
+        out.push(`> ${text}${caption ? `\n>\n> — ${caption}` : ''}`);
+      }
+      continue;
+    }
+
+    if (type === 'list' && Array.isArray(data.items)) {
+      const items = data.items
+        .map((item) => {
+          const value = typeof item === 'string' ? item : (item?.content || item?.text || '');
+          return editorJsInlineMarkdown(value);
+        })
+        .filter(Boolean)
+        .map((item) => `- ${item}`);
+      if (items.length) out.push(items.join('\n'));
+      continue;
+    }
+
+    if (type === 'image' || type === 'simpleimage') {
+      const imageUrl = data?.file?.url || data?.url || data?.image || '';
+      const normalized = normalizeUrl(imageUrl, 'https://bo3.gg');
+      if (normalized) {
+        images.push(normalized);
+        const caption = editorJsInlineMarkdown(data.caption);
+        out.push(`![${caption || 'Image'}](${normalized})`);
+      }
+    }
+  }
+
+  return {
+    markdown: out.join('\n\n').trim(),
+    images: Array.from(new Set(images)),
+  };
+}
+
+async function fetchBo3ArticleViaApi(url) {
+  const slug = slugFromBo3NewsUrl(url);
+  if (!slug) return null;
+
+  const item = await fetchBo3ApiJson(`/base_news/${encodeURIComponent(slug)}`, new URLSearchParams([['locale', 'en']]));
+  if (!item?.slug || String(item?.discipline_id) !== '4') return null;
+
+  const canonicalUrl = bo3NewsUrlFromSlug(item.slug) || url;
+  const { markdown, images } = editorJsBlocksToMarkdown(item.body);
+  const imageUrl = item.title_image_url || item.title_image_square_url || item.image || images[0] || undefined;
+  const contentMarkdown = sanitizeStoredMarkdown(normalizeBo3ContentMarkdown(markdown || item.description || ''));
+  const content = truncateText(markdownToText(contentMarkdown || item.description || ''));
+
+  const result = {
+    id: generateId(canonicalUrl, 'bo3'),
+    title: item.title || titleFromSlug(canonicalUrl),
+    summary: stripHtml(item.description || content).slice(0, 220) || undefined,
+    content,
+    content_markdown: contentMarkdown,
+    url: canonicalUrl,
+    imageUrl,
+    source: 'BO3.gg',
+    publishedAt: parseDate(item.published_at) || parseDate(item.created_at) || new Date(),
+    category: item?.news_category?.title || 'tournament',
+  };
+  return isBettingNews(result) ? null : result;
 }
 
 function parseBo3PublishedAt(detailHtml) {
@@ -763,6 +1003,11 @@ function parseCyberScorePublishedAt(detailHtml = '') {
   return parseCyberScoreDateText(textDate);
 }
 
+function isCloudflareChallengePage(html = '') {
+  const text = String(html || '');
+  return /Just a moment\.\.\.|Enable JavaScript and cookies to continue|__cf_chl_/i.test(text);
+}
+
 function trimCyberScoreContent(content = '') {
   let result = String(content || '').trim();
   if (!result) return result;
@@ -812,6 +1057,25 @@ function extractCyberScoreUrlsFromJinaText(text, baseUrl) {
   return Array.from(new Set(matches
     .map((raw) => normalizeCyberScoreNewsUrl(raw, baseUrl))
     .filter(Boolean))).slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
+}
+
+export function prioritizeCyberScoreDetailUrls(urls = [], fallbackItems = [], limit = CYBERSCORE_DETAIL_SCAN_LIMIT) {
+  const numericLimit = Number.isFinite(Number(limit)) ? Math.max(0, Math.trunc(Number(limit))) : null;
+  const prioritizedFallbackUrls = [...fallbackItems]
+    .filter((item) => item?.url)
+    .sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0))
+    .map((item) => item.url);
+
+  const ordered = [];
+  const seen = new Set();
+  for (const url of [...prioritizedFallbackUrls, ...urls]) {
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    ordered.push(url);
+    if (numericLimit !== null && ordered.length >= numericLimit) break;
+  }
+
+  return numericLimit === null ? ordered : ordered.slice(0, numericLimit);
 }
 
 function extractCyberScoreItemsFromJinaCategory(text = '', categoryDef = {}, source = 'cyberscore') {
@@ -998,6 +1262,122 @@ function extractCyberScoreDetailFromJina(text = '', fallback = {}) {
   };
 }
 
+function hasCyberScoreUsableBody(item = {}) {
+  const markdown = String(item?.content_markdown || item?.content || '').trim();
+  if (!markdown) return false;
+  if (/正文抓取受限|正文暂不可读|请点击原文/i.test(markdown)) return false;
+  return markdown.length >= 260;
+}
+
+function mergeCyberScoreDetail(primary = {}, secondary = {}) {
+  if (!secondary?.url) return primary;
+  if (!primary?.url) return secondary;
+
+  const primaryBody = String(primary.content_markdown || primary.content || '');
+  const secondaryBody = String(secondary.content_markdown || secondary.content || '');
+  const useSecondaryBody =
+    hasCyberScoreUsableBody(secondary) &&
+    (!hasCyberScoreUsableBody(primary) || secondaryBody.length > primaryBody.length);
+
+  return {
+    ...primary,
+    title: primary.title || secondary.title,
+    summary: (useSecondaryBody ? secondary.summary : primary.summary) || secondary.summary || primary.summary,
+    content: useSecondaryBody ? secondary.content : (primary.content || secondary.content),
+    content_markdown: useSecondaryBody ? secondary.content_markdown : (primary.content_markdown || secondary.content_markdown),
+    imageUrl: primary.imageUrl || secondary.imageUrl,
+    publishedAt: primary.publishedAt || secondary.publishedAt,
+    category: primary.category || secondary.category,
+  };
+}
+
+async function fetchCyberScoreDetailFromJina(url, fallback = {}) {
+  const jinaUrl = `${JINA_PROXY}${String(url || '').replace(/^https?:\/\//, '')}`;
+  const jinaText = await fetchTextWithRetries(jinaUrl, {
+    attempts: CYBERSCORE_JINA_RETRY_ATTEMPTS,
+    timeout: CYBERSCORE_JINA_TIMEOUT_MS,
+    retryDelayMs: 800,
+    label: `CyberScore Jina detail ${url}`,
+  });
+  const parsed = extractCyberScoreDetailFromJina(jinaText, fallback);
+  if (!parsed) {
+    throw new Error(`CyberScore Jina detail parse failed for ${url}`);
+  }
+  return parsed;
+}
+
+async function fetchCyberScoreDetail(url, context = {}) {
+  const fallback = {
+    id: context.id || generateId(url, 'cyberscore'),
+    title: context.title || titleFromSlug(url),
+    summary: context.summary || 'CyberScore · latest',
+    content: context.content || '正文抓取受限，请点击原文查看完整内容。',
+    content_markdown: context.content_markdown || '正文抓取受限，请点击原文查看完整内容。',
+    url,
+    imageUrl: context.imageUrl,
+    source: context.source || 'CyberScore',
+    publishedAt: context.publishedAt || new Date(),
+    category: context.category || 'community',
+  };
+
+  const detailResponse = await fetchWithTimeout(url, {}, 12000);
+  const detailHtml = await detailResponse.text();
+  if (isCloudflareChallengePage(detailHtml) || !detailResponse.ok) {
+    return fetchCyberScoreDetailFromJina(url, fallback);
+  }
+
+  const detailLd = parseJsonLdBlocks(detailHtml);
+  const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
+
+  const titleRaw = article.headline || getMetaContent(detailHtml, 'og:title') || getTitleFromHtml(detailHtml);
+  const title = stripHtml(titleRaw || '').replace(/\s*\|\s*CyberScore\s*$/i, '').trim();
+  if (!title) {
+    return fetchCyberScoreDetailFromJina(url, fallback);
+  }
+
+  const publishedAt =
+    parseDate(article.datePublished) ||
+    parseCyberScorePublishedAt(detailHtml) ||
+    fallback.publishedAt ||
+    new Date();
+
+  const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
+  const content = trimCyberScoreContent(extractArticleContent(detailHtml, article));
+
+  const directItem = {
+    ...fallback,
+    title,
+    summary: summary || fallback.summary,
+    content: truncateText(content || summary || ''),
+    url,
+    imageUrl: normalizeUrl(
+      getArticleImage(article) || getMetaContent(detailHtml, 'og:image') || '',
+      'https://cyberscore.live'
+    ) || fallback.imageUrl,
+    source: fallback.source,
+    publishedAt,
+    category: context.category || fallback.category,
+  };
+
+  if (hasCyberScoreUsableBody(directItem)) {
+    return directItem;
+  }
+
+  try {
+    const jinaItem = await fetchCyberScoreDetailFromJina(url, {
+      ...fallback,
+      title,
+      summary: summary || fallback.summary,
+      publishedAt,
+      category: context.category || fallback.category,
+      imageUrl: directItem.imageUrl || fallback.imageUrl,
+    });
+    return mergeCyberScoreDetail(directItem, jinaItem);
+  } catch {
+    return directItem;
+  }
+}
+
 async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays = 3) {
   const dayCount = Number.isFinite(Number(recentDays)) && Number(recentDays) > 0
     ? Math.trunc(Number(recentDays))
@@ -1006,7 +1386,7 @@ async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays 
   const filtered = listFallbackItems
     .filter((item) => (item?.publishedAt instanceof Date ? item.publishedAt.getTime() >= cutoffMs : true))
     .sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0))
-    .slice(0, Math.max(8, MAX_ITEMS));
+    .slice(0, CYBERSCORE_FALLBACK_ENRICH_LIMIT);
 
   const uniqueTargets = [];
   const seen = new Set();
@@ -1017,23 +1397,15 @@ async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays 
   }
 
   const enriched = [];
-  for (const item of uniqueTargets) {
+  await mapWithConcurrency(uniqueTargets, CYBERSCORE_DETAIL_CONCURRENCY, async (item) => {
     try {
-      const detailUrl = `${JINA_PROXY}${String(item.url || '').replace(/^https?:\/\//, '')}`;
-      const response = await fetchWithTimeout(detailUrl, {}, 12000);
-      if (!response.ok) {
-        enriched.push(item);
-        continue;
-      }
-      const text = await response.text();
-      const parsed = extractCyberScoreDetailFromJina(text, item);
-      enriched.push(parsed || item);
+      enriched.push(await fetchCyberScoreDetailFromJina(item.url, item));
     } catch {
       enriched.push(item);
     }
-  }
+  });
 
-  return enriched;
+  return enriched.sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0));
 }
 
 function extractBo3NewsUrls(html, baseUrl) {
@@ -1272,12 +1644,12 @@ async function scrapeCyberScore(options = {}) {
     for (const categoryDef of CYBERSCORE_CATEGORIES) {
       try {
         let urls = [];
-        let canUseDirectDetail = false;
         const response = await fetchWithTimeout(categoryDef.url, {}, 15000);
         if (response.ok) {
-          canUseDirectDetail = true;
           const html = await response.text();
-          urls = extractCyberScoreNewsUrls(html, baseUrl);
+          if (!isCloudflareChallengePage(html)) {
+            urls = extractCyberScoreNewsUrls(html, baseUrl);
+          }
         }
 
         if (urls.length === 0) {
@@ -1291,11 +1663,9 @@ async function scrapeCyberScore(options = {}) {
           }
         }
 
-        if (canUseDirectDetail) {
-          for (const url of urls) {
-            if (!urlToCategory.has(url)) {
-              urlToCategory.set(url, categoryDef.category);
-            }
+        for (const url of urls) {
+          if (!urlToCategory.has(url)) {
+            urlToCategory.set(url, categoryDef.category);
           }
         }
       } catch {
@@ -1303,67 +1673,97 @@ async function scrapeCyberScore(options = {}) {
       }
     }
 
-    const urls = Array.from(urlToCategory.keys());
-    console.log(`[News API] CyberScore list URLs: ${urls.length}, fallback items: ${listFallbackItems.length}`);
-    if (urls.length === 0 && listFallbackItems.length === 0) {
-      return { items: [], source, success: false, error: 'No CyberScore article URLs found' };
+    const allListUrls = Array.from(urlToCategory.keys());
+    const detailUrls = prioritizeCyberScoreDetailUrls(allListUrls, listFallbackItems, CYBERSCORE_DETAIL_SCAN_LIMIT);
+    console.log(`[News API] CyberScore list URLs: ${allListUrls.length}, fallback items: ${listFallbackItems.length}, detail URLs: ${detailUrls.length}`);
+    if (detailUrls.length === 0 && listFallbackItems.length === 0) {
+      return {
+        items: [],
+        source,
+        success: false,
+        error: 'No CyberScore article URLs found',
+        diagnostics: { listUrlCount: allListUrls.length, fallbackItemCount: listFallbackItems.length, detailUrlCount: detailUrls.length, detailFailureCount: 0 },
+      };
     }
 
-    const detailTasks = urls.map(async (url) => {
-      const detailResponse = await fetchWithTimeout(url, {}, 12000);
-      if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
-      const detailHtml = await detailResponse.text();
-      const detailLd = parseJsonLdBlocks(detailHtml);
-      const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
-
-      const titleRaw = article.headline || getMetaContent(detailHtml, 'og:title') || getTitleFromHtml(detailHtml);
-      const title = stripHtml(titleRaw || '').replace(/\s*\|\s*CyberScore\s*$/i, '').trim();
-      if (!title) return null;
-
-      const publishedAt =
-        parseDate(article.datePublished) ||
-        parseCyberScorePublishedAt(detailHtml) ||
-        new Date();
-
-      const summary = stripHtml(article.description || getMetaContent(detailHtml, 'description') || '');
-      const content = trimCyberScoreContent(extractArticleContent(detailHtml, article));
-
-      return {
-        id: generateId(url, source),
-        title,
-        summary: summary || undefined,
-        content: truncateText(content || summary || ''),
-        url,
-        imageUrl: normalizeUrl(
-          getArticleImage(article) || getMetaContent(detailHtml, 'og:image') || '',
-          baseUrl
-        ) || undefined,
-        source: sourceName,
-        publishedAt,
-        category: urlToCategory.get(url) || 'community',
-      };
+    const detailItems = [];
+    let detailFailureCount = 0;
+    await mapWithConcurrency(detailUrls, CYBERSCORE_DETAIL_CONCURRENCY, async (url) => {
+      try {
+        const item = await fetchCyberScoreDetail(url, {
+          id: generateId(url, source),
+          title: titleFromSlug(url),
+          summary: `${sourceName} · latest`,
+          content: '正文抓取受限，请点击原文查看完整内容。',
+          content_markdown: '正文抓取受限，请点击原文查看完整内容。',
+          source: sourceName,
+          publishedAt: new Date(),
+          category: urlToCategory.get(url) || 'community',
+        });
+        if (item) detailItems.push(item);
+      } catch (error) {
+        detailFailureCount += 1;
+        console.warn(`[News API] CyberScore detail failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
+      }
     });
-
-    const settled = await Promise.allSettled(detailTasks);
-    const detailItems = settled.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
-    const enrichedFallbackItems = urls.length === 0
-      ? await enrichCyberScoreFallbackItems(listFallbackItems, recentDays)
-      : listFallbackItems;
-    const merged = [...detailItems, ...enrichedFallbackItems];
+    const detailUrlSet = new Set(detailItems.map((item) => item?.url).filter(Boolean));
+    const fallbackNeedingDetail = listFallbackItems.filter((item) => !detailUrlSet.has(item?.url));
+    const enrichedFallbackItems = await enrichCyberScoreFallbackItems(fallbackNeedingDetail, recentDays);
+    const merged = [...detailItems, ...listFallbackItems, ...enrichedFallbackItems];
     const uniqueByUrl = new Map();
     for (const item of merged) {
       if (!item?.url) continue;
-      if (!uniqueByUrl.has(item.url)) {
+      if (uniqueByUrl.has(item.url)) {
+        const existing = uniqueByUrl.get(item.url);
+        const existingMarkdown = String(existing.content_markdown || existing.content || '');
+        const incomingMarkdown = String(item.content_markdown || item.content || '');
+        const useIncomingContent =
+          incomingMarkdown.length > existingMarkdown.length &&
+          !/正文抓取受限|正文暂不可读|请点击原文/i.test(incomingMarkdown);
+        uniqueByUrl.set(item.url, {
+          ...existing,
+          title: existing.title || item.title,
+          summary: (useIncomingContent ? item.summary : existing.summary) || item.summary,
+          content: useIncomingContent ? item.content : (existing.content || item.content),
+          content_markdown: useIncomingContent ? item.content_markdown : (existing.content_markdown || item.content_markdown),
+          imageUrl: existing.imageUrl || item.imageUrl,
+          publishedAt: existing.publishedAt || item.publishedAt,
+          category: existing.category || item.category,
+        });
+      } else {
         uniqueByUrl.set(item.url, item);
       }
     }
     const items = Array.from(uniqueByUrl.values());
 
     if (items.length === 0) {
-      return { items: [], source, success: false, error: 'No CyberScore article details parsed' };
+      return {
+        items: [],
+        source,
+        success: false,
+        error: 'No CyberScore article details parsed',
+        diagnostics: {
+          listUrlCount: allListUrls.length,
+          fallbackItemCount: listFallbackItems.length,
+          detailUrlCount: detailUrls.length,
+          detailFailureCount,
+          enrichedFallbackCount: enrichedFallbackItems.length,
+        },
+      };
     }
 
-    return { items, source, success: true };
+    return {
+      items,
+      source,
+      success: true,
+      diagnostics: {
+        listUrlCount: allListUrls.length,
+        fallbackItemCount: listFallbackItems.length,
+        detailUrlCount: detailUrls.length,
+        detailFailureCount,
+        enrichedFallbackCount: enrichedFallbackItems.length,
+      },
+    };
   } catch (error) {
     return {
       items: [],
@@ -1447,7 +1847,16 @@ async function scrapeBO3(options = {}) {
     let bo3ImageHints = new Map();
 
     if (urls.length === 0) {
-      // Strategy 1: RSS
+      // Strategy 1: official BO3 API. The public HTML is Nuxt-only and
+      // r.jina.ai can return unrelated SEO/betting text for some slugs, so
+      // prefer the same JSON endpoint used by bo3.gg itself.
+      const apiList = await collectBo3UrlsViaApi();
+      urls = apiList.urls;
+      bo3ImageHints = apiList.imageHints;
+    }
+
+    if (urls.length === 0) {
+      // Strategy 2: RSS
       for (const rssUrl of rssUrls) {
         try {
           const rssResponse = await fetchWithTimeout(rssUrl, {
@@ -1469,7 +1878,7 @@ async function scrapeBO3(options = {}) {
         }
       }
 
-      // Strategy 2: HTML list parsing
+      // Strategy 3: HTML list parsing
       try {
         const response = await fetchWithTimeout(listUrl, {}, 9000);
         if (response.ok) {
@@ -1480,12 +1889,12 @@ async function scrapeBO3(options = {}) {
         // Continue to fallback
       }
 
-      // Strategy 3: sitemap fallback when HTML fails
+      // Strategy 4: sitemap fallback when HTML fails
       if (urls.length === 0) {
         urls = await collectBo3FallbackUrls(baseUrl);
       }
 
-      // Strategy 4: jina.ai fallback for anti-bot pages
+      // Strategy 5: jina.ai fallback for anti-bot pages
       if (urls.length === 0) {
         const jinaList = await collectBo3UrlsViaJina(baseUrl);
         urls = jinaList.urls;
@@ -1505,6 +1914,13 @@ async function scrapeBO3(options = {}) {
     }
 
     const detailTasks = urls.map(async (url) => {
+      try {
+        const apiItem = await fetchBo3ArticleViaApi(url);
+        if (apiItem) return apiItem;
+      } catch (error) {
+        console.warn(`[News API] BO3 API detail failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
       let detailHtml = '';
       let article = {};
       let detailLd = [];
@@ -1694,9 +2110,11 @@ function makeFallbackNews() {
   ];
 }
 
-function normalizeAndSortNews(items) {
+export function normalizeAndSortNews(items, options = {}) {
   const seen = new Set();
   const normalized = [];
+  const hasExplicitLimit = Object.prototype.hasOwnProperty.call(options || {}, 'limit');
+  const limit = hasExplicitLimit ? options.limit : MAX_ITEMS;
 
   for (const item of items) {
     if (!item?.url || !item?.title) continue;
@@ -1742,7 +2160,9 @@ function normalizeAndSortNews(items) {
   }
 
   normalized.sort((a, b) => b.published_at - a.published_at);
-  return normalized.slice(0, MAX_ITEMS);
+  if (limit == null) return normalized;
+  if (!Number.isFinite(Number(limit))) return normalized.slice(0, MAX_ITEMS);
+  return normalized.slice(0, Math.max(0, Math.trunc(Number(limit))));
 }
 
 function looksChinese(text = '') {
@@ -1934,39 +2354,96 @@ function getTranslationApiKey() {
   return process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
 }
 
+function getPreferredTranslationProvider(apiKey = '') {
+  if (process.env.OPENROUTER_API_KEY) return OPENROUTER_TRANSLATION_PROVIDER;
+  if (apiKey) return NEWS_TRANSLATION_PROVIDER;
+  return null;
+}
+
+function normalizeModelOutputText(value = '') {
+  let text = String(value || '').trim();
+  if (!text) return '';
+
+  const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)?.[1];
+  if (fenced) {
+    text = fenced.trim();
+  }
+
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed === 'string') return String(parsed).trim();
+    if (parsed && typeof parsed.text === 'string') return String(parsed.text).trim();
+  } catch {
+    // ignore
+  }
+
+  const textField = text.match(/^\s*"text"\s*:\s*([\s\S]+)$/i)?.[1];
+  if (textField) {
+    return textField.trim().replace(/^"(.*)"$/s, '$1').trim();
+  }
+
+  return text;
+}
+
 async function callTranslationModel(apiKey, prompt, maxTokens = 1200, timeoutMs = 20000) {
+  const errors = [];
+
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      const outputText = normalizeModelOutputText(await callLlmText(prompt, {
+        model: OPENROUTER_TRANSLATION_MODEL,
+        timeoutMs: Math.max(timeoutMs, 30000),
+        maxTokens,
+      })).trim();
+      if (!outputText) {
+        throw new Error('openrouter returned empty translations');
+      }
+      return outputText;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`openrouter: ${message}`);
+      console.warn(`[News API] OpenRouter translation fallback failed: ${message}`);
+    }
+  }
+
   if (!apiKey) {
-    throw new Error('No translation model API key configured');
+    throw new Error(errors.length ? errors.join(' | ') : 'No translation model API key configured');
   }
 
-  const response = await fetchWithTimeout(
-    MINIMAX_API_URL,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+  try {
+    const response = await fetchWithTimeout(
+      MINIMAX_API_URL,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MINIMAX_MODEL,
+          max_tokens: maxTokens,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+        }),
       },
-      body: JSON.stringify({
-        model: MINIMAX_MODEL,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
-      }),
-    },
-    timeoutMs
-  );
+      timeoutMs
+    );
 
-  if (!response.ok) {
-    const bodyText = await response.text().catch(() => '');
-    throw new Error(`minimax HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
-  }
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '');
+      throw new Error(`minimax HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
+    }
 
-  const payload = await response.json();
-  const outputText = extractMiniMaxText(payload).trim();
-  if (!outputText) {
-    throw new Error('minimax returned empty translations');
+    const payload = await response.json();
+    const outputText = normalizeModelOutputText(extractMiniMaxText(payload)).trim();
+    if (!outputText) {
+      throw new Error('minimax returned empty translations');
+    }
+    return outputText;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(`minimax: ${message}`);
+    throw new Error(errors.join(' | '));
   }
-  return outputText;
 }
 
 async function translateNewsWithMiniMax(news) {
@@ -2106,7 +2583,7 @@ function hasCompleteChineseBody(value, fallbackEn = '') {
 }
 
 function looksLikeTranslationRefusal(value = '') {
-  return /抱歉|请提供|请把完整|无法保证|没有看到正文|只看到了标题|not enough|provide the full/i.test(String(value));
+  return /抱歉|请提供|请把完整|无法保证|没有看到正文|只看到了标题|not enough|provide the full|由于.*没有提供.*(?:英文|正文|素材)|请发送.*(?:英文|内容|正文)|没有提供需要翻译|缺乏具体.*(?:正文|新闻)|无法为您翻译完整/i.test(String(value));
 }
 
 function looksLikeStructuredArticle(value = '') {
@@ -2125,13 +2602,14 @@ function hasChineseSummary(value = '', fallbackEn = '') {
   return !fallbackEn || zh !== String(fallbackEn || '').trim();
 }
 
-function buildTranslationMeta(item, translated, provider = NEWS_TRANSLATION_PROVIDER) {
+function buildTranslationMeta(item, translated, provider = null) {
   const sourceBody = item?.content_markdown || item?.content || '';
   const titleDone = item?.title ? hasChineseTitle(translated?.title_zh, item.title) : true;
   const summaryDone = item?.summary ? hasChineseSummary(translated?.summary_zh, item.summary) : true;
   const bodyDone = sourceBody ? hasCompleteChineseBody(translated?.content_markdown_zh || translated?.content_zh || '', sourceBody) : true;
   const anyDone = titleDone || summaryDone || bodyDone;
   const complete = titleDone && summaryDone && bodyDone;
+  const resolvedProvider = anyDone ? (provider || translated?._provider || null) : null;
 
   return {
     translation_status: complete
@@ -2139,20 +2617,23 @@ function buildTranslationMeta(item, translated, provider = NEWS_TRANSLATION_PROV
       : anyDone
         ? TRANSLATION_STATUS_PARTIAL
         : TRANSLATION_STATUS_PENDING,
-    translation_provider: anyDone ? provider : null,
-    title_zh_provider: titleDone ? provider : null,
-    summary_zh_provider: summaryDone ? provider : null,
-    content_zh_provider: bodyDone ? provider : null,
+    translation_provider: resolvedProvider,
+    title_zh_provider: titleDone ? resolvedProvider : null,
+    summary_zh_provider: summaryDone ? resolvedProvider : null,
+    content_zh_provider: bodyDone ? resolvedProvider : null,
     translated_at: anyDone ? new Date().toISOString() : null,
   };
 }
 
 async function translateCommunityTitle(apiKey, item) {
   if (!item?.title || looksChinese(item.title)) return item?.title || null;
+  const glossaryPrompt = glossaryPromptForItem(item);
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
       '',
+      glossaryPrompt,
+      glossaryPrompt ? '' : '',
       '请基于下面英文 Dota2 新闻信息，写一个适合中文社区传播的中文标题。',
       '要求：',
       '- 保留战队名、选手名、赛事名等专有名词原文',
@@ -2165,6 +2646,10 @@ async function translateCommunityTitle(apiKey, item) {
     let output = await callTranslationModel(apiKey, prompt, 800, 18000);
     if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
       const retryPrompt = [
+        NEWS_TRANSLATION_GUIDANCE,
+        '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
         '把下面英文 Dota2 新闻标题改写成一个中文社区传播标题。',
         '要求：必须输出简体中文；保留专有名词原文；不能输出英文整句；不能输出标题/正文/总结标签；只输出一行标题。',
         item.title,
@@ -2172,6 +2657,10 @@ async function translateCommunityTitle(apiKey, item) {
       output = await callTranslationModel(apiKey, retryPrompt, 400, 15000).catch(() => output);
       if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
         const finalPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
           '将下面英文 Dota2 新闻标题直接翻译为简体中文标题。',
           '要求：必须输出中文；保留专有名词原文；只输出一行标题；不要解释。',
           item.title,
@@ -2188,10 +2677,13 @@ async function translateCommunityTitle(apiKey, item) {
 async function translateCommunitySummary(apiKey, item) {
   const seed = item?.summary || item?.content || item?.content_markdown || item?.title;
   if (!seed || looksChinese(seed)) return item?.summary || seed || null;
+  const glossaryPrompt = glossaryPromptForItem(item);
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
       '',
+      glossaryPrompt,
+      glossaryPrompt ? '' : '',
       '请基于下面英文 Dota2 新闻信息，写一句简短点评/总结。',
       '要求：',
       '- 20 到 50 字',
@@ -2205,6 +2697,10 @@ async function translateCommunitySummary(apiKey, item) {
     let output = await callTranslationModel(apiKey, prompt, 800, 18000);
     if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
       const retryPrompt = [
+        NEWS_TRANSLATION_GUIDANCE,
+        '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
         '基于下面英文 Dota2 新闻信息，写一句中文总结。',
         '要求：必须输出简体中文；20到50字；不能道歉；不能要求补充材料；不能输出标题/正文/总结标签；只输出一句话。',
         `标题：${item.title || ''}`,
@@ -2214,6 +2710,10 @@ async function translateCommunitySummary(apiKey, item) {
       output = await callTranslationModel(apiKey, retryPrompt, 400, 15000).catch(() => output);
       if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
         const finalPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
           '把下面英文 Dota2 新闻摘要翻译并压缩成一句简体中文总结。',
           '要求：必须输出中文；20到50字；只输出一句话；不要解释。',
           `标题：${item.title || ''}`,
@@ -2229,7 +2729,7 @@ async function translateCommunitySummary(apiKey, item) {
   }
 }
 
-async function translateLongMarkdown(apiKey, text) {
+async function translateLongMarkdown(apiKey, text, glossaryPrompt = '') {
   if (!text || looksChinese(text)) return text;
   const chunks = splitTextChunks(text, 1300);
   const translated = [];
@@ -2239,6 +2739,8 @@ async function translateLongMarkdown(apiKey, text) {
       const prompt = [
         NEWS_TRANSLATION_GUIDANCE,
         '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
         '请把下面 Dota2 英文新闻正文翻译成中文社区搬运帖风格。',
         '要求：',
         '- 保留 markdown 链接与图片语法',
@@ -2252,6 +2754,10 @@ async function translateLongMarkdown(apiKey, text) {
       let output = await callTranslationModel(apiKey, prompt, 1800, 22000).catch(() => chunk);
       if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
         const retryPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
           '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
           '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
           chunk,
@@ -2259,6 +2765,10 @@ async function translateLongMarkdown(apiKey, text) {
         output = await callTranslationModel(apiKey, retryPrompt, 1800, 22000).catch(() => output);
         if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
           const finalPrompt = [
+            NEWS_TRANSLATION_GUIDANCE,
+            '',
+            glossaryPrompt,
+            glossaryPrompt ? '' : '',
             '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
             '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释。',
             chunk,
@@ -2277,19 +2787,22 @@ async function translateLongMarkdown(apiKey, text) {
 
 async function translateItem(apiKey, item) {
   const sourceBody = item.content_markdown || item.content || '';
-  if (!apiKey) {
+  const glossaryPrompt = glossaryPromptForItem(item);
+  const provider = getPreferredTranslationProvider(apiKey);
+  if (!provider) {
     return {
       title_zh: null,
       summary_zh: null,
       content_zh: null,
       content_markdown_zh: null,
+      _provider: provider,
     };
   }
 
   const [title_zh, summary_zh, content_markdown_zh] = await Promise.all([
     translateCommunityTitle(apiKey, item),
     translateCommunitySummary(apiKey, item),
-    sourceBody ? translateLongMarkdown(apiKey, sourceBody) : Promise.resolve(sourceBody),
+    sourceBody ? translateLongMarkdown(apiKey, sourceBody, glossaryPrompt) : Promise.resolve(sourceBody),
   ]);
 
   return {
@@ -2297,6 +2810,7 @@ async function translateItem(apiKey, item) {
     summary_zh,
     content_markdown_zh,
     content_zh: content_markdown_zh ? markdownToText(content_markdown_zh) : item.content,
+    _provider: provider,
   };
 }
 
@@ -2330,46 +2844,14 @@ async function getStoredNews(db, limit = 20) {
   }).filter((x) => !isBettingNews(x));
 }
 
-export async function syncNewsToDb(options = {}) {
-  const db = getDb();
-  if (!db) {
-    throw new Error('DATABASE_URL not configured');
-  }
-
-  await ensureNewsTable(db);
-  let purgedBo3Count = 0;
-  if (options?.purgeBo3) {
-    const removed = await db`DELETE FROM news_articles WHERE source = 'BO3.gg' RETURNING url`;
-    purgedBo3Count = removed.length;
-  }
-
-  const onlySource = ['bo3', 'hawk', 'cyberscore'].includes(options?.onlySource)
-    ? options.onlySource
-    : null;
-  const sourceTasks = [];
-  if (!onlySource || onlySource === 'cyberscore') {
-    sourceTasks.push(scrapeCyberScore({ recentDays: options?.recentDays }));
-  }
-  if (!onlySource || onlySource === 'hawk') {
-    sourceTasks.push(scrapeHawkLive());
-  }
-  if (!onlySource || onlySource === 'bo3') {
-    const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
-    sourceTasks.push(scrapeBO3({ urls: testUrl ? [testUrl] : [] }));
-  }
-
-  const sourceResults = await Promise.allSettled(sourceTasks);
-  const allItems = [];
-
-  for (const result of sourceResults) {
-    if (result.status === 'fulfilled' && result.value?.success && Array.isArray(result.value.items)) {
-      allItems.push(...result.value.items);
-    }
-  }
-
-  let news = normalizeAndSortNews(allItems);
+export async function upsertSyncedNewsItems(db, items, options = {}) {
+  let news = normalizeAndSortNews(items, { limit: null });
   news = news.filter((x) => !isBettingNews(x));
   const totalFetched = news.length;
+  const cutoffSeconds = Number.isFinite(Number(options?.cutoffSeconds))
+    ? Math.trunc(Number(options.cutoffSeconds))
+    : Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
+
   if (news.length === 0) {
     return {
       totalFetched: 0,
@@ -2378,14 +2860,13 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      translateAttemptedCount: 0,
       skippedSuspiciousBo3Count: 0,
-      purgedBo3Count,
-      onlySource: onlySource || 'all',
-      cutoffSeconds: Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options),
+      cutoffSeconds,
+      translationErrors: [],
     };
   }
 
-  const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
   news = news.filter((x) => Number(x.published_at) >= cutoffSeconds);
   const windowFilteredCount = news.length;
   if (news.length === 0) {
@@ -2396,10 +2877,10 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      translateAttemptedCount: 0,
       skippedSuspiciousBo3Count: 0,
-      purgedBo3Count,
-      onlySource: onlySource || 'all',
       cutoffSeconds,
+      translationErrors: [],
     };
   }
 
@@ -2440,10 +2921,10 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      translateAttemptedCount: 0,
       skippedSuspiciousBo3Count: 0,
-      purgedBo3Count,
-      onlySource: onlySource || 'all',
       cutoffSeconds,
+      translationErrors: [],
     };
   }
 
@@ -2564,26 +3045,34 @@ export async function syncNewsToDb(options = {}) {
   const translateLimit = Number.isFinite(Number(options?.translateLimit))
     ? Math.max(0, Number(options.translateLimit))
     : pendingTranslateItems.length;
-  for (const item of pendingTranslateItems.slice(0, translateLimit)) {
-    const zh = await translateItem(apiKey, item);
-    const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
-    await db`
-      UPDATE news_articles
-      SET
-        title_zh = ${meta.title_zh_provider ? zh.title_zh || null : null},
-        summary_zh = ${meta.summary_zh_provider ? zh.summary_zh || null : null},
-        content_zh = ${meta.content_zh_provider ? zh.content_zh || null : null},
-        content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
-        translation_status = ${meta.translation_status},
-        translation_provider = ${meta.translation_provider},
-        title_zh_provider = ${meta.title_zh_provider},
-        summary_zh_provider = ${meta.summary_zh_provider},
-        content_zh_provider = ${meta.content_zh_provider},
-        translated_at = ${meta.translated_at},
-        updated_at = NOW()
-      WHERE url = ${item.url}
-    `;
-    if (meta.translation_status === TRANSLATION_STATUS_COMPLETED) translatedCount += 1;
+  const translationErrors = [];
+  const translateTargets = pendingTranslateItems.slice(0, translateLimit);
+  for (const item of translateTargets) {
+    try {
+      const zh = await translateItem(apiKey, item);
+      const meta = buildTranslationMeta(item, zh, zh?._provider || getPreferredTranslationProvider(apiKey));
+      await db`
+        UPDATE news_articles
+        SET
+          title_zh = ${meta.title_zh_provider ? zh.title_zh || null : null},
+          summary_zh = ${meta.summary_zh_provider ? zh.summary_zh || null : null},
+          content_zh = ${meta.content_zh_provider ? zh.content_zh || null : null},
+          content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
+          translation_status = ${meta.translation_status},
+          translation_provider = ${meta.translation_provider},
+          title_zh_provider = ${meta.title_zh_provider},
+          summary_zh_provider = ${meta.summary_zh_provider},
+          content_zh_provider = ${meta.content_zh_provider},
+          translated_at = ${meta.translated_at},
+          updated_at = NOW()
+        WHERE url = ${item.url}
+      `;
+      if (meta.translation_status === TRANSLATION_STATUS_COMPLETED) translatedCount += 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown translation error';
+      translationErrors.push({ url: item.url, message });
+      console.warn(`[News API] Translate failed for ${item.url}: ${message}`);
+    }
   }
 
   return {
@@ -2593,10 +3082,111 @@ export async function syncNewsToDb(options = {}) {
     insertedCount,
     pendingTranslate: Math.max(0, pendingTranslateItems.length - translatedCount),
     translatedCount,
+    translateAttemptedCount: translateTargets.length,
     skippedSuspiciousBo3Count,
+    cutoffSeconds,
+    translationErrors,
+  };
+}
+
+export async function syncNewsToDb(options = {}) {
+  const db = getDb();
+  if (!db) {
+    throw new Error('DATABASE_URL not configured');
+  }
+
+  await ensureNewsTable(db);
+  let purgedBo3Count = 0;
+  if (options?.purgeBo3) {
+    const removed = await db`DELETE FROM news_articles WHERE source = 'BO3.gg' RETURNING url`;
+    purgedBo3Count = removed.length;
+  }
+
+  const onlySource = ['bo3', 'hawk', 'cyberscore'].includes(options?.onlySource)
+    ? options.onlySource
+    : null;
+  const sourceTasks = [];
+  if (!onlySource || onlySource === 'cyberscore') {
+    sourceTasks.push({ key: 'cyberscore', run: () => scrapeCyberScore({ recentDays: options?.recentDays }) });
+  }
+  if (!onlySource || onlySource === 'hawk') {
+    sourceTasks.push({ key: 'hawk', run: () => scrapeHawkLive() });
+  }
+  if (!onlySource || onlySource === 'bo3') {
+    const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
+    sourceTasks.push({ key: 'bo3', run: () => scrapeBO3({ urls: testUrl ? [testUrl] : [] }) });
+  }
+
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
+  const translateLimit = Number.isFinite(Number(options?.translateLimit))
+    ? Math.max(0, Number(options.translateLimit))
+    : null;
+  let remainingTranslateBudget = translateLimit;
+
+  const sourceDiagnostics = [];
+  const aggregate = {
+    totalFetched: 0,
+    windowFilteredCount: 0,
+    dedupedByTitleCount: 0,
+    insertedCount: 0,
+    pendingTranslate: 0,
+    translatedCount: 0,
+    skippedSuspiciousBo3Count: 0,
+    translationErrors: [],
+  };
+
+  for (const sourceTask of sourceTasks) {
+    try {
+      const payload = await sourceTask.run();
+      const itemCount = Array.isArray(payload?.items) ? payload.items.length : 0;
+      sourceDiagnostics.push({
+        source: payload?.source || sourceTask.key,
+        success: Boolean(payload?.success),
+        itemCount,
+        error: payload?.error || null,
+        ...(payload?.diagnostics || {}),
+      });
+
+      if (!payload?.success || itemCount === 0) {
+        if (!payload?.success) {
+          console.warn(`[News API] Source failed: ${payload?.source || sourceTask.key} ${payload?.error || 'unknown_error'}`);
+        }
+        continue;
+      }
+
+      const batch = await upsertSyncedNewsItems(db, payload.items, {
+        cutoffSeconds,
+        translateLimit: remainingTranslateBudget,
+      });
+      aggregate.totalFetched += batch.totalFetched;
+      aggregate.windowFilteredCount += batch.windowFilteredCount;
+      aggregate.dedupedByTitleCount += batch.dedupedByTitleCount;
+      aggregate.insertedCount += batch.insertedCount;
+      aggregate.pendingTranslate += batch.pendingTranslate;
+      aggregate.translatedCount += batch.translatedCount;
+      aggregate.skippedSuspiciousBo3Count += batch.skippedSuspiciousBo3Count;
+      aggregate.translationErrors.push(...(batch.translationErrors || []));
+      if (remainingTranslateBudget !== null) {
+        remainingTranslateBudget = Math.max(0, remainingTranslateBudget - (batch.translateAttemptedCount || 0));
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error || 'unknown_error');
+      sourceDiagnostics.push({
+        source: sourceTask.key,
+        success: false,
+        itemCount: 0,
+        error: errorMessage,
+      });
+      console.warn(`[News API] Source task rejected: ${errorMessage}`);
+    }
+  }
+
+  return {
+    ...aggregate,
     purgedBo3Count,
     onlySource: onlySource || 'all',
     cutoffSeconds,
+    sourceDiagnostics,
   };
 }
 
@@ -2608,8 +3198,9 @@ export async function translateNewsBackfill(options = {}) {
 
   await ensureNewsTable(db);
   const apiKey = getTranslationApiKey();
-  if (!apiKey) {
-    return { scanned: 0, translated: 0, completed: 0, pending: 0, provider: NEWS_TRANSLATION_PROVIDER, skipped: 'missing_api_key' };
+  const preferredProvider = getPreferredTranslationProvider(apiKey);
+  if (!preferredProvider) {
+    return { scanned: 0, translated: 0, completed: 0, pending: 0, provider: null, skipped: 'missing_api_key' };
   }
 
   const recentDays = Number.isFinite(Number(options?.recentDays))
@@ -2635,7 +3226,7 @@ export async function translateNewsBackfill(options = {}) {
       )
       AND (
         COALESCE(translation_status, ${TRANSLATION_STATUS_PENDING}) <> ${TRANSLATION_STATUS_COMPLETED}
-        OR translation_provider = ${NEWS_TRANSLATION_PROVIDER}
+        OR translation_provider = ${preferredProvider}
         OR COALESCE(title_zh, '') = ''
         OR COALESCE(summary_zh, '') = ''
         OR COALESCE(content_zh, '') = ''
@@ -2657,7 +3248,7 @@ export async function translateNewsBackfill(options = {}) {
       content_markdown: row.content_markdown_en,
     };
     const zh = await translateItem(apiKey, item);
-    const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
+    const meta = buildTranslationMeta(item, zh, zh?._provider || preferredProvider);
     await db`
       UPDATE news_articles
       SET
@@ -2684,7 +3275,7 @@ export async function translateNewsBackfill(options = {}) {
     translated,
     completed,
     pending,
-    provider: NEWS_TRANSLATION_PROVIDER,
+    provider: preferredProvider,
     recentDays,
     limit,
   };

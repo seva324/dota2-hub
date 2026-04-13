@@ -1,0 +1,29 @@
+[
+  {
+    "id": 0,
+    "internal_name": "term_facet",
+    "english_name": "Facet",
+    "chinese_name": "命石",
+    "english_aliases": [
+      "Facet",
+      "Facets",
+      "Aspect",
+      "Aspects"
+    ],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_tormentor",
+    "english_name": "Tormentor",
+    "chinese_name": "痛苦魔方",
+    "english_aliases": [
+      "Tormentor",
+      "Tormentors"
+    ],
+    "chinese_aliases": [
+      "魔方",
+      "焦哥"
+    ]
+  }
+]

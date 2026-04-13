@@ -32,6 +32,12 @@ function pickNonNegativeInt(value, fallback) {
   return Math.trunc(parsed);
 }
 
+function isTransientFetchError(error) {
+  const message = String(error?.message || '');
+  const code = String(error?.code || error?.cause?.code || '');
+  return /fetch failed|ECONNRESET|UND_ERR_SOCKET|socket|ENOTFOUND|ETIMEDOUT|ECONNREFUSED/i.test(`${message} ${code}`);
+}
+
 function readLastJsonLine(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return null;
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -80,7 +86,9 @@ function parseEndpoints(args) {
   return [
     { name: 'sync-opendota', url: `${base}/api/cron?action=sync-opendota` },
     { name: 'sync-liquipedia', url: `${base}/api/cron?action=sync-liquipedia` },
-    { name: 'sync-news', url: `${base}/api/cron?action=sync-news` },
+    { name: 'sync-news-hawk', url: `${base}/api/cron?action=sync-news&onlySource=hawk` },
+    { name: 'sync-news-bo3', url: `${base}/api/cron?action=sync-news&onlySource=bo3` },
+    { name: 'sync-news-cyberscore', url: `${base}/api/cron?action=sync-news&onlySource=cyberscore` },
   ];
 }
 
@@ -89,25 +97,34 @@ async function invokeEndpoint(endpoint, timeoutMs) {
   let ok = false;
   let errorMessage = '';
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const response = await fetch(endpoint.url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const text = await response.text();
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = { ok: response.ok, raw: text.slice(0, 1000) };
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      const response = await fetch(endpoint.url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const text = await response.text();
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = { ok: response.ok, raw: text.slice(0, 1000) };
+      }
+      ok = response.ok && payload?.ok !== false;
+      if (!response.ok) errorMessage = `HTTP ${response.status}`;
+      break;
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : String(error);
+      if (!isTransientFetchError(error) || attempt >= 3) {
+        break;
+      }
+      const delayMs = 500 * attempt;
+      console.warn(`[hourly-cron-refresh] ${endpoint.name} failed attempt ${attempt}/3: ${errorMessage}. retrying in ${delayMs}ms`);
+      await sleep(delayMs);
     }
-    ok = response.ok && payload?.ok !== false;
-    if (!response.ok) errorMessage = `HTTP ${response.status}`;
-  } catch (error) {
-    errorMessage = error instanceof Error ? error.message : String(error);
   }
 
   return {

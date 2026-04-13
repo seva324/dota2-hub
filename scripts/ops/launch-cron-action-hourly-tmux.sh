@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 name=""
 action=""
-interval_hours="3"
+interval_hours=""
 base="https://dota2-hub.vercel.app"
 timeout_ms="180000"
 notify="1"
@@ -22,8 +22,16 @@ for arg in "$@"; do
 done
 
 if [[ -z "$name" || -z "$action" ]]; then
-  echo "Usage: $0 --name=<job-name> --action=<cron-action> [--interval-hours=3] [--base=URL] [--timeout-ms=180000] [--notify=1]" >&2
+  echo "Usage: $0 --name=<job-name> --action=<cron-action> [--interval-hours=<hours>] [--base=URL] [--timeout-ms=180000] [--notify=1]" >&2
   exit 1
+fi
+
+if [[ -z "$interval_hours" ]]; then
+  if [[ "$action" == "sync-news" ]]; then
+    interval_hours=1
+  else
+    interval_hours=3
+  fi
 fi
 
 session="d2hub-cron-${name}"

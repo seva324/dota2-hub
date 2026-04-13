@@ -4,9 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import net from 'node:net';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { callLlmJson } from '../lib/openrouter.mjs';
+import { buildTranslationGlossaryPrompt, normalizeGlossaryTranslations } from '../lib/translation-glossary.js';
 
 const USER_AGENT = process.env.REDDIT_USER_AGENT || 'Mozilla/5.0 (compatible; d2hub-bot/1.0)';
 const SUBREDDIT = process.env.REDDIT_SUBREDDIT || 'DotA2';
@@ -32,7 +35,7 @@ const toInt = (value, fallback, min = 1) => {
   return Math.max(min, Math.trunc(parsed));
 };
 
-const LIMIT = toInt(getArg('limit', process.env.REDDIT_XHS_LIMIT || '3'), 3, 1);
+const LIMIT = toInt(getArg('limit', process.env.REDDIT_XHS_LIMIT || '1'), 1, 1);
 const DAYS = toInt(getArg('days', process.env.REDDIT_XHS_DAYS || '10'), 10, 1);
 const FETCH_LIMIT = toInt(getArg('fetch-limit', process.env.REDDIT_XHS_FETCH_LIMIT || '100'), 100, 5);
 const COMMENT_LIMIT = toInt(getArg('comment-limit', process.env.REDDIT_XHS_COMMENT_LIMIT || '8'), 8, 1);
@@ -43,6 +46,7 @@ const STATE_FILE = getArg('state-file', path.join(os.homedir(), '.dota2-hub', 'x
 const PROMPT_FILE = getArg('prompt-file', path.resolve(process.cwd(), 'docs/xhs-reddit-hotpost-prompt.md'));
 const POST_TIMEOUT_MS = toInt(getArg('post-timeout-ms', process.env.REDDIT_XHS_POST_TIMEOUT_MS || '240000'), 240000, 10000);
 const XHS_CDP_URL = getArg('cdp-url', process.env.XHS_REAL_CDP_URL || 'http://127.0.0.1:9222');
+const XHS_PUBLISH_URL = getArg('publish-url', process.env.XHS_REAL_PUBLISH_URL || 'https://creator.xiaohongshu.com/publish/publish');
 const PREFERRED_XHS_CLI = getArg('xhs-cli', process.env.XHS_REDDIT_CLI || '');
 const TARGET_IDS = String(getArg('ids', process.env.REDDIT_XHS_IDS || '') || '')
   .split(/[\s,]+/)
@@ -138,8 +142,8 @@ async function fetchJson(url) {
     if (response.status === 429) {
       const resetSec = Number(response.headers.get('x-ratelimit-reset') || '0');
       const waitMs = Number.isFinite(resetSec) && resetSec > 0
-        ? Math.min(resetSec * 1000, 240000)
-        : 60000;
+        ? Math.min(Math.max(resetSec * 1000, 2000), 15000)
+        : 5000;
       await wait(waitMs);
     } else {
       await wait(1200 * (attempt + 1));
@@ -232,8 +236,20 @@ async function rewritePost(promptReference, post, comments) {
     comments: comments.map((item) => item.body),
   };
 
+  const glossarySource = {
+    title: post.title || '',
+    summary: comments.map((item) => item.body).join('\n'),
+    content: post.content || '',
+  };
+  const glossaryPrompt = buildTranslationGlossaryPrompt(glossarySource);
+
   const prompt = [
     promptReference,
+    '',
+    glossaryPrompt,
+    glossaryPrompt ? '' : '',
+    '如果命中术语表，标题、正文、话题里都必须统一使用术语表指定中文名，不要保留英文名、旧称或社区绰号。',
+    '不要写“英文名+中文通用品类”的混搭词，例如：Tango药水、Blink匕首、Black Hole技能；命中术语表后必须直接写对应中文正式名。',
     '',
     '输入：',
     JSON.stringify(inputPayload, null, 2),
@@ -246,10 +262,13 @@ async function rewritePost(promptReference, post, comments) {
       model: MODEL,
       timeoutMs: 60000,
     });
-    const title = truncateTitle(result?.title || '');
-    const body = normalizeWhitespace(result?.body || '');
+    const title = truncateTitle(normalizeGlossaryTranslations(result?.title || '', glossarySource));
+    const body = normalizeWhitespace(normalizeGlossaryTranslations(result?.body || '', glossarySource));
     const topics = Array.isArray(result?.topics)
-      ? result.topics.map((x) => `#${String(x || '').replace(/^#+/, '').trim()}`).filter((x) => x.length > 1)
+      ? result.topics
+        .map((x) => normalizeGlossaryTranslations(String(x || '').trim(), glossarySource))
+        .map((x) => `#${String(x || '').replace(/^#+/, '').trim()}`)
+        .filter((x) => x.length > 1)
       : [];
     if (!title || !body || topics.length < 3) {
       return {
@@ -309,6 +328,49 @@ function hasPostReal(xhsCli) {
   return /\bpost-real\b/i.test(text);
 }
 
+function canConnectTcpUrl(rawUrl, timeoutMs = 1200) {
+  return new Promise((resolve) => {
+    let url;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      resolve(false);
+      return;
+    }
+
+    const socket = net.connect({
+      host: url.hostname || '127.0.0.1',
+      port: Number(url.port || (url.protocol === 'https:' ? 443 : 80)),
+    });
+    const done = (ok) => {
+      socket.removeAllListeners();
+      socket.destroy();
+      resolve(ok);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => done(true));
+    socket.once('timeout', () => done(false));
+    socket.once('error', () => done(false));
+  });
+}
+
+async function detectVideoPublishCapability(clients) {
+  const videoCli = clients.legacyCli || clients.reverseApiCli;
+  if (videoCli && hasPostReal(videoCli)) {
+    return { ok: true, method: 'post-real' };
+  }
+
+  if (await canConnectTcpUrl(XHS_CDP_URL)) {
+    return { ok: true, method: 'web-video' };
+  }
+
+  return {
+    ok: false,
+    method: null,
+    reason: `video_publish_unavailable: no xhs post-real and CDP not reachable at ${XHS_CDP_URL}`,
+  };
+}
+
 function runXhs(xhsCli, argv) {
   const result = spawnSync(xhsCli, argv, {
     encoding: 'utf8',
@@ -334,27 +396,189 @@ function runXhs(xhsCli, argv) {
   return { result, stdout, stderr, parsed };
 }
 
-function publishViaXhs(clients, payload, localMediaPaths, mediaType) {
+function resolvePlaywrightCoreEntries() {
+  const out = [];
+  const push = (candidate) => {
+    if (!candidate) return;
+    const full = path.resolve(String(candidate));
+    if (fs.existsSync(full) && !out.includes(full)) out.push(full);
+  };
+
+  const explicit = process.env.PLAYWRIGHT_CORE_PATH || '';
+  if (explicit) {
+    if (/\.(mjs|js)$/i.test(explicit)) {
+      push(explicit);
+    } else {
+      push(path.join(explicit, 'index.mjs'));
+      push(path.join(explicit, 'index.js'));
+    }
+  }
+
+  try {
+    const npmRoot = String(spawnSync('npm', ['root', '-g'], { encoding: 'utf8' }).stdout || '').trim();
+    if (npmRoot) {
+      push(path.join(npmRoot, 'openclaw', 'node_modules', 'playwright-core', 'index.mjs'));
+      push(path.join(npmRoot, 'openclaw', 'node_modules', 'playwright-core', 'index.js'));
+      push(path.join(npmRoot, 'playwright-core', 'index.mjs'));
+      push(path.join(npmRoot, 'playwright-core', 'index.js'));
+    }
+  } catch {}
+
+  return out;
+}
+
+async function loadPlaywrightCore() {
+  try {
+    const mod = await import('playwright-core');
+    if (mod?.chromium || mod?.default?.chromium) return mod;
+  } catch {}
+
+  for (const entry of resolvePlaywrightCoreEntries()) {
+    try {
+      const mod = await import(pathToFileURL(entry).href);
+      if (mod?.chromium || mod?.default?.chromium) return mod;
+    } catch {}
+  }
+
+  throw new Error(
+    'playwright-core not found. Install playwright-core or set PLAYWRIGHT_CORE_PATH.'
+  );
+}
+
+async function fillFirstInput(page, selectors, value) {
+  for (const selector of selectors) {
+    const nodes = page.locator(selector);
+    const count = await nodes.count();
+    if (!count) continue;
+    const node = nodes.first();
+    try {
+      await node.click({ timeout: 1200 });
+      await node.fill('');
+      await node.fill(value);
+      return true;
+    } catch {}
+  }
+  return false;
+}
+
+async function fillContentEditable(page, value) {
+  const nodes = page.locator('div[contenteditable="true"]');
+  const count = await nodes.count();
+  for (let i = 0; i < count; i += 1) {
+    const node = nodes.nth(i);
+    try {
+      await node.click({ timeout: 1200 });
+      await node.fill('');
+      await node.type(value, { delay: 8 });
+      const text = await node.innerText().catch(() => '');
+      if (normalizeWhitespace(text).length > 10) return true;
+    } catch {}
+  }
+  return false;
+}
+
+async function waitForAnyText(page, texts, timeoutMs = 90000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const body = await page.evaluate(() => document.body?.innerText || '');
+    if (texts.some((text) => body.includes(text))) return true;
+    await page.waitForTimeout(1000);
+  }
+  return false;
+}
+
+async function publishVideoViaWeb(payload, videoPath) {
+  const playwright = await loadPlaywrightCore();
+  const chromium = playwright?.chromium || playwright?.default?.chromium;
+  if (!chromium) throw new Error('playwright chromium unavailable');
+
+  const browser = await chromium.connectOverCDP(XHS_CDP_URL, { timeout: 15000 });
+  let page = null;
+  let createdPage = false;
+  try {
+    const context = browser.contexts()[0];
+    if (!context) throw new Error('no chrome context available via CDP');
+
+    page = context.pages().find((p) => /xiaohongshu\.com/i.test(p.url() || '')) || null;
+    if (!page) {
+      page = await context.newPage();
+      createdPage = true;
+    }
+
+    await page.goto(XHS_PUBLISH_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(2000);
+
+    await page.waitForSelector('input[type="file"]', { timeout: 30000 });
+    await page.locator('input[type="file"]').first().setInputFiles(videoPath);
+
+    await page.waitForTimeout(2000);
+    await fillFirstInput(page, [
+      'input[placeholder*="标题"]',
+      'textarea[placeholder*="标题"]',
+      'input[type="text"]',
+    ], payload.title);
+
+    const filledBody = await fillFirstInput(page, [
+      'textarea[placeholder*="正文"]',
+      'textarea[placeholder*="内容"]',
+    ], payload.body);
+    if (!filledBody) {
+      await fillContentEditable(page, payload.body);
+    }
+
+    const buttons = [
+      page.getByRole('button', { name: /^发布$/ }),
+      page.getByRole('button', { name: /立即发布/ }),
+      page.getByRole('button', { name: /发布笔记/ }),
+      page.locator('button:has-text("发布")').first(),
+    ];
+    let clicked = false;
+    for (const button of buttons) {
+      try {
+        await button.click({ timeout: 2500 });
+        clicked = true;
+        break;
+      } catch {}
+    }
+    if (!clicked) {
+      throw new Error('publish button not found');
+    }
+
+    const confirmed = await waitForAnyText(page, ['发布成功', '发布完成', '笔记发布成功'], 90000);
+    if (!confirmed) {
+      const body = await page.evaluate(() => document.body?.innerText || '');
+      throw new Error(`web video publish not confirmed: ${body.slice(0, 260)}`);
+    }
+
+    return { method: 'web-video', response: { ok: true } };
+  } finally {
+    try {
+      if (createdPage && page) await page.close({ runBeforeUnload: false });
+    } catch {}
+    try {
+      await browser.close();
+    } catch {}
+  }
+}
+
+async function publishViaXhs(clients, payload, localMediaPaths, mediaType) {
   const preferredForVideo = clients.legacyCli || clients.reverseApiCli;
   const preferredForImage = clients.reverseApiCli || clients.legacyCli;
 
   if (mediaType === 'video') {
     const xhsCli = preferredForVideo;
-    if (!xhsCli) {
-      throw new Error('xhs cli not found for video publishing');
+    if (xhsCli && hasPostReal(xhsCli)) {
+      const argv = ['post-real', payload.title, '--image', localMediaPaths[0], '--content', payload.body, '--json', '--cdp-url', XHS_CDP_URL];
+      const run = runXhs(xhsCli, argv);
+      if (run.result.status !== 0) {
+        throw new Error(`xhs post-real failed (exit=${run.result.status})\nstdout:\n${run.stdout}\nstderr:\n${run.stderr}`);
+      }
+      if (run.parsed?.success !== true && run.parsed?.ok !== true) {
+        throw new Error(run.stdout || run.stderr || 'xhs post-real returned unknown response');
+      }
+      return { method: 'post-real', response: run.parsed || {} };
     }
-    if (!hasPostReal(xhsCli)) {
-      throw new Error('xhs cli does not support post-real (video publishing)');
-    }
-    const argv = ['post-real', payload.title, '--image', localMediaPaths[0], '--content', payload.body, '--json', '--cdp-url', XHS_CDP_URL];
-    const run = runXhs(xhsCli, argv);
-    if (run.result.status !== 0) {
-      throw new Error(`xhs post-real failed (exit=${run.result.status})\nstdout:\n${run.stdout}\nstderr:\n${run.stderr}`);
-    }
-    if (run.parsed?.success !== true && run.parsed?.ok !== true) {
-      throw new Error(run.stdout || run.stderr || 'xhs post-real returned unknown response');
-    }
-    return { method: 'post-real', response: run.parsed || {} };
+    return publishVideoViaWeb(payload, localMediaPaths[0]);
   }
 
   const xhsCli = preferredForImage;
@@ -404,6 +628,30 @@ function downloadMedia(url, outPath) {
   }
 }
 
+function downloadAndDedupeMedia(postId, mediaItems, mediaType, tempDir, suffix = '') {
+  const localMediaPaths = [];
+  const mediaHashes = new Set();
+  const namePrefix = suffix ? `${postId}-${suffix}` : postId;
+
+  for (let i = 0; i < mediaItems.length; i += 1) {
+    const item = mediaItems[i];
+    const ext = mediaType === 'video' ? '.mp4' : mediaExtFromUrl(item.url, '.jpg');
+    const outPath = path.join(tempDir, `${namePrefix}-${i}${ext}`);
+    downloadMedia(item.url, outPath);
+    try {
+      const hash = crypto.createHash('sha1').update(fs.readFileSync(outPath)).digest('hex');
+      if (mediaHashes.has(hash)) {
+        safeUnlink(outPath);
+        continue;
+      }
+      mediaHashes.add(hash);
+    } catch {}
+    localMediaPaths.push(outPath);
+  }
+
+  return localMediaPaths;
+}
+
 function extractTopComments(commentsListing, maxItems = 8) {
   const out = [];
   const children = commentsListing?.[1]?.data?.children || [];
@@ -420,7 +668,7 @@ function extractTopComments(commentsListing, maxItems = 8) {
   return out;
 }
 
-function buildEnrichedPost(post, commentsPayload) {
+function buildEnrichedPost(post, commentsPayload = null) {
   const data = post || {};
   return {
     id: data.id,
@@ -431,7 +679,7 @@ function buildEnrichedPost(post, commentsPayload) {
     created_utc: Number(data.created_utc || 0),
     permalink: `https://www.reddit.com${data.permalink || ''}`,
     media: extractMediaCandidates(data),
-    top_comments: extractTopComments(commentsPayload, COMMENT_LIMIT),
+    top_comments: commentsPayload ? extractTopComments(commentsPayload, COMMENT_LIMIT) : [],
   };
 }
 
@@ -456,12 +704,7 @@ async function fetchTopRedditPosts() {
     .filter((post) => post?.id && !post?.stickied && Number(post?.created_utc || 0) >= cutoff)
     .sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
 
-  const enriched = [];
-  for (const post of rows) {
-    const commentsPayload = await fetchJson(`https://www.reddit.com/comments/${post.id}.json?limit=25&sort=top&raw_json=1`);
-    enriched.push(buildEnrichedPost(post, commentsPayload));
-  }
-  return enriched;
+  return rows.map((post) => buildEnrichedPost(post));
 }
 
 async function main() {
@@ -471,7 +714,7 @@ async function main() {
   if (!promptReference) throw new Error(`Missing prompt file: ${PROMPT_FILE}`);
 
   const xhsClients = resolveXhsClients();
-  if (!xhsClients.anyCli) throw new Error('xhs cli not found');
+  const videoCapability = await detectVideoPublishCapability(xhsClients);
 
   const state = await loadState();
   const posts = TARGET_IDS.length > 0
@@ -490,38 +733,40 @@ async function main() {
         continue;
       }
 
-      const mediaType = post.media[0]?.type === 'video' ? 'video' : 'image';
-      const selectedMedia = mediaType === 'video'
-        ? [post.media[0]]
-        : post.media.filter((item) => item.type === 'image').slice(0, 9);
+      const videoMedia = post.media.filter((item) => item.type === 'video').slice(0, 1);
+      const imageMedia = post.media.filter((item) => item.type === 'image').slice(0, 9);
+      const mediaType = videoMedia.length > 0 && videoCapability.ok ? 'video' : 'image';
+      const selectedMedia = mediaType === 'video' ? videoMedia : imageMedia;
+      if (videoMedia.length > 0 && mediaType !== 'video' && imageMedia.length === 0) {
+        results.push({
+          id: post.id,
+          status: 'skipped',
+          reason: videoCapability.reason || 'video_publish_unavailable',
+          media_type: 'video',
+          url: post.permalink,
+          score: post.score,
+        });
+        continue;
+      }
       if (!selectedMedia.length) {
         results.push({ id: post.id, status: 'skipped', reason: 'no_media_after_filter', url: post.permalink });
         continue;
       }
 
-      const localMediaPaths = [];
-      const mediaHashes = new Set();
-      for (let i = 0; i < selectedMedia.length; i += 1) {
-        const item = selectedMedia[i];
-        const ext = mediaType === 'video' ? '.mp4' : mediaExtFromUrl(item.url, '.jpg');
-        const outPath = path.join(tempDir, `${post.id}-${i}${ext}`);
-        downloadMedia(item.url, outPath);
-        try {
-          const hash = crypto.createHash('sha1').update(fs.readFileSync(outPath)).digest('hex');
-          if (mediaHashes.has(hash)) {
-            safeUnlink(outPath);
-            continue;
-          }
-          mediaHashes.add(hash);
-        } catch {}
-        localMediaPaths.push(outPath);
-      }
+      const localMediaPaths = downloadAndDedupeMedia(post.id, selectedMedia, mediaType, tempDir);
       if (!localMediaPaths.length) {
         results.push({ id: post.id, status: 'skipped', reason: 'duplicate_media_only', url: post.permalink });
         continue;
       }
 
-      const draft = await rewritePost(promptReference, post, post.top_comments);
+      if (!Array.isArray(post.top_comments) || post.top_comments.length === 0) {
+        try {
+          const commentsPayload = await fetchJson(`https://www.reddit.com/comments/${post.id}.json?limit=25&sort=top&raw_json=1`);
+          post.top_comments = extractTopComments(commentsPayload, COMMENT_LIMIT);
+        } catch {}
+      }
+
+      const draft = await rewritePost(promptReference, post, post.top_comments || []);
       if (!draft?.rewritten) {
         results.push({
           id: post.id,
@@ -555,7 +800,7 @@ async function main() {
       }
 
       try {
-        const published = publishViaXhs(xhsClients, payload, localMediaPaths, mediaType);
+        const published = await publishViaXhs(xhsClients, payload, localMediaPaths, mediaType);
         const noteId = String(
           published?.response?.note_id
           || published?.response?.data?.id
@@ -582,13 +827,15 @@ async function main() {
         });
         posted += 1;
       } catch (error) {
+        const primaryError = error instanceof Error ? error.message : String(error);
+
         results.push({
           id: post.id,
           status: 'failed',
           media_type: mediaType,
           permalink: post.permalink,
           score: post.score,
-          error: error instanceof Error ? error.message : String(error),
+          error: primaryError,
         });
       }
     }
@@ -602,6 +849,7 @@ async function main() {
     model: MODEL,
     target_ids: TARGET_IDS,
     days: DAYS,
+    video_publish: videoCapability,
     requested_limit: LIMIT,
     fetched: posts.length,
     candidates_with_media: candidates.length,

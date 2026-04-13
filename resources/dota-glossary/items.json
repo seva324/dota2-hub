@@ -1,0 +1,3845 @@
+[
+  {
+    "id": 208,
+    "internal_name": "item_abyssal_blade",
+    "english_name": "Abyssal Blade",
+    "chinese_name": "深渊之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "深渊刀",
+      "深渊"
+    ]
+  },
+  {
+    "id": 117,
+    "internal_name": "item_aegis",
+    "english_name": "Aegis of the Immortal",
+    "chinese_name": "不朽之守护",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 256,
+    "internal_name": "item_aeon_disk",
+    "english_name": "Aeon Disk",
+    "chinese_name": "永恒之盘",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 232,
+    "internal_name": "item_aether_lens",
+    "english_name": "Aether Lens",
+    "chinese_name": "以太透镜",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 271,
+    "internal_name": "item_ultimate_scepter_2",
+    "english_name": "Aghanim's Blessing",
+    "chinese_name": "阿哈利姆福佑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 727,
+    "internal_name": "item_ultimate_scepter_roshan",
+    "english_name": "Aghanim's Blessing - Roshan",
+    "chinese_name": "阿哈利姆福佑 - 肉山",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 108,
+    "internal_name": "item_ultimate_scepter",
+    "english_name": "Aghanim's Scepter",
+    "chinese_name": "阿哈利姆神杖",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Aghanim's Scepter",
+      "Aghs",
+      "Scepter"
+    ],
+    "chinese_aliases": [
+      "A杖"
+    ]
+  },
+  {
+    "id": 609,
+    "internal_name": "item_aghanims_shard",
+    "english_name": "Aghanim's Shard",
+    "chinese_name": "魔晶",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Aghanim's Shard",
+      "Shard",
+      "Shards"
+    ],
+    "chinese_aliases": [
+      "阿哈利姆魔晶",
+      "魔晶"
+    ]
+  },
+  {
+    "id": 725,
+    "internal_name": "item_aghanims_shard_roshan",
+    "english_name": "Aghanim's Shard - Consumable",
+    "chinese_name": "阿哈利姆魔晶 - 消耗品",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1584,
+    "internal_name": "item_enhancement_alert",
+    "english_name": "Alert",
+    "chinese_name": "警觉",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1156,
+    "internal_name": "item_ancient_guardian",
+    "english_name": "Ancient Guardian",
+    "chinese_name": "遗迹守护者",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 45,
+    "internal_name": "item_courier",
+    "english_name": "Animal Courier",
+    "chinese_name": "动物信使",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 366,
+    "internal_name": "item_apex",
+    "english_name": "Apex",
+    "chinese_name": "极",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 604,
+    "internal_name": "item_arcane_blink",
+    "english_name": "Arcane Blink",
+    "chinese_name": "秘奥闪光",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 180,
+    "internal_name": "item_arcane_boots",
+    "english_name": "Arcane Boots",
+    "chinese_name": "奥术鞋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "秘法鞋",
+      "秘法"
+    ]
+  },
+  {
+    "id": 349,
+    "internal_name": "item_arcane_ring",
+    "english_name": "Arcane Ring",
+    "chinese_name": "奥术指环",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 829,
+    "internal_name": "item_force_field",
+    "english_name": "Arcanist's Armor",
+    "chinese_name": "秘术师铠甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 151,
+    "internal_name": "item_armlet",
+    "english_name": "Armlet of Mordiggian",
+    "chinese_name": "莫尔迪基安的臂章",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 825,
+    "internal_name": "item_ascetic_cap",
+    "english_name": "Ascetic's Cap",
+    "chinese_name": "简朴短帽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1717,
+    "internal_name": "item_ash_legion_shield",
+    "english_name": "Ash Legion Shield",
+    "chinese_name": "余烬军团战盾",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 112,
+    "internal_name": "item_assault",
+    "english_name": "Assault Cuirass",
+    "chinese_name": "强袭胸甲",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "AC"
+    ],
+    "chinese_aliases": [
+      "强袭"
+    ]
+  },
+  {
+    "id": 1581,
+    "internal_name": "item_enhancement_audacious",
+    "english_name": "Audacious",
+    "chinese_name": "冒险",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1160,
+    "internal_name": "item_avianas_feather",
+    "english_name": "Aviana's Feather",
+    "chinese_name": "艾维娜之羽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1652,
+    "internal_name": "item_furion_gold_bag",
+    "english_name": "Bag of Gold",
+    "chinese_name": "金袋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 367,
+    "internal_name": "item_ballista",
+    "english_name": "Ballista",
+    "chinese_name": "弩炮",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 18,
+    "internal_name": "item_boots_of_elves",
+    "english_name": "Band of Elvenskin",
+    "chinese_name": "精灵布带",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 145,
+    "internal_name": "item_bfury",
+    "english_name": "Battle Fury",
+    "chinese_name": "狂战斧",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "BF"
+    ],
+    "chinese_aliases": [
+      "狂战斧"
+    ]
+  },
+  {
+    "id": 4300,
+    "internal_name": "item_ofrenda",
+    "english_name": "Beloved Memory",
+    "chinese_name": "挚爱回忆",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 17,
+    "internal_name": "item_belt_of_strength",
+    "english_name": "Belt of Strength",
+    "chinese_name": "力量腰带",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1440,
+    "internal_name": "item_black_grimoire",
+    "english_name": "Black Grimoire\n(Warlock)",
+    "chinese_name": "Black Grimoire\n(Warlock)",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 116,
+    "internal_name": "item_black_king_bar",
+    "english_name": "Black King Bar",
+    "chinese_name": "黑皇杖",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "BKB"
+    ],
+    "chinese_aliases": [
+      "黑皇杖"
+    ]
+  },
+  {
+    "id": 127,
+    "internal_name": "item_blade_mail",
+    "english_name": "Blade Mail",
+    "chinese_name": "刃甲",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "BM"
+    ],
+    "chinese_aliases": [
+      "刃甲"
+    ]
+  },
+  {
+    "id": 22,
+    "internal_name": "item_blade_of_alacrity",
+    "english_name": "Blade of Alacrity",
+    "chinese_name": "欢欣之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2,
+    "internal_name": "item_blades_of_attack",
+    "english_name": "Blades of Attack",
+    "chinese_name": "攻击之爪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 834,
+    "internal_name": "item_black_powder_bag",
+    "english_name": "Blast Rig",
+    "chinese_name": "雷火弹",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1,
+    "internal_name": "item_blink",
+    "english_name": "Blink Dagger",
+    "chinese_name": "闪烁匕首",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Blink"
+    ],
+    "chinese_aliases": [
+      "跳刀"
+    ]
+  },
+  {
+    "id": 485,
+    "internal_name": "item_blitz_knuckles",
+    "english_name": "Blitz Knuckles",
+    "chinese_name": "闪电指套",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1154,
+    "internal_name": "item_royale_with_cheese",
+    "english_name": "Block of Cheese",
+    "chinese_name": "奶酪块",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1123,
+    "internal_name": "item_blood_grenade",
+    "english_name": "Blood Grenade",
+    "chinese_name": "血腥榴弹",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 121,
+    "internal_name": "item_bloodstone",
+    "english_name": "Bloodstone",
+    "chinese_name": "血精石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "血精石"
+    ]
+  },
+  {
+    "id": 250,
+    "internal_name": "item_bloodthorn",
+    "english_name": "Bloodthorn",
+    "chinese_name": "血棘",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 677,
+    "internal_name": "item_book_of_shadows",
+    "english_name": "Book of Shadows",
+    "chinese_name": "暗影邪典",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 370,
+    "internal_name": "item_demonicon",
+    "english_name": "Book of the Dead",
+    "chinese_name": "冥灵书",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 931,
+    "internal_name": "item_boots_of_bearing",
+    "english_name": "Boots of Bearing",
+    "chinese_name": "宽容之靴",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 29,
+    "internal_name": "item_boots",
+    "english_name": "Boots of Speed",
+    "chinese_name": "速度之靴",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 48,
+    "internal_name": "item_travel_boots",
+    "english_name": "Boots of Travel",
+    "chinese_name": "远行鞋",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "BoT",
+      "BoTs"
+    ],
+    "chinese_aliases": [
+      "飞鞋"
+    ]
+  },
+  {
+    "id": 220,
+    "internal_name": "item_travel_boots_2",
+    "english_name": "Boots of Travel 2",
+    "chinese_name": "远行鞋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 41,
+    "internal_name": "item_bottle",
+    "english_name": "Bottle",
+    "chinese_name": "魔瓶",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1590,
+    "internal_name": "item_enhancement_boundless",
+    "english_name": "Boundless",
+    "chinese_name": "无边",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 73,
+    "internal_name": "item_bracer",
+    "english_name": "Bracer",
+    "chinese_name": "护腕",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1585,
+    "internal_name": "item_enhancement_brawny",
+    "english_name": "Brawny",
+    "chinese_name": "壮实",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 828,
+    "internal_name": "item_misericorde",
+    "english_name": "Brigand's Blade",
+    "chinese_name": "飞贼之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 3,
+    "internal_name": "item_broadsword",
+    "english_name": "Broadsword",
+    "chinese_name": "阔剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 355,
+    "internal_name": "item_broom_handle",
+    "english_name": "Broom Handle",
+    "chinese_name": "扫帚柄",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 86,
+    "internal_name": "item_buckler",
+    "english_name": "Buckler",
+    "chinese_name": "玄冥盾牌",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 680,
+    "internal_name": "item_bullwhip",
+    "english_name": "Bullwhip",
+    "chinese_name": "凌厉长鞭",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 139,
+    "internal_name": "item_butterfly",
+    "english_name": "Butterfly",
+    "chinese_name": "蝴蝶",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 676,
+    "internal_name": "item_ceremonial_robe",
+    "english_name": "Ceremonial Robe",
+    "chinese_name": "祭礼长袍",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 4,
+    "internal_name": "item_chainmail",
+    "english_name": "Chainmail",
+    "chinese_name": "锁子甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1872,
+    "internal_name": "item_chasm_stone",
+    "english_name": "Chasm Stone",
+    "chinese_name": "裂隙之石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 33,
+    "internal_name": "item_cheese",
+    "english_name": "Cheese",
+    "chinese_name": "奶酪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 565,
+    "internal_name": "item_chipped_vest",
+    "english_name": "Chipped Vest",
+    "chinese_name": "碎裂背心",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 20,
+    "internal_name": "item_circlet",
+    "english_name": "Circlet",
+    "chinese_name": "圆环",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 38,
+    "internal_name": "item_clarity",
+    "english_name": "Clarity",
+    "chinese_name": "净化药水",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 5,
+    "internal_name": "item_claymore",
+    "english_name": "Claymore",
+    "chinese_name": "大剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 31,
+    "internal_name": "item_cloak",
+    "english_name": "Cloak",
+    "chinese_name": "抗魔斗篷",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 574,
+    "internal_name": "item_cloak_of_flames",
+    "english_name": "Cloak of Flames",
+    "chinese_name": "火焰斗篷",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 360,
+    "internal_name": "item_clumsy_net",
+    "english_name": "Clumsy Net",
+    "chinese_name": "笨拙渔网",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1864,
+    "internal_name": "item_conjurers_catalyst",
+    "english_name": "Conjurer's Catalyst",
+    "chinese_name": "咒术师触媒",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1854,
+    "internal_name": "item_consecrated_wraps",
+    "english_name": "Consecrated Wraps",
+    "chinese_name": "圣化护服",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1125,
+    "internal_name": "item_cornucopia",
+    "english_name": "Cornucopia",
+    "chinese_name": "丰饶之环",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 298,
+    "internal_name": "item_craggy_coat",
+    "english_name": "Craggy Coat",
+    "chinese_name": "崎岖外衣",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1856,
+    "internal_name": "item_crellas_crozier",
+    "english_name": "Crella's Crozier",
+    "chinese_name": "克莱拉牧杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 242,
+    "internal_name": "item_crimson_guard",
+    "english_name": "Crimson Guard",
+    "chinese_name": "赤红甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "赤红甲",
+      "赤红"
+    ]
+  },
+  {
+    "id": 1601,
+    "internal_name": "item_crippling_crossbow",
+    "english_name": "Crippling Crossbow",
+    "chinese_name": "致残之弩",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 261,
+    "internal_name": "item_crown",
+    "english_name": "Crown",
+    "chinese_name": "王冠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1589,
+    "internal_name": "item_enhancement_crude",
+    "english_name": "Crude",
+    "chinese_name": "粗暴",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 149,
+    "internal_name": "item_lesser_crit",
+    "english_name": "Crystalys",
+    "chinese_name": "水晶剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 141,
+    "internal_name": "item_greater_crit",
+    "english_name": "Daedalus",
+    "chinese_name": "代达罗斯之殇",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "大炮"
+    ]
+  },
+  {
+    "id": 1077,
+    "internal_name": "item_dagger_of_ristul",
+    "english_name": "Dagger of Ristul",
+    "chinese_name": "瑞斯图尔尖匕",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 104,
+    "internal_name": "item_dagon_5",
+    "english_name": "Dagon",
+    "chinese_name": "达贡之神力",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [],
+    "deprecated": false
+  },
+  {
+    "id": 2190,
+    "internal_name": "item_dandelion_amulet",
+    "english_name": "Dandelion Amulet",
+    "chinese_name": "蒲公英护符",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 950,
+    "internal_name": "item_defiant_shell",
+    "english_name": "Defiant Shell",
+    "chinese_name": "不羁甲壳",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 51,
+    "internal_name": "item_demon_edge",
+    "english_name": "Demon Edge",
+    "chinese_name": "恶魔刀锋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 168,
+    "internal_name": "item_desolator",
+    "english_name": "Desolator",
+    "chinese_name": "黯灭",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "黯灭"
+    ]
+  },
+  {
+    "id": 1642,
+    "internal_name": "item_dezun_bloodrite",
+    "english_name": "Dezun Bloodrite",
+    "chinese_name": "德尊血式",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1122,
+    "internal_name": "item_diadem",
+    "english_name": "Diadem",
+    "chinese_name": "宝冕",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 174,
+    "internal_name": "item_diffusal_blade",
+    "english_name": "Diffusal Blade",
+    "chinese_name": "净魂之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "散失"
+    ]
+  },
+  {
+    "id": 1645,
+    "internal_name": "item_divine_regalia_broken",
+    "english_name": "Disgraced Regalia",
+    "chinese_name": "失节华冠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1097,
+    "internal_name": "item_disperser",
+    "english_name": "Disperser",
+    "chinese_name": "散魂剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 133,
+    "internal_name": "item_rapier",
+    "english_name": "Divine Rapier",
+    "chinese_name": "圣剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "圣剑"
+    ]
+  },
+  {
+    "id": 1644,
+    "internal_name": "item_divine_regalia",
+    "english_name": "Divine Regalia",
+    "chinese_name": "天赐华冠",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1648,
+    "internal_name": "item_enhancement_dominant",
+    "english_name": "Dominant",
+    "chinese_name": "专横",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1638,
+    "internal_name": "item_dormant_curio",
+    "english_name": "Dormant Curio",
+    "chinese_name": "休眠珍品",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1803,
+    "internal_name": "item_doubloon",
+    "english_name": "Doubloon",
+    "chinese_name": "双面币",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 236,
+    "internal_name": "item_dragon_lance",
+    "english_name": "Dragon Lance",
+    "chinese_name": "魔龙枪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 358,
+    "internal_name": "item_dragon_scale",
+    "english_name": "Dragon Scale",
+    "chinese_name": "炎龙之鳞",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 185,
+    "internal_name": "item_ancient_janggo",
+    "english_name": "Drum of Endurance",
+    "chinese_name": "韧鼓",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Drums"
+    ],
+    "chinese_aliases": [
+      "战鼓"
+    ]
+  },
+  {
+    "id": 2097,
+    "internal_name": "item_duelist_gloves",
+    "english_name": "Duelist Gloves",
+    "chinese_name": "决斗家手套",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 40,
+    "internal_name": "item_dust",
+    "english_name": "Dust of Appearance",
+    "chinese_name": "显影之尘",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 52,
+    "internal_name": "item_eagle",
+    "english_name": "Eaglesong",
+    "chinese_name": "鹰歌弓",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 252,
+    "internal_name": "item_echo_sabre",
+    "english_name": "Echo Sabre",
+    "chinese_name": "回音战刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "回音刀"
+    ]
+  },
+  {
+    "id": 1850,
+    "internal_name": "item_eldwurms_edda",
+    "english_name": "Eldwurm's Edda",
+    "chinese_name": "古龙诗集",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 302,
+    "internal_name": "item_elixer",
+    "english_name": "Elixir",
+    "chinese_name": "万灵药水",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 573,
+    "internal_name": "item_elven_tunic",
+    "english_name": "Elven Tunic",
+    "chinese_name": "精灵外衣",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 216,
+    "internal_name": "item_enchanted_mango",
+    "english_name": "Enchanted Mango",
+    "chinese_name": "魔法芒果",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 361,
+    "internal_name": "item_enchanted_quiver",
+    "english_name": "Enchanted Quiver",
+    "chinese_name": "魔力箭袋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1862,
+    "internal_name": "item_enchanters_bauble",
+    "english_name": "Enchanter's Bauble",
+    "chinese_name": "附魔师之椟",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 59,
+    "internal_name": "item_energy_booster",
+    "english_name": "Energy Booster",
+    "chinese_name": "能量之球",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1852,
+    "internal_name": "item_essence_distiller",
+    "english_name": "Essence Distiller",
+    "chinese_name": "精之灵器",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 359,
+    "internal_name": "item_essence_ring",
+    "english_name": "Essence Ring",
+    "chinese_name": "精华指环",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 692,
+    "internal_name": "item_eternal_shroud",
+    "english_name": "Eternal Shroud",
+    "chinese_name": "永世法衣",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 176,
+    "internal_name": "item_ethereal_blade",
+    "english_name": "Ethereal Blade",
+    "chinese_name": "虚灵之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 100,
+    "internal_name": "item_cyclone",
+    "english_name": "Eul's Scepter of Divinity",
+    "chinese_name": "Eul的神圣法杖",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Euls"
+    ],
+    "chinese_aliases": [
+      "风杖"
+    ]
+  },
+  {
+    "id": 1596,
+    "internal_name": "item_enhancement_evolved",
+    "english_name": "Evolved",
+    "chinese_name": "进化",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 374,
+    "internal_name": "item_ex_machina",
+    "english_name": "Ex Machina",
+    "chinese_name": "机械之心",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 160,
+    "internal_name": "item_skadi",
+    "english_name": "Eye of Skadi",
+    "chinese_name": "斯嘉蒂之眼",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "冰眼"
+    ]
+  },
+  {
+    "id": 990,
+    "internal_name": "item_eye_of_the_vizier",
+    "english_name": "Eye of the Vizier",
+    "chinese_name": "维齐尔之眼",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 375,
+    "internal_name": "item_faded_broach",
+    "english_name": "Faded Broach",
+    "chinese_name": "暗淡胸针",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 835,
+    "internal_name": "item_paintball",
+    "english_name": "Fae Grenade",
+    "chinese_name": "仙灵榴弹",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 237,
+    "internal_name": "item_faerie_fire",
+    "english_name": "Faerie Fire",
+    "chinese_name": "仙灵之火",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 589,
+    "internal_name": "item_mysterious_hat",
+    "english_name": "Fairy's Trinket",
+    "chinese_name": "仙灵饰品",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 596,
+    "internal_name": "item_falcon_blade",
+    "english_name": "Falcon Blade",
+    "chinese_name": "猎鹰战刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 371,
+    "internal_name": "item_fallen_sky",
+    "english_name": "Fallen Sky",
+    "chinese_name": "天崩",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1587,
+    "internal_name": "item_enhancement_feverish",
+    "english_name": "Feverish",
+    "chinese_name": "狂热",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1647,
+    "internal_name": "item_enhancement_fierce",
+    "english_name": "Fierce",
+    "chinese_name": "凶猛",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1721,
+    "internal_name": "item_flayers_bota",
+    "english_name": "Flayer's Bota",
+    "chinese_name": "剥皮血囊",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1588,
+    "internal_name": "item_enhancement_fleetfooted",
+    "english_name": "Fleetfooted",
+    "chinese_name": "捷足",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 335,
+    "internal_name": "item_flicker",
+    "english_name": "Flicker",
+    "chinese_name": "闪灵",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 593,
+    "internal_name": "item_fluffy_hat",
+    "english_name": "Fluffy Hat",
+    "chinese_name": "毛毛帽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 286,
+    "internal_name": "item_flying_courier",
+    "english_name": "Flying Courier",
+    "chinese_name": "飞行信使",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1868,
+    "internal_name": "item_foragers_kit",
+    "english_name": "Forager's Kit",
+    "chinese_name": "采菌套具",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 291,
+    "internal_name": "item_force_boots",
+    "english_name": "Force Boots",
+    "chinese_name": "原力鞋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 102,
+    "internal_name": "item_force_staff",
+    "english_name": "Force Staff",
+    "chinese_name": "原力法杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "推推",
+      "推推棒"
+    ]
+  },
+  {
+    "id": 4302,
+    "internal_name": "item_ofrenda_pledge",
+    "english_name": "Forebearer's Fortune",
+    "chinese_name": "先祖的财富",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 313,
+    "internal_name": "item_fusion_rune",
+    "english_name": "Fusion Rune",
+    "chinese_name": "聚合神符",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1602,
+    "internal_name": "item_gale_guard",
+    "english_name": "Gale Guard",
+    "chinese_name": "烈风护体",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 13,
+    "internal_name": "item_gauntlets",
+    "english_name": "Gauntlets of Strength",
+    "chinese_name": "力量手套",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 30,
+    "internal_name": "item_gem",
+    "english_name": "Gem of True Sight",
+    "chinese_name": "真视宝石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 37,
+    "internal_name": "item_ghost",
+    "english_name": "Ghost Scepter",
+    "chinese_name": "幽魂权杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1643,
+    "internal_name": "item_giant_maul",
+    "english_name": "Giant's Maul",
+    "chinese_name": "巨人之槌",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 678,
+    "internal_name": "item_giants_ring",
+    "english_name": "Giant's Ring",
+    "chinese_name": "巨人之戒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1466,
+    "internal_name": "item_gungir",
+    "english_name": "Gleipnir",
+    "chinese_name": "缚灵索",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "缚灵索"
+    ]
+  },
+  {
+    "id": 254,
+    "internal_name": "item_glimmer_cape",
+    "english_name": "Glimmer Cape",
+    "chinese_name": "微光披风",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "微光"
+    ]
+  },
+  {
+    "id": 25,
+    "internal_name": "item_gloves",
+    "english_name": "Gloves of Haste",
+    "chinese_name": "加速手套",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2193,
+    "internal_name": "item_gossamer_cape",
+    "english_name": "Gossamer Cape",
+    "chinese_name": "蛛丝斗篷",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 4205,
+    "internal_name": "item_great_famango",
+    "english_name": "Great Healing Lotus",
+    "chinese_name": "大疗伤莲花",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 299,
+    "internal_name": "item_greater_faerie_fire",
+    "english_name": "Greater Faerie Fire",
+    "chinese_name": "高级仙灵之火",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 4206,
+    "internal_name": "item_greater_famango",
+    "english_name": "Greater Healing Lotus",
+    "chinese_name": "巨大疗伤莲花",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1593,
+    "internal_name": "item_enhancement_greedy",
+    "english_name": "Greedy",
+    "chinese_name": "贪婪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1441,
+    "internal_name": "item_grisgris",
+    "english_name": "Gris-Gris",
+    "chinese_name": "驱邪护符",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 288,
+    "internal_name": "item_grove_bow",
+    "english_name": "Grove Bow",
+    "chinese_name": "林野长弓",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 231,
+    "internal_name": "item_guardian_greaves",
+    "english_name": "Guardian Greaves",
+    "chinese_name": "卫士胫甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "大鞋"
+    ]
+  },
+  {
+    "id": 1603,
+    "internal_name": "item_gunpowder_gauntlets",
+    "english_name": "Gunpowder Gauntlet",
+    "chinese_name": "火药手套",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 65,
+    "internal_name": "item_hand_of_midas",
+    "english_name": "Hand of Midas",
+    "chinese_name": "迈达斯之手",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "点金手",
+      "点金"
+    ]
+  },
+  {
+    "id": 1863,
+    "internal_name": "item_harmonizer",
+    "english_name": "Harmonizer",
+    "chinese_name": "协和",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 939,
+    "internal_name": "item_harpoon",
+    "english_name": "Harpoon",
+    "chinese_name": "鱼叉",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 364,
+    "internal_name": "item_havoc_hammer",
+    "english_name": "Havoc Hammer",
+    "chinese_name": "浩劫巨锤",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 94,
+    "internal_name": "item_headdress",
+    "english_name": "Headdress",
+    "chinese_name": "恢复头巾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 4204,
+    "internal_name": "item_famango",
+    "english_name": "Healing Lotus",
+    "chinese_name": "疗伤莲花",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 39,
+    "internal_name": "item_flask",
+    "english_name": "Healing Salve",
+    "chinese_name": "治疗药膏",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 114,
+    "internal_name": "item_heart",
+    "english_name": "Heart of Tarrasque",
+    "chinese_name": "恐鳌之心",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "龙心"
+    ]
+  },
+  {
+    "id": 210,
+    "internal_name": "item_heavens_halberd",
+    "english_name": "Heaven's Halberd",
+    "chinese_name": "天堂之戟",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "天堂之戟"
+    ]
+  },
+  {
+    "id": 6,
+    "internal_name": "item_helm_of_iron_will",
+    "english_name": "Helm of Iron Will",
+    "chinese_name": "铁意头盔",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 164,
+    "internal_name": "item_helm_of_the_dominator",
+    "english_name": "Helm of the Dominator",
+    "chinese_name": "支配头盔",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 635,
+    "internal_name": "item_helm_of_the_overlord",
+    "english_name": "Helm of the Overlord",
+    "chinese_name": "统御头盔",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 327,
+    "internal_name": "item_helm_of_the_undying",
+    "english_name": "Helm of the Undying",
+    "chinese_name": "不朽尸王的头盔",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 269,
+    "internal_name": "item_holy_locket",
+    "english_name": "Holy Locket",
+    "chinese_name": "圣洁吊坠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 131,
+    "internal_name": "item_hood_of_defiance",
+    "english_name": "Hood of Defiance",
+    "chinese_name": "挑战头巾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1866,
+    "internal_name": "item_enhancement_hulking",
+    "english_name": "Hulking",
+    "chinese_name": "笨重",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 263,
+    "internal_name": "item_hurricane_pike",
+    "english_name": "Hurricane Pike",
+    "chinese_name": "飓风长戟",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "飓风长戟",
+      "Pike"
+    ]
+  },
+  {
+    "id": 1858,
+    "internal_name": "item_hydras_breath",
+    "english_name": "Hydra's Breath",
+    "chinese_name": "怪蛇之息",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 55,
+    "internal_name": "item_hyperstone",
+    "english_name": "Hyperstone",
+    "chinese_name": "振奋宝石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1720,
+    "internal_name": "item_idol_of_screeauk",
+    "english_name": "Idol of Scree'auk",
+    "chinese_name": "丝奎奥克神像",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 363,
+    "internal_name": "item_illusionsts_cape",
+    "english_name": "Illusionist's Cape",
+    "chinese_name": "幻术师披风",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 334,
+    "internal_name": "item_imp_claw",
+    "english_name": "Imp Claw",
+    "chinese_name": "魔童之爪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 265,
+    "internal_name": "item_infused_raindrop",
+    "english_name": "Infused Raindrops",
+    "chinese_name": "凝魂之露",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 16,
+    "internal_name": "item_branches",
+    "english_name": "Iron Branch",
+    "chinese_name": "铁树枝干",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 239,
+    "internal_name": "item_iron_talon",
+    "english_name": "Iron Talon",
+    "chinese_name": "寒铁钢爪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1870,
+    "internal_name": "item_foragers_stats",
+    "english_name": "Ironwood Nut",
+    "chinese_name": "铁树坚果",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 304,
+    "internal_name": "item_ironwood_tree",
+    "english_name": "Ironwood Tree",
+    "chinese_name": "铁树之木",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1000,
+    "internal_name": "item_bottomless_chalice",
+    "english_name": "item_bottomless_chalice",
+    "chinese_name": "item_bottomless_chalice",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1801,
+    "internal_name": "item_caster_rapier",
+    "english_name": "item_caster_rapier",
+    "chinese_name": "item_caster_rapier",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 295,
+    "internal_name": "item_greater_mango",
+    "english_name": "item_greater_mango",
+    "chinese_name": "item_greater_mango",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 312,
+    "internal_name": "item_horizon",
+    "english_name": "item_horizon",
+    "chinese_name": "item_horizon",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 849,
+    "internal_name": "item_mechanical_arm",
+    "english_name": "item_mechanical_arm",
+    "chinese_name": "item_mechanical_arm",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1610,
+    "internal_name": "item_miniboss_minion_summoner",
+    "english_name": "item_miniboss_minion_summoner",
+    "chinese_name": "item_miniboss_minion_summoner",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1029,
+    "internal_name": "item_super_blink",
+    "english_name": "item_super_blink",
+    "chinese_name": "item_super_blink",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 7,
+    "internal_name": "item_javelin",
+    "english_name": "Javelin",
+    "chinese_name": "标枪",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1640,
+    "internal_name": "item_jidi_pollen_bag",
+    "english_name": "Jidi Pollen Bag",
+    "chinese_name": "基迪花粉袋",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 259,
+    "internal_name": "item_kaya",
+    "english_name": "Kaya",
+    "chinese_name": "慧光",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 273,
+    "internal_name": "item_kaya_and_sange",
+    "english_name": "Kaya and Sange",
+    "chinese_name": "散慧对剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 287,
+    "internal_name": "item_keen_optic",
+    "english_name": "Keen Optic",
+    "chinese_name": "基恩镜片",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1595,
+    "internal_name": "item_enhancement_keen_eyed",
+    "english_name": "Keen-eyed",
+    "chinese_name": "犀利",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1808,
+    "internal_name": "item_angels_demise",
+    "english_name": "Khanda",
+    "chinese_name": "绝刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1637,
+    "internal_name": "item_kobold_cup",
+    "english_name": "Kobold Cup",
+    "chinese_name": "狗头人酒杯",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 946,
+    "internal_name": "item_lance_of_pursuit",
+    "english_name": "Lance of Pursuit",
+    "chinese_name": "追击之矛",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1875,
+    "internal_name": "item_tidehunter_fish",
+    "english_name": "Leviathan's Fish",
+    "chinese_name": "利维坦的鱼",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1167,
+    "internal_name": "item_light_collector",
+    "english_name": "Light Collector",
+    "chinese_name": "集光器",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 123,
+    "internal_name": "item_sphere",
+    "english_name": "Linken's Sphere",
+    "chinese_name": "林肯法球",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Linkens"
+    ],
+    "chinese_aliases": [
+      "林肯"
+    ]
+  },
+  {
+    "id": 226,
+    "internal_name": "item_lotus_orb",
+    "english_name": "Lotus Orb",
+    "chinese_name": "清莲宝珠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "莲花"
+    ]
+  },
+  {
+    "id": 1609,
+    "internal_name": "item_madstone_bundle",
+    "english_name": "Madstone Bundle",
+    "chinese_name": "狂石包",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 166,
+    "internal_name": "item_maelstrom",
+    "english_name": "Maelstrom",
+    "chinese_name": "漩涡",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Mael"
+    ],
+    "chinese_aliases": [
+      "电锤"
+    ]
+  },
+  {
+    "id": 598,
+    "internal_name": "item_mage_slayer",
+    "english_name": "Mage Slayer",
+    "chinese_name": "法师克星",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 365,
+    "internal_name": "item_panic_button",
+    "english_name": "Magic Lamp",
+    "chinese_name": "神妙明灯",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 34,
+    "internal_name": "item_magic_stick",
+    "english_name": "Magic Stick",
+    "chinese_name": "魔棒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 36,
+    "internal_name": "item_magic_wand",
+    "english_name": "Magic Wand",
+    "chinese_name": "魔杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1607,
+    "internal_name": "item_magnifying_monocle",
+    "english_name": "Magnifying Monocle",
+    "chinese_name": "放大单片镜",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1599,
+    "internal_name": "item_mana_draught",
+    "english_name": "Mana Draught",
+    "chinese_name": "魔力药水",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 328,
+    "internal_name": "item_mango_tree",
+    "english_name": "Mango Tree",
+    "chinese_name": "芒果树",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1867,
+    "internal_name": "item_enhancement_manic",
+    "english_name": "Manic",
+    "chinese_name": "癫狂",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 147,
+    "internal_name": "item_manta",
+    "english_name": "Manta Style",
+    "chinese_name": "幻影斧",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 15,
+    "internal_name": "item_mantle",
+    "english_name": "Mantle of Intelligence",
+    "chinese_name": "智力斗篷",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2192,
+    "internal_name": "item_martyrs_plate",
+    "english_name": "Martyr's Plate",
+    "chinese_name": "烈士鳞甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 172,
+    "internal_name": "item_mask_of_madness",
+    "english_name": "Mask of Madness",
+    "chinese_name": "疯狂面具",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 187,
+    "internal_name": "item_medallion_of_courage",
+    "english_name": "Medallion of Courage",
+    "chinese_name": "勇气勋章",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 79,
+    "internal_name": "item_mekansm",
+    "english_name": "Mekansm",
+    "chinese_name": "梅肯斯姆",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1090,
+    "internal_name": "item_muertas_gun",
+    "english_name": "Mercy & Grace",
+    "chinese_name": "仁慈与恩泽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1719,
+    "internal_name": "item_metamorphic_mandible",
+    "english_name": "Metamorphic Mandible",
+    "chinese_name": "变态上颚",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 223,
+    "internal_name": "item_meteor_hammer",
+    "english_name": "Meteor Hammer",
+    "chinese_name": "陨星锤",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 309,
+    "internal_name": "item_mind_breaker",
+    "english_name": "Mind Breaker",
+    "chinese_name": "智灭",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 377,
+    "internal_name": "item_minotaur_horn",
+    "english_name": "Minotaur Horn",
+    "chinese_name": "恶牛角",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 301,
+    "internal_name": "item_mirror_shield",
+    "english_name": "Mirror Shield",
+    "chinese_name": "神镜盾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 8,
+    "internal_name": "item_mithril_hammer",
+    "english_name": "Mithril Hammer",
+    "chinese_name": "秘银锤",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 158,
+    "internal_name": "item_mjollnir",
+    "english_name": "Mjollnir",
+    "chinese_name": "雷神之锤",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "雷神之锤"
+    ]
+  },
+  {
+    "id": 135,
+    "internal_name": "item_monkey_king_bar",
+    "english_name": "Monkey King Bar",
+    "chinese_name": "金箍棒",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "MKB"
+    ],
+    "chinese_aliases": [
+      "金箍棒"
+    ]
+  },
+  {
+    "id": 247,
+    "internal_name": "item_moon_shard",
+    "english_name": "Moon Shard",
+    "chinese_name": "银月之晶",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 26,
+    "internal_name": "item_lifesteal",
+    "english_name": "Morbid Mask",
+    "chinese_name": "吸血面具",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 58,
+    "internal_name": "item_mystic_staff",
+    "english_name": "Mystic Staff",
+    "chinese_name": "神秘法杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1583,
+    "internal_name": "item_enhancement_mystical",
+    "english_name": "Mystical",
+    "chinese_name": "神秘",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 106,
+    "internal_name": "item_necronomicon_legacy",
+    "english_name": "Necronomicon",
+    "chinese_name": "死灵书",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Necrobook",
+      "Necronomicon 1",
+      "Necronomicon 2",
+      "Necronomicon 3"
+    ],
+    "chinese_aliases": [
+      "死灵书",
+      "小死灵书",
+      "大死灵书"
+    ],
+    "deprecated": true
+  },
+  {
+    "id": 1159,
+    "internal_name": "item_nemesis_curse",
+    "english_name": "Nemesis Curse",
+    "chinese_name": "天诛之咒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 357,
+    "internal_name": "item_nether_shawl",
+    "english_name": "Nether Shawl",
+    "chinese_name": "幽冥披巾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1874,
+    "internal_name": "item_enhancement_nimble",
+    "english_name": "Nimble",
+    "chinese_name": "轻快",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 362,
+    "internal_name": "item_ninja_gear",
+    "english_name": "Ninja Gear",
+    "chinese_name": "忍者用具",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 77,
+    "internal_name": "item_null_talisman",
+    "english_name": "Null Talisman",
+    "chinese_name": "空灵挂件",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 225,
+    "internal_name": "item_nullifier",
+    "english_name": "Nullifier",
+    "chinese_name": "否决坠饰",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "否决坠饰"
+    ]
+  },
+  {
+    "id": 67,
+    "internal_name": "item_oblivion_staff",
+    "english_name": "Oblivion Staff",
+    "chinese_name": "空明杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 218,
+    "internal_name": "item_ward_dispenser",
+    "english_name": "Observer and Sentry Wards",
+    "chinese_name": "侦察·岗哨守卫",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 42,
+    "internal_name": "item_ward_observer",
+    "english_name": "Observer Ward",
+    "chinese_name": "侦察守卫",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 947,
+    "internal_name": "item_occult_bracelet",
+    "english_name": "Occult Bracelet",
+    "chinese_name": "玄奥手镯",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 354,
+    "internal_name": "item_ocean_heart",
+    "english_name": "Ocean Heart",
+    "chinese_name": "海洋之心",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 235,
+    "internal_name": "item_octarine_core",
+    "english_name": "Octarine Core",
+    "chinese_name": "玲珑心",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "玲珑心"
+    ]
+  },
+  {
+    "id": 21,
+    "internal_name": "item_ogre_axe",
+    "english_name": "Ogre Axe",
+    "chinese_name": "食人魔之斧",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 949,
+    "internal_name": "item_ogre_seal_totem",
+    "english_name": "Ogre Seal Totem",
+    "chinese_name": "食人魔海豹图腾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 240,
+    "internal_name": "item_blight_stone",
+    "english_name": "Orb of Blight",
+    "chinese_name": "枯萎之珠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 569,
+    "internal_name": "item_orb_of_corrosion",
+    "english_name": "Orb of Corrosion",
+    "chinese_name": "腐蚀之珠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 378,
+    "internal_name": "item_orb_of_destruction",
+    "english_name": "Orb of Destruction",
+    "chinese_name": "毁灭灵球",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1575,
+    "internal_name": "item_orb_of_frost",
+    "english_name": "Orb of Frost",
+    "chinese_name": "冰霜之珠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 181,
+    "internal_name": "item_orb_of_venom",
+    "english_name": "Orb of Venom",
+    "chinese_name": "淬毒之珠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 98,
+    "internal_name": "item_orchid",
+    "english_name": "Orchid Malevolence",
+    "chinese_name": "紫怨",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1641,
+    "internal_name": "item_outworld_staff",
+    "english_name": "Outworld Staff",
+    "chinese_name": "殁境法杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 600,
+    "internal_name": "item_overwhelming_blink",
+    "english_name": "Overwhelming Blink",
+    "chinese_name": "盛势闪光",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 376,
+    "internal_name": "item_paladin_sword",
+    "english_name": "Paladin Sword",
+    "chinese_name": "骑士剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1806,
+    "internal_name": "item_devastator",
+    "english_name": "Parasma",
+    "chinese_name": "圣斧",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1873,
+    "internal_name": "item_partisans_brand",
+    "english_name": "Partisan's Brand",
+    "chinese_name": "天游烙印",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1128,
+    "internal_name": "item_pavise",
+    "english_name": "Pavise",
+    "chinese_name": "长盾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 638,
+    "internal_name": "item_penta_edged_sword",
+    "english_name": "Penta-Edged Sword",
+    "chinese_name": "五锋长剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 69,
+    "internal_name": "item_pers",
+    "english_name": "Perseverance",
+    "chinese_name": "坚韧球",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 50,
+    "internal_name": "item_phase_boots",
+    "english_name": "Phase Boots",
+    "chinese_name": "相位鞋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "相位鞋",
+      "相位"
+    ]
+  },
+  {
+    "id": 290,
+    "internal_name": "item_philosophers_stone",
+    "english_name": "Philosopher's Stone",
+    "chinese_name": "贤者石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 293,
+    "internal_name": "item_phoenix_ash",
+    "english_name": "Phoenix Ash",
+    "chinese_name": "凤凰余烬",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1107,
+    "internal_name": "item_phylactery",
+    "english_name": "Phylactery",
+    "chinese_name": "灵匣",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 838,
+    "internal_name": "item_unstable_wand",
+    "english_name": "Pig Pole",
+    "chinese_name": "豚杆",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 90,
+    "internal_name": "item_pipe",
+    "english_name": "Pipe of Insight",
+    "chinese_name": "洞察烟斗",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "笛子"
+    ]
+  },
+  {
+    "id": 372,
+    "internal_name": "item_pirate_hat",
+    "english_name": "Pirate Hat",
+    "chinese_name": "海盗帽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 9,
+    "internal_name": "item_platemail",
+    "english_name": "Platemail",
+    "chinese_name": "板甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1032,
+    "internal_name": "item_pocket_roshan",
+    "english_name": "Pocket Roshan",
+    "chinese_name": "袖珍肉山",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1030,
+    "internal_name": "item_pocket_tower",
+    "english_name": "Pocket Tower",
+    "chinese_name": "袖珍高塔",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 60,
+    "internal_name": "item_point_booster",
+    "english_name": "Point Booster",
+    "chinese_name": "精气之球",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1606,
+    "internal_name": "item_polliwog_charm",
+    "english_name": "Pollywog Charm",
+    "chinese_name": "蝌蚪护符",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 71,
+    "internal_name": "item_poor_mans_shield",
+    "english_name": "Poor Man's Shield",
+    "chinese_name": "穷鬼盾",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 577,
+    "internal_name": "item_possessed_mask",
+    "english_name": "Possessed Mask",
+    "chinese_name": "附魂面具",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 63,
+    "internal_name": "item_power_treads",
+    "english_name": "Power Treads",
+    "chinese_name": "动力鞋",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "PT",
+      "Treads"
+    ],
+    "chinese_aliases": [
+      "假腿"
+    ]
+  },
+  {
+    "id": 325,
+    "internal_name": "item_princes_knife",
+    "english_name": "Prince's Knife",
+    "chinese_name": "亲王短刀",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1860,
+    "internal_name": "item_prophets_pendulum",
+    "english_name": "Prophet's Pendulum",
+    "chinese_name": "先知灵摆",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 675,
+    "internal_name": "item_psychic_headband",
+    "english_name": "Psychic Headband",
+    "chinese_name": "通灵头带",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 306,
+    "internal_name": "item_pupils_gift",
+    "english_name": "Pupil's Gift",
+    "chinese_name": "学徒之礼",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1608,
+    "internal_name": "item_pyrrhic_cloak",
+    "english_name": "Pyrrhic Cloak",
+    "chinese_name": "皮洛士斗篷",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 10,
+    "internal_name": "item_quarterstaff",
+    "english_name": "Quarterstaff",
+    "chinese_name": "短棍",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 11,
+    "internal_name": "item_quelling_blade",
+    "english_name": "Quelling Blade",
+    "chinese_name": "压制之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1577,
+    "internal_name": "item_enhancement_quickened",
+    "english_name": "Quickened",
+    "chinese_name": "迅速",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 289,
+    "internal_name": "item_quickening_charm",
+    "english_name": "Quickening Charm",
+    "chinese_name": "加速护符",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 686,
+    "internal_name": "item_quicksilver_amulet",
+    "english_name": "Quicksilver Amulet",
+    "chinese_name": "银闪护符",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 137,
+    "internal_name": "item_radiance",
+    "english_name": "Radiance",
+    "chinese_name": "辉耀",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "辉耀"
+    ]
+  },
+  {
+    "id": 1168,
+    "internal_name": "item_rattlecage",
+    "english_name": "Rattlecage",
+    "chinese_name": "回响之笼",
+    "neutral_tier": 3,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 53,
+    "internal_name": "item_reaver",
+    "english_name": "Reaver",
+    "chinese_name": "掠夺者之斧",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 110,
+    "internal_name": "item_refresher",
+    "english_name": "Refresher Orb",
+    "chinese_name": "刷新球",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Refresher"
+    ],
+    "chinese_aliases": [
+      "刷新球"
+    ]
+  },
+  {
+    "id": 260,
+    "internal_name": "item_refresher_shard",
+    "english_name": "Refresher Shard",
+    "chinese_name": "刷新球碎片",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "刷新碎片"
+    ]
+  },
+  {
+    "id": 308,
+    "internal_name": "item_repair_kit",
+    "english_name": "Repair Kit",
+    "chinese_name": "维修器具",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1649,
+    "internal_name": "item_enhancement_restorative",
+    "english_name": "Restorative",
+    "chinese_name": "滋补",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 911,
+    "internal_name": "item_revenants_brooch",
+    "english_name": "Revenant's Brooch",
+    "chinese_name": "英灵胸针",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1718,
+    "internal_name": "item_riftshadow_prism",
+    "english_name": "Riftshadow Prism",
+    "chinese_name": "影墟棱晶",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 212,
+    "internal_name": "item_ring_of_aquila",
+    "english_name": "Ring of Aquila",
+    "chinese_name": "天鹰之戒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 88,
+    "internal_name": "item_ring_of_basilius",
+    "english_name": "Ring of Basilius",
+    "chinese_name": "王者之戒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 56,
+    "internal_name": "item_ring_of_health",
+    "english_name": "Ring of Health",
+    "chinese_name": "治疗指环",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 12,
+    "internal_name": "item_ring_of_protection",
+    "english_name": "Ring of Protection",
+    "chinese_name": "守护指环",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 27,
+    "internal_name": "item_ring_of_regen",
+    "english_name": "Ring of Regen",
+    "chinese_name": "回复戒指",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 279,
+    "internal_name": "item_ring_of_tarrasque",
+    "english_name": "Ring of Tarrasque",
+    "chinese_name": "恐鳌之戒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1600,
+    "internal_name": "item_rippers_lash",
+    "english_name": "Ripper's Lash",
+    "chinese_name": "撕裂之鞭",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1027,
+    "internal_name": "item_river_painter7",
+    "english_name": "River Vial: Blood",
+    "chinese_name": "河水药瓶：血红",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1021,
+    "internal_name": "item_river_painter",
+    "english_name": "River Vial: Chrome",
+    "chinese_name": "河水药瓶：液铬",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1022,
+    "internal_name": "item_river_painter2",
+    "english_name": "River Vial: Dry",
+    "chinese_name": "河水药瓶：干涸",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1025,
+    "internal_name": "item_river_painter5",
+    "english_name": "River Vial: Electrified",
+    "chinese_name": "河水药瓶：导电",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1024,
+    "internal_name": "item_river_painter4",
+    "english_name": "River Vial: Oil",
+    "chinese_name": "河水药瓶：油污",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1026,
+    "internal_name": "item_river_painter6",
+    "english_name": "River Vial: Potion",
+    "chinese_name": "河水药瓶：魔水",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1023,
+    "internal_name": "item_river_painter3",
+    "english_name": "River Vial: Slime",
+    "chinese_name": "河水药瓶：烂泥",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 19,
+    "internal_name": "item_robe",
+    "english_name": "Robe of the Magi",
+    "chinese_name": "法师长袍",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 206,
+    "internal_name": "item_rod_of_atos",
+    "english_name": "Rod of Atos",
+    "chinese_name": "阿托斯之棍",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Atos"
+    ],
+    "chinese_aliases": [
+      "阿托斯"
+    ]
+  },
+  {
+    "id": 1804,
+    "internal_name": "item_roshans_banner",
+    "english_name": "Roshan's Banner",
+    "chinese_name": "肉山的战旗",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 305,
+    "internal_name": "item_royal_jelly",
+    "english_name": "Royal Jelly",
+    "chinese_name": "蜂王浆",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 54,
+    "internal_name": "item_relic",
+    "english_name": "Sacred Relic",
+    "chinese_name": "圣者遗物",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1157,
+    "internal_name": "item_safety_bubble",
+    "english_name": "Safety Bubble",
+    "chinese_name": "安全泡泡",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 28,
+    "internal_name": "item_sobi_mask",
+    "english_name": "Sage's Mask",
+    "chinese_name": "贤者面罩",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 162,
+    "internal_name": "item_sange",
+    "english_name": "Sange",
+    "chinese_name": "散华",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 154,
+    "internal_name": "item_sange_and_yasha",
+    "english_name": "Sange and Yasha",
+    "chinese_name": "散夜对剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 156,
+    "internal_name": "item_satanic",
+    "english_name": "Satanic",
+    "chinese_name": "撒旦之邪力",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "撒旦"
+    ]
+  },
+  {
+    "id": 4301,
+    "internal_name": "item_ofrenda_shovel",
+    "english_name": "Scrying Shovel",
+    "chinese_name": "占卜之铲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 96,
+    "internal_name": "item_sheepstick",
+    "english_name": "Scythe of Vyse",
+    "chinese_name": "邪恶镰刀",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Hex"
+    ],
+    "chinese_aliases": [
+      "羊刀"
+    ]
+  },
+  {
+    "id": 1604,
+    "internal_name": "item_searing_signet",
+    "english_name": "Searing Signet",
+    "chinese_name": "炽热纹章",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 945,
+    "internal_name": "item_seeds_of_serenity",
+    "english_name": "Seeds of Serenity",
+    "chinese_name": "宁静种籽",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 294,
+    "internal_name": "item_seer_stone",
+    "english_name": "Seer Stone",
+    "chinese_name": "先哲之石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 43,
+    "internal_name": "item_ward_sentry",
+    "english_name": "Sentry Ward",
+    "chinese_name": "岗哨守卫",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1605,
+    "internal_name": "item_serrated_shiv",
+    "english_name": "Serrated Shiv",
+    "chinese_name": "锯齿短刀",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 215,
+    "internal_name": "item_shadow_amulet",
+    "english_name": "Shadow Amulet",
+    "chinese_name": "暗影护符",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 152,
+    "internal_name": "item_invis_sword",
+    "english_name": "Shadow Blade",
+    "chinese_name": "影刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "隐刀"
+    ]
+  },
+  {
+    "id": 1848,
+    "internal_name": "item_shawl",
+    "english_name": "Shawl",
+    "chinese_name": "披巾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 119,
+    "internal_name": "item_shivas_guard",
+    "english_name": "Shiva's Guard",
+    "chinese_name": "希瓦的守护",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 249,
+    "internal_name": "item_silver_edge",
+    "english_name": "Silver Edge",
+    "chinese_name": "白银之锋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "大隐刀"
+    ]
+  },
+  {
+    "id": 1639,
+    "internal_name": "item_sisters_shroud",
+    "english_name": "Sister's Shroud",
+    "chinese_name": "魅影之衣",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 143,
+    "internal_name": "item_basher",
+    "english_name": "Skull Basher",
+    "chinese_name": "碎颅锤",
+    "neutral_tier": -1,
+    "english_aliases": [
+      "Basher"
+    ],
+    "chinese_aliases": [
+      "碎骨锤"
+    ]
+  },
+  {
+    "id": 14,
+    "internal_name": "item_slippers",
+    "english_name": "Slippers of Agility",
+    "chinese_name": "敏捷便鞋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 188,
+    "internal_name": "item_smoke_of_deceit",
+    "english_name": "Smoke of Deceit",
+    "chinese_name": "诡计之雾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 229,
+    "internal_name": "item_solar_crest",
+    "english_name": "Solar Crest",
+    "chinese_name": "炎阳纹章",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 129,
+    "internal_name": "item_soul_booster",
+    "english_name": "Soul Booster",
+    "chinese_name": "振魂石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 178,
+    "internal_name": "item_soul_ring",
+    "english_name": "Soul Ring",
+    "chinese_name": "灵魂之戒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1124,
+    "internal_name": "item_spark_of_courage",
+    "english_name": "Spark of Courage",
+    "chinese_name": "勇气之光",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1076,
+    "internal_name": "item_specialists_array",
+    "english_name": "Specialist's Array",
+    "chinese_name": "行家阵列",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 311,
+    "internal_name": "item_spell_prism",
+    "english_name": "Spell Prism",
+    "chinese_name": "法术棱镜",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1859,
+    "internal_name": "item_spellslinger",
+    "english_name": "Spellslinger",
+    "chinese_name": "咏咒之坠",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 326,
+    "internal_name": "item_spider_legs",
+    "english_name": "Spider Legs",
+    "chinese_name": "网虫腿",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 267,
+    "internal_name": "item_spirit_vessel",
+    "english_name": "Spirit Vessel",
+    "chinese_name": "魂之灵瓮",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "大骨灰",
+      "灵龛"
+    ]
+  },
+  {
+    "id": 1847,
+    "internal_name": "item_splintmail",
+    "english_name": "Splintmail",
+    "chinese_name": "片甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 23,
+    "internal_name": "item_staff_of_wizardry",
+    "english_name": "Staff of Wizardry",
+    "chinese_name": "魔力法杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1861,
+    "internal_name": "item_stonefeather_satchel",
+    "english_name": "Stonefeather Satchel",
+    "chinese_name": "石羽小包",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 585,
+    "internal_name": "item_stormcrafter",
+    "english_name": "Stormcrafter",
+    "chinese_name": "风暴宝器",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 182,
+    "internal_name": "item_stout_shield",
+    "english_name": "Stout Shield",
+    "chinese_name": "圆盾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 292,
+    "internal_name": "item_desolator_2",
+    "english_name": "Stygian Desolator",
+    "chinese_name": "寂灭",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 603,
+    "internal_name": "item_swift_blink",
+    "english_name": "Swift Blink",
+    "chinese_name": "迅疾闪光",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 32,
+    "internal_name": "item_talisman_of_evasion",
+    "english_name": "Talisman of Evasion",
+    "chinese_name": "闪避护符",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 44,
+    "internal_name": "item_tango",
+    "english_name": "Tango",
+    "chinese_name": "树之祭祀",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 241,
+    "internal_name": "item_tango_single",
+    "english_name": "Tango (Shared)",
+    "chinese_name": "树之祭祀（共享）",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 336,
+    "internal_name": "item_spy_gadget",
+    "english_name": "Telescope",
+    "chinese_name": "望远镜",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 379,
+    "internal_name": "item_the_leveller",
+    "english_name": "The Leveller",
+    "chinese_name": "平世剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1650,
+    "internal_name": "item_enhancement_thick",
+    "english_name": "Thick",
+    "chinese_name": "厚重",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 310,
+    "internal_name": "item_third_eye",
+    "english_name": "Third Eye",
+    "chinese_name": "第三只眼",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1802,
+    "internal_name": "item_tiara_of_selemene",
+    "english_name": "Tiara of Selemene",
+    "chinese_name": "赛莉蒙妮之冠",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2091,
+    "internal_name": "item_tier1_token",
+    "english_name": "Tier 1 Token",
+    "chinese_name": "第1级代币",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2092,
+    "internal_name": "item_tier2_token",
+    "english_name": "Tier 2 Token",
+    "chinese_name": "第2级代币",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2093,
+    "internal_name": "item_tier3_token",
+    "english_name": "Tier 3 Token",
+    "chinese_name": "第3级代币",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2094,
+    "internal_name": "item_tier4_token",
+    "english_name": "Tier 4 Token",
+    "chinese_name": "第4级代币",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2095,
+    "internal_name": "item_tier5_token",
+    "english_name": "Tier 5 Token",
+    "chinese_name": "第5级代币",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1592,
+    "internal_name": "item_enhancement_timeless",
+    "english_name": "Timeless",
+    "chinese_name": "永恒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 300,
+    "internal_name": "item_timeless_relic",
+    "english_name": "Timeless Relic",
+    "chinese_name": "永恒遗物",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 381,
+    "internal_name": "item_titan_sliver",
+    "english_name": "Titan Sliver",
+    "chinese_name": "巨神残铁",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1597,
+    "internal_name": "item_enhancement_titanic",
+    "english_name": "Titanic",
+    "chinese_name": "巨神",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1028,
+    "internal_name": "item_mutation_tombstone",
+    "english_name": "Tombstone",
+    "chinese_name": "墓碑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 307,
+    "internal_name": "item_tome_of_aghanim",
+    "english_name": "Tome of Aghanim",
+    "chinese_name": "阿哈利姆之书",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 257,
+    "internal_name": "item_tome_of_knowledge",
+    "english_name": "Tome of Knowledge",
+    "chinese_name": "知识之书",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1871,
+    "internal_name": "item_foragers_mana",
+    "english_name": "Tomo'kan Ringcap",
+    "chinese_name": "托莫干伞盖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1586,
+    "internal_name": "item_enhancement_tough",
+    "english_name": "Tough",
+    "chinese_name": "坚强",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 46,
+    "internal_name": "item_tpscroll",
+    "english_name": "Town Portal Scroll",
+    "chinese_name": "回城卷轴",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 214,
+    "internal_name": "item_tranquil_boots",
+    "english_name": "Tranquil Boots",
+    "chinese_name": "静谧之鞋",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "绿鞋"
+    ]
+  },
+  {
+    "id": 571,
+    "internal_name": "item_trickster_cloak",
+    "english_name": "Trickster Cloak",
+    "chinese_name": "欺诈师斗篷",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 369,
+    "internal_name": "item_trident",
+    "english_name": "Trident",
+    "chinese_name": "三元重戟",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 356,
+    "internal_name": "item_trusty_shovel",
+    "english_name": "Trusty Shovel",
+    "chinese_name": "可靠铁铲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 840,
+    "internal_name": "item_pogo_stick",
+    "english_name": "Tumbler's Toy",
+    "chinese_name": "杂技玩具",
+    "neutral_tier": 1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 24,
+    "internal_name": "item_ultimate_orb",
+    "english_name": "Ultimate Orb",
+    "chinese_name": "极限法球",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1651,
+    "internal_name": "item_enhancement_curious",
+    "english_name": "Unleashed",
+    "chinese_name": "觉醒",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1598,
+    "internal_name": "item_unrelenting_eye",
+    "english_name": "Unrelenting Eye",
+    "chinese_name": "不屈之眼",
+    "neutral_tier": 2,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1161,
+    "internal_name": "item_unwavering_condition",
+    "english_name": "Unwavering Condition",
+    "chinese_name": "坚毅之件",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 92,
+    "internal_name": "item_urn_of_shadows",
+    "english_name": "Urn of Shadows",
+    "chinese_name": "影之灵龛",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": [
+      "骨灰"
+    ]
+  },
+  {
+    "id": 331,
+    "internal_name": "item_vambrace",
+    "english_name": "Vambrace",
+    "chinese_name": "臂甲",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 297,
+    "internal_name": "item_vampire_fangs",
+    "english_name": "Vampire Fangs",
+    "chinese_name": "吸血鬼獠牙",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1594,
+    "internal_name": "item_enhancement_vampiric",
+    "english_name": "Vampiric",
+    "chinese_name": "吸血鬼",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 125,
+    "internal_name": "item_vanguard",
+    "english_name": "Vanguard",
+    "chinese_name": "先锋盾",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1576,
+    "internal_name": "item_enhancement_vast",
+    "english_name": "Vast",
+    "chinese_name": "高远",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 190,
+    "internal_name": "item_veil_of_discord",
+    "english_name": "Veil of Discord",
+    "chinese_name": "纷争面纱",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 2096,
+    "internal_name": "item_vindicators_axe",
+    "english_name": "Vindicator's Axe",
+    "chinese_name": "正义之斧",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1865,
+    "internal_name": "item_enhancement_vital",
+    "english_name": "Vital",
+    "chinese_name": "活力",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1869,
+    "internal_name": "item_foragers_health",
+    "english_name": "Vital Toadstool",
+    "chinese_name": "活力伞菌",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 61,
+    "internal_name": "item_vitality_booster",
+    "english_name": "Vitality Booster",
+    "chinese_name": "活力之球",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 81,
+    "internal_name": "item_vladmir",
+    "english_name": "Vladmir's Offering",
+    "chinese_name": "弗拉迪米尔的祭品",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 57,
+    "internal_name": "item_void_stone",
+    "english_name": "Void Stone",
+    "chinese_name": "虚无宝石",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 473,
+    "internal_name": "item_voodoo_mask",
+    "english_name": "Voodoo Mask",
+    "chinese_name": "巫毒面具",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1716,
+    "internal_name": "item_weighted_dice",
+    "english_name": "Weighted Dice",
+    "chinese_name": "加重骰子",
+    "neutral_tier": 0,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1158,
+    "internal_name": "item_whisper_of_the_dread",
+    "english_name": "Whisper of the Dread",
+    "chinese_name": "邪道私语",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 244,
+    "internal_name": "item_wind_lace",
+    "english_name": "Wind Lace",
+    "chinese_name": "风灵之纹",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 610,
+    "internal_name": "item_wind_waker",
+    "english_name": "Wind Waker",
+    "chinese_name": "风之杖",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1591,
+    "internal_name": "item_enhancement_wise",
+    "english_name": "Wise",
+    "chinese_name": "睿智",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 534,
+    "internal_name": "item_witch_blade",
+    "english_name": "Witch Blade",
+    "chinese_name": "巫师之刃",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 837,
+    "internal_name": "item_heavy_blade",
+    "english_name": "Witchbane",
+    "chinese_name": "行巫之祸",
+    "neutral_tier": 4,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 330,
+    "internal_name": "item_witless_shako",
+    "english_name": "Witless Shako",
+    "chinese_name": "无知小帽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 1849,
+    "internal_name": "item_wizard_hat",
+    "english_name": "Wizard Hat",
+    "chinese_name": "巫师帽",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 368,
+    "internal_name": "item_woodland_striders",
+    "english_name": "Woodland Striders",
+    "chinese_name": "林地神行靴",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 75,
+    "internal_name": "item_wraith_band",
+    "english_name": "Wraith Band",
+    "chinese_name": "怨灵系带",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 908,
+    "internal_name": "item_wraith_pact",
+    "english_name": "Wraith Pact",
+    "chinese_name": "怨灵之契",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 170,
+    "internal_name": "item_yasha",
+    "english_name": "Yasha",
+    "chinese_name": "夜叉",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 277,
+    "internal_name": "item_yasha_and_kaya",
+    "english_name": "Yasha and Kaya",
+    "chinese_name": "慧夜对剑",
+    "neutral_tier": -1,
+    "english_aliases": [],
+    "chinese_aliases": []
+  }
+]

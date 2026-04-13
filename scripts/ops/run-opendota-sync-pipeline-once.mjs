@@ -3,11 +3,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { neon } from '@neondatabase/serverless';
-import { runSyncOpenDota } from '../../lib/server/sync-opendota.js';
+import { isTransientDbError, runSyncOpenDota, withOpenDotaDbRetry } from '../../lib/server/sync-opendota.js';
 import { ensurePlayerProfileDerivedIndexes } from '../../lib/server/player-profile-cache.js';
 import { sendTelegramMessage } from './telegram-util.mjs';
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const DATABASE_URL =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
 const OPENDOTA = 'https://api.opendota.com/api';
 const OPENDOTA_API_KEY = process.env.OPENDOTA_API_KEY;
 const db = neon(DATABASE_URL);
@@ -72,6 +76,10 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function queryDbWithRetry(sqlText, params = [], label = 'pipeline-db') {
+  return withOpenDotaDbRetry(() => db.query(sqlText, params), label);
+}
+
 async function fetchJSON(url) {
   const requestUrl = new URL(url);
   if (OPENDOTA_API_KEY && requestUrl.hostname === 'api.opendota.com') {
@@ -83,7 +91,7 @@ async function fetchJSON(url) {
 }
 
 async function ensureDerivedTables() {
-  await db.query(`
+  await queryDbWithRetry(`
     CREATE TABLE IF NOT EXISTS match_summary (
       match_id BIGINT PRIMARY KEY,
       duration INT,
@@ -109,7 +117,7 @@ async function ensureDerivedTables() {
       barracks_status_dire INT
     )
   `);
-  await db.query(`
+  await queryDbWithRetry(`
     CREATE TABLE IF NOT EXISTS player_stats (
       id BIGSERIAL PRIMARY KEY,
       match_id BIGINT NOT NULL,
@@ -149,14 +157,14 @@ async function ensureDerivedTables() {
     )
   `);
 
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_match_summary_start_time ON match_summary(start_time DESC)`);
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_match_summary_league_id ON match_summary(league_id)`);
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_match_summary_radiant_team_id ON match_summary(radiant_team_id)`);
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_match_summary_dire_team_id ON match_summary(dire_team_id)`);
-  await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_player_stats_match_slot ON player_stats(match_id, player_slot)`);
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_player_stats_match_id ON player_stats(match_id)`);
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_player_stats_account_id ON player_stats(account_id)`);
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_player_stats_hero_id ON player_stats(hero_id)`);
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_match_summary_start_time ON match_summary(start_time DESC)`, [], 'ensureDerivedTables:idx_match_summary_start_time');
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_match_summary_league_id ON match_summary(league_id)`, [], 'ensureDerivedTables:idx_match_summary_league_id');
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_match_summary_radiant_team_id ON match_summary(radiant_team_id)`, [], 'ensureDerivedTables:idx_match_summary_radiant_team_id');
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_match_summary_dire_team_id ON match_summary(dire_team_id)`, [], 'ensureDerivedTables:idx_match_summary_dire_team_id');
+  await queryDbWithRetry(`CREATE UNIQUE INDEX IF NOT EXISTS idx_player_stats_match_slot ON player_stats(match_id, player_slot)`, [], 'ensureDerivedTables:idx_player_stats_match_slot');
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_player_stats_match_id ON player_stats(match_id)`, [], 'ensureDerivedTables:idx_player_stats_match_id');
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_player_stats_account_id ON player_stats(account_id)`, [], 'ensureDerivedTables:idx_player_stats_account_id');
+  await queryDbWithRetry(`CREATE INDEX IF NOT EXISTS idx_player_stats_hero_id ON player_stats(hero_id)`, [], 'ensureDerivedTables:idx_player_stats_hero_id');
   await ensurePlayerProfileDerivedIndexes(db);
 }
 
@@ -165,7 +173,7 @@ async function backfillMissingMatchDetails({ targetMatchIds = [], limit = 10, ma
   let totalFailed = 0;
   let rounds = 0;
 
-  await db.query(`
+  await queryDbWithRetry(`
     CREATE TABLE IF NOT EXISTS match_details (
       match_id BIGINT PRIMARY KEY,
       payload JSONB NOT NULL,
@@ -183,7 +191,7 @@ async function backfillMissingMatchDetails({ targetMatchIds = [], limit = 10, ma
 
   while (rounds < maxRounds) {
     rounds += 1;
-    const targets = await db.query(
+    const targets = await queryDbWithRetry(
       `SELECT m.match_id
        FROM matches m
        LEFT JOIN match_details d ON d.match_id = m.match_id
@@ -191,7 +199,8 @@ async function backfillMissingMatchDetails({ targetMatchIds = [], limit = 10, ma
          AND m.match_id = ANY($1::bigint[])
        ORDER BY m.start_time DESC
        LIMIT $2`,
-      [normalizedTargetMatchIds, limit]
+      [normalizedTargetMatchIds, limit],
+      'backfillMissingMatchDetails:targets'
     );
     if (!targets.length) break;
 
@@ -200,11 +209,12 @@ async function backfillMissingMatchDetails({ targetMatchIds = [], limit = 10, ma
       if (!Number.isFinite(matchId)) continue;
       try {
         const detail = await fetchJSON(`${OPENDOTA}/matches/${matchId}`);
-        await db.query(
+        await queryDbWithRetry(
           `INSERT INTO match_details (match_id, payload, updated_at)
            VALUES ($1, $2::jsonb, NOW())
            ON CONFLICT (match_id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()`,
-          [Math.trunc(matchId), JSON.stringify(detail)]
+          [Math.trunc(matchId), JSON.stringify(detail)],
+          `backfillMissingMatchDetails:upsert:${matchId}`
         );
         totalInserted += 1;
       } catch (error) {
@@ -220,17 +230,18 @@ async function backfillMissingMatchDetails({ targetMatchIds = [], limit = 10, ma
 
 async function upsertDerivedForRecentMatchDetails(sinceIso) {
   await ensureDerivedTables();
-  const ids = await db.query(
+  const ids = await queryDbWithRetry(
     `SELECT match_id::BIGINT
      FROM match_details
      WHERE updated_at >= $1::timestamptz
      ORDER BY updated_at DESC, match_id DESC`,
-    [sinceIso]
+    [sinceIso],
+    'upsertDerivedForRecentMatchDetails:ids'
   );
   const matchIds = ids.map((row) => Number(row.match_id)).filter((n) => Number.isFinite(n));
   if (!matchIds.length) return { matches: 0, playerStatsRows: 0 };
 
-  await db.query(
+  await queryDbWithRetry(
     `WITH selected_matches AS (
        SELECT unnest($1::bigint[]) AS match_id
      ),
@@ -316,12 +327,13 @@ async function upsertDerivedForRecentMatchDetails(sinceIso) {
        tower_status_dire = EXCLUDED.tower_status_dire,
        barracks_status_radiant = EXCLUDED.barracks_status_radiant,
        barracks_status_dire = EXCLUDED.barracks_status_dire`,
-    [matchIds]
+    [matchIds],
+    'upsertDerivedForRecentMatchDetails:match_summary'
   );
 
-  await db.query(`DELETE FROM player_stats WHERE match_id = ANY($1::bigint[])`, [matchIds]);
+  await queryDbWithRetry(`DELETE FROM player_stats WHERE match_id = ANY($1::bigint[])`, [matchIds], 'upsertDerivedForRecentMatchDetails:delete_player_stats');
 
-  const inserted = await db.query(
+  const inserted = await queryDbWithRetry(
     `WITH selected_matches AS (
        SELECT unnest($1::bigint[]) AS match_id
      ),
@@ -380,7 +392,8 @@ async function upsertDerivedForRecentMatchDetails(sinceIso) {
        RETURNING 1
      )
      SELECT count(*)::int AS inserted_count FROM inserted_rows`,
-    [matchIds]
+    [matchIds],
+    'upsertDerivedForRecentMatchDetails:insert_player_stats'
   );
 
   return { matches: matchIds.length, playerStatsRows: inserted[0]?.inserted_count || 0 };
