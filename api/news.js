@@ -16,9 +16,11 @@ const MAX_ITEMS = 30;
 const DETAIL_FETCH_LIMIT = 10;
 const HAWK_LIST_SCAN_LIMIT = 40;
 const CYBERSCORE_LIST_SCAN_LIMIT = 24;
+const CYBERSCORE_DETAIL_SCAN_LIMIT = 10;
+const CYBERSCORE_FALLBACK_ENRICH_LIMIT = 6;
 const CYBERSCORE_DETAIL_CONCURRENCY = 2;
-const CYBERSCORE_JINA_RETRY_ATTEMPTS = 4;
-const CYBERSCORE_JINA_TIMEOUT_MS = 25000;
+const CYBERSCORE_JINA_RETRY_ATTEMPTS = 2;
+const CYBERSCORE_JINA_TIMEOUT_MS = 15000;
 const MAX_CONTENT_LENGTH = 5000;
 const DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
@@ -1057,6 +1059,25 @@ function extractCyberScoreUrlsFromJinaText(text, baseUrl) {
     .filter(Boolean))).slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
 }
 
+export function prioritizeCyberScoreDetailUrls(urls = [], fallbackItems = [], limit = CYBERSCORE_DETAIL_SCAN_LIMIT) {
+  const numericLimit = Number.isFinite(Number(limit)) ? Math.max(0, Math.trunc(Number(limit))) : null;
+  const prioritizedFallbackUrls = [...fallbackItems]
+    .filter((item) => item?.url)
+    .sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0))
+    .map((item) => item.url);
+
+  const ordered = [];
+  const seen = new Set();
+  for (const url of [...prioritizedFallbackUrls, ...urls]) {
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    ordered.push(url);
+    if (numericLimit !== null && ordered.length >= numericLimit) break;
+  }
+
+  return numericLimit === null ? ordered : ordered.slice(0, numericLimit);
+}
+
 function extractCyberScoreItemsFromJinaCategory(text = '', categoryDef = {}, source = 'cyberscore') {
   const items = [];
   const seen = new Set();
@@ -1365,7 +1386,7 @@ async function enrichCyberScoreFallbackItems(listFallbackItems = [], recentDays 
   const filtered = listFallbackItems
     .filter((item) => (item?.publishedAt instanceof Date ? item.publishedAt.getTime() >= cutoffMs : true))
     .sort((a, b) => (b?.publishedAt?.getTime?.() || 0) - (a?.publishedAt?.getTime?.() || 0))
-    .slice(0, Math.max(8, MAX_ITEMS));
+    .slice(0, CYBERSCORE_FALLBACK_ENRICH_LIMIT);
 
   const uniqueTargets = [];
   const seen = new Set();
@@ -1652,14 +1673,22 @@ async function scrapeCyberScore(options = {}) {
       }
     }
 
-    const urls = Array.from(urlToCategory.keys()).slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
-    console.log(`[News API] CyberScore list URLs: ${urls.length}, fallback items: ${listFallbackItems.length}`);
-    if (urls.length === 0 && listFallbackItems.length === 0) {
-      return { items: [], source, success: false, error: 'No CyberScore article URLs found' };
+    const allListUrls = Array.from(urlToCategory.keys());
+    const detailUrls = prioritizeCyberScoreDetailUrls(allListUrls, listFallbackItems, CYBERSCORE_DETAIL_SCAN_LIMIT);
+    console.log(`[News API] CyberScore list URLs: ${allListUrls.length}, fallback items: ${listFallbackItems.length}, detail URLs: ${detailUrls.length}`);
+    if (detailUrls.length === 0 && listFallbackItems.length === 0) {
+      return {
+        items: [],
+        source,
+        success: false,
+        error: 'No CyberScore article URLs found',
+        diagnostics: { listUrlCount: allListUrls.length, fallbackItemCount: listFallbackItems.length, detailUrlCount: detailUrls.length, detailFailureCount: 0 },
+      };
     }
 
     const detailItems = [];
-    await mapWithConcurrency(urls, CYBERSCORE_DETAIL_CONCURRENCY, async (url) => {
+    let detailFailureCount = 0;
+    await mapWithConcurrency(detailUrls, CYBERSCORE_DETAIL_CONCURRENCY, async (url) => {
       try {
         const item = await fetchCyberScoreDetail(url, {
           id: generateId(url, source),
@@ -1673,6 +1702,7 @@ async function scrapeCyberScore(options = {}) {
         });
         if (item) detailItems.push(item);
       } catch (error) {
+        detailFailureCount += 1;
         console.warn(`[News API] CyberScore detail failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
       }
     });
@@ -1707,10 +1737,33 @@ async function scrapeCyberScore(options = {}) {
     const items = Array.from(uniqueByUrl.values());
 
     if (items.length === 0) {
-      return { items: [], source, success: false, error: 'No CyberScore article details parsed' };
+      return {
+        items: [],
+        source,
+        success: false,
+        error: 'No CyberScore article details parsed',
+        diagnostics: {
+          listUrlCount: allListUrls.length,
+          fallbackItemCount: listFallbackItems.length,
+          detailUrlCount: detailUrls.length,
+          detailFailureCount,
+          enrichedFallbackCount: enrichedFallbackItems.length,
+        },
+      };
     }
 
-    return { items, source, success: true };
+    return {
+      items,
+      source,
+      success: true,
+      diagnostics: {
+        listUrlCount: allListUrls.length,
+        fallbackItemCount: listFallbackItems.length,
+        detailUrlCount: detailUrls.length,
+        detailFailureCount,
+        enrichedFallbackCount: enrichedFallbackItems.length,
+      },
+    };
   } catch (error) {
     return {
       items: [],
@@ -2791,69 +2844,14 @@ async function getStoredNews(db, limit = 20) {
   }).filter((x) => !isBettingNews(x));
 }
 
-export async function syncNewsToDb(options = {}) {
-  const db = getDb();
-  if (!db) {
-    throw new Error('DATABASE_URL not configured');
-  }
-
-  await ensureNewsTable(db);
-  let purgedBo3Count = 0;
-  if (options?.purgeBo3) {
-    const removed = await db`DELETE FROM news_articles WHERE source = 'BO3.gg' RETURNING url`;
-    purgedBo3Count = removed.length;
-  }
-
-  const onlySource = ['bo3', 'hawk', 'cyberscore'].includes(options?.onlySource)
-    ? options.onlySource
-    : null;
-  const sourceTasks = [];
-  if (!onlySource || onlySource === 'cyberscore') {
-    sourceTasks.push(scrapeCyberScore({ recentDays: options?.recentDays }));
-  }
-  if (!onlySource || onlySource === 'hawk') {
-    sourceTasks.push(scrapeHawkLive());
-  }
-  if (!onlySource || onlySource === 'bo3') {
-    const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
-    sourceTasks.push(scrapeBO3({ urls: testUrl ? [testUrl] : [] }));
-  }
-
-  const sourceResults = await Promise.allSettled(sourceTasks);
-  const allItems = [];
-  const sourceDiagnostics = [];
-
-  for (const result of sourceResults) {
-    if (result.status === 'fulfilled') {
-      const payload = result.value || {};
-      const itemCount = Array.isArray(payload.items) ? payload.items.length : 0;
-      sourceDiagnostics.push({
-        source: payload.source || 'unknown',
-        success: Boolean(payload.success),
-        itemCount,
-        error: payload.error || null,
-      });
-      if (payload?.success && itemCount > 0) {
-        allItems.push(...payload.items);
-      } else if (!payload?.success) {
-        console.warn(`[News API] Source failed: ${payload.source || 'unknown'} ${payload.error || 'unknown_error'}`);
-      }
-      continue;
-    }
-
-    const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason || 'unknown_error');
-    sourceDiagnostics.push({
-      source: 'unknown',
-      success: false,
-      itemCount: 0,
-      error: errorMessage,
-    });
-    console.warn(`[News API] Source task rejected: ${errorMessage}`);
-  }
-
-  let news = normalizeAndSortNews(allItems, { limit: null });
+export async function upsertSyncedNewsItems(db, items, options = {}) {
+  let news = normalizeAndSortNews(items, { limit: null });
   news = news.filter((x) => !isBettingNews(x));
   const totalFetched = news.length;
+  const cutoffSeconds = Number.isFinite(Number(options?.cutoffSeconds))
+    ? Math.trunc(Number(options.cutoffSeconds))
+    : Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
+
   if (news.length === 0) {
     return {
       totalFetched: 0,
@@ -2862,15 +2860,13 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      translateAttemptedCount: 0,
       skippedSuspiciousBo3Count: 0,
-      purgedBo3Count,
-      onlySource: onlySource || 'all',
-      cutoffSeconds: Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options),
-      sourceDiagnostics,
+      cutoffSeconds,
+      translationErrors: [],
     };
   }
 
-  const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
   news = news.filter((x) => Number(x.published_at) >= cutoffSeconds);
   const windowFilteredCount = news.length;
   if (news.length === 0) {
@@ -2881,11 +2877,10 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      translateAttemptedCount: 0,
       skippedSuspiciousBo3Count: 0,
-      purgedBo3Count,
-      onlySource: onlySource || 'all',
       cutoffSeconds,
-      sourceDiagnostics,
+      translationErrors: [],
     };
   }
 
@@ -2926,11 +2921,10 @@ export async function syncNewsToDb(options = {}) {
       insertedCount: 0,
       pendingTranslate: 0,
       translatedCount: 0,
+      translateAttemptedCount: 0,
       skippedSuspiciousBo3Count: 0,
-      purgedBo3Count,
-      onlySource: onlySource || 'all',
       cutoffSeconds,
-      sourceDiagnostics,
+      translationErrors: [],
     };
   }
 
@@ -3052,7 +3046,8 @@ export async function syncNewsToDb(options = {}) {
     ? Math.max(0, Number(options.translateLimit))
     : pendingTranslateItems.length;
   const translationErrors = [];
-  for (const item of pendingTranslateItems.slice(0, translateLimit)) {
+  const translateTargets = pendingTranslateItems.slice(0, translateLimit);
+  for (const item of translateTargets) {
     try {
       const zh = await translateItem(apiKey, item);
       const meta = buildTranslationMeta(item, zh, zh?._provider || getPreferredTranslationProvider(apiKey));
@@ -3087,12 +3082,111 @@ export async function syncNewsToDb(options = {}) {
     insertedCount,
     pendingTranslate: Math.max(0, pendingTranslateItems.length - translatedCount),
     translatedCount,
+    translateAttemptedCount: translateTargets.length,
     skippedSuspiciousBo3Count,
+    cutoffSeconds,
+    translationErrors,
+  };
+}
+
+export async function syncNewsToDb(options = {}) {
+  const db = getDb();
+  if (!db) {
+    throw new Error('DATABASE_URL not configured');
+  }
+
+  await ensureNewsTable(db);
+  let purgedBo3Count = 0;
+  if (options?.purgeBo3) {
+    const removed = await db`DELETE FROM news_articles WHERE source = 'BO3.gg' RETURNING url`;
+    purgedBo3Count = removed.length;
+  }
+
+  const onlySource = ['bo3', 'hawk', 'cyberscore'].includes(options?.onlySource)
+    ? options.onlySource
+    : null;
+  const sourceTasks = [];
+  if (!onlySource || onlySource === 'cyberscore') {
+    sourceTasks.push({ key: 'cyberscore', run: () => scrapeCyberScore({ recentDays: options?.recentDays }) });
+  }
+  if (!onlySource || onlySource === 'hawk') {
+    sourceTasks.push({ key: 'hawk', run: () => scrapeHawkLive() });
+  }
+  if (!onlySource || onlySource === 'bo3') {
+    const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
+    sourceTasks.push({ key: 'bo3', run: () => scrapeBO3({ urls: testUrl ? [testUrl] : [] }) });
+  }
+
+  const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
+  const translateLimit = Number.isFinite(Number(options?.translateLimit))
+    ? Math.max(0, Number(options.translateLimit))
+    : null;
+  let remainingTranslateBudget = translateLimit;
+
+  const sourceDiagnostics = [];
+  const aggregate = {
+    totalFetched: 0,
+    windowFilteredCount: 0,
+    dedupedByTitleCount: 0,
+    insertedCount: 0,
+    pendingTranslate: 0,
+    translatedCount: 0,
+    skippedSuspiciousBo3Count: 0,
+    translationErrors: [],
+  };
+
+  for (const sourceTask of sourceTasks) {
+    try {
+      const payload = await sourceTask.run();
+      const itemCount = Array.isArray(payload?.items) ? payload.items.length : 0;
+      sourceDiagnostics.push({
+        source: payload?.source || sourceTask.key,
+        success: Boolean(payload?.success),
+        itemCount,
+        error: payload?.error || null,
+        ...(payload?.diagnostics || {}),
+      });
+
+      if (!payload?.success || itemCount === 0) {
+        if (!payload?.success) {
+          console.warn(`[News API] Source failed: ${payload?.source || sourceTask.key} ${payload?.error || 'unknown_error'}`);
+        }
+        continue;
+      }
+
+      const batch = await upsertSyncedNewsItems(db, payload.items, {
+        cutoffSeconds,
+        translateLimit: remainingTranslateBudget,
+      });
+      aggregate.totalFetched += batch.totalFetched;
+      aggregate.windowFilteredCount += batch.windowFilteredCount;
+      aggregate.dedupedByTitleCount += batch.dedupedByTitleCount;
+      aggregate.insertedCount += batch.insertedCount;
+      aggregate.pendingTranslate += batch.pendingTranslate;
+      aggregate.translatedCount += batch.translatedCount;
+      aggregate.skippedSuspiciousBo3Count += batch.skippedSuspiciousBo3Count;
+      aggregate.translationErrors.push(...(batch.translationErrors || []));
+      if (remainingTranslateBudget !== null) {
+        remainingTranslateBudget = Math.max(0, remainingTranslateBudget - (batch.translateAttemptedCount || 0));
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error || 'unknown_error');
+      sourceDiagnostics.push({
+        source: sourceTask.key,
+        success: false,
+        itemCount: 0,
+        error: errorMessage,
+      });
+      console.warn(`[News API] Source task rejected: ${errorMessage}`);
+    }
+  }
+
+  return {
+    ...aggregate,
     purgedBo3Count,
     onlySource: onlySource || 'all',
     cutoffSeconds,
     sourceDiagnostics,
-    translationErrors,
   };
 }
 
