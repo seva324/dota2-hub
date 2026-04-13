@@ -53,6 +53,7 @@ export const tournamentSummarySchema = z.object({
   prize_pool: z.string().nullable().optional(),
   prize_pool_usd: z.number().nullable().optional(),
   image: z.string().nullable().optional(),
+  background_image_url: z.string().nullable().optional(),
 });
 
 export type TournamentSummary = z.infer<typeof tournamentSummarySchema>;

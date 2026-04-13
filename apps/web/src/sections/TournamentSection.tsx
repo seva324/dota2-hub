@@ -67,6 +67,7 @@ interface Tournament {
   end_time?: number;
   status: string;
   image?: string;
+  background_image_url?: string | null;
 }
 
 interface Series {
@@ -408,6 +409,10 @@ function formatPrizeUsd(value?: number, fallback?: string): string {
     }).format(value);
   }
   return fallback || 'TBD';
+}
+
+function getTournamentVisualUrl(tournament?: Tournament | null): string {
+  return String(tournament?.background_image_url || tournament?.image || '').trim();
 }
 
 function parseEventDateTime(value?: string | null): Date | null {
@@ -1844,6 +1849,7 @@ export function TournamentSection({
     }
     return aliasMap;
   }, [effectiveTeams]);
+  const selectedTournamentVisual = getTournamentVisualUrl(selectedTournament);
 
   const allSortedTournaments = useMemo(() => {
     return [...(effectiveTournaments || [])].sort((a, b) => {
@@ -2391,9 +2397,29 @@ export function TournamentSection({
         {selectedTournament && (
           <Card className="bg-slate-900/60 backdrop-blur-xl border border-white/10 overflow-hidden">
             {/* Tournament Header */}
-            <CardHeader className="border-b border-white/10 p-4 sm:p-6">
+            <CardHeader className="relative overflow-hidden border-b border-white/10 p-0">
+              {selectedTournamentVisual ? (
+                <>
+                  <div className="absolute inset-0">
+                    <img
+                      src={selectedTournamentVisual}
+                      alt={`${selectedTournament.name} background`}
+                      className="h-full w-full object-cover object-center opacity-30"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-[linear-gradient(110deg,rgba(2,6,23,0.96),rgba(2,6,23,0.78)_45%,rgba(15,23,42,0.9)_100%)]" />
+                  <div className="absolute inset-y-0 right-0 w-1/3 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.16),transparent_72%)]" />
+                </>
+              ) : null}
+
+              <div className="relative z-10 p-4 sm:p-6">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
+                  {selectedTournamentVisual ? (
+                    <div className="mb-3 inline-flex items-center rounded-full border border-white/10 bg-slate-950/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-200">
+                      Event Visual
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-3 mb-3">
                     {isFeaturedTournament(selectedTournament) ? (
                       <button
@@ -2434,6 +2460,7 @@ export function TournamentSection({
                     </div>
                   ) : null}
                 </div>
+              </div>
               </div>
             </CardHeader>
 

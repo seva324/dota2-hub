@@ -5,6 +5,7 @@
 
 import { neon } from '@neondatabase/serverless';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { buildTournamentBackgroundUrl } from '../lib/tournament-backgrounds.js';
 import {
   fetchFeaturedTournamentPayload,
   resolveFeaturedTournamentDefinition,
@@ -212,7 +213,7 @@ function resolveSeriesStage(stageWindows, startTime, fallbackStage) {
   };
 }
 
-function formatTournament(tournament) {
+function formatTournament(tournament, req) {
   return {
     id: String(tournament.id || tournament.league_id),
     league_id: tournament.league_id,
@@ -227,11 +228,12 @@ function formatTournament(tournament) {
     prize_pool_usd: tournament.prize_pool_usd ?? null,
     start_date: tournament.start_date ?? null,
     end_date: tournament.end_date ?? null,
-    image: tournament.image || null
+    image: tournament.image || null,
+    background_image_url: buildTournamentBackgroundUrl(tournament, req),
   };
 }
 
-async function listTournamentSummaries(db) {
+async function listTournamentSummaries(db, req) {
   const tournaments = await db`
     SELECT *
     FROM tournaments
@@ -239,7 +241,7 @@ async function listTournamentSummaries(db) {
     ORDER BY COALESCE(start_time, 0) DESC, COALESCE(end_time, 0) DESC
   `;
 
-  return tournaments.map(formatTournament);
+  return tournaments.map((tournament) => formatTournament(tournament, req));
 }
 
 async function getTournamentById(db, tournamentId) {
@@ -760,7 +762,7 @@ export default async function handler(req, res) {
     }
 
     if (!tournamentId) {
-      const tournaments = await listTournamentSummaries(db);
+      const tournaments = await listTournamentSummaries(db, req);
       return res.status(200).json({ tournaments });
     }
 
@@ -786,7 +788,7 @@ export default async function handler(req, res) {
     const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, req);
 
     return res.status(200).json({
-      tournament: formatTournament(tournament),
+      tournament: formatTournament(tournament, req),
       series,
       pagination: {
         limit,
