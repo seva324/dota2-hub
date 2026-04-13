@@ -24,4 +24,29 @@ describe('tournament backgrounds', () => {
       'https://dotahub.cn/api/tournament-background?slug=dreamleague'
     );
   });
+
+  it('falls back to dotahub.cn when edge runtime passes an internal qcloud host', () => {
+    expect(buildTournamentBackgroundUrl(
+      { name: 'DreamLeague Season 31' },
+      {
+        headers: {
+          host: 'pages-pro-7-e197.pages-scf-gz-pro.qcloudteo.com',
+          'x-forwarded-proto': 'https',
+        },
+      }
+    )).toBe('https://dotahub.cn/api/tournament-background?slug=dreamleague');
+  });
+
+  it('prefers a forwarded public host when present', () => {
+    expect(buildTournamentBackgroundUrl(
+      { name: 'DreamLeague Season 31' },
+      {
+        headers: {
+          host: 'pages-pro-7-e197.pages-scf-gz-pro.qcloudteo.com',
+          'x-forwarded-host': 'dotahub.cn',
+          'x-forwarded-proto': 'https',
+        },
+      }
+    )).toBe('https://dotahub.cn/api/tournament-background?slug=dreamleague');
+  });
 });
