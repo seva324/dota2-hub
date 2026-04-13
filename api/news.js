@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
+import { callLlmText } from '../lib/openrouter.mjs';
 import { mapWithConcurrency } from '../lib/server/derived-refresh-utils.js';
 import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
 
@@ -56,7 +57,13 @@ const CYBERSCORE_CATEGORIES = [
 
 const MINIMAX_API_URL = process.env.MINIMAX_API_URL || 'https://api.minimax.io/anthropic/v1/messages';
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M2.5';
+const OPENROUTER_TRANSLATION_MODEL =
+  process.env.NEWS_TRANSLATE_OPENROUTER_MODEL ||
+  process.env.NEWS_TRANSLATE_MODEL ||
+  process.env.OPENROUTER_MODEL ||
+  'google/gemini-2.5-flash';
 const NEWS_TRANSLATION_PROVIDER = 'minimax';
+const OPENROUTER_TRANSLATION_PROVIDER = 'openrouter';
 const TRANSLATION_STATUS_PENDING = 'pending';
 const TRANSLATION_STATUS_PARTIAL = 'partial';
 const TRANSLATION_STATUS_COMPLETED = 'completed';
@@ -2294,39 +2301,96 @@ function getTranslationApiKey() {
   return process.env.MINIMAX_API_KEY || process.env.MINIMAX_TEXT_API_KEY || '';
 }
 
+function getPreferredTranslationProvider(apiKey = '') {
+  if (process.env.OPENROUTER_API_KEY) return OPENROUTER_TRANSLATION_PROVIDER;
+  if (apiKey) return NEWS_TRANSLATION_PROVIDER;
+  return null;
+}
+
+function normalizeModelOutputText(value = '') {
+  let text = String(value || '').trim();
+  if (!text) return '';
+
+  const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)?.[1];
+  if (fenced) {
+    text = fenced.trim();
+  }
+
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed === 'string') return String(parsed).trim();
+    if (parsed && typeof parsed.text === 'string') return String(parsed.text).trim();
+  } catch {
+    // ignore
+  }
+
+  const textField = text.match(/^\s*"text"\s*:\s*([\s\S]+)$/i)?.[1];
+  if (textField) {
+    return textField.trim().replace(/^"(.*)"$/s, '$1').trim();
+  }
+
+  return text;
+}
+
 async function callTranslationModel(apiKey, prompt, maxTokens = 1200, timeoutMs = 20000) {
+  const errors = [];
+
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      const outputText = normalizeModelOutputText(await callLlmText(prompt, {
+        model: OPENROUTER_TRANSLATION_MODEL,
+        timeoutMs: Math.max(timeoutMs, 30000),
+        maxTokens,
+      })).trim();
+      if (!outputText) {
+        throw new Error('openrouter returned empty translations');
+      }
+      return outputText;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`openrouter: ${message}`);
+      console.warn(`[News API] OpenRouter translation fallback failed: ${message}`);
+    }
+  }
+
   if (!apiKey) {
-    throw new Error('No translation model API key configured');
+    throw new Error(errors.length ? errors.join(' | ') : 'No translation model API key configured');
   }
 
-  const response = await fetchWithTimeout(
-    MINIMAX_API_URL,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+  try {
+    const response = await fetchWithTimeout(
+      MINIMAX_API_URL,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MINIMAX_MODEL,
+          max_tokens: maxTokens,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
+        }),
       },
-      body: JSON.stringify({
-        model: MINIMAX_MODEL,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
-      }),
-    },
-    timeoutMs
-  );
+      timeoutMs
+    );
 
-  if (!response.ok) {
-    const bodyText = await response.text().catch(() => '');
-    throw new Error(`minimax HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
-  }
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '');
+      throw new Error(`minimax HTTP ${response.status}: ${bodyText.slice(0, 300)}`);
+    }
 
-  const payload = await response.json();
-  const outputText = extractMiniMaxText(payload).trim();
-  if (!outputText) {
-    throw new Error('minimax returned empty translations');
+    const payload = await response.json();
+    const outputText = normalizeModelOutputText(extractMiniMaxText(payload)).trim();
+    if (!outputText) {
+      throw new Error('minimax returned empty translations');
+    }
+    return outputText;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(`minimax: ${message}`);
+    throw new Error(errors.join(' | '));
   }
-  return outputText;
 }
 
 async function translateNewsWithMiniMax(news) {
@@ -2485,13 +2549,14 @@ function hasChineseSummary(value = '', fallbackEn = '') {
   return !fallbackEn || zh !== String(fallbackEn || '').trim();
 }
 
-function buildTranslationMeta(item, translated, provider = NEWS_TRANSLATION_PROVIDER) {
+function buildTranslationMeta(item, translated, provider = null) {
   const sourceBody = item?.content_markdown || item?.content || '';
   const titleDone = item?.title ? hasChineseTitle(translated?.title_zh, item.title) : true;
   const summaryDone = item?.summary ? hasChineseSummary(translated?.summary_zh, item.summary) : true;
   const bodyDone = sourceBody ? hasCompleteChineseBody(translated?.content_markdown_zh || translated?.content_zh || '', sourceBody) : true;
   const anyDone = titleDone || summaryDone || bodyDone;
   const complete = titleDone && summaryDone && bodyDone;
+  const resolvedProvider = anyDone ? (provider || translated?._provider || null) : null;
 
   return {
     translation_status: complete
@@ -2499,10 +2564,10 @@ function buildTranslationMeta(item, translated, provider = NEWS_TRANSLATION_PROV
       : anyDone
         ? TRANSLATION_STATUS_PARTIAL
         : TRANSLATION_STATUS_PENDING,
-    translation_provider: anyDone ? provider : null,
-    title_zh_provider: titleDone ? provider : null,
-    summary_zh_provider: summaryDone ? provider : null,
-    content_zh_provider: bodyDone ? provider : null,
+    translation_provider: resolvedProvider,
+    title_zh_provider: titleDone ? resolvedProvider : null,
+    summary_zh_provider: summaryDone ? resolvedProvider : null,
+    content_zh_provider: bodyDone ? resolvedProvider : null,
     translated_at: anyDone ? new Date().toISOString() : null,
   };
 }
@@ -2670,12 +2735,14 @@ async function translateLongMarkdown(apiKey, text, glossaryPrompt = '') {
 async function translateItem(apiKey, item) {
   const sourceBody = item.content_markdown || item.content || '';
   const glossaryPrompt = glossaryPromptForItem(item);
-  if (!apiKey) {
+  const provider = getPreferredTranslationProvider(apiKey);
+  if (!provider) {
     return {
       title_zh: null,
       summary_zh: null,
       content_zh: null,
       content_markdown_zh: null,
+      _provider: provider,
     };
   }
 
@@ -2690,6 +2757,7 @@ async function translateItem(apiKey, item) {
     summary_zh,
     content_markdown_zh,
     content_zh: content_markdown_zh ? markdownToText(content_markdown_zh) : item.content,
+    _provider: provider,
   };
 }
 
@@ -2987,7 +3055,7 @@ export async function syncNewsToDb(options = {}) {
   for (const item of pendingTranslateItems.slice(0, translateLimit)) {
     try {
       const zh = await translateItem(apiKey, item);
-      const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
+      const meta = buildTranslationMeta(item, zh, zh?._provider || getPreferredTranslationProvider(apiKey));
       await db`
         UPDATE news_articles
         SET
@@ -3036,8 +3104,9 @@ export async function translateNewsBackfill(options = {}) {
 
   await ensureNewsTable(db);
   const apiKey = getTranslationApiKey();
-  if (!apiKey) {
-    return { scanned: 0, translated: 0, completed: 0, pending: 0, provider: NEWS_TRANSLATION_PROVIDER, skipped: 'missing_api_key' };
+  const preferredProvider = getPreferredTranslationProvider(apiKey);
+  if (!preferredProvider) {
+    return { scanned: 0, translated: 0, completed: 0, pending: 0, provider: null, skipped: 'missing_api_key' };
   }
 
   const recentDays = Number.isFinite(Number(options?.recentDays))
@@ -3063,7 +3132,7 @@ export async function translateNewsBackfill(options = {}) {
       )
       AND (
         COALESCE(translation_status, ${TRANSLATION_STATUS_PENDING}) <> ${TRANSLATION_STATUS_COMPLETED}
-        OR translation_provider = ${NEWS_TRANSLATION_PROVIDER}
+        OR translation_provider = ${preferredProvider}
         OR COALESCE(title_zh, '') = ''
         OR COALESCE(summary_zh, '') = ''
         OR COALESCE(content_zh, '') = ''
@@ -3085,7 +3154,7 @@ export async function translateNewsBackfill(options = {}) {
       content_markdown: row.content_markdown_en,
     };
     const zh = await translateItem(apiKey, item);
-    const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
+    const meta = buildTranslationMeta(item, zh, zh?._provider || preferredProvider);
     await db`
       UPDATE news_articles
       SET
@@ -3112,7 +3181,7 @@ export async function translateNewsBackfill(options = {}) {
     translated,
     completed,
     pending,
-    provider: NEWS_TRANSLATION_PROVIDER,
+    provider: preferredProvider,
     recentDays,
     limit,
   };

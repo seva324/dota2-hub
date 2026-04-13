@@ -158,6 +158,10 @@ function maybeAutoPostXhs(row, context = {}) {
   console.log(`[xhs] auto post done for ${row.id}`);
 }
 
+function sleep(ms = 0) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function looksChinese(text) {
   return /[\u4e00-\u9fff]/.test(String(text || ''));
 }
@@ -725,6 +729,47 @@ async function translateMarkdown(text, tone, glossaryPrompt = '') {
   return trimTranslatedMarkdownNoise(out.join('\n\n'));
 }
 
+async function translatePlainBodyFallback(text, tone, glossaryPrompt = '') {
+  const source = String(text || '').trim();
+  if (!source || looksChinese(source)) return source || null;
+  async function translateBlock(block) {
+    try {
+      let out = await callModelStructuredText([
+        NEWS_TRANSLATION_GUIDANCE,
+        '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
+        '下面是一段 Dota2 新闻正文。',
+        tone === 'gossip'
+          ? '请用自然的中文论坛转述口吻翻译，保留专有名词原文。'
+          : '请用自然的中文新闻转述口吻翻译，保留专有名词原文。',
+        '如果 markdown 结构不好保留，可以退化成普通中文段落。',
+        '只输出中文正文，不要标题，不要摘要，不要点评，不要 JSON，不要解释。',
+        '',
+        block,
+      ].join('\n'), 32000);
+      out = String(out || '').trim();
+      return (hasUsableChineseBody(out, block) || hasCompleteChineseBody(out, block)) ? out : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const whole = await translateBlock(source);
+  if (whole) return whole;
+
+  const chunks = splitTextChunks(source, Math.max(CHUNK_MAX, 900));
+  const translated = [];
+  for (const chunk of chunks) {
+    const out = await translateBlock(chunk);
+    if (!out) return null;
+    translated.push(out);
+  }
+
+  const merged = translated.join('\n\n').trim();
+  return (hasCompleteChineseBody(merged, source) || hasUsableChineseBody(merged, source)) ? merged : null;
+}
+
 async function loadPending(limit, force = false) {
   if (TARGET_IDS.length) {
     return withDbRetry(() => sql`
@@ -885,11 +930,43 @@ async function translateOne(row, force = false) {
   ]);
   const content_zh = content_markdown_zh ? stripMarkdown(content_markdown_zh) : (row.content_en || null);
 
-  const meta = await updateRow(row, { title_zh, summary_zh, content_markdown_zh, content_zh });
+  let meta = await updateRow(row, { title_zh, summary_zh, content_markdown_zh, content_zh });
+  const shouldRetryMissingBody =
+    !force &&
+    !meta.bodyDone &&
+    Boolean(preparedMarkdown) &&
+    !keepBody;
+
+  if (shouldRetryMissingBody) {
+    console.warn(`[translate] body retry for ${row.id} after incomplete first pass`);
+    await sleep(300);
+    let retriedBodyMarkdown = await translateMarkdown(preparedMarkdown, tone, glossaryPrompt).catch(() => null);
+    const hasRetriedBody = retriedBodyMarkdown && (
+      hasCompleteChineseBody(retriedBodyMarkdown, preparedMarkdown)
+      || hasUsableChineseBody(retriedBodyMarkdown, preparedMarkdown)
+    );
+    if (!hasRetriedBody) {
+      retriedBodyMarkdown = await translatePlainBodyFallback(preparedMarkdown, tone, glossaryPrompt).catch(() => null);
+    }
+    const retriedBodyText = retriedBodyMarkdown ? stripMarkdown(retriedBodyMarkdown) : (row.content_en || null);
+    meta = await updateRow(row, {
+      title_zh: meta.titleZh || title_zh,
+      summary_zh: meta.summaryZh || summary_zh,
+      content_markdown_zh: retriedBodyMarkdown,
+      content_zh: retriedBodyText,
+    });
+  }
+
+  if (!meta.anyDone) {
+    console.warn(`[translate] no progress for ${row.id}; title=${row.title_en || ''}`);
+  }
+
   maybeAutoPostXhs(row, {
     translationCompleted: meta.status === TRANSLATION_STATUS_COMPLETED,
     gemmaTranslationTriggered,
   });
+
+  return meta;
 }
 
 async function main() {
@@ -899,9 +976,10 @@ async function main() {
   if (FORCE) {
     const rows = await loadForceRows(TOTAL_LIMIT);
     for (const row of rows) {
-      await translateOne(row, true);
+      console.log(`[translate] start ${done + 1}/${rows.length} id=${row.id}`);
+      const meta = await translateOne(row, true);
       done += 1;
-      console.log(`translated ${done}/${rows.length} id=${row.id}`);
+      console.log(`translated ${done}/${rows.length} id=${row.id} status=${meta.status}`);
     }
 
     const left = await withDbRetry(() => sql`
@@ -927,10 +1005,11 @@ async function main() {
     if (!rows.length) break;
 
     for (const row of rows) {
-      await translateOne(row, FORCE);
+      console.log(`[translate] start ${done + 1}/${TOTAL_LIMIT} id=${row.id}`);
+      const meta = await translateOne(row, FORCE);
       processedIds.add(row.id);
       done += 1;
-      console.log(`translated ${done}/${TOTAL_LIMIT} id=${row.id}`);
+      console.log(`translated ${done}/${TOTAL_LIMIT} id=${row.id} status=${meta.status}`);
       if (done >= TOTAL_LIMIT) break;
     }
   }
