@@ -83,6 +83,7 @@ describe('/api/tournaments lazy loading', () => {
           id: 'dreamleague-s28',
           league_id: 42,
           name: 'DreamLeague Season 28',
+          background_image_url: 'https://dotahub.cn/api/tournament-background?slug=dreamleague',
         }),
       ],
     });
