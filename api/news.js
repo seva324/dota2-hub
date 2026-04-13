@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
+import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
 
 /**
  * News API
@@ -16,7 +17,12 @@ const CYBERSCORE_LIST_SCAN_LIMIT = 24;
 const MAX_CONTENT_LENGTH = 5000;
 const DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const BO3_API_BASE = 'https://api.bo3.gg/api/v1';
+const DATABASE_URL =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
 const CYBERSCORE_CATEGORIES = [
   {
     key: 'competitive',
@@ -67,6 +73,14 @@ const NEWS_TRANSLATION_GUIDANCE = [
   '2. 一段自然流畅的正文',
   '3. 一句简短点评/总结',
 ].join('\n');
+
+function glossaryPromptForItem(item = {}) {
+  return buildTranslationGlossaryPrompt({
+    title: item?.title || item?.title_en || '',
+    summary: item?.summary || item?.summary_en || '',
+    content: item?.content_markdown || item?.content_en || item?.content || '',
+  });
+}
 
 function getDb() {
   if (!sql && DATABASE_URL) {
@@ -309,10 +323,181 @@ function parseBo3DateTimeString(input = '') {
 }
 
 function parseJinaPublishedDate(text = '') {
-  const m = String(text).match(/Published Time:\s*(\d{4}-\d{2}-\d{2})/i);
-  if (!m) return null;
-  const date = new Date(`${m[1]}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const matchedLine = String(text).match(/Published Time:\s*([^\n\r]+)/i)?.[1]?.trim();
+  if (!matchedLine) return null;
+
+  const direct = parseDate(matchedLine);
+  if (direct) return direct;
+
+  const dateOnly = matchedLine.match(/(\d{4}-\d{2}-\d{2})/)?.[1];
+  if (!dateOnly) return null;
+  const fallback = new Date(`${dateOnly}T00:00:00Z`);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function slugFromBo3NewsUrl(rawUrl = '') {
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname !== 'bo3.gg' && url.hostname !== 'www.bo3.gg') return '';
+    const parts = url.pathname.split('/').filter(Boolean);
+    const newsIndex = parts.lastIndexOf('news');
+    if (newsIndex === -1 || !parts[newsIndex + 1]) return '';
+    return parts[newsIndex + 1];
+  } catch {
+    return '';
+  }
+}
+
+function bo3NewsUrlFromSlug(slug = '') {
+  const clean = String(slug || '').trim();
+  if (!clean) return '';
+  return `https://bo3.gg/dota2/news/${clean}`;
+}
+
+async function fetchBo3ApiJson(pathname, searchParams = null) {
+  const url = new URL(`${BO3_API_BASE}${pathname}`);
+  if (searchParams) {
+    for (const [key, value] of searchParams.entries()) {
+      url.searchParams.set(key, value);
+    }
+  }
+  const response = await fetchWithTimeout(url.toString(), {
+    headers: {
+      Accept: 'application/json',
+      Origin: 'https://bo3.gg',
+      Referer: 'https://bo3.gg/dota2/news',
+    },
+  }, 12000);
+  if (!response.ok) throw new Error(`BO3 API HTTP ${response.status}`);
+  return response.json();
+}
+
+function bo3ApiListParams(limit = DETAIL_FETCH_LIMIT) {
+  const params = new URLSearchParams();
+  params.set('filter[base_news.discipline_id][eq]', '4');
+  params.set('filter[news.locale][eq]', 'en');
+  params.set('filter[base_news.section][in]', '1');
+  params.set('page[offset]', '0');
+  params.set('page[limit]', String(Math.max(1, limit)));
+  params.set('sort', '-published_at');
+  return params;
+}
+
+async function collectBo3UrlsViaApi() {
+  try {
+    const data = await fetchBo3ApiJson('/base_news', bo3ApiListParams(DETAIL_FETCH_LIMIT * 3));
+    const results = Array.isArray(data?.results) ? data.results : [];
+    const urls = [];
+    const imageHints = new Map();
+    for (const item of results) {
+      const slug = item?.slug;
+      const url = bo3NewsUrlFromSlug(slug);
+      if (!url) continue;
+      urls.push(url);
+      const imageUrl = item.title_image_url || item.title_image_square_url || item.image;
+      if (imageUrl) imageHints.set(url, imageUrl);
+    }
+    return {
+      urls: Array.from(new Set(urls)).slice(0, DETAIL_FETCH_LIMIT),
+      imageHints,
+    };
+  } catch (error) {
+    console.warn(`[News API] BO3 API list failed: ${error instanceof Error ? error.message : String(error)}`);
+    return { urls: [], imageHints: new Map() };
+  }
+}
+
+function editorJsInlineMarkdown(input = '') {
+  return htmlInlineToMarkdown(String(input || ''), 'https://bo3.gg')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function editorJsBlocksToMarkdown(body = {}) {
+  const blocks = Array.isArray(body?.blocks) ? body.blocks : [];
+  const out = [];
+  const images = [];
+
+  for (const block of blocks) {
+    const type = String(block?.type || '').toLowerCase();
+    const data = block?.data || {};
+
+    if (type === 'paragraph') {
+      const text = editorJsInlineMarkdown(data.text);
+      if (text) out.push(text);
+      continue;
+    }
+
+    if (type === 'header') {
+      const text = editorJsInlineMarkdown(data.text);
+      if (text) out.push(`## ${text}`);
+      continue;
+    }
+
+    if (type === 'quote') {
+      const text = editorJsInlineMarkdown(data.text);
+      const caption = editorJsInlineMarkdown(data.caption);
+      if (text) {
+        out.push(`> ${text}${caption ? `\n>\n> — ${caption}` : ''}`);
+      }
+      continue;
+    }
+
+    if (type === 'list' && Array.isArray(data.items)) {
+      const items = data.items
+        .map((item) => {
+          const value = typeof item === 'string' ? item : (item?.content || item?.text || '');
+          return editorJsInlineMarkdown(value);
+        })
+        .filter(Boolean)
+        .map((item) => `- ${item}`);
+      if (items.length) out.push(items.join('\n'));
+      continue;
+    }
+
+    if (type === 'image' || type === 'simpleimage') {
+      const imageUrl = data?.file?.url || data?.url || data?.image || '';
+      const normalized = normalizeUrl(imageUrl, 'https://bo3.gg');
+      if (normalized) {
+        images.push(normalized);
+        const caption = editorJsInlineMarkdown(data.caption);
+        out.push(`![${caption || 'Image'}](${normalized})`);
+      }
+    }
+  }
+
+  return {
+    markdown: out.join('\n\n').trim(),
+    images: Array.from(new Set(images)),
+  };
+}
+
+async function fetchBo3ArticleViaApi(url) {
+  const slug = slugFromBo3NewsUrl(url);
+  if (!slug) return null;
+
+  const item = await fetchBo3ApiJson(`/base_news/${encodeURIComponent(slug)}`, new URLSearchParams([['locale', 'en']]));
+  if (!item?.slug || String(item?.discipline_id) !== '4') return null;
+
+  const canonicalUrl = bo3NewsUrlFromSlug(item.slug) || url;
+  const { markdown, images } = editorJsBlocksToMarkdown(item.body);
+  const imageUrl = item.title_image_url || item.title_image_square_url || item.image || images[0] || undefined;
+  const contentMarkdown = sanitizeStoredMarkdown(normalizeBo3ContentMarkdown(markdown || item.description || ''));
+  const content = truncateText(markdownToText(contentMarkdown || item.description || ''));
+
+  const result = {
+    id: generateId(canonicalUrl, 'bo3'),
+    title: item.title || titleFromSlug(canonicalUrl),
+    summary: stripHtml(item.description || content).slice(0, 220) || undefined,
+    content,
+    content_markdown: contentMarkdown,
+    url: canonicalUrl,
+    imageUrl,
+    source: 'BO3.gg',
+    publishedAt: parseDate(item.published_at) || parseDate(item.created_at) || new Date(),
+    category: item?.news_category?.title || 'tournament',
+  };
+  return isBettingNews(result) ? null : result;
 }
 
 function parseBo3PublishedAt(detailHtml) {
@@ -761,6 +946,11 @@ function parseCyberScorePublishedAt(detailHtml = '') {
   const textWindow = String(detailHtml || '').slice(0, 12000);
   const textDate = textWindow.match(/>\s*(Today|Yesterday|\d{2}\.\d{2}\.\d{4})\s*</i)?.[1];
   return parseCyberScoreDateText(textDate);
+}
+
+function isCloudflareChallengePage(html = '') {
+  const text = String(html || '');
+  return /Just a moment\.\.\.|Enable JavaScript and cookies to continue|__cf_chl_/i.test(text);
 }
 
 function trimCyberScoreContent(content = '') {
@@ -1272,12 +1462,12 @@ async function scrapeCyberScore(options = {}) {
     for (const categoryDef of CYBERSCORE_CATEGORIES) {
       try {
         let urls = [];
-        let canUseDirectDetail = false;
         const response = await fetchWithTimeout(categoryDef.url, {}, 15000);
         if (response.ok) {
-          canUseDirectDetail = true;
           const html = await response.text();
-          urls = extractCyberScoreNewsUrls(html, baseUrl);
+          if (!isCloudflareChallengePage(html)) {
+            urls = extractCyberScoreNewsUrls(html, baseUrl);
+          }
         }
 
         if (urls.length === 0) {
@@ -1291,11 +1481,9 @@ async function scrapeCyberScore(options = {}) {
           }
         }
 
-        if (canUseDirectDetail) {
-          for (const url of urls) {
-            if (!urlToCategory.has(url)) {
-              urlToCategory.set(url, categoryDef.category);
-            }
+        for (const url of urls) {
+          if (!urlToCategory.has(url)) {
+            urlToCategory.set(url, categoryDef.category);
           }
         }
       } catch {
@@ -1303,7 +1491,7 @@ async function scrapeCyberScore(options = {}) {
       }
     }
 
-    const urls = Array.from(urlToCategory.keys());
+    const urls = Array.from(urlToCategory.keys()).slice(0, CYBERSCORE_LIST_SCAN_LIMIT);
     console.log(`[News API] CyberScore list URLs: ${urls.length}, fallback items: ${listFallbackItems.length}`);
     if (urls.length === 0 && listFallbackItems.length === 0) {
       return { items: [], source, success: false, error: 'No CyberScore article URLs found' };
@@ -1311,8 +1499,25 @@ async function scrapeCyberScore(options = {}) {
 
     const detailTasks = urls.map(async (url) => {
       const detailResponse = await fetchWithTimeout(url, {}, 12000);
-      if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
       const detailHtml = await detailResponse.text();
+      if (isCloudflareChallengePage(detailHtml)) {
+        const jinaResponse = await fetchWithTimeout(`${JINA_PROXY}${url.replace(/^https?:\/\//, '')}`, {}, 12000);
+        if (!jinaResponse.ok) throw new Error(`CyberScore Jina detail failed: HTTP ${jinaResponse.status}`);
+        const jinaText = await jinaResponse.text();
+        return extractCyberScoreDetailFromJina(jinaText, {
+          id: generateId(url, source),
+          title: titleFromSlug(url),
+          summary: `${sourceName} · latest`,
+          content: '正文抓取受限，请点击原文查看完整内容。',
+          content_markdown: '正文抓取受限，请点击原文查看完整内容。',
+          url,
+          imageUrl: undefined,
+          source: sourceName,
+          publishedAt: new Date(),
+          category: urlToCategory.get(url) || 'community',
+        });
+      }
+      if (!detailResponse.ok) throw new Error(`HTTP ${detailResponse.status}`);
       const detailLd = parseJsonLdBlocks(detailHtml);
       const article = detailLd.find((x) => x?.['@type'] === 'NewsArticle') || {};
 
@@ -1346,14 +1551,31 @@ async function scrapeCyberScore(options = {}) {
 
     const settled = await Promise.allSettled(detailTasks);
     const detailItems = settled.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
-    const enrichedFallbackItems = urls.length === 0
-      ? await enrichCyberScoreFallbackItems(listFallbackItems, recentDays)
-      : listFallbackItems;
-    const merged = [...detailItems, ...enrichedFallbackItems];
+    const detailUrlSet = new Set(detailItems.map((item) => item?.url).filter(Boolean));
+    const fallbackNeedingDetail = listFallbackItems.filter((item) => !detailUrlSet.has(item?.url));
+    const enrichedFallbackItems = await enrichCyberScoreFallbackItems(fallbackNeedingDetail, recentDays);
+    const merged = [...detailItems, ...listFallbackItems, ...enrichedFallbackItems];
     const uniqueByUrl = new Map();
     for (const item of merged) {
       if (!item?.url) continue;
-      if (!uniqueByUrl.has(item.url)) {
+      if (uniqueByUrl.has(item.url)) {
+        const existing = uniqueByUrl.get(item.url);
+        const existingMarkdown = String(existing.content_markdown || existing.content || '');
+        const incomingMarkdown = String(item.content_markdown || item.content || '');
+        const useIncomingContent =
+          incomingMarkdown.length > existingMarkdown.length &&
+          !/正文抓取受限|正文暂不可读|请点击原文/i.test(incomingMarkdown);
+        uniqueByUrl.set(item.url, {
+          ...existing,
+          title: existing.title || item.title,
+          summary: (useIncomingContent ? item.summary : existing.summary) || item.summary,
+          content: useIncomingContent ? item.content : (existing.content || item.content),
+          content_markdown: useIncomingContent ? item.content_markdown : (existing.content_markdown || item.content_markdown),
+          imageUrl: existing.imageUrl || item.imageUrl,
+          publishedAt: existing.publishedAt || item.publishedAt,
+          category: existing.category || item.category,
+        });
+      } else {
         uniqueByUrl.set(item.url, item);
       }
     }
@@ -1447,7 +1669,16 @@ async function scrapeBO3(options = {}) {
     let bo3ImageHints = new Map();
 
     if (urls.length === 0) {
-      // Strategy 1: RSS
+      // Strategy 1: official BO3 API. The public HTML is Nuxt-only and
+      // r.jina.ai can return unrelated SEO/betting text for some slugs, so
+      // prefer the same JSON endpoint used by bo3.gg itself.
+      const apiList = await collectBo3UrlsViaApi();
+      urls = apiList.urls;
+      bo3ImageHints = apiList.imageHints;
+    }
+
+    if (urls.length === 0) {
+      // Strategy 2: RSS
       for (const rssUrl of rssUrls) {
         try {
           const rssResponse = await fetchWithTimeout(rssUrl, {
@@ -1469,7 +1700,7 @@ async function scrapeBO3(options = {}) {
         }
       }
 
-      // Strategy 2: HTML list parsing
+      // Strategy 3: HTML list parsing
       try {
         const response = await fetchWithTimeout(listUrl, {}, 9000);
         if (response.ok) {
@@ -1480,12 +1711,12 @@ async function scrapeBO3(options = {}) {
         // Continue to fallback
       }
 
-      // Strategy 3: sitemap fallback when HTML fails
+      // Strategy 4: sitemap fallback when HTML fails
       if (urls.length === 0) {
         urls = await collectBo3FallbackUrls(baseUrl);
       }
 
-      // Strategy 4: jina.ai fallback for anti-bot pages
+      // Strategy 5: jina.ai fallback for anti-bot pages
       if (urls.length === 0) {
         const jinaList = await collectBo3UrlsViaJina(baseUrl);
         urls = jinaList.urls;
@@ -1505,6 +1736,13 @@ async function scrapeBO3(options = {}) {
     }
 
     const detailTasks = urls.map(async (url) => {
+      try {
+        const apiItem = await fetchBo3ArticleViaApi(url);
+        if (apiItem) return apiItem;
+      } catch (error) {
+        console.warn(`[News API] BO3 API detail failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
       let detailHtml = '';
       let article = {};
       let detailLd = [];
@@ -1694,9 +1932,11 @@ function makeFallbackNews() {
   ];
 }
 
-function normalizeAndSortNews(items) {
+export function normalizeAndSortNews(items, options = {}) {
   const seen = new Set();
   const normalized = [];
+  const hasExplicitLimit = Object.prototype.hasOwnProperty.call(options || {}, 'limit');
+  const limit = hasExplicitLimit ? options.limit : MAX_ITEMS;
 
   for (const item of items) {
     if (!item?.url || !item?.title) continue;
@@ -1742,7 +1982,9 @@ function normalizeAndSortNews(items) {
   }
 
   normalized.sort((a, b) => b.published_at - a.published_at);
-  return normalized.slice(0, MAX_ITEMS);
+  if (limit == null) return normalized;
+  if (!Number.isFinite(Number(limit))) return normalized.slice(0, MAX_ITEMS);
+  return normalized.slice(0, Math.max(0, Math.trunc(Number(limit))));
 }
 
 function looksChinese(text = '') {
@@ -2106,7 +2348,7 @@ function hasCompleteChineseBody(value, fallbackEn = '') {
 }
 
 function looksLikeTranslationRefusal(value = '') {
-  return /抱歉|请提供|请把完整|无法保证|没有看到正文|只看到了标题|not enough|provide the full/i.test(String(value));
+  return /抱歉|请提供|请把完整|无法保证|没有看到正文|只看到了标题|not enough|provide the full|由于.*没有提供.*(?:英文|正文|素材)|请发送.*(?:英文|内容|正文)|没有提供需要翻译|缺乏具体.*(?:正文|新闻)|无法为您翻译完整/i.test(String(value));
 }
 
 function looksLikeStructuredArticle(value = '') {
@@ -2149,10 +2391,13 @@ function buildTranslationMeta(item, translated, provider = NEWS_TRANSLATION_PROV
 
 async function translateCommunityTitle(apiKey, item) {
   if (!item?.title || looksChinese(item.title)) return item?.title || null;
+  const glossaryPrompt = glossaryPromptForItem(item);
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
       '',
+      glossaryPrompt,
+      glossaryPrompt ? '' : '',
       '请基于下面英文 Dota2 新闻信息，写一个适合中文社区传播的中文标题。',
       '要求：',
       '- 保留战队名、选手名、赛事名等专有名词原文',
@@ -2165,6 +2410,10 @@ async function translateCommunityTitle(apiKey, item) {
     let output = await callTranslationModel(apiKey, prompt, 800, 18000);
     if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
       const retryPrompt = [
+        NEWS_TRANSLATION_GUIDANCE,
+        '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
         '把下面英文 Dota2 新闻标题改写成一个中文社区传播标题。',
         '要求：必须输出简体中文；保留专有名词原文；不能输出英文整句；不能输出标题/正文/总结标签；只输出一行标题。',
         item.title,
@@ -2172,6 +2421,10 @@ async function translateCommunityTitle(apiKey, item) {
       output = await callTranslationModel(apiKey, retryPrompt, 400, 15000).catch(() => output);
       if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
         const finalPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
           '将下面英文 Dota2 新闻标题直接翻译为简体中文标题。',
           '要求：必须输出中文；保留专有名词原文；只输出一行标题；不要解释。',
           item.title,
@@ -2188,10 +2441,13 @@ async function translateCommunityTitle(apiKey, item) {
 async function translateCommunitySummary(apiKey, item) {
   const seed = item?.summary || item?.content || item?.content_markdown || item?.title;
   if (!seed || looksChinese(seed)) return item?.summary || seed || null;
+  const glossaryPrompt = glossaryPromptForItem(item);
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
       '',
+      glossaryPrompt,
+      glossaryPrompt ? '' : '',
       '请基于下面英文 Dota2 新闻信息，写一句简短点评/总结。',
       '要求：',
       '- 20 到 50 字',
@@ -2205,6 +2461,10 @@ async function translateCommunitySummary(apiKey, item) {
     let output = await callTranslationModel(apiKey, prompt, 800, 18000);
     if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
       const retryPrompt = [
+        NEWS_TRANSLATION_GUIDANCE,
+        '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
         '基于下面英文 Dota2 新闻信息，写一句中文总结。',
         '要求：必须输出简体中文；20到50字；不能道歉；不能要求补充材料；不能输出标题/正文/总结标签；只输出一句话。',
         `标题：${item.title || ''}`,
@@ -2214,6 +2474,10 @@ async function translateCommunitySummary(apiKey, item) {
       output = await callTranslationModel(apiKey, retryPrompt, 400, 15000).catch(() => output);
       if (!output || !looksChinese(output) || looksLikeStructuredArticle(output) || looksLikeTranslationRefusal(output)) {
         const finalPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
           '把下面英文 Dota2 新闻摘要翻译并压缩成一句简体中文总结。',
           '要求：必须输出中文；20到50字；只输出一句话；不要解释。',
           `标题：${item.title || ''}`,
@@ -2229,7 +2493,7 @@ async function translateCommunitySummary(apiKey, item) {
   }
 }
 
-async function translateLongMarkdown(apiKey, text) {
+async function translateLongMarkdown(apiKey, text, glossaryPrompt = '') {
   if (!text || looksChinese(text)) return text;
   const chunks = splitTextChunks(text, 1300);
   const translated = [];
@@ -2239,6 +2503,8 @@ async function translateLongMarkdown(apiKey, text) {
       const prompt = [
         NEWS_TRANSLATION_GUIDANCE,
         '',
+        glossaryPrompt,
+        glossaryPrompt ? '' : '',
         '请把下面 Dota2 英文新闻正文翻译成中文社区搬运帖风格。',
         '要求：',
         '- 保留 markdown 链接与图片语法',
@@ -2252,6 +2518,10 @@ async function translateLongMarkdown(apiKey, text) {
       let output = await callTranslationModel(apiKey, prompt, 1800, 22000).catch(() => chunk);
       if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
         const retryPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
           '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
           '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
           chunk,
@@ -2259,6 +2529,10 @@ async function translateLongMarkdown(apiKey, text) {
         output = await callTranslationModel(apiKey, retryPrompt, 1800, 22000).catch(() => output);
         if (!hasCompleteChineseBody(output, chunk) || looksLikeTranslationRefusal(output)) {
           const finalPrompt = [
+            NEWS_TRANSLATION_GUIDANCE,
+            '',
+            glossaryPrompt,
+            glossaryPrompt ? '' : '',
             '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
             '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释。',
             chunk,
@@ -2277,6 +2551,7 @@ async function translateLongMarkdown(apiKey, text) {
 
 async function translateItem(apiKey, item) {
   const sourceBody = item.content_markdown || item.content || '';
+  const glossaryPrompt = glossaryPromptForItem(item);
   if (!apiKey) {
     return {
       title_zh: null,
@@ -2289,7 +2564,7 @@ async function translateItem(apiKey, item) {
   const [title_zh, summary_zh, content_markdown_zh] = await Promise.all([
     translateCommunityTitle(apiKey, item),
     translateCommunitySummary(apiKey, item),
-    sourceBody ? translateLongMarkdown(apiKey, sourceBody) : Promise.resolve(sourceBody),
+    sourceBody ? translateLongMarkdown(apiKey, sourceBody, glossaryPrompt) : Promise.resolve(sourceBody),
   ]);
 
   return {
@@ -2360,14 +2635,37 @@ export async function syncNewsToDb(options = {}) {
 
   const sourceResults = await Promise.allSettled(sourceTasks);
   const allItems = [];
+  const sourceDiagnostics = [];
 
   for (const result of sourceResults) {
-    if (result.status === 'fulfilled' && result.value?.success && Array.isArray(result.value.items)) {
-      allItems.push(...result.value.items);
+    if (result.status === 'fulfilled') {
+      const payload = result.value || {};
+      const itemCount = Array.isArray(payload.items) ? payload.items.length : 0;
+      sourceDiagnostics.push({
+        source: payload.source || 'unknown',
+        success: Boolean(payload.success),
+        itemCount,
+        error: payload.error || null,
+      });
+      if (payload?.success && itemCount > 0) {
+        allItems.push(...payload.items);
+      } else if (!payload?.success) {
+        console.warn(`[News API] Source failed: ${payload.source || 'unknown'} ${payload.error || 'unknown_error'}`);
+      }
+      continue;
     }
+
+    const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason || 'unknown_error');
+    sourceDiagnostics.push({
+      source: 'unknown',
+      success: false,
+      itemCount: 0,
+      error: errorMessage,
+    });
+    console.warn(`[News API] Source task rejected: ${errorMessage}`);
   }
 
-  let news = normalizeAndSortNews(allItems);
+  let news = normalizeAndSortNews(allItems, { limit: null });
   news = news.filter((x) => !isBettingNews(x));
   const totalFetched = news.length;
   if (news.length === 0) {
@@ -2382,6 +2680,7 @@ export async function syncNewsToDb(options = {}) {
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds: Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options),
+      sourceDiagnostics,
     };
   }
 
@@ -2400,6 +2699,7 @@ export async function syncNewsToDb(options = {}) {
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds,
+      sourceDiagnostics,
     };
   }
 
@@ -2444,6 +2744,7 @@ export async function syncNewsToDb(options = {}) {
       purgedBo3Count,
       onlySource: onlySource || 'all',
       cutoffSeconds,
+      sourceDiagnostics,
     };
   }
 
@@ -2564,26 +2865,33 @@ export async function syncNewsToDb(options = {}) {
   const translateLimit = Number.isFinite(Number(options?.translateLimit))
     ? Math.max(0, Number(options.translateLimit))
     : pendingTranslateItems.length;
+  const translationErrors = [];
   for (const item of pendingTranslateItems.slice(0, translateLimit)) {
-    const zh = await translateItem(apiKey, item);
-    const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
-    await db`
-      UPDATE news_articles
-      SET
-        title_zh = ${meta.title_zh_provider ? zh.title_zh || null : null},
-        summary_zh = ${meta.summary_zh_provider ? zh.summary_zh || null : null},
-        content_zh = ${meta.content_zh_provider ? zh.content_zh || null : null},
-        content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
-        translation_status = ${meta.translation_status},
-        translation_provider = ${meta.translation_provider},
-        title_zh_provider = ${meta.title_zh_provider},
-        summary_zh_provider = ${meta.summary_zh_provider},
-        content_zh_provider = ${meta.content_zh_provider},
-        translated_at = ${meta.translated_at},
-        updated_at = NOW()
-      WHERE url = ${item.url}
-    `;
-    if (meta.translation_status === TRANSLATION_STATUS_COMPLETED) translatedCount += 1;
+    try {
+      const zh = await translateItem(apiKey, item);
+      const meta = buildTranslationMeta(item, zh, NEWS_TRANSLATION_PROVIDER);
+      await db`
+        UPDATE news_articles
+        SET
+          title_zh = ${meta.title_zh_provider ? zh.title_zh || null : null},
+          summary_zh = ${meta.summary_zh_provider ? zh.summary_zh || null : null},
+          content_zh = ${meta.content_zh_provider ? zh.content_zh || null : null},
+          content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
+          translation_status = ${meta.translation_status},
+          translation_provider = ${meta.translation_provider},
+          title_zh_provider = ${meta.title_zh_provider},
+          summary_zh_provider = ${meta.summary_zh_provider},
+          content_zh_provider = ${meta.content_zh_provider},
+          translated_at = ${meta.translated_at},
+          updated_at = NOW()
+        WHERE url = ${item.url}
+      `;
+      if (meta.translation_status === TRANSLATION_STATUS_COMPLETED) translatedCount += 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown translation error';
+      translationErrors.push({ url: item.url, message });
+      console.warn(`[News API] Translate failed for ${item.url}: ${message}`);
+    }
   }
 
   return {
@@ -2597,6 +2905,8 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count,
     onlySource: onlySource || 'all',
     cutoffSeconds,
+    sourceDiagnostics,
+    translationErrors,
   };
 }
 

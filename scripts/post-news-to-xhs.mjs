@@ -4,7 +4,19 @@ import path from 'node:path';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { neon } from '@neondatabase/serverless';
+import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
 import { callLlmJson } from '../lib/openrouter.mjs';
+import { hasCompleteTranslatedNewsRow } from '../lib/news-posting-guards.js';
+import {
+  buildArticleDrivenBody,
+  buildArticleDrivenTitle,
+  clipText,
+  normalizeWhitespace,
+  sanitizeArticleBody,
+  stripMarkdown,
+  truncateTitle,
+  inferTopic,
+} from '../lib/xhs-news-draft.js';
 
 function loadEnvFile(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return;
@@ -62,7 +74,6 @@ const CUSTOM_BODY = getArg('custom-body', null);
 const CUSTOM_TITLE_FILE = getArg('title-file', null);
 const CUSTOM_BODY_FILE = getArg('body-file', null);
 const CUSTOM_TOPIC = getArg('topic', null);
-const TEMPLATE = getArg('template', 'auto');
 const PRESET = getArg('preset', process.env.XHS_POST_PRESET || 'default');
 const AI_REWRITE = !['0', 'false', 'no', 'off'].includes(String(getArg('ai-rewrite', process.env.XHS_AI_REWRITE || 'true')).toLowerCase());
 const REWRITE_MODEL = getArg('rewrite-model', process.env.XHS_REWRITE_MODEL || process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash');
@@ -71,6 +82,8 @@ const XHS_POST_TIMEOUT_MS = Math.max(10000, Number(getArg('post-timeout-ms', pro
 const LOCK_STALE_MS = Math.max(60000, Number(getArg('lock-stale-ms', process.env.XHS_POST_LOCK_STALE_MS || '900000')) || 900000);
 const LOCK_FILE = getArg('lock-file', process.env.XHS_POST_LOCK_FILE || path.join(os.homedir(), '.dota2-hub', 'xhs-post.lock'));
 const WECHAT_AUTO_DRAFT = !['0', 'false', 'no', 'off'].includes(String(getArg('wechat-auto-draft', process.env.WECHAT_AUTO_DRAFT || 'true')).toLowerCase());
+const REQUIRE_COMPLETE_TRANSLATION = hasFlag('require-complete-translation')
+  || !['0', 'false', 'no', 'off'].includes(String(process.env.XHS_REQUIRE_COMPLETE_TRANSLATION || 'false').toLowerCase());
 const REWRITE_PROMPT_FILE = getArg(
   'prompt-file',
   process.env.XHS_REWRITE_PROMPT_FILE || path.resolve(process.cwd(), 'docs/xhs-community-post-prompt.md')
@@ -80,88 +93,6 @@ const sql = neon(DB_URL);
 
 function ensureDir(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-}
-
-function stripMarkdown(text = '') {
-  return String(text)
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^>\s?/gm, '')
-    .replace(/^#+\s+/gm, '')
-    .replace(/[*_~]/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function normalizeWhitespace(text = '') {
-  return String(text)
-    .replace(/\r/g, '')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function clipText(text = '', maxLen = 420) {
-  const plain = normalizeWhitespace(stripMarkdown(text));
-  if (plain.length <= maxLen) return plain;
-  return `${plain.slice(0, maxLen - 1).trim()}…`;
-}
-
-function trimTrailingPunctuation(text = '') {
-  return String(text || '').replace(/[\s，。！？、；：,.!?;:]+$/g, '').trim();
-}
-
-function clipTextComplete(text = '', maxLen = 420) {
-  const plain = normalizeWhitespace(stripMarkdown(text));
-  if (plain.length <= maxLen) return plain;
-
-  const slice = plain.slice(0, maxLen).trim();
-  const breakpoints = ['\n\n', '。', '！', '？', '；', '\n', '，', '、', ' '];
-  for (const breakpoint of breakpoints) {
-    const idx = slice.lastIndexOf(breakpoint);
-    if (idx >= Math.max(8, Math.floor(maxLen * 0.45))) {
-      const candidate = trimTrailingPunctuation(slice.slice(0, idx));
-      if (candidate) return candidate;
-    }
-  }
-
-  return trimTrailingPunctuation(slice);
-}
-
-function countHanChars(text = '') {
-  const matches = String(text || '').match(/[\u4e00-\u9fff]/g);
-  return matches ? matches.length : 0;
-}
-
-function truncateTitle(text = '', maxHanChars = 20, maxTotalChars = 60) {
-  const clean = normalizeWhitespace(text);
-  if (!clean) return '';
-  if (countHanChars(clean) <= maxHanChars && clean.length <= maxTotalChars) return clean;
-
-  let han = 0;
-  let total = 0;
-  let slice = '';
-  for (const ch of clean) {
-    const nextHan = /[\u4e00-\u9fff]/.test(ch) ? han + 1 : han;
-    const nextTotal = total + 1;
-    if (nextHan > maxHanChars || nextTotal > maxTotalChars) break;
-    slice += ch;
-    han = nextHan;
-    total = nextTotal;
-  }
-  if (!slice) return clean.slice(0, Math.min(clean.length, maxTotalChars));
-
-  // Break at natural points instead of mid-word
-  const breakpoints = ['：', ':', '，', ',', '。', ' '];
-  for (const bp of breakpoints) {
-    const idx = slice.lastIndexOf(bp);
-    if (idx >= Math.floor(slice.length * 0.5)) {
-      return trimTrailingPunctuation(slice.slice(0, idx));
-    }
-  }
-  return trimTrailingPunctuation(slice);
 }
 
 function maybeReadText(filePath) {
@@ -200,269 +131,42 @@ function readOptionalFile(filePath) {
   return fs.readFileSync(path.resolve(filePath), 'utf8').trim();
 }
 
-function pickFirstText(...values) {
-  for (const value of values) {
-    const normalized = normalizeWhitespace(value || '');
-    if (normalized) return normalized;
-  }
-  return '';
-}
-
-function sanitizeArticleBody(row) {
-  const title = normalizeWhitespace(row.title_zh || row.title_en || '');
-  let text = normalizeWhitespace(stripMarkdown(
-    row.content_zh || row.content_markdown_zh || row.summary_zh || row.content_en || row.content_markdown_en || row.summary_en || ''
-  ));
-  const lines = text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => !/^作者[:：]/.test(line))
-    .filter((line) => !/^更新时间[:：]/.test(line))
-    .filter((line) => !/^来源[:：]/.test(line))
-    .filter((line) => !/^原文链接[:：]/.test(line))
-    .filter((line) => !/^[-—]{3,}$/.test(line));
-
-  if (title && lines[0] && normalizeWhitespace(lines[0]) === title) {
-    lines.shift();
-  }
-  text = normalizeWhitespace(lines.join('\n'));
-  return text;
-}
-
-function detectPostType(row) {
-  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.summary_en || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
-  if (/赛程|schedule|standings|results|开打|奖金池|grand final|group stage/i.test(text)) return 'event';
-  if (/回应|谈|表示|explained|spoke|said|commented|发声/i.test(text)) return 'postmatch';
-  if (/离开|离队|转会|合同|inactive|return|didn.?t leave/i.test(text)) return 'transfer';
-  if (/排名|best mid|top 5|评选|评出|名单/i.test(text)) return 'ranking';
-  return 'news';
-}
-
-function resolveTemplate(row) {
-  if (TEMPLATE && TEMPLATE !== 'auto') return TEMPLATE;
-  return detectPostType(row);
-}
-
-function resolvePreset() {
-  return PRESET || 'default';
-}
-
-function extractSentences(text = '') {
-  return normalizeWhitespace(text)
-    .replace(/\n/g, ' ')
-    .split(/(?<=[。！？!?])/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function toBulletLines(sentences, limit = 3, maxLen = 34) {
-  const items = [];
-  for (const sentence of sentences) {
-    const plain = normalizeWhitespace(sentence).replace(/[。！？!?]+$/g, '');
-    if (!plain || plain.length < 8) continue;
-    const clipped = plain.length > maxLen ? `${plain.slice(0, maxLen - 1).trim()}…` : plain;
-    items.push(`- ${clipped}`);
-    if (items.length >= limit) break;
-  }
-  return items;
-}
-
-function buildLead(row, articleBody, postType) {
-  const summary = normalizeWhitespace(row.summary_zh || row.summary_en || '');
-  if (summary) return clipTextComplete(summary, 52);
-  const firstSentence = extractSentences(articleBody)[0];
-  if (firstSentence) return clipTextComplete(firstSentence, 52);
-  if (postType === 'event') return '这站比赛信息已经出来了，先看重点。';
-  if (postType === 'transfer') return '这条阵容动态和外界之前的判断不太一样。';
-  if (postType === 'postmatch') return '这场赛后复盘已经把问题点得很直接。';
-  if (postType === 'ranking') return '这份排名已经出来了，先看最核心的信息。';
-  return '这条新闻的重点，先直接放前面。';
-}
-
-function buildInfoBullets(row, articleBody, postType) {
-  const sentences = extractSentences(articleBody);
-  const withoutLead = sentences.slice(1);
-  const bullets = toBulletLines(withoutLead, postType === 'event' ? 4 : 3, 32);
-  if (bullets.length) return bullets;
-
-  if (postType === 'event') {
-    return [
-      '- 比赛时间和赛制已经确定',
-      '- 热门队伍基本都在',
-      '- 这站前期就会有高强度对局',
-    ];
-  }
-  if (postType === 'ranking') {
-    return [
-      '- 排名核心信息已经给出',
-      '- 前几位基本是本次赛事讨论焦点',
-      '- 这类榜单更容易引发选手表现讨论',
-    ];
-  }
-  return ['- 关键信息已经明确', '- 后续走势还值得继续看'];
-}
-
-function buildImpactLine(row, postType) {
-  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.summary_en || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
-  if (postType === 'event') return '看点基本集中在赛制、热门队状态和强强对话。';
-  if (postType === 'transfer') return '这说明他和现有队伍的关系还没有真正画上句号。';
-  if (postType === 'postmatch') return '这场最可惜的不是完全打不过，而是关键决策把机会送掉了。';
-  if (postType === 'ranking') return '这种榜单本身不算定论，但很容易带起一波选手表现讨论。';
-  if (/版本|patch/i.test(text)) return '真正有讨论度的还是版本变化会不会影响后面比赛。';
-  return '这条消息本身不算长，但后续讨论空间还挺大。';
-}
-
-function buildCommentLine(postType) {
-  if (postType === 'event') return '最近只想追一站比赛的，可以先把这站记上。';
-  if (postType === 'transfer') return '后面会不会再有新动向，估计还得继续看。';
-  if (postType === 'postmatch') return '上限还在，但关键局稳定性确实得再观察。';
-  if (postType === 'ranking') return '你要是自己排这份榜，前几位大概率也绕不开这些名字。';
-  return '这条先记下，后面大概率还会有后续。';
-}
-
-function buildTemplateTitle(row, template) {
-  const titleZh = normalizeWhitespace(row.title_zh || '');
-  const titleEn = normalizeWhitespace(row.title_en || '');
-  const sourceText = `${titleZh}\n${titleEn}`;
-  const base = titleZh || titleEn || 'DOTA2新闻';
-  if (template === 'event') {
-    if (/PGL Wallachia/i.test(sourceText)) return 'PGL Wallachia S7赛程公布';
-    return clipText(base
-      .replace(/将于2026年3月在布加勒斯特举行，16队争夺100万美元奖金池/g, '赛程公布：16队争100万美元奖金')
-      .replace(/赛程公布：3月7日罗马尼亚开打，16队争夺100万美元奖金/g, '赛程公布：16队争100万美元奖金'), 26);
-  }
-  if (template === 'postmatch') {
-    if (/Panto|Team Spirit/i.test(sourceText)) return 'Panto复盘Spirit失利';
-    return clipText(base
-      .replace(/Team Spirit 队长 /g, '')
-      .replace(/谈队伍在 PGL Wallachia Season 7 季后赛不敌 BetBoom Team 的原因/g, '复盘失利：问题出在BP和Roshan团'), 26);
-  }
-  if (template === 'transfer') {
-    if (/TORONTOTOKYO/i.test(sourceText)) return 'TORONTOTOKYO回应去向';
-    return clipText(base
-      .replace(/澄清：其实没有离开Aurora，还在领工资/g, '回应去向：目前仍在Aurora合同中'), 26);
-  }
-  if (template === 'ranking') {
-    if (/Larl/i.test(sourceText)) return 'Larl评S7中单：Nisha第一';
-    return clipText(base
-      .replace(/评选PGL瓦拉几亚赛季7最佳中单/g, '评PGL瓦拉几亚S7中单：Nisha排第一')
-      .replace(/Larl Names the Best Mid Laners at PGL Wallachia Season 7/g, 'Larl评PGL瓦拉几亚S7中单：Nisha排第一'), 26);
-  }
-  return clipText(base, 26);
-}
-
-function buildBodyFromTemplate(row, template) {
-  const articleBody = sanitizeArticleBody(row);
-  const summary = normalizeWhitespace(row.summary_zh || row.summary_en || '');
-  const text = `${row.title_zh || ''}\n${row.title_en || ''}\n${articleBody}`;
-  if (template === 'event') {
-    const lead = summary || '这站比赛信息已经出来了，先看最核心的部分。';
-    return normalizeWhitespace([
-      clipText(lead, 52),
-      '',
-      '- 比赛时间和赛制已经确定',
-      '- 小组赛采用瑞士轮',
-      '- 季后赛为双败淘汰赛',
-      '- 热门队伍基本都在这站出战',
-      '',
-      '这站前几天就会有高强度对局，赛制本身也比较有看点。',
-      '',
-      '最近想认真追一站比赛的，可以先把这站记上。',
-    ].join('\n'));
-  }
-  if (template === 'transfer') {
-    const lead = summary || '这条阵容动态和外界之前的判断不太一样。';
-    return normalizeWhitespace([
-      clipText(lead, 52),
-      '',
-      '- 选手目前仍在原队合同期内',
-      '- 当前处于不活跃 / 预备名单状态',
-      '- 工资或合同关系没有完全中断',
-      '- 外界此前对"已经离队"的判断并不准确',
-      '',
-      '这说明他和现有队伍的关系还没有真正画上句号。',
-      '',
-      '后面会不会有新去向，估计还得继续看。',
-    ].join('\n'));
-  }
-  if (template === 'postmatch') {
-    const lead = summary || '赛后复盘已经把问题点得比较直接。';
-    return normalizeWhitespace([
-      clipTextComplete(lead, 52),
-      '',
-      '- 主要问题集中在BP处理',
-      '- 系列赛中段一度还能咬住局势',
-      '- 关键转折点出现在Roshan附近',
-      '- 决策失误直接把机会送掉了',
-      '',
-      '这场最可惜的不是完全打不过，而是关键决策把机会白给了。',
-      '',
-      '上限还在，但关键局稳定性确实得再观察。',
-    ].join('\n'));
-  }
-  if (template === 'ranking') {
-    const lead = summary || '这份排名已经出来了，重点看前几位。';
-    return normalizeWhitespace([
-      clipText(lead, 52),
-      '',
-      '- 排名核心信息已经给出',
-      '- 第一梯队基本就是这次赛事热议人选',
-      '- 排名里也带出了选手近期状态讨论',
-      '- 这种榜单本身就容易引发对比',
-      '',
-      '这种榜单本身不算定论，但很容易带起一波选手表现讨论。',
-      '',
-      '你要是自己排这份榜，前几位大概率也绕不开这些名字。',
-    ].join('\n'));
-  }
-
-  const lead = buildLead(row, articleBody, template);
-  const bullets = buildInfoBullets(row, articleBody, template);
-  const impact = buildImpactLine(row, template);
-  const comment = buildCommentLine(template);
-  return normalizeWhitespace([
-    lead,
-    '',
-    ...bullets,
-    '',
-    impact,
-    '',
-    comment,
-  ].join('\n'));
-}
-
 function buildBody(row) {
   const overrideBody = CUSTOM_BODY || readOptionalFile(CUSTOM_BODY_FILE);
   if (overrideBody) return normalizeWhitespace(overrideBody);
-  const template = resolveTemplate(row);
-  const preset = resolvePreset();
-  const limit = preset === 'concise-news' ? 300 : 400;
-  return clipTextComplete(buildBodyFromTemplate(row, template), limit);
+  const limit = PRESET === 'concise-news' ? 300 : 400;
+  return buildArticleDrivenBody(row, { maxLen: limit });
 }
 
 function buildTitle(row) {
   const overrideTitle = CUSTOM_TITLE || readOptionalFile(CUSTOM_TITLE_FILE);
   if (overrideTitle) return truncateTitle(normalizeWhitespace(overrideTitle), 20, 60);
-  return truncateTitle(buildTemplateTitle(row, resolveTemplate(row)), 20, 60);
+  return buildArticleDrivenTitle(row);
 }
 
 function buildTopic(row) {
   if (CUSTOM_TOPIC) return CUSTOM_TOPIC;
-  const sourceText = `${row.title_zh || ''}\n${row.title_en || ''}\n${row.summary_zh || ''}\n${row.summary_en || ''}\n${row.content_zh || ''}\n${row.content_en || ''}`;
-  if (/PGL Wallachia/i.test(sourceText)) return 'PGL Wallachia';
-  if (/Team Spirit/i.test(sourceText)) return 'Team Spirit';
-  if (/Dota 2|DOTA2|刀塔/i.test(sourceText)) return 'DOTA2';
-  return null;
+  return inferTopic(row);
 }
 
 const REWRITE_PROMPT_REFERENCE = maybeReadText(REWRITE_PROMPT_FILE);
 
+function glossaryPromptForRow(row = {}) {
+  return buildTranslationGlossaryPrompt({
+    title: row?.title_en || '',
+    summary: row?.summary_en || '',
+    content: row?.content_markdown_en || row?.content_en || '',
+  });
+}
+
 function buildRewritePrompt(row, draft) {
   const articleBody = clipText(sanitizeArticleBody(row), 1800);
+  const glossaryPrompt = glossaryPromptForRow(row);
   return [
     REWRITE_PROMPT_REFERENCE,
     '',
+    glossaryPrompt,
+    glossaryPrompt ? '' : '',
     '请基于下面新闻素材直接输出最终 JSON。',
     '只输出 JSON，不要解释，不要 Markdown 代码块。',
     '',
@@ -626,7 +330,7 @@ async function fetchRows() {
   if (IDS.length) {
     return sql`
       SELECT id, source, url, image_url, published_at, title_en, summary_en, content_en, content_markdown_en,
-             title_zh, summary_zh, content_zh, content_markdown_zh
+             title_zh, summary_zh, content_zh, content_markdown_zh, translation_status
       FROM news_articles
       WHERE id = ANY(${IDS})
       ORDER BY published_at DESC NULLS LAST
@@ -635,7 +339,7 @@ async function fetchRows() {
 
   return sql`
     SELECT id, source, url, image_url, published_at, title_en, summary_en, content_en, content_markdown_en,
-           title_zh, summary_zh, content_zh, content_markdown_zh
+           title_zh, summary_zh, content_zh, content_markdown_zh, translation_status
     FROM news_articles
     WHERE COALESCE(title_zh, title_en, '') <> ''
       AND COALESCE(translation_status, '') <> 'xhs_skip'
@@ -765,6 +469,10 @@ async function main() {
         }
         if (!rowHasAnySource(row)) {
           results.push({ id: row.id, status: 'skipped', reason: 'missing_source_content' });
+          continue;
+        }
+        if (REQUIRE_COMPLETE_TRANSLATION && !hasCompleteTranslatedNewsRow(row)) {
+          results.push({ id: row.id, status: 'skipped', reason: 'translation_incomplete' });
           continue;
         }
         if (!row.image_url) {

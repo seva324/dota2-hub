@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-04-09T01:12:51.942Z",
+  "sources": {
+    "heroes": [
+      "https://www.dota2.com/datafeed/herolist?language=english",
+      "https://www.dota2.com/datafeed/herolist?language=schinese"
+    ],
+    "items": [
+      "https://www.dota2.com/datafeed/itemlist?language=english",
+      "https://www.dota2.com/datafeed/itemlist?language=schinese"
+    ],
+    "abilities": [
+      "https://www.dota2.com/datafeed/abilitylist?language=english",
+      "https://www.dota2.com/datafeed/abilitylist?language=schinese"
+    ],
+    "heroAbbreviations": [
+      "https://liquipedia.net/dota2/List_of_Abbreviations"
+    ]
+  },
+  "counts": {
+    "terms": 2,
+    "heroes": 127,
+    "items": 409,
+    "abilities": 734
+  }
+}
