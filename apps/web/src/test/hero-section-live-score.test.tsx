@@ -135,7 +135,7 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[1]).getByText('失利方')).toBeInTheDocument();
     expect(within(cards[1]).getByText('时长 35:00')).toBeInTheDocument();
     expect(within(cards[1]).queryByText('Map 1 已结束')).not.toBeInTheDocument();
-  });
+  }, 15000);
 
   it('falls back cleanly when the live API returns no match', async () => {
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {

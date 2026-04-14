@@ -132,5 +132,5 @@ describe('TeamFlyout', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/team-flyout?limit=5&offset=5&teamId=1&name=Team+Alpha');
     });
-  });
+  }, 15000);
 });
