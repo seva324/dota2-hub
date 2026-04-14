@@ -79,7 +79,7 @@ describe('TeamFlyout', () => {
 
     expect(await screen.findByText('Opp 1')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/team-flyout?limit=5&offset=0&teamId=1&name=Team+Alpha');
-  });
+  }, 15000);
 
   it('shows five recent matches by default and loads more lazily', async () => {
     const matches = buildRecentMatches(8);

@@ -382,7 +382,7 @@ describe('/api/player-profile account_id filter regression', () => {
             account_id: '9001',
             player: {
               name: 'Cached Player',
-              avatar_url: 'https://dota2-hub.vercel.app/images/mirror/players/9403474.png',
+              avatar_url: 'https://s3.dltv.org/uploads/players/5oQ0XCp7aqrvWr0yzeoL7bb5M5FvFe5H.png',
             },
             recent_matches: [{
               match_id: '99',

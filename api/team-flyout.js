@@ -3,7 +3,7 @@
  * Returns team summary, next match, and paginated recent matches for a team.
  */
 import { neon } from '@neondatabase/serverless';
-import { getMirroredAssetUrl, rebaseMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import {
   enrichRecentMatchesWithTeamHeroes,
   getTeamFlyoutCachePayload,
@@ -109,7 +109,7 @@ function rehydrateActiveSquad(activeSquad, req) {
   if (!Array.isArray(activeSquad)) return [];
   return activeSquad.map((player) => ({
     ...player,
-    avatar_url: rebaseMirroredAssetUrl(player?.avatar_url || null, req),
+    avatar_url: getMirroredAssetUrl(player?.avatar_url || null, req),
   }));
 }
 

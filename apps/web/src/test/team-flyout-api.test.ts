@@ -143,7 +143,7 @@ describe('/api/team-flyout', () => {
       active_squad: [{
         account_id: '11',
         name: 'Player 11',
-        avatar_url: 'https://dota2-hub.vercel.app/images/mirror/players/9403474.png',
+        avatar_url: 'https://s3.dltv.org/uploads/players/5oQ0XCp7aqrvWr0yzeoL7bb5M5FvFe5H.png',
       }],
       top_heroes_90d: [],
     });

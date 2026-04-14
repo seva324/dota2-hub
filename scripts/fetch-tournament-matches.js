@@ -11,6 +11,10 @@ import { fileURLToPath } from 'url';
 import https from 'https';
 import zlib from 'zlib';
 import fs from 'fs';
+import {
+  buildDltvRankingLogoIndex,
+  findDltvRankingLogo,
+} from '../lib/server/dltv-team-assets.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +28,9 @@ const logosDir = path.join(__dirname, '..', 'public', 'images', 'teams');
 if (!fs.existsSync(logosDir)) {
   fs.mkdirSync(logosDir, { recursive: true });
 }
+
+const DLTV_RANKING_URL = 'https://dltv.org/ranking';
+const KNOWN_LOGO_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
 
 // 添加 stage 列（如果不存在）
 try {
@@ -101,13 +108,13 @@ const teamLogoUrls = {
 // Logo 缓存
 const logoCache = {};
 
-function fetchWithGzip(url) {
+function fetchWithGzip(url, accept = 'application/json') {
   return new Promise((resolve, reject) => {
     const options = new URL(url);
     options.headers = {
       'User-Agent': 'DOTA2-Hub-Bot/1.0 (https://github.com/seva324/dota2-hub)',
       'Accept-Encoding': 'gzip',
-      'Accept': 'application/json'
+      'Accept': accept
     };
 
     const req = https.get(options, (res) => {
@@ -127,6 +134,18 @@ function fetchWithGzip(url) {
     });
     req.on('error', reject);
   });
+}
+
+async function fetchDltvRankingIndex() {
+  try {
+    const html = await fetchWithGzip(DLTV_RANKING_URL, 'text/html,application/xhtml+xml');
+    const index = buildDltvRankingLogoIndex(html);
+    console.log(`Loaded ${index.entries.length} team logos from DLTV ranking`);
+    return index;
+  } catch (error) {
+    console.warn(`Failed to load DLTV ranking logos: ${error.message}`);
+    return { entries: [], byKey: new Map() };
+  }
 }
 
 function downloadImage(url, filepath) {
@@ -158,6 +177,35 @@ function downloadImage(url, filepath) {
   });
 }
 
+function inferLogoExtension(url) {
+  try {
+    const pathname = new URL(url).pathname || '';
+    const ext = path.extname(pathname).toLowerCase();
+    return KNOWN_LOGO_EXTENSIONS.includes(ext) ? ext : '.png';
+  } catch {
+    return '.png';
+  }
+}
+
+function getLogoStorage(teamId, ext = '.png') {
+  const normalizedExt = KNOWN_LOGO_EXTENSIONS.includes(ext) ? ext : '.png';
+  const publicPath = `${GITHUB_PAGES_BASE}/images/teams/${teamId}${normalizedExt}`;
+  return {
+    publicPath,
+    localFilePath: path.join(__dirname, '..', 'public', 'images', 'teams', `${teamId}${normalizedExt}`),
+  };
+}
+
+function findExistingLogoStorage(teamId) {
+  for (const ext of KNOWN_LOGO_EXTENSIONS) {
+    const storage = getLogoStorage(teamId, ext);
+    if (fs.existsSync(storage.localFilePath)) {
+      return storage;
+    }
+  }
+  return getLogoStorage(teamId);
+}
+
 // 将队名转换为 ID（用于文件名）
 function teamNameToId(teamName) {
   if (!teamName) return 'unknown';
@@ -173,7 +221,7 @@ function normalizeTeamName(teamName) {
   return teamNameMapping[lower] || teamName;
 }
 
-async function getTeamLogo(teamName) {
+async function getTeamLogo(teamName, dltvRankingIndex) {
   if (!teamName) return null;
   
   // 先标准化队名
@@ -187,13 +235,29 @@ async function getTeamLogo(teamName) {
   
   // 生成本地文件路径
   const teamId = teamNameToId(normalizedName);
-  const localPath = `${GITHUB_PAGES_BASE}/images/teams/${teamId}.png`;
-  const localFilePath = path.join(__dirname, '..', 'public', localPath);
-  
+  const existingStorage = findExistingLogoStorage(teamId);
+  const dltvLogo = findDltvRankingLogo(dltvRankingIndex, normalizedName, lowerName, teamId);
+
+  if (dltvLogo?.logoUrl) {
+    const rankingStorage = getLogoStorage(teamId, inferLogoExtension(dltvLogo.logoUrl));
+    try {
+      await downloadImage(dltvLogo.logoUrl, rankingStorage.localFilePath);
+      console.log(`  Downloaded DLTV ranking logo: ${path.basename(rankingStorage.localFilePath)}`);
+      logoCache[lowerName] = rankingStorage.publicPath;
+      return rankingStorage.publicPath;
+    } catch (error) {
+      console.log(`  Failed to download DLTV ranking logo for ${teamName}: ${error.message}`);
+      if (fs.existsSync(existingStorage.localFilePath)) {
+        logoCache[lowerName] = existingStorage.publicPath;
+        return existingStorage.publicPath;
+      }
+    }
+  }
+
   // 如果本地文件已存在，直接返回本地路径
-  if (fs.existsSync(localFilePath)) {
-    logoCache[lowerName] = localPath;
-    return localPath;
+  if (fs.existsSync(existingStorage.localFilePath)) {
+    logoCache[lowerName] = existingStorage.publicPath;
+    return existingStorage.publicPath;
   }
   
   // 尝试下载 logo
@@ -248,11 +312,12 @@ async function getTeamLogo(teamName) {
   
   // 下载并保存到本地
   if (logoUrl) {
+    const fallbackStorage = getLogoStorage(teamId, inferLogoExtension(logoUrl));
     try {
-      await downloadImage(logoUrl, localFilePath);
-      console.log(`  Downloaded logo: ${teamId}.png`);
-      logoCache[lowerName] = localPath;
-      return localPath;
+      await downloadImage(logoUrl, fallbackStorage.localFilePath);
+      console.log(`  Downloaded logo: ${path.basename(fallbackStorage.localFilePath)}`);
+      logoCache[lowerName] = fallbackStorage.publicPath;
+      return fallbackStorage.publicPath;
     } catch (e) {
       console.log(`  Failed to download logo for ${teamName}: ${e.message}`);
     }
@@ -546,6 +611,7 @@ async function main() {
   `);
   
   let totalSaved = 0;
+  const dltvRankingIndex = await fetchDltvRankingIndex();
   
   for (const t of tournaments) {
     console.log(`📅 ${t.name_cn || t.name}`);
@@ -559,8 +625,8 @@ async function main() {
         const radiantName = normalizeTeamName(m.radiant_team_name);
         const direName = normalizeTeamName(m.dire_team_name);
         
-        const radiantLogo = await getTeamLogo(radiantName);
-        const direLogo = await getTeamLogo(direName);
+        const radiantLogo = await getTeamLogo(radiantName, dltvRankingIndex);
+        const direLogo = await getTeamLogo(direName, dltvRankingIndex);
         
         insertMatch.run(
           m.match_id,

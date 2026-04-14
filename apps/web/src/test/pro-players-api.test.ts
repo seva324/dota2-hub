@@ -97,6 +97,43 @@ describe('/api/pro-players', () => {
     expect(queryMock).not.toHaveBeenCalled();
   });
 
+  it('maps known DLTV avatar urls to the current-host mirror path', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE account_id =')) {
+        return [
+          {
+            account_id: 1001,
+            name: 'Player One',
+            name_cn: null,
+            team_id: 2001,
+            team_name: 'Team Alpha',
+            country_code: 'CN',
+            avatar_url: 'https://s3.dltv.org/uploads/players/5oQ0XCp7aqrvWr0yzeoL7bb5M5FvFe5H.png',
+            realname: 'Real One',
+            birth_date: null,
+            birth_year: 1999,
+            birth_month: 5,
+          },
+        ];
+      }
+      return [];
+    });
+
+    const { default: handler } = await import('../../../../api/pro-players.js');
+    const req = {
+      method: 'GET',
+      query: { account_id: '1001' },
+      headers: { host: 'prod.example.com', 'x-forwarded-proto': 'https' },
+    };
+    const res = createRes();
+
+    await handler(req as any, res as any);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any)?.avatar_url).toBe('https://prod.example.com/images/mirror/players/9403474.png');
+  });
+
   it('returns the full map when no account_id is provided', async () => {
     queryMock.mockResolvedValue([
       {
@@ -106,7 +143,7 @@ describe('/api/pro-players', () => {
         team_id: 2001,
         team_name: 'Team Alpha',
         country_code: null,
-        avatar_url: null,
+        avatar_url: 'https://s3.dltv.org/uploads/players/5oQ0XCp7aqrvWr0yzeoL7bb5M5FvFe5H.png',
         realname: null,
         birth_date: null,
         birth_year: null,
@@ -126,6 +163,7 @@ describe('/api/pro-players', () => {
         name: 'Player One',
         team_id: '2001',
         team_name: 'Team Alpha',
+        avatar_url: '/images/mirror/players/9403474.png',
       }),
     });
   });

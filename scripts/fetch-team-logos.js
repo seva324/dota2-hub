@@ -9,6 +9,10 @@ import { fileURLToPath } from 'url';
 import https from 'https';
 import zlib from 'zlib';
 import fs from 'fs';
+import {
+  buildDltvRankingLogoIndex,
+  findDltvRankingLogo,
+} from '../lib/server/dltv-team-assets.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,13 +26,16 @@ if (!fs.existsSync(logosDir)) {
   fs.mkdirSync(logosDir, { recursive: true });
 }
 
-function fetchWithGzip(url) {
+const DLTV_RANKING_URL = 'https://dltv.org/ranking';
+const KNOWN_LOGO_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.webp']);
+
+function fetchWithGzip(url, accept = 'application/json') {
   return new Promise((resolve, reject) => {
     const options = new URL(url);
     options.headers = {
       'User-Agent': 'DOTA2-Hub-Bot/1.0 (https://github.com/seva324/dota2-hub)',
       'Accept-Encoding': 'gzip',
-      'Accept': 'application/json'
+      'Accept': accept
     };
 
     const req = https.get(options, (res) => {
@@ -53,6 +60,18 @@ function fetchWithGzip(url) {
       reject(new Error('Timeout'));
     });
   });
+}
+
+async function fetchDltvRankingIndex() {
+  try {
+    const html = await fetchWithGzip(DLTV_RANKING_URL, 'text/html,application/xhtml+xml');
+    const index = buildDltvRankingLogoIndex(html);
+    console.log(`Loaded ${index.entries.length} team logos from DLTV ranking`);
+    return index;
+  } catch (error) {
+    console.warn(`Failed to load DLTV ranking logos: ${error.message}`);
+    return { entries: [], byKey: new Map() };
+  }
 }
 
 async function downloadImage(url, filepath) {
@@ -82,6 +101,16 @@ async function downloadImage(url, filepath) {
       reject(err);
     });
   });
+}
+
+function inferLogoExtension(url) {
+  try {
+    const pathname = new URL(url).pathname || '';
+    const ext = path.extname(pathname).toLowerCase();
+    return KNOWN_LOGO_EXTENSIONS.has(ext) ? ext : '.png';
+  } catch {
+    return '.png';
+  }
 }
 
 async function fetchTeamLogo(teamName, teamId) {
@@ -241,18 +270,12 @@ function getTeamIdFromName(name) {
 
 async function main() {
   console.log('========================================');
-  console.log('从 Liquipedia 获取战队 Logo 并更新比赛');
+  console.log('优先从 DLTV Ranking 获取战队 Logo，并回退到 Liquipedia/已有数据');
   console.log('Time:', new Date().toISOString());
   console.log('========================================\n');
   
   const updateTeam = db.prepare(`
     UPDATE teams SET logo_url = ?, updated_at = unixepoch() WHERE id = ?
-  `);
-  
-  const updateMatchTeamLogos = db.prepare(`
-    UPDATE matches 
-    SET radiant_team_logo = ?, dire_team_logo = ?
-    WHERE radiant_team_id = ? OR dire_team_id = ?
   `);
   
   // 获取所有在比赛中出现过的队伍
@@ -265,6 +288,9 @@ async function main() {
   console.log(`Found ${matchTeams.length} unique teams in matches\n`);
   
   const teamLogoCache = {};
+  const selectTeamLogoById = db.prepare('SELECT logo_url FROM teams WHERE id = ?');
+  const selectTeamLogoByName = db.prepare('SELECT logo_url FROM teams WHERE lower(name) = lower(?)');
+  const dltvRankingIndex = await fetchDltvRankingIndex();
   
   for (const team of matchTeams) {
     if (!team.name || team.name === 'unknown') continue;
@@ -273,20 +299,21 @@ async function main() {
     console.log(`Processing logo for ${team.name} (${teamId})...`);
     
     // 检查是否已有 logo
-    const existingLogo = db.prepare('SELECT logo_url FROM teams WHERE id = ?').get(teamId);
-    if (existingLogo?.logo_url) {
+    const existingLogo = selectTeamLogoById.get(teamId);
+    const dltvLogo = findDltvRankingLogo(dltvRankingIndex, team.name, teamId);
+    if (!dltvLogo && existingLogo?.logo_url) {
       console.log(`  Already has logo: ${existingLogo.logo_url}`);
       teamLogoCache[teamId] = existingLogo.logo_url;
       continue;
     }
     
     try {
-      const logoUrl = await fetchTeamLogo(team.name, teamId);
+      const logoUrl = dltvLogo?.logoUrl || await fetchTeamLogo(team.name, teamId);
       
       if (logoUrl) {
         console.log(`  Found: ${logoUrl}`);
         
-        const ext = logoUrl.includes('.png') ? '.png' : '.svg';
+        const ext = inferLogoExtension(logoUrl);
         const localPath = path.join(logosDir, `${teamId}${ext}`);
         
         try {
@@ -317,51 +344,20 @@ async function main() {
   // 获取所有比赛的队伍
   const matches = db.prepare('SELECT id, radiant_team_id, dire_team_id, radiant_team_name, dire_team_name FROM matches').all();
   
-  // 已知战队的直接 logo URL 映射 - 用于更新比赛记录
-  const teamLogoUrls = {
-    'yakult-brothers': '/dota2-hub/images/teams/yakult-brothers.png',
-    'yakult_brothers': '/dota2-hub/images/teams/yakult-brothers.png',
-    'yb': '/dota2-hub/images/teams/yakult-brothers.png',
-    'og': '/dota2-hub/images/teams/og.png',
-    'team-liquid': '/dota2-hub/images/teams/team-liquid.png',
-    'team-spirit': '/dota2-hub/images/teams/team-spirit.png',
-    'spirit': '/dota2-hub/images/teams/team-spirit.png',
-    'tundra-esports': '/dota2-hub/images/teams/tundra-esports.png',
-    'tundra': '/dota2-hub/images/teams/tundra-esports.png',
-    'aurora-gaming': '/dota2-hub/images/teams/aurora-gaming.png',
-    'xtreme-gaming': '/dota2-hub/images/teams/xtreme-gaming.png',
-    'xg': '/dota2-hub/images/teams/xtreme-gaming.png',
-    'vici-gaming': '/dota2-hub/images/teams/vici-gaming.png',
-    'vg': '/dota2-hub/images/teams/vici-gaming.png',
-    'lgd-gaming': '/dota2-hub/images/teams/lgd-gaming.png',
-    'azure-ray': '/dota2-hub/images/teams/azure-ray.png',
-    'execration': '/dota2-hub/images/teams/execration.png',
-  };
-  
   let updatedCount = 0;
+
+  const resolveStoredLogo = (teamId, teamName) => (
+    teamLogoCache[teamId]
+    || teamLogoCache[getTeamIdFromName(teamName)]
+    || selectTeamLogoById.get(teamId)?.logo_url
+    || selectTeamLogoById.get(getTeamIdFromName(teamName))?.logo_url
+    || selectTeamLogoByName.get(teamName)?.logo_url
+    || null
+  );
   
   for (const m of matches) {
-    // 使用队伍名称（转小写）来查找 logo
-    const radiantNameLower = (m.radiant_team_name || '').toLowerCase();
-    const direNameLower = (m.dire_team_name || '').toLowerCase();
-    const radiantIdLower = (m.radiant_team_id || '').toLowerCase();
-    const direIdLower = (m.dire_team_id || '').toLowerCase();
-    
-    // 优先使用队伍名称匹配
-    let radiantLogo = teamLogoUrls[radiantNameLower] || teamLogoUrls[radiantIdLower];
-    let direLogo = teamLogoUrls[direNameLower] || teamLogoUrls[direIdLower];
-    
-    // 如果没有匹配到，尝试从名称中提取
-    if (!radiantLogo) {
-      if (radiantNameLower.includes('team spirit') || radiantNameLower === 'spirit') radiantLogo = '/dota2-hub/images/teams/team-spirit.png';
-      else if (radiantNameLower.includes('tundra')) radiantLogo = '/dota2-hub/images/teams/tundra-esports.png';
-      else if (radiantNameLower.includes('execration')) radiantLogo = '/dota2-hub/images/teams/execration.png';
-    }
-    if (!direLogo) {
-      if (direNameLower.includes('team spirit') || direNameLower === 'spirit') direLogo = '/dota2-hub/images/teams/team-spirit.png';
-      else if (direNameLower.includes('tundra')) direLogo = '/dota2-hub/images/teams/tundra-esports.png';
-      else if (direNameLower.includes('execration')) direLogo = '/dota2-hub/images/teams/execration.png';
-    }
+    const radiantLogo = resolveStoredLogo(m.radiant_team_id, m.radiant_team_name);
+    const direLogo = resolveStoredLogo(m.dire_team_id, m.dire_team_name);
     
     if (radiantLogo || direLogo) {
       db.prepare(`
