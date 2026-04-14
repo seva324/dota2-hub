@@ -3,7 +3,14 @@ import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
 import { callLlmText } from '../lib/openrouter.mjs';
 import { mapWithConcurrency } from '../lib/server/derived-refresh-utils.js';
+import {
+  normalizeBo3CoverImageUrl,
+  rewriteBo3ImageUrlsForClient,
+  toChinaReachableBo3ImageUrl,
+} from '../lib/server/bo3-images.js';
 import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
+
+export { normalizeBo3CoverImageUrl } from '../lib/server/bo3-images.js';
 
 /**
  * News API
@@ -100,6 +107,21 @@ function getDb() {
     sql = neon(DATABASE_URL);
   }
   return sql;
+}
+
+function getPublicOrigin(req) {
+  const configured =
+    process.env.PUBLIC_SITE_ORIGIN ||
+    process.env.VITE_PUBLIC_SITE_ORIGIN ||
+    process.env.SITE_URL ||
+    '';
+  if (configured) return configured.replace(/\/+$/, '');
+
+  const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host || '';
+  if (!host) return '';
+  const resolvedHost = Array.isArray(host) ? host[0] : host;
+  const proto = req?.headers?.['x-forwarded-proto'] || (/^(localhost|127\.0\.0\.1)(?::\d+)?$/.test(resolvedHost) ? 'http' : 'https');
+  return `${Array.isArray(proto) ? proto[0] : proto}://${resolvedHost}`.replace(/\/+$/, '');
 }
 
 function generateId(url, prefix) {
@@ -829,34 +851,6 @@ function normalizeUrl(rawUrl, baseUrl) {
     return `${url.origin}${url.pathname}${url.search}`;
   } catch {
     return null;
-  }
-}
-
-export function normalizeBo3CoverImageUrl(rawUrl, baseUrl = 'https://bo3.gg') {
-  const normalized = normalizeUrl(rawUrl, baseUrl);
-  if (!normalized) return undefined;
-
-  try {
-    const url = new URL(normalized);
-    const host = url.hostname.toLowerCase();
-    const isBo3NewsTitleImage =
-      url.pathname.startsWith('/uploads/news/') &&
-      url.pathname.includes('/title_image/');
-
-    if (host === 'image-proxy.bo3.gg') {
-      if (!isBo3NewsTitleImage) return normalized;
-      if (!url.searchParams.has('w')) url.searchParams.set('w', '960');
-      if (!url.searchParams.has('h')) url.searchParams.set('h', '480');
-      return url.toString();
-    }
-
-    if ((host === 'files.bo3.gg' || host === 'bo3.gg' || host === 'www.bo3.gg') && isBo3NewsTitleImage) {
-      return `https://image-proxy.bo3.gg${url.pathname}.webp?w=960&h=480`;
-    }
-
-    return normalized;
-  } catch {
-    return normalized;
   }
 }
 
@@ -2851,7 +2845,7 @@ async function translateItem(apiKey, item) {
   };
 }
 
-async function getStoredNews(db, limit = 20) {
+async function getStoredNews(db, limit = 20, options = {}) {
   const rows = await db`
     SELECT *
     FROM news_articles
@@ -2867,14 +2861,17 @@ async function getStoredNews(db, limit = 20) {
       source: row.source,
       url: row.url,
       category: row.category || 'community',
-      image_url: row.image_url,
+      image_url: toChinaReachableBo3ImageUrl(row.image_url, row.url || 'https://bo3.gg', options),
       published_at: Number(row.published_at),
       title: row.title_zh || row.title_en,
       summary: noisyZh ? (row.summary_en || row.summary_zh) : (row.summary_zh || row.summary_en),
       content: noisyZh ? (row.content_en || row.content_zh) : (row.content_zh || row.content_en),
-      content_markdown: noisyZh
-        ? (row.content_markdown_en || row.content_markdown_zh)
-        : (row.content_markdown_zh || row.content_markdown_en),
+      content_markdown: rewriteBo3ImageUrlsForClient(
+        noisyZh
+          ? (row.content_markdown_en || row.content_markdown_zh)
+          : (row.content_markdown_zh || row.content_markdown_en),
+        options,
+      ),
       translation_status: row.translation_status || null,
       translation_provider: row.translation_provider || null,
     };
@@ -3334,12 +3331,13 @@ export default async function handler(req, res) {
     }
 
     await ensureNewsTable(db);
-    let stored = await getStoredNews(db, MAX_ITEMS);
+    const clientImageOptions = { publicOrigin: getPublicOrigin(req) };
+    let stored = await getStoredNews(db, MAX_ITEMS, clientImageOptions);
 
     // Cold-start fallback: do one sync when table is empty.
     if (stored.length === 0) {
       await syncNewsToDb();
-      stored = await getStoredNews(db, MAX_ITEMS);
+      stored = await getStoredNews(db, MAX_ITEMS, clientImageOptions);
     }
 
     if (stored.length === 0) {
