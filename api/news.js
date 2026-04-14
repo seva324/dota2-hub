@@ -449,7 +449,7 @@ async function collectBo3UrlsViaApi() {
       const url = bo3NewsUrlFromSlug(slug);
       if (!url) continue;
       urls.push(url);
-      const imageUrl = item.title_image_url || item.title_image_square_url || item.image;
+      const imageUrl = normalizeBo3CoverImageUrl(item.title_image_url || item.title_image_square_url || item.image);
       if (imageUrl) imageHints.set(url, imageUrl);
     }
     return {
@@ -536,7 +536,7 @@ async function fetchBo3ArticleViaApi(url) {
 
   const canonicalUrl = bo3NewsUrlFromSlug(item.slug) || url;
   const { markdown, images } = editorJsBlocksToMarkdown(item.body);
-  const imageUrl = item.title_image_url || item.title_image_square_url || item.image || images[0] || undefined;
+  const imageUrl = normalizeBo3CoverImageUrl(item.title_image_url || item.title_image_square_url || item.image || images[0]) || undefined;
   const contentMarkdown = sanitizeStoredMarkdown(normalizeBo3ContentMarkdown(markdown || item.description || ''));
   const content = truncateText(markdownToText(contentMarkdown || item.description || ''));
 
@@ -829,6 +829,34 @@ function normalizeUrl(rawUrl, baseUrl) {
     return `${url.origin}${url.pathname}${url.search}`;
   } catch {
     return null;
+  }
+}
+
+export function normalizeBo3CoverImageUrl(rawUrl, baseUrl = 'https://bo3.gg') {
+  const normalized = normalizeUrl(rawUrl, baseUrl);
+  if (!normalized) return undefined;
+
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    const isBo3NewsTitleImage =
+      url.pathname.startsWith('/uploads/news/') &&
+      url.pathname.includes('/title_image/');
+
+    if (host === 'image-proxy.bo3.gg') {
+      if (!isBo3NewsTitleImage) return normalized;
+      if (!url.searchParams.has('w')) url.searchParams.set('w', '960');
+      if (!url.searchParams.has('h')) url.searchParams.set('h', '480');
+      return url.toString();
+    }
+
+    if ((host === 'files.bo3.gg' || host === 'bo3.gg' || host === 'www.bo3.gg') && isBo3NewsTitleImage) {
+      return `https://image-proxy.bo3.gg${url.pathname}.webp?w=960&h=480`;
+    }
+
+    return normalized;
+  } catch {
+    return normalized;
   }
 }
 
@@ -2022,7 +2050,10 @@ async function scrapeBO3(options = {}) {
       const content = truncateText(markdownToText(contentMarkdown || ''));
       const fallbackImage = imageUrl && !imageUrl.includes('/img/logo-og') ? imageUrl : undefined;
       const hintedImage = bo3ImageHints.get(url);
-      const preferredImage = htmlImages[0] || jinaImageUrl || hintedImage || fallbackImage || imageUrl;
+      const preferredImage = normalizeBo3CoverImageUrl(
+        hintedImage || fallbackImage || imageUrl || htmlImages[0] || jinaImageUrl,
+        url
+      );
 
       const resultItem = {
         id: generateId(url, source),
@@ -2147,7 +2178,13 @@ export function normalizeAndSortNews(items, options = {}) {
       content_markdown: normalizedMarkdown,
       source: item.source || 'Unknown',
       url: normalizedUrl,
-      image_url: item.imageUrl ? normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl : undefined,
+      image_url: item.imageUrl
+        ? (
+          String(item.source || '') === 'BO3.gg'
+            ? normalizeBo3CoverImageUrl(item.imageUrl, item.url || normalizedUrl)
+            : (normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl)
+        )
+        : undefined,
       published_at: publishedAt,
       category: classifyNewsCategory({
         category: item.category || null,
