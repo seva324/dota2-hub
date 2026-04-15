@@ -195,8 +195,8 @@ describe('/api/tournaments lazy loading', () => {
           games: [
             expect.objectContaining({
               match_id: '101',
-              radiant_team_logo: 'https://cdn.steamstatic.com/team-a.png',
-              dire_team_logo: 'https://cdn.steamstatic.com/team-b.png',
+              radiant_team_logo: '/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fteam-a.png',
+              dire_team_logo: '/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fteam-b.png',
               picks_bans: [{ hero_id: 1, team: 'radiant', is_pick: true, order: 1 }],
             }),
           ],
@@ -344,7 +344,7 @@ describe('/api/tournaments lazy loading', () => {
     expect((res.payload as any).groupStage.standings[0]).toEqual(expect.objectContaining({
       teamId: '2163',
       teamName: 'Team Liquid',
-      logoUrl: 'https://cdn.steamstatic.com/team-liquid.png',
+      logoUrl: '/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fteam-liquid.png',
       isCnTeam: false,
     }));
     expect((res.payload as any).groupStage.standings[0].rounds[0]).toEqual(expect.objectContaining({

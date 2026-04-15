@@ -32,6 +32,14 @@ describe('resolveApiTarget', () => {
       queryOverrides: {},
     });
   });
+
+  it('maps /api/asset-image onto the dedicated generic asset proxy handler', () => {
+    expect(resolveApiTarget('/api/asset-image')).toEqual({
+      key: 'asset-image',
+      routePath: '/api/asset-image',
+      queryOverrides: {},
+    });
+  });
 });
 
 describe('runEdgeOneApiRequest', () => {

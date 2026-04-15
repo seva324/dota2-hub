@@ -3,6 +3,7 @@ import { Calendar, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
+import { getHeroImageUrl } from '@/lib/assetUrls';
 import { isChineseTeam } from '@/lib/teams';
 import { toFlagImageUrl } from '@/lib/playerProfile';
 
@@ -118,10 +119,7 @@ function inferWin(match: MatchLike, isRadiant: boolean): boolean | null {
 
 function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   const hero = heroMap[heroId];
-  if (hero?.img) {
-    return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
-  }
-  return '';
+  return getHeroImageUrl(heroId, hero?.img);
 }
 
 function buildTeamFlyoutApiUrl(selectedTeam: { team_id?: string | null; name: string }): string {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock3, Crown, Zap } from 'lucide-react';
+import { getHeroImageUrl } from '@/lib/assetUrls';
 
 interface Player {
   player_slot: number;
@@ -62,8 +63,7 @@ function getHeroName(id: number, heroesData: HeroesData): string {
 }
 
 function getHeroImg(id: number, heroesData: HeroesData): string {
-  const img = heroesData[id]?.img || `hero_${id}`;
-  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${img}_lg.png`;
+  return getHeroImageUrl(id, heroesData[id]?.img || `hero_${id}`);
 }
 
 function getPlayerName(player: Player, heroesData: HeroesData): string {

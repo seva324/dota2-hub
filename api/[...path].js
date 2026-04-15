@@ -1,8 +1,10 @@
+import assetImageHandler from '../lib/api-handlers/asset-image.js';
 import bo3ImageHandler from '../lib/api-handlers/bo3-image.js';
 import heroesHandler from '../lib/api-handlers/heroes.js';
 import tournamentBackgroundHandler from '../lib/api-handlers/tournament-background.js';
 
 const HANDLERS = {
+  'asset-image': assetImageHandler,
   'bo3-image': bo3ImageHandler,
   heroes: heroesHandler,
   'tournament-background': tournamentBackgroundHandler,

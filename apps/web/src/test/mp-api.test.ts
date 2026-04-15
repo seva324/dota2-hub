@@ -275,7 +275,11 @@ describe('/api/mp/*', () => {
       items: [
         expect.objectContaining({
           series_id: 'series-1',
-          games: [expect.objectContaining({ match_id: '101' })],
+          games: [expect.objectContaining({
+            match_id: '101',
+            radiant_team_logo: 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fteam-a.png',
+            dire_team_logo: 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fteam-b.png',
+          })],
         }),
       ],
       pagination: expect.objectContaining({ hasMore: true, nextCursor: 1 }),
@@ -342,7 +346,11 @@ describe('/api/mp/*', () => {
     const res = await callMpRoute({ __mp: 'team/1', limit: '5', offset: '0' });
 
     expect(res.statusCode).toBe(200);
-    expect((res.payload as any).data.team).toEqual(expect.objectContaining({ team_id: '1', name: 'Team Alpha' }));
+    expect((res.payload as any).data.team).toEqual(expect.objectContaining({
+      team_id: '1',
+      name: 'Team Alpha',
+      logo_url: 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fa.png',
+    }));
     expect((res.payload as any).data.items[0]).toEqual(expect.objectContaining({ match_id: '100', team_hero_ids: [1, 2, 3, 4, 5] }));
     expect((res.payload as any).data.pagination).toEqual(expect.objectContaining({ hasMore: true, nextCursor: 5 }));
   });

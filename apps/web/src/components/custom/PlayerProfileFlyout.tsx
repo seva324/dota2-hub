@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Shield, Target, Trophy, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { getHeroImageUrl } from '@/lib/assetUrls';
 import {
   buildRecentMatchDraftRows,
   formatBirthDisplay,
@@ -35,8 +36,7 @@ function formatTs(ts?: number | null): string {
 
 function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   const hero = heroMap[heroId];
-  if (!hero?.img) return '';
-  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
+  return getHeroImageUrl(heroId, hero?.img);
 }
 
 function TeamInline({
