@@ -95,4 +95,25 @@ describe('runSyncLiquipedia', () => {
     expect(values).toContain('EPL World Series: SEA Season 13');
     expect(values).toContain('BO3');
   });
+
+  it('creates a tournament stub before saving unknown DLTV tournaments', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
+      return [];
+    });
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    await runSyncLiquipedia();
+
+    const tournamentInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO tournaments'));
+    const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
+
+    expect(tournamentInsertCall).toBeDefined();
+    expect(tournamentInsertCall?.slice(1)).toContain('EPL World Series: SEA Season 13');
+    expect(upcomingInsertCall).toBeDefined();
+  });
 });
