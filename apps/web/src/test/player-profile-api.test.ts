@@ -372,7 +372,7 @@ describe('/api/player-profile account_id filter regression', () => {
     expect(queryMock.mock.calls.find((call) => String(call[0]).includes('FROM matches m'))).toBeUndefined();
   });
 
-  it('rehydrates mirrored asset urls in cached payloads against the current request host', async () => {
+  it('rehydrates cached asset urls against the current request host', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
       if (sql.includes('FROM player_profile_cache')) {

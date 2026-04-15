@@ -88,6 +88,7 @@ describe('/api/upcoming', () => {
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).days).toBe(2);
     expect((res.payload as any).upcoming).toHaveLength(1);
+    expect((res.payload as any).upcoming[0].radiant_team_logo).toBe('/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Flogo.png');
 
     const upcomingCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
     expect(upcomingCall).toBeDefined();

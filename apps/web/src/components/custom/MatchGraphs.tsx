@@ -2,8 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { Shield, Swords, Skull, RotateCcw, Maximize2, Minimize2 } from 'lucide-react';
+import { getHeroImageUrl, toCnAssetUrl } from '@/lib/assetUrls';
 
-const AEGIS_ICON_URL = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png';
+const AEGIS_ICON_URL = toCnAssetUrl('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png');
 const FIRST_BLOOD_ICON_URL = '/images/first-blood.svg';
 
 interface MatchObjective {
@@ -99,9 +100,7 @@ function getHeroName(id: number, heroes: Record<number, { name: string; img: str
 }
 
 function getHeroImg(id: number, heroes: Record<number, { name: string; img: string }>): string {
-  const hero = heroes[id];
-  if (!hero?.img) return '';
-  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
+  return getHeroImageUrl(id, heroes[id]?.img);
 }
 
 function getPlayerName(player: MatchPlayer, heroes: Record<number, { name: string; img: string; name_cn?: string }>): string {

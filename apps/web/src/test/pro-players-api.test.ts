@@ -97,7 +97,7 @@ describe('/api/pro-players', () => {
     expect(queryMock).not.toHaveBeenCalled();
   });
 
-  it('maps known DLTV avatar urls to the current-host mirror path', async () => {
+  it('maps known DLTV avatar urls to a current-host CN-reachable asset url', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
       if (sql.includes('WHERE account_id =')) {

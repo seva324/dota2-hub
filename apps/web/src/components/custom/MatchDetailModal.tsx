@@ -3,6 +3,7 @@ import { Users, TrendingUp, FileText, Backpack, ChevronDown, X } from 'lucide-re
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getHeroImageUrl, toCnAssetUrl } from '@/lib/assetUrls';
 import { MatchGraphs } from './MatchGraphs';
 import { LaningAnalysis } from './LaningAnalysis';
 import { AIReportSection } from './AIReportSection';
@@ -115,10 +116,7 @@ function getHeroName(id: number): string {
 
 function getHeroImg(id: number): string {
   const hero = heroesData[id];
-  if (!hero?.img) {
-    return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${id}.png`;
-  }
-  return `https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/${hero.img}_lg.png`;
+  return getHeroImageUrl(id, hero?.img);
 }
 
 function getLaneName(lane: number | undefined, isRadiant: boolean): string {
@@ -164,8 +162,8 @@ function formatCompact(value: number): string {
 
 function normalizeItemImg(img: string): string {
   if (!img) return '';
-  if (img.startsWith('http://') || img.startsWith('https://')) return img;
-  if (img.startsWith('/apps/')) return `https://cdn.cloudflare.steamstatic.com${img}`;
+  if (img.startsWith('http://') || img.startsWith('https://')) return toCnAssetUrl(img);
+  if (img.startsWith('/apps/')) return toCnAssetUrl(`https://cdn.cloudflare.steamstatic.com${img}`);
   return img;
 }
 

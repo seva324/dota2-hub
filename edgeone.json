@@ -44,6 +44,15 @@
       ]
     },
     {
+      "source": "/api/asset-image*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
       "source": "/api/bo3-image*",
       "headers": [
         {
@@ -65,6 +74,10 @@
   "caches": [
     {
       "source": "/images/mirror/*",
+      "cacheTtl": 86400
+    },
+    {
+      "source": "/api/asset-image*",
       "cacheTtl": 86400
     },
     {

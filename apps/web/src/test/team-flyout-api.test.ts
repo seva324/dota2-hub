@@ -117,7 +117,11 @@ describe('/api/team-flyout', () => {
     await handler(req as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect((res.payload as any).team).toEqual(expect.objectContaining({ team_id: '1', name: 'Team Alpha' }));
+    expect((res.payload as any).team).toEqual(expect.objectContaining({
+      team_id: '1',
+      name: 'Team Alpha',
+      logo_url: '/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fa.png',
+    }));
     expect((res.payload as any).recentMatches).toHaveLength(5);
     expect((res.payload as any).recentMatches[0].team_hero_ids).toEqual([1, 2, 3, 4, 5]);
     expect((res.payload as any).activeSquad).toEqual([{ account_id: '11', name: 'Player 11', avatar_url: null }]);
@@ -125,7 +129,7 @@ describe('/api/team-flyout', () => {
     expect((res.payload as any).pagination).toEqual(expect.objectContaining({ hasMore: true, nextCursor: 5 }));
   });
 
-  it('rehydrates mirrored squad avatar urls against the current request host', async () => {
+  it('rehydrates squad avatar urls against the current request host', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
       if (sql === 'SELECT * FROM teams') {
