@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { loadMatchDetailPayload } from '../lib/server/mp-api.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 let sql = null;
@@ -27,26 +28,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    await db`
-      CREATE TABLE IF NOT EXISTS match_details (
-        match_id BIGINT PRIMARY KEY,
-        payload JSONB NOT NULL,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `;
-
-    const rows = await db`
-      SELECT payload
-      FROM match_details
-      WHERE match_id = ${Math.trunc(matchId)}
-      LIMIT 1
-    `;
-
-    if (!rows.length) {
+    const payload = await loadMatchDetailPayload(db, Math.trunc(matchId));
+    if (!payload) {
       return res.status(404).json({ error: 'Match detail not found in database' });
     }
 
-    return res.status(200).json(rows[0].payload);
+    return res.status(200).json(payload);
   } catch (e) {
     console.error('[MatchDetails API] Error:', e.message);
     return res.status(500).json({ error: e.message });

@@ -19,6 +19,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron?action=sync-news&onlySource=taverna",
+      "schedule": "25 9 * * *"
+    },
+    {
       "path": "/api/cron?action=sync-news&onlySource=hawk",
       "schedule": "30 9 * * *"
     },

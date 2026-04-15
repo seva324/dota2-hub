@@ -34,6 +34,9 @@ const CYBERSCORE_LIST_SCAN_LIMIT = 24;
 const CYBERSCORE_DETAIL_SCAN_LIMIT = 10;
 const CYBERSCORE_FALLBACK_ENRICH_LIMIT = 6;
 const CYBERSCORE_DETAIL_CONCURRENCY = 2;
+const TAVERNA_DETAIL_CONCURRENCY = 2;
+const TAVERNA_FETCH_RETRY_ATTEMPTS = 3;
+const TAVERNA_FETCH_RETRY_DELAY_MS = 900;
 const CYBERSCORE_JINA_RETRY_ATTEMPTS = 2;
 const CYBERSCORE_JINA_TIMEOUT_MS = 15000;
 const MAX_CONTENT_LENGTH = 5000;
@@ -1509,6 +1512,216 @@ function parseSimpleRss(xml, sourceName, sourcePrefix) {
   return items;
 }
 
+function normalizeTavernaNewsUrl(rawUrl, baseUrl = 'https://taverna.gg') {
+  try {
+    const url = new URL(rawUrl, baseUrl);
+    const hostname = url.hostname.replace(/^www\./i, '').toLowerCase();
+    if (hostname !== 'taverna.gg') return '';
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (parts.length < 3 || parts[0] !== 'dota2' || parts[1] !== 'news' || !parts[2]) return '';
+    url.pathname = `/dota2/news/${parts[2]}/`;
+    url.hash = '';
+    for (const key of Array.from(url.searchParams.keys())) {
+      if (/^utm_/i.test(key) || ['fbclid', 'gclid'].includes(key.toLowerCase())) {
+        url.searchParams.delete(key);
+      }
+    }
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function normalizeTavernaTitle(value = '') {
+  return stripHtml(value)
+    .replace(/\s*[||-]\s*Dota\s*2\s*[||-]\s*Taverna\.gg$/i, '')
+    .replace(/\s*[||-]\s*Taverna\.gg$/i, '')
+    .trim();
+}
+
+function parseTavernaNewsSitemap(xml, recentDays = 7) {
+  const items = [];
+  const cutoffMs = Date.now() - (Math.max(1, Number(recentDays) || 7) * 86400 * 1000);
+  const urlRegex = /<url>([\s\S]*?)<\/url>/gi;
+  let match;
+
+  while ((match = urlRegex.exec(xml)) !== null) {
+    const block = match[1] || '';
+    const url = normalizeTavernaNewsUrl(stripHtml(block.match(/<loc>([\s\S]*?)<\/loc>/i)?.[1] || ''));
+    if (!url) continue;
+    const publishedAt =
+      parseDate(stripHtml(block.match(/<news:publication_date>([\s\S]*?)<\/news:publication_date>/i)?.[1] || '')) ||
+      parseDate(stripHtml(block.match(/<lastmod>([\s\S]*?)<\/lastmod>/i)?.[1] || ''));
+    if (publishedAt && publishedAt.getTime() < cutoffMs) continue;
+    const title = normalizeTavernaTitle(stripHtml(block.match(/<news:title>([\s\S]*?)<\/news:title>/i)?.[1] || ''));
+    items.push({ url, publishedAt: publishedAt || new Date(), title });
+  }
+
+  items.sort((left, right) => right.publishedAt - left.publishedAt);
+  return items;
+}
+
+function extractTavernaNewsUrls(html, baseUrl = 'https://taverna.gg') {
+  const urls = new Set();
+  const hrefRegex = /href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi;
+  let match;
+
+  while ((match = hrefRegex.exec(html)) !== null) {
+    const raw = match[1] || match[2] || match[3] || '';
+    const normalized = normalizeTavernaNewsUrl(raw, baseUrl);
+    if (normalized) urls.add(normalized);
+  }
+
+  const absoluteRegex = /https?:\/\/(?:www\.)?taverna\.gg\/dota2\/news\/[a-z0-9-]+\/?/gi;
+  while ((match = absoluteRegex.exec(html)) !== null) {
+    const normalized = normalizeTavernaNewsUrl(match[0], baseUrl);
+    if (normalized) urls.add(normalized);
+  }
+
+  const pathRegex = /\/dota2\/news\/[a-z0-9-]+\/?/gi;
+  while ((match = pathRegex.exec(html)) !== null) {
+    const normalized = normalizeTavernaNewsUrl(match[0], baseUrl);
+    if (normalized) urls.add(normalized);
+  }
+
+  return Array.from(urls);
+}
+
+function cutTavernaContentBeforeNoise(text = '') {
+  let content = String(text || '').trim();
+  const stopPatterns = [
+    /\nПоделиться:?/i,
+    /\nПоследние новости\b/i,
+    /\nКомментарии\b/i,
+    /\nКомментарий\b/i,
+    /\nПодписаться\b/i,
+    /\nавторизуйтесь\b/i,
+    /\nРеклама\b/i,
+  ];
+
+  for (const pattern of stopPatterns) {
+    const matched = content.match(pattern);
+    if (matched && typeof matched.index === 'number') {
+      content = content.slice(0, matched.index).trim();
+    }
+  }
+
+  return content;
+}
+
+function sanitizeTavernaContentMarkdown(markdown = '') {
+  const raw = cutTavernaContentBeforeNoise(String(markdown || ''));
+  const lines = raw.split('\n');
+  const filtered = [];
+
+  for (const line of lines) {
+    const text = line.trim();
+    if (!text) continue;
+    if (/^>\s*$/.test(text)) continue;
+    if (/^-\s*$/.test(text)) continue;
+    if (/^(Поделиться:?|Последние новости|Комментарии|Комментарий|Подписаться|авторизуйтесь|Реклама)$/i.test(text)) continue;
+    filtered.push(line);
+  }
+
+  return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function extractTavernaBodyData(inputHtml = '', baseUrl = 'https://taverna.gg', options = {}) {
+  const sourceHtml = String(inputHtml || '');
+  if (!sourceHtml.trim()) {
+    return { contentMarkdown: '', content: '', contentImages: [] };
+  }
+
+  const articleBody = options.fragment
+    ? sourceHtml
+    : (
+      extractDivByClass(sourceHtml, 'entry-content')
+      || sourceHtml.match(/<div[^>]+class=["'][^"']*\bentry-content\b[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<div[^>]+class=["'][^"']*\bpost__tags_wrapper\b/i)?.[1]
+      || ''
+    );
+
+  const working = articleBody || sourceHtml;
+  const blocks = [];
+  const images = [];
+  const blockRegex = /<(p|h2|h3|h4|blockquote|li)[^>]*>([\s\S]*?)<\/\1>|<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+  let match;
+
+  while ((match = blockRegex.exec(working)) !== null) {
+    if (match[3]) {
+      const normalized = normalizeUrl(decodeHtmlEntities(match[3]).replace(/&amp;/g, '&'), baseUrl) || decodeHtmlEntities(match[3]);
+      if (normalized && !images.includes(normalized)) images.push(normalized);
+      continue;
+    }
+
+    const tag = String(match[1] || '').toLowerCase();
+    const inline = htmlInlineToMarkdown(match[2] || '', baseUrl).trim();
+    if (!inline) continue;
+
+    if (tag === 'blockquote') {
+      blocks.push(inline.split('\n').map((line) => `> ${line.trim()}`).join('\n'));
+      continue;
+    }
+
+    if (tag === 'li') {
+      blocks.push(`- ${inline}`);
+      continue;
+    }
+
+    blocks.push(inline);
+  }
+
+  const contentMarkdown = sanitizeTavernaContentMarkdown(blocks.join('\n\n'));
+  return {
+    contentMarkdown,
+    content: truncateText(markdownToText(contentMarkdown)),
+    contentImages: images,
+  };
+}
+
+function parseTavernaFeedItems(xml, baseUrl = 'https://taverna.gg', recentDays = 7) {
+  const items = [];
+  const cutoffMs = Date.now() - (Math.max(1, Number(recentDays) || 7) * 86400 * 1000);
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const rawItem = match[1] || '';
+    const url = normalizeTavernaNewsUrl(stripHtml(rawItem.match(/<link>([\s\S]*?)<\/link>/i)?.[1] || ''), baseUrl);
+    if (!url) continue;
+
+    const publishedAt = parseDate(stripHtml(rawItem.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1] || '')) || new Date();
+    if (publishedAt.getTime() < cutoffMs) continue;
+
+    const title = normalizeTavernaTitle(rawItem.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '');
+    if (!title) continue;
+
+    const description = stripHtml(rawItem.match(/<description>([\s\S]*?)<\/description>/i)?.[1] || '');
+    const contentHtml = rawItem.match(/<content:encoded>([\s\S]*?)<\/content:encoded>/i)?.[1] || '';
+    const body = extractTavernaBodyData(contentHtml, baseUrl, { fragment: true });
+    const enclosureUrl = stripHtml(rawItem.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]*>/i)?.[1] || '');
+    const mediaContentUrl = stripHtml(rawItem.match(/<media:content[^>]+url=["']([^"']+)["'][^>]*>/i)?.[1] || '');
+    const preferredImage = enclosureUrl || mediaContentUrl || body.contentImages[0] || '';
+    const imageUrl = preferredImage
+      ? (normalizeUrl(preferredImage, baseUrl) || preferredImage)
+      : undefined;
+
+    items.push({
+      id: generateId(url, 'taverna'),
+      title,
+      summary: description || truncateText(body.content, 220) || undefined,
+      content: body.content || description || '',
+      content_markdown: body.contentMarkdown || undefined,
+      url,
+      imageUrl,
+      source: 'Taverna.gg',
+      publishedAt,
+      category: 'news',
+    });
+  }
+
+  return items;
+}
+
 function extractArticleContent(detailHtml, article = {}) {
   if (typeof article.articleBody === 'string' && article.articleBody.trim()) {
     return truncateText(stripHtmlWithParagraphs(article.articleBody));
@@ -1579,6 +1792,233 @@ function titleFromJinaText(text, fallbackTitle) {
   const header = lines.find((x) => x.startsWith('Title: ')) || lines[0] || '';
   const title = header.replace(/^Title:\s*/i, '').trim();
   return title || fallbackTitle;
+}
+
+async function scrapeTaverna(options = {}) {
+  const source = 'taverna';
+  const sourceName = 'Taverna.gg';
+  const baseUrl = 'https://taverna.gg';
+  const recentDays = Number.isFinite(Number(options?.recentDays)) && Number(options?.recentDays) > 0
+    ? Math.trunc(Number(options.recentDays))
+    : 7;
+
+  try {
+    const feedUrl = `${baseUrl}/dota2/feed/`;
+    const sitemapUrl = `${baseUrl}/news-sitemap.xml`;
+    const homeUrl = `${baseUrl}/dota2/`;
+    let feedItems = [];
+    let sitemapEntries = [];
+    let homepageUrls = [];
+
+    try {
+      const feedXml = await fetchTextWithRetries(feedUrl, {
+        label: 'Taverna feed',
+        timeout: 12000,
+        attempts: TAVERNA_FETCH_RETRY_ATTEMPTS,
+        retryDelayMs: TAVERNA_FETCH_RETRY_DELAY_MS,
+        headers: {
+          Accept: 'application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.7',
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          Referer: homeUrl,
+        },
+      });
+      feedItems = parseTavernaFeedItems(feedXml, baseUrl, recentDays);
+    } catch (error) {
+      console.warn(`[News API] Taverna feed failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    try {
+      const sitemapXml = await fetchTextWithRetries(sitemapUrl, {
+        label: 'Taverna sitemap',
+        timeout: 12000,
+        attempts: TAVERNA_FETCH_RETRY_ATTEMPTS,
+        retryDelayMs: TAVERNA_FETCH_RETRY_DELAY_MS,
+        headers: {
+          Accept: 'application/xml,text/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          Referer: homeUrl,
+        },
+      });
+      sitemapEntries = parseTavernaNewsSitemap(sitemapXml, recentDays);
+    } catch (error) {
+      console.warn(`[News API] Taverna sitemap failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    if (feedItems.length === 0 && sitemapEntries.length === 0) {
+      try {
+        const homeHtml = await fetchTextWithRetries(homeUrl, {
+          label: 'Taverna homepage',
+          timeout: 12000,
+          attempts: 2,
+          retryDelayMs: 800,
+          headers: {
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+          },
+        });
+        homepageUrls = extractTavernaNewsUrls(homeHtml, baseUrl).slice(0, DETAIL_FETCH_LIMIT * 2);
+      } catch (error) {
+        console.warn(`[News API] Taverna homepage fallback failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    const seedByUrl = new Map(feedItems.map((item) => [item.url, item]));
+    const sitemapByUrl = new Map(sitemapEntries.map((entry) => [entry.url, entry]));
+    const targetUrls = Array.from(new Set([
+      ...feedItems.map((item) => item.url),
+      ...sitemapEntries.map((entry) => entry.url),
+      ...homepageUrls,
+    ])).slice(0, DETAIL_FETCH_LIMIT * 3);
+
+    if (targetUrls.length === 0) {
+      return { items: [], source, success: false, error: 'No Taverna article URLs found' };
+    }
+
+    const detailItems = [];
+    let detailFailureCount = 0;
+
+    await mapWithConcurrency(targetUrls, TAVERNA_DETAIL_CONCURRENCY, async (url, index) => {
+      if (index > 0) {
+        await sleep(250 * index);
+      }
+
+      const seed = seedByUrl.get(url);
+      const sitemapEntry = sitemapByUrl.get(url);
+
+      try {
+        const detailHtml = await fetchTextWithRetries(url, {
+          label: `Taverna detail ${url}`,
+          timeout: 15000,
+          attempts: TAVERNA_FETCH_RETRY_ATTEMPTS,
+          retryDelayMs: TAVERNA_FETCH_RETRY_DELAY_MS,
+          headers: {
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            Referer: homeUrl,
+          },
+        });
+        const detailLd = parseJsonLdBlocks(detailHtml);
+        const article = detailLd.find((entry) => entry?.['@type'] === 'NewsArticle')
+          || detailLd.find((entry) => Array.isArray(entry?.['@type']) && entry['@type'].includes('NewsArticle'))
+          || {};
+
+        const pageBody = extractTavernaBodyData(detailHtml, baseUrl);
+        const seedMarkdown = String(seed?.content_markdown || '');
+        const usePageBody = String(pageBody.contentMarkdown || '').length > Math.max(120, seedMarkdown.length);
+        const contentMarkdown = usePageBody ? pageBody.contentMarkdown : seedMarkdown;
+        const content = usePageBody
+          ? pageBody.content
+          : (seed?.content || truncateText(markdownToText(contentMarkdown || '')));
+        const title = normalizeTavernaTitle(
+          article.headline
+          || getMetaContent(detailHtml, 'og:title')
+          || seed?.title
+          || sitemapEntry?.title
+          || getTitleFromHtml(detailHtml)
+          || titleFromSlug(url)
+        );
+        if (!title) return;
+
+        const summary = stripHtml(
+          article.description
+          || getMetaContent(detailHtml, 'description')
+          || seed?.summary
+          || ''
+        ).slice(0, 320) || truncateText(content, 220) || undefined;
+        const publishedAt =
+          parseDate(article.datePublished) ||
+          parseDate(getMetaContent(detailHtml, 'article:published_time')) ||
+          seed?.publishedAt ||
+          sitemapEntry?.publishedAt ||
+          new Date();
+        const preferredImage =
+          seed?.imageUrl
+          || pageBody.contentImages[0]
+          || getArticleImage(article)
+          || getMetaContent(detailHtml, 'og:image')
+          || '';
+        const imageUrl = preferredImage
+          ? (normalizeUrl(preferredImage, baseUrl) || preferredImage)
+          : undefined;
+
+        detailItems.push({
+          id: generateId(url, source),
+          title,
+          summary,
+          content: content || summary || '',
+          content_markdown: contentMarkdown || undefined,
+          url,
+          imageUrl,
+          source: sourceName,
+          publishedAt,
+          category: 'news',
+        });
+      } catch (error) {
+        detailFailureCount += 1;
+        console.warn(`[News API] Taverna detail failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
+        if (seed) {
+          detailItems.push(seed);
+        }
+      }
+    });
+
+    const mergedByUrl = new Map();
+    for (const item of detailItems) {
+      if (!item?.url) continue;
+      const existing = mergedByUrl.get(item.url);
+      if (!existing) {
+        mergedByUrl.set(item.url, item);
+        continue;
+      }
+
+      const existingLength = String(existing.content_markdown || existing.content || '').length;
+      const incomingLength = String(item.content_markdown || item.content || '').length;
+      mergedByUrl.set(item.url, {
+        ...existing,
+        ...item,
+        title: existing.title || item.title,
+        summary: (incomingLength >= existingLength ? item.summary : existing.summary) || item.summary || existing.summary,
+        content: incomingLength >= existingLength ? item.content : existing.content,
+        content_markdown: incomingLength >= existingLength ? item.content_markdown : existing.content_markdown,
+        imageUrl: existing.imageUrl || item.imageUrl,
+        publishedAt: existing.publishedAt || item.publishedAt,
+      });
+    }
+
+    const items = Array.from(mergedByUrl.values());
+    if (items.length === 0) {
+      return {
+        items: [],
+        source,
+        success: false,
+        error: 'No Taverna article details parsed',
+        diagnostics: {
+          feedItemCount: feedItems.length,
+          sitemapUrlCount: sitemapEntries.length,
+          homepageUrlCount: homepageUrls.length,
+          detailFailureCount,
+        },
+      };
+    }
+
+    return {
+      items,
+      source,
+      success: true,
+      diagnostics: {
+        feedItemCount: feedItems.length,
+        sitemapUrlCount: sitemapEntries.length,
+        homepageUrlCount: homepageUrls.length,
+        detailUrlCount: targetUrls.length,
+        detailFailureCount,
+      },
+    };
+  } catch (error) {
+    return {
+      items: [],
+      source,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 async function scrapeHawkLive() {
@@ -3147,10 +3587,13 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count = removed.length;
   }
 
-  const onlySource = ['bo3', 'hawk', 'cyberscore'].includes(options?.onlySource)
+  const onlySource = ['bo3', 'hawk', 'cyberscore', 'taverna'].includes(options?.onlySource)
     ? options.onlySource
     : null;
   const sourceTasks = [];
+  if (!onlySource || onlySource === 'taverna') {
+    sourceTasks.push({ key: 'taverna', run: () => scrapeTaverna({ recentDays: options?.recentDays }) });
+  }
   if (!onlySource || onlySource === 'cyberscore') {
     sourceTasks.push({ key: 'cyberscore', run: () => scrapeCyberScore({ recentDays: options?.recentDays }) });
   }
@@ -3325,6 +3768,13 @@ export async function translateNewsBackfill(options = {}) {
     limit,
   };
 }
+
+export const __test__ = {
+  normalizeTavernaNewsUrl,
+  parseTavernaNewsSitemap,
+  extractTavernaBodyData,
+  parseTavernaFeedItems,
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

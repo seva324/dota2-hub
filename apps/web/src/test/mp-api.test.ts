@@ -361,6 +361,22 @@ describe('/api/mp/*', () => {
       if (sql.includes('CREATE TABLE IF NOT EXISTS match_details')) {
         return [];
       }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          {
+            team_id: 9886289,
+            name: 'Cloud Rising',
+            tag: null,
+            logo_url: 'https://s3.dltv.org/uploads/teams/qOxveFIjlAHAnKvYzsaScK4YdNwpTcBb.png.webp',
+          },
+          {
+            team_id: 9444076,
+            name: 'NGNB',
+            tag: null,
+            logo_url: 'https://s3.dltv.org/uploads/teams/undGjRoa9Vzm2ahfsXMCN5RLljkwsS5v.png.webp',
+          },
+        ];
+      }
       if (sql.includes('FROM match_details')) {
         return [{
           payload: {
@@ -369,6 +385,18 @@ describe('/api/mp/*', () => {
             radiant_score: 30,
             dire_score: 20,
             radiant_win: true,
+            radiant_team_id: 9886289,
+            dire_team_id: 9444076,
+            radiant_team: {
+              team_id: 9886289,
+              name: 'Cloud Rising',
+              logo_url: 'https://cdn.steamusercontent.com/ugc/legacy-cloud-rising/',
+            },
+            dire_team: {
+              team_id: 9444076,
+              name: 'NGNB',
+              logo_url: 'https://cdn.steamusercontent.com/ugc/legacy-ngnb/',
+            },
             players: [],
             picks_bans: [],
           },
@@ -385,6 +413,14 @@ describe('/api/mp/*', () => {
       data: expect.objectContaining({
         match_id: 123,
         radiant_score: 30,
+        radiant_team: expect.objectContaining({
+          name: 'Cloud Rising',
+          logo_url: 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fs3.dltv.org%2Fuploads%2Fteams%2FqOxveFIjlAHAnKvYzsaScK4YdNwpTcBb.png.webp',
+        }),
+        dire_team: expect.objectContaining({
+          name: 'NGNB',
+          logo_url: 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fs3.dltv.org%2Fuploads%2Fteams%2FundGjRoa9Vzm2ahfsXMCN5RLljkwsS5v.png.webp',
+        }),
       }),
       error: null,
       meta: expect.objectContaining({ generatedAt: expect.any(String) }),
