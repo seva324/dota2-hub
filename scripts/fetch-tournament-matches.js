@@ -29,7 +29,7 @@ if (!fs.existsSync(logosDir)) {
   fs.mkdirSync(logosDir, { recursive: true });
 }
 
-const DLTV_RANKING_URL = 'https://dltv.org/ranking';
+const DLTV_RANKING_URL = 'https://dltv.org/stats/teams';
 const KNOWN_LOGO_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp'];
 
 // 添加 stage 列（如果不存在）
@@ -140,10 +140,10 @@ async function fetchDltvRankingIndex() {
   try {
     const html = await fetchWithGzip(DLTV_RANKING_URL, 'text/html,application/xhtml+xml');
     const index = buildDltvRankingLogoIndex(html);
-    console.log(`Loaded ${index.entries.length} team logos from DLTV ranking`);
+    console.log(`Loaded ${index.entries.length} team logos from DLTV stats`);
     return index;
   } catch (error) {
-    console.warn(`Failed to load DLTV ranking logos: ${error.message}`);
+    console.warn(`Failed to load DLTV stats logos: ${error.message}`);
     return { entries: [], byKey: new Map() };
   }
 }
