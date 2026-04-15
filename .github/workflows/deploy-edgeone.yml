@@ -34,7 +34,11 @@ jobs:
         run: npm run test:web
 
   deploy:
-    if: github.event_name != 'pull_request'
+    # The production EdgeOne Pages project is connected with Provider=Github.
+    # EdgeOne rejects CLI folder/zip deploys for that provider type; keep CI
+    # green on pushes/PRs and reserve direct upload deploys for explicitly
+    # configured manual runs against Upload-provider projects.
+    if: github.event_name == 'workflow_dispatch' && vars.EDGEONE_DIRECT_DEPLOY == 'true'
     needs:
       - build-and-test
     runs-on: ubuntu-latest
