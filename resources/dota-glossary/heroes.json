@@ -787,9 +787,7 @@
     "internal_name": "npc_dota_hero_night_stalker",
     "english_name": "Night Stalker",
     "chinese_name": "暗夜魔王",
-    "english_aliases": [
-      "ns"
-    ],
+    "english_aliases": [],
     "chinese_aliases": [
       "夜魔"
     ]

@@ -86,6 +86,7 @@ function parseEndpoints(args) {
   return [
     { name: 'sync-opendota', url: `${base}/api/cron?action=sync-opendota` },
     { name: 'sync-liquipedia', url: `${base}/api/cron?action=sync-liquipedia` },
+    { name: 'sync-news-taverna', url: `${base}/api/cron?action=sync-news&onlySource=taverna` },
     { name: 'sync-news-hawk', url: `${base}/api/cron?action=sync-news&onlySource=hawk` },
     { name: 'sync-news-bo3', url: `${base}/api/cron?action=sync-news&onlySource=bo3` },
     { name: 'sync-news-cyberscore', url: `${base}/api/cron?action=sync-news&onlySource=cyberscore` },

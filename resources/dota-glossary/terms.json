@@ -10,6 +10,10 @@
       "Aspect",
       "Aspects"
     ],
+    "russian_aliases": [
+      "аспект",
+      "аспекты"
+    ],
     "chinese_aliases": []
   },
   {
@@ -21,9 +25,33 @@
       "Tormentor",
       "Tormentors"
     ],
+    "russian_aliases": [
+      "торментор",
+      "торментора",
+      "мучитель",
+      "мучителя",
+      "мучителей"
+    ],
     "chinese_aliases": [
       "魔方",
       "焦哥"
     ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_wisdom_rune",
+    "english_name": "Wisdom Rune",
+    "chinese_name": "智慧神符",
+    "english_aliases": [
+      "Wisdom Rune",
+      "Wisdom Runes",
+      "Wisdom"
+    ],
+    "russian_aliases": [
+      "руна мудрости",
+      "руны мудрости",
+      "мудрость"
+    ],
+    "chinese_aliases": []
   }
 ]

@@ -95,3 +95,35 @@ test('translation glossary does not duplicate official chinese names when aliase
 
   assert.equal(output, '蝙蝠骑士、巨牙海民和末日使者还是热门，巨牙海民和末日使者这两个简称也很常见。');
 });
+
+test('translation glossary recognizes russian aliases and normalizes them to official chinese names', () => {
+  const source = {
+    title: 'Команды снова спорят за мучителя после нового аспекта',
+    summary: 'Игроки раньше берут осколок аганима и обсуждают аспект в драфтах.',
+    content: 'После патча аспект и мучитель снова стали ключевыми темами, а осколок аганима покупают раньше.',
+  };
+
+  const prompt = buildTranslationGlossaryPrompt(source);
+  assert.match(prompt, /Facet -> 命石/);
+  assert.match(prompt, /俄文别名：аспект \/ аспекты/);
+  assert.match(prompt, /Tormentor -> 痛苦魔方/);
+  assert.match(prompt, /Aghanim's Shard -> 魔晶/);
+
+  const output = normalizeGlossaryTranslations(
+    '这次 аспект 改动后，大家还是会去打 мучитель，осколок аганима 的节奏也提前了。',
+    source,
+  );
+
+  assert.equal(output, '这次 命石 改动后，大家还是会去打 痛苦魔方，魔晶 的节奏也提前了。');
+});
+
+test('translation glossary does not mistake commentator handle NS for Night Stalker', () => {
+  const source = {
+    title: 'NS: Все крутят ботов',
+    summary: 'Комментатор NS высказался о Twitch.',
+    content: 'NS считает, что без накрутки стримы выглядят менее конкурентными.',
+  };
+
+  const output = normalizeGlossaryTranslations('NS：大家都在刷机器人，不刷就没竞争力。', source);
+  assert.equal(output, 'NS：大家都在刷机器人，不刷就没竞争力。');
+});

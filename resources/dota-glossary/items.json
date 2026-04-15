@@ -67,6 +67,11 @@
       "Aghs",
       "Scepter"
     ],
+    "russian_aliases": [
+      "аганим",
+      "аганим скипетр",
+      "скипетр аганима"
+    ],
     "chinese_aliases": [
       "A杖"
     ]
@@ -81,6 +86,11 @@
       "Aghanim's Shard",
       "Shard",
       "Shards"
+    ],
+    "russian_aliases": [
+      "осколок аганима",
+      "шард",
+      "шард аганима"
     ],
     "chinese_aliases": [
       "阿哈利姆魔晶",
