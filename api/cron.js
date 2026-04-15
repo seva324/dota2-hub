@@ -4,6 +4,7 @@ import { runSyncLiquipedia } from '../lib/server/sync-liquipedia.js';
 import { neon } from '@neondatabase/serverless';
 import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
+import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -228,6 +229,11 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
   }
   if (action === 'sync-liquipedia') {
     return { action, result: await runSyncLiquipedia() };
+  }
+  if (action === 'backfill-dltv-team-logos') {
+    const db = getDb();
+    if (!db) throw new Error('Database not available');
+    return { action, result: await backfillDltvTeamLogos(db, { dryRun: Boolean(raw?.dryRun === true || raw?.dryRun === 'true') }) };
   }
   if (action === 'sync-news') {
     return { action, result: await syncNewsToDb(buildSyncNewsOptions(raw)) };

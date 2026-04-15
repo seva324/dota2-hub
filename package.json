@@ -33,6 +33,7 @@
     "ops:repair-bo3-news": "node --env-file=.env.vercel scripts/repair-bo3-news-content.mjs",
     "ops:monitor-live-hero-tg": "node --env-file=.env.local scripts/ops/monitor-live-hero-score.mjs",
     "ops:mirror-assets": "node scripts/mirror-assets-to-public.mjs",
+    "ops:backfill-dltv-team-logos": "node --env-file=.env.vercel scripts/ops/backfill-dltv-team-logos.mjs",
     "ops:audit-neon-branches": "node scripts/ops/audit-neon-branches.mjs",
     "ops:post-news-xhs": "node --env-file=.env.vercel scripts/post-news-to-xhs.mjs",
     "ops:post-reddit-xhs": "node --env-file=.env.vercel scripts/post-reddit-to-xhs.mjs"
