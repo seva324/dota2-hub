@@ -39,7 +39,7 @@ describe('runEdgeOneApiRequest', () => {
     vi.resetModules();
     vi.doUnmock('../../../../api/cron.js');
     vi.doUnmock('../../../../api/matches.js');
-    vi.doUnmock('../../../../api/tournament-background.js');
+    vi.doUnmock('../../../../lib/api-handlers/tournament-background.js');
   });
 
   it('returns 404 for unknown API routes', async () => {
@@ -109,7 +109,7 @@ describe('runEdgeOneApiRequest', () => {
       return res.status(200).json({ ok: true, slug: req.query.slug });
     });
 
-    vi.doMock('../../../../api/tournament-background.js', () => ({
+    vi.doMock('../../../../lib/api-handlers/tournament-background.js', () => ({
       default: tournamentBackgroundHandler,
     }));
 
