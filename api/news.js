@@ -3,7 +3,14 @@ import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
 import { callLlmText } from '../lib/openrouter.mjs';
 import { mapWithConcurrency } from '../lib/server/derived-refresh-utils.js';
+import {
+  normalizeBo3CoverImageUrl,
+  rewriteBo3ImageUrlsForClient,
+  toChinaReachableBo3ImageUrl,
+} from '../lib/server/bo3-images.js';
 import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
+
+export { normalizeBo3CoverImageUrl } from '../lib/server/bo3-images.js';
 
 /**
  * News API
@@ -100,6 +107,21 @@ function getDb() {
     sql = neon(DATABASE_URL);
   }
   return sql;
+}
+
+function getPublicOrigin(req) {
+  const configured =
+    process.env.PUBLIC_SITE_ORIGIN ||
+    process.env.VITE_PUBLIC_SITE_ORIGIN ||
+    process.env.SITE_URL ||
+    '';
+  if (configured) return configured.replace(/\/+$/, '');
+
+  const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host || '';
+  if (!host) return '';
+  const resolvedHost = Array.isArray(host) ? host[0] : host;
+  const proto = req?.headers?.['x-forwarded-proto'] || (/^(localhost|127\.0\.0\.1)(?::\d+)?$/.test(resolvedHost) ? 'http' : 'https');
+  return `${Array.isArray(proto) ? proto[0] : proto}://${resolvedHost}`.replace(/\/+$/, '');
 }
 
 function generateId(url, prefix) {
@@ -449,7 +471,7 @@ async function collectBo3UrlsViaApi() {
       const url = bo3NewsUrlFromSlug(slug);
       if (!url) continue;
       urls.push(url);
-      const imageUrl = item.title_image_url || item.title_image_square_url || item.image;
+      const imageUrl = normalizeBo3CoverImageUrl(item.title_image_url || item.title_image_square_url || item.image);
       if (imageUrl) imageHints.set(url, imageUrl);
     }
     return {
@@ -536,7 +558,7 @@ async function fetchBo3ArticleViaApi(url) {
 
   const canonicalUrl = bo3NewsUrlFromSlug(item.slug) || url;
   const { markdown, images } = editorJsBlocksToMarkdown(item.body);
-  const imageUrl = item.title_image_url || item.title_image_square_url || item.image || images[0] || undefined;
+  const imageUrl = normalizeBo3CoverImageUrl(item.title_image_url || item.title_image_square_url || item.image || images[0]) || undefined;
   const contentMarkdown = sanitizeStoredMarkdown(normalizeBo3ContentMarkdown(markdown || item.description || ''));
   const content = truncateText(markdownToText(contentMarkdown || item.description || ''));
 
@@ -2022,7 +2044,10 @@ async function scrapeBO3(options = {}) {
       const content = truncateText(markdownToText(contentMarkdown || ''));
       const fallbackImage = imageUrl && !imageUrl.includes('/img/logo-og') ? imageUrl : undefined;
       const hintedImage = bo3ImageHints.get(url);
-      const preferredImage = htmlImages[0] || jinaImageUrl || hintedImage || fallbackImage || imageUrl;
+      const preferredImage = normalizeBo3CoverImageUrl(
+        hintedImage || fallbackImage || imageUrl || htmlImages[0] || jinaImageUrl,
+        url
+      );
 
       const resultItem = {
         id: generateId(url, source),
@@ -2147,7 +2172,13 @@ export function normalizeAndSortNews(items, options = {}) {
       content_markdown: normalizedMarkdown,
       source: item.source || 'Unknown',
       url: normalizedUrl,
-      image_url: item.imageUrl ? normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl : undefined,
+      image_url: item.imageUrl
+        ? (
+          String(item.source || '') === 'BO3.gg'
+            ? normalizeBo3CoverImageUrl(item.imageUrl, item.url || normalizedUrl)
+            : (normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl)
+        )
+        : undefined,
       published_at: publishedAt,
       category: classifyNewsCategory({
         category: item.category || null,
@@ -2814,7 +2845,7 @@ async function translateItem(apiKey, item) {
   };
 }
 
-async function getStoredNews(db, limit = 20) {
+async function getStoredNews(db, limit = 20, options = {}) {
   const rows = await db`
     SELECT *
     FROM news_articles
@@ -2830,14 +2861,17 @@ async function getStoredNews(db, limit = 20) {
       source: row.source,
       url: row.url,
       category: row.category || 'community',
-      image_url: row.image_url,
+      image_url: toChinaReachableBo3ImageUrl(row.image_url, row.url || 'https://bo3.gg', options),
       published_at: Number(row.published_at),
       title: row.title_zh || row.title_en,
       summary: noisyZh ? (row.summary_en || row.summary_zh) : (row.summary_zh || row.summary_en),
       content: noisyZh ? (row.content_en || row.content_zh) : (row.content_zh || row.content_en),
-      content_markdown: noisyZh
-        ? (row.content_markdown_en || row.content_markdown_zh)
-        : (row.content_markdown_zh || row.content_markdown_en),
+      content_markdown: rewriteBo3ImageUrlsForClient(
+        noisyZh
+          ? (row.content_markdown_en || row.content_markdown_zh)
+          : (row.content_markdown_zh || row.content_markdown_en),
+        options,
+      ),
       translation_status: row.translation_status || null,
       translation_provider: row.translation_provider || null,
     };
@@ -3297,12 +3331,13 @@ export default async function handler(req, res) {
     }
 
     await ensureNewsTable(db);
-    let stored = await getStoredNews(db, MAX_ITEMS);
+    const clientImageOptions = { publicOrigin: getPublicOrigin(req) };
+    let stored = await getStoredNews(db, MAX_ITEMS, clientImageOptions);
 
     // Cold-start fallback: do one sync when table is empty.
     if (stored.length === 0) {
       await syncNewsToDb();
-      stored = await getStoredNews(db, MAX_ITEMS);
+      stored = await getStoredNews(db, MAX_ITEMS, clientImageOptions);
     }
 
     if (stored.length === 0) {

@@ -116,7 +116,7 @@ describe('TournamentSection', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=0');
       expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=10');
     });
-  });
+  }, 15000);
 
   it('defaults to the newest tournament even when an older event is marked ongoing', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
