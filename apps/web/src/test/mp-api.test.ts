@@ -142,7 +142,10 @@ describe('/api/mp/*', () => {
       data: expect.objectContaining({
         liveMatchCount: 1,
         heroLive: expect.objectContaining({ leagueName: 'DreamLeague Season 28' }),
-        tournaments: [expect.objectContaining({ league_id: 42 })],
+        tournaments: [expect.objectContaining({
+          league_id: 42,
+          background_image_url: 'https://dotahub.cn/api/tournament-background?slug=dreamleague',
+        })],
         upcoming: [expect.objectContaining({ series_id: '11' })],
         news: [expect.objectContaining({ title: '中文标题' })],
       }),

@@ -24,6 +24,14 @@ describe('resolveApiTarget', () => {
       queryOverrides: { action: 'sync-liquipedia' },
     });
   });
+
+  it('maps /api/tournament-background onto the dedicated artwork proxy handler', () => {
+    expect(resolveApiTarget('/api/tournament-background')).toEqual({
+      key: 'tournament-background',
+      routePath: '/api/tournament-background',
+      queryOverrides: {},
+    });
+  });
 });
 
 describe('runEdgeOneApiRequest', () => {
@@ -31,6 +39,7 @@ describe('runEdgeOneApiRequest', () => {
     vi.resetModules();
     vi.doUnmock('../../../../api/cron.js');
     vi.doUnmock('../../../../api/matches.js');
+    vi.doUnmock('../../../../api/tournament-background.js');
   });
 
   it('returns 404 for unknown API routes', async () => {
@@ -89,6 +98,33 @@ describe('runEdgeOneApiRequest', () => {
         query: expect.objectContaining({
           __mp: 'tournament/league-1',
           limit: '5',
+        }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('passes /api/tournament-background through the tournament background handler', async () => {
+    const tournamentBackgroundHandler = vi.fn(async (req, res) => {
+      return res.status(200).json({ ok: true, slug: req.query.slug });
+    });
+
+    vi.doMock('../../../../api/tournament-background.js', () => ({
+      default: tournamentBackgroundHandler,
+    }));
+
+    const { runEdgeOneApiRequest } = await import('../../../../lib/server/edgeone-node-handler.js');
+    const response = await runEdgeOneApiRequest(new Request('https://edgeone.example/api/tournament-background?slug=dreamleague'));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      slug: 'dreamleague',
+    });
+    expect(tournamentBackgroundHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({
+          slug: 'dreamleague',
         }),
       }),
       expect.any(Object),
