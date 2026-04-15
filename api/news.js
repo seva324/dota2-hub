@@ -16,6 +16,7 @@ import {
   normalizeGlossaryTranslations,
   normalizeGlossaryTranslationsInMarkdown,
 } from '../lib/translation-glossary.js';
+import { getPublicOrigin } from '../lib/server/public-origin.js';
 
 export { normalizeBo3CoverImageUrl } from '../lib/server/bo3-images.js';
 
@@ -123,21 +124,6 @@ function getDb() {
     sql = neon(DATABASE_URL);
   }
   return sql;
-}
-
-function getPublicOrigin(req) {
-  const configured =
-    process.env.PUBLIC_SITE_ORIGIN ||
-    process.env.VITE_PUBLIC_SITE_ORIGIN ||
-    process.env.SITE_URL ||
-    '';
-  if (configured) return configured.replace(/\/+$/, '');
-
-  const host = req?.headers?.['x-forwarded-host'] || req?.headers?.host || '';
-  if (!host) return '';
-  const resolvedHost = Array.isArray(host) ? host[0] : host;
-  const proto = req?.headers?.['x-forwarded-proto'] || (/^(localhost|127\.0\.0\.1)(?::\d+)?$/.test(resolvedHost) ? 'http' : 'https');
-  return `${Array.isArray(proto) ? proto[0] : proto}://${resolvedHost}`.replace(/\/+$/, '');
 }
 
 function generateId(url, prefix) {
