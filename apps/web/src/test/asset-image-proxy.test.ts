@@ -61,6 +61,15 @@ describe('asset image proxy helpers', () => {
     ])
   })
 
+  it('canonicalizes DLTV assets to dltv.org and keeps an s3 fallback candidate', () => {
+    expect(
+      getAssetImageFetchCandidates('https://s3.dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp')
+    ).toEqual([
+      'https://dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp',
+      'https://s3.dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp',
+    ])
+  })
+
   it('rejects non-default ports and svg assets from the generic proxy allowlist', () => {
     expect(toChinaReachableAssetUrl('https://cdn.steamstatic.com:8443/team-a.png')).toBeNull()
     expect(toChinaReachableAssetUrl('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.svg')).toBeNull()

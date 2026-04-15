@@ -167,4 +167,41 @@ describe('/api/pro-players', () => {
       }),
     });
   });
+
+  it('falls back to the public site origin for internal EdgeOne hosts', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE account_id =')) {
+        return [
+          {
+            account_id: 1001,
+            name: 'Player One',
+            name_cn: null,
+            team_id: 2001,
+            team_name: 'Team Alpha',
+            country_code: 'CN',
+            avatar_url: 'https://cdn.steamstatic.com/players/player-one.png',
+            realname: 'Real One',
+            birth_date: null,
+            birth_year: 1999,
+            birth_month: 5,
+          },
+        ];
+      }
+      return [];
+    });
+
+    const { default: handler } = await import('../../../../api/pro-players.js');
+    const req = {
+      method: 'GET',
+      query: { account_id: '1001' },
+      headers: { host: 'pages-pro-12-2e9b.pages-scf-gz-pro.qcloudteo.com' },
+    };
+    const res = createRes();
+
+    await handler(req as any, res as any);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any)?.avatar_url).toBe('https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fplayers%2Fplayer-one.png');
+  });
 });

@@ -29,6 +29,21 @@ const fixture = `
 </div>
 `;
 
+const statsFixture = `
+<div class="table-body">
+  <div class="table__body-row">
+    <div class="table__body-row__cell width-15 width-m-15"><div class="cell__coloured">1</div></div>
+    <a href="https://vn.dltv.org/teams/natus-vincere" class="table__body-row__cell width-55 width-m-55">
+      <div class="cell__logo" data-theme-light="https://s3.dltv.org/uploads/teams/4Qxd8LGsNkAKWHKwfoSJiRoRE8IdflDI.png.webp"></div>
+      <div class="cell__name">
+        <div>Natus Vincere</div>
+        <div class="cell__name-text">Ukraine</div>
+      </div>
+    </a>
+  </div>
+</div>
+`;
+
 describe('DLTV ranking logo helpers', () => {
   it('extracts team names, logo URLs, and team links from ranking rows', () => {
     const entries = parseDltvRankingLogos(fixture);
@@ -43,6 +58,17 @@ describe('DLTV ranking logo helpers', () => {
     expect(entries[1].name).toBe('Xtreme Gaming');
     expect(entries[1].logoUrl).toBe('https://cdn.example/xg.png');
     expect(entries[1].teamUrl).toBe('https://dltv.org/teams/8261500-xtreme-gaming');
+  });
+
+  it('extracts team names, logo URLs, and team links from stats rows', () => {
+    const entries = parseDltvRankingLogos(statsFixture);
+
+    expect(entries).toEqual([{
+      name: 'Natus Vincere',
+      teamUrl: 'https://vn.dltv.org/teams/natus-vincere',
+      logoUrl: 'https://s3.dltv.org/uploads/teams/4Qxd8LGsNkAKWHKwfoSJiRoRE8IdflDI.png.webp',
+      lookupKeys: ['natus vincere'],
+    }]);
   });
 
   it('resolves conservative aliases against the ranking index', () => {
