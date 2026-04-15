@@ -4,9 +4,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { neon } from '@neondatabase/serverless';
 import { spawnSync } from 'node:child_process';
-import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
-import { callLlmJson, callLlmText } from '../lib/openrouter.mjs';
-import { countHanChars, sanitizeTranslatedChunkMarkdown } from '../lib/news-translation-cleanup.js';
+import {
+  buildRequiredTranslationGlossaryPrompt,
+  buildTranslationGlossaryPrompt,
+  normalizeGlossaryTranslations,
+  normalizeGlossaryTranslationsInMarkdown,
+} from '../lib/translation-glossary.js';
+import { loadWebsiteNewsTranslationGuidance } from '../lib/news-translation-guidance.js';
+import { callLlmJson, callLlmText, getLlmRoutingConfig } from '../lib/openrouter.mjs';
+import {
+  countHanChars,
+  sanitizeTranslatedArticleMarkdown,
+  sanitizeTranslatedChunkMarkdown,
+  stripMarkdownEmphasis,
+} from '../lib/news-translation-cleanup.js';
 import { evaluateAutoPostSafety, isGemma4Model, TRANSLATION_STATUS_COMPLETED } from '../lib/news-posting-guards.js';
 
 const DB_URL =
@@ -17,57 +28,30 @@ const DB_URL =
 const CODEX_BIN = process.env.NEWS_TRANSLATE_CODEX_BIN || process.env.CODEX_BIN || 'codex';
 const REQUESTED_MODEL =
   process.env.NEWS_TRANSLATE_MODEL ||
+  process.env.NEWS_TRANSLATE_LOCAL_MODEL ||
+  process.env.LOCAL_LLM_MODEL ||
+  process.env.LM_STUDIO_MODEL ||
+  process.env.LMSTUDIO_MODEL ||
   process.env.NEWS_TRANSLATE_OPENROUTER_MODEL ||
   process.env.OPENROUTER_MODEL ||
   process.env.NEWS_TRANSLATE_CODEX_MODEL ||
-  'google/gemma-4-31b-it';
+  'google/gemma-4-e4b';
 const CODEX_TIMEOUT_MS = Math.max(5000, Number(process.env.NEWS_TRANSLATE_CODEX_TIMEOUT_MS || '45000') || 45000);
 const OPENROUTER_TIMEOUT_MS = Math.max(5000, Number(process.env.OPENROUTER_TIMEOUT_MS || '60000') || 60000);
 const MODEL_ALIASES = {
-  gemma4: 'google/gemma-4-31b-it',
-  'gemma-4': 'google/gemma-4-31b-it',
-  'gemma-4-31b': 'google/gemma-4-31b-it',
-  'google/gemma-4': 'google/gemma-4-31b-it',
+  gemma4: 'google/gemma-4-e4b',
+  'gemma-4': 'google/gemma-4-e4b',
+  'gemma-4-e4b': 'google/gemma-4-e4b',
+  'google/gemma-4': 'google/gemma-4-e4b',
 };
 const MODEL = MODEL_ALIASES[String(REQUESTED_MODEL || '').trim().toLowerCase()] || REQUESTED_MODEL;
-const USE_OPENROUTER = /gemma|google\/|anthropic\/|openai\/|deepseek\/|qwen\//i.test(String(MODEL || ''));
-const TRANSLATION_PROVIDER = USE_OPENROUTER ? 'openrouter' : 'codex';
+const LLM_ROUTING = getLlmRoutingConfig({ model: MODEL, timeoutMs: OPENROUTER_TIMEOUT_MS });
+const USE_LLM_GATEWAY = LLM_ROUTING.providers.length > 0;
+const HAS_OPENROUTER_FALLBACK = Boolean(LLM_ROUTING.openrouterEnabled);
+const TRANSLATION_PROVIDER = LLM_ROUTING.primaryProvider || 'codex';
 const TRANSLATION_STATUS_PENDING = 'pending';
 const TRANSLATION_STATUS_PARTIAL = 'partial';
-const XHS_REWRITE_PROMPT_FILE = path.resolve(process.cwd(), 'docs/xhs-community-post-prompt.md');
-
-function loadTranslationGuidance() {
-  const fallback = [
-    '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成自然、完整、可读的简体中文内容。',
-    '语言要像懂比赛的人在复述消息，不要翻译腔，不要官方通稿腔。',
-    '保留事实准确性与信息密度，专有名词保留原文。',
-  ].join('\n');
-
-  let base = fallback;
-  try {
-    const raw = fs.readFileSync(XHS_REWRITE_PROMPT_FILE, 'utf8').trim();
-    if (raw) base = raw;
-  } catch {}
-
-  return [
-    base,
-    '',
-    '---',
-    '下面的任务是“站内新闻翻译”，不是直接生成小红书发帖 JSON。',
-    '请复用上面提示词里的中文风格、叙事方式、信息取舍原则和 Dota2 观众视角。',
-    '但忽略其中这些限制：',
-    '- 忽略必须输出 JSON / topics 的要求',
-    '- 忽略 title 不超过 20 个中文字的要求',
-    '- 忽略 body 150 到 380 字的要求',
-    '- 忽略“超过 380 字必须压缩”的要求',
-    '标题、摘要、正文都不设字数上限。',
-    '以“自然、完整、准确、信息清楚”为第一优先，不要为了控字数而压缩掉关键事实。',
-    '本任务会分别单独生成标题、摘要、正文，不要把“标题：”“正文：”“总结：”“点评：”“话题：”“topics：”之类字段标签写进输出。',
-    '生成正文时，只输出网站文章正文本身，不要输出多段候选，不要附带额外标题、摘要、点评、话题。',
-  ].join('\n');
-}
-
-const NEWS_TRANSLATION_GUIDANCE = loadTranslationGuidance();
+const NEWS_TRANSLATION_GUIDANCE = loadWebsiteNewsTranslationGuidance();
 
 if (!DB_URL) {
   console.error('Missing DATABASE_URL/POSTGRES_URL');
@@ -126,6 +110,30 @@ function glossaryPromptForSource(source = {}) {
     summary: source?.summary_en || source?.summary || '',
     content: source?.content_markdown_en || source?.content_en || source?.content || '',
   });
+}
+
+function requiredGlossaryPromptForSource(source = {}) {
+  return buildRequiredTranslationGlossaryPrompt({
+    title: source?.title_en || source?.title || '',
+    summary: source?.summary_en || source?.summary || '',
+    content: source?.content_markdown_en || source?.content_en || source?.content || '',
+  });
+}
+
+function applyGlossaryText(text = '', source = {}) {
+  return normalizeGlossaryTranslations(text, {
+    title: source?.title_en || source?.title || '',
+    summary: source?.summary_en || source?.summary || '',
+    content: source?.content_markdown_en || source?.content_en || source?.content || '',
+  });
+}
+
+function applyGlossaryMarkdown(text = '', source = {}) {
+  return sanitizeTranslatedArticleMarkdown(stripMarkdownEmphasis(normalizeGlossaryTranslationsInMarkdown(text, {
+    title: source?.title_en || source?.title || '',
+    summary: source?.summary_en || source?.summary || '',
+    content: source?.content_markdown_en || source?.content_en || source?.content || '',
+  })), source?.title_zh || source?.title || '');
 }
 
 function maybeAutoPostXhs(row, context = {}) {
@@ -430,18 +438,20 @@ function shortPrompt(text, tone, glossaryPrompt = '') {
   ].join('\n');
 }
 
-function markdownPrompt(text, tone, glossaryPrompt = '') {
-  const style = tone === 'gossip'
-    ? '整体语气偏电竞八卦，轻松有梗但克制，不夸张不造谣。'
-    : '整体语气偏新闻报道，客观、准确、简洁。';
+function markdownPrompt(text, glossaryPrompt = '', chunkIndex = 0, chunkTotal = 1) {
+  const chunkHint = chunkTotal > 1
+    ? `下面内容是整篇网站文章中的第 ${chunkIndex + 1}/${chunkTotal} 段正文。`
+    : '下面内容是需要翻译的网站新闻正文。';
   return [
     NEWS_TRANSLATION_GUIDANCE,
     '',
     glossaryPrompt,
     glossaryPrompt ? '' : '',
-    '将下列 Dota2 新闻正文翻译为简体中文。',
-    style,
-    '要求：保留 markdown 链接、图片、列表、标题等语法；保留专有名词原文；保持段落结构；不要额外解释。',
+    chunkHint,
+    '只输出最终中文 markdown 正文。',
+    '保留 markdown 链接、图片、列表、标题等语法；保留专有名词原文；保持段落结构。',
+    '不要输出 JSON、代码块、字段标签，也不要额外补标题、摘要、总结、点评或话题。',
+    '',
     text,
   ].join('\n');
 }
@@ -452,23 +462,23 @@ function safeUnlink(filePath) {
   } catch {}
 }
 
-function callModelJson(prompt, schema, timeoutMs = CODEX_TIMEOUT_MS) {
-  if (USE_OPENROUTER) {
-    return callLlmJson(prompt, schema, { model: MODEL, timeoutMs: Math.max(timeoutMs, OPENROUTER_TIMEOUT_MS) });
+function callModelJson(prompt, schema, timeoutMs = CODEX_TIMEOUT_MS, opts = {}) {
+  if (USE_LLM_GATEWAY) {
+    return callLlmJson(prompt, schema, { ...opts, model: MODEL, timeoutMs: Math.max(timeoutMs, OPENROUTER_TIMEOUT_MS) });
   }
   return callCodex(prompt, schema, timeoutMs);
 }
 
-function callModelText(prompt, timeoutMs = CODEX_TIMEOUT_MS) {
-  if (USE_OPENROUTER) {
-    return callLlmText(prompt, { model: MODEL, timeoutMs: Math.max(timeoutMs, OPENROUTER_TIMEOUT_MS) });
+function callModelText(prompt, timeoutMs = CODEX_TIMEOUT_MS, opts = {}) {
+  if (USE_LLM_GATEWAY) {
+    return callLlmText(prompt, { ...opts, model: MODEL, timeoutMs: Math.max(timeoutMs, OPENROUTER_TIMEOUT_MS) });
   }
   return callCodexText(prompt, timeoutMs);
 }
 
-async function callModelStructuredText(prompt, timeoutMs = CODEX_TIMEOUT_MS) {
-  if (USE_OPENROUTER) {
-    const out = unwrapModelText(await callModelText(prompt, timeoutMs));
+async function callModelStructuredText(prompt, timeoutMs = CODEX_TIMEOUT_MS, opts = {}) {
+  if (USE_LLM_GATEWAY) {
+    const out = unwrapModelText(await callModelText(prompt, timeoutMs, opts));
     if (!out) throw new Error('model returned empty text');
     return out;
   }
@@ -546,7 +556,7 @@ function callCodexText(prompt, timeoutMs = CODEX_TIMEOUT_MS) {
 
 async function translateTitle(row, tone) {
   if (!row?.title_en || looksChinese(row.title_en)) return row?.title_en || null;
-  const glossaryPrompt = glossaryPromptForSource(row);
+  const glossaryPrompt = requiredGlossaryPromptForSource(row);
   try {
     let out = await callModelStructuredText([
       shortPrompt(`${row.title_en}\n${row.summary_en || ''}`, tone, glossaryPrompt),
@@ -581,7 +591,7 @@ async function translateTitle(row, tone) {
       out = String(out || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean)[0] || '';
       out = out.replace(/^#+\s*/, '').trim();
     }
-    return out;
+    return applyGlossaryText(out, row);
   } catch {
     return row.title_en;
   }
@@ -590,7 +600,7 @@ async function translateTitle(row, tone) {
 async function translateSummary(row) {
   const seed = row?.summary_en || row?.content_en || row?.content_markdown_en || row?.title_en;
   if (!seed || looksChinese(seed)) return row?.summary_en || seed || null;
-  const glossaryPrompt = glossaryPromptForSource(row);
+  const glossaryPrompt = requiredGlossaryPromptForSource(row);
   try {
     let out = await callModelStructuredText([
       NEWS_TRANSLATION_GUIDANCE,
@@ -634,25 +644,21 @@ async function translateSummary(row) {
         row.content_en ? `正文：${String(row.content_en).slice(0, 1200)}` : '',
       ].join('\n'), 15000);
     }
-    return out;
+    return applyGlossaryText(out, row);
   } catch {
     return row.summary_en || row.title_en || null;
   }
 }
 
-async function translateMarkdown(text, tone, glossaryPrompt = '') {
+async function translateMarkdown(text, source = {}, glossaryPrompt = '') {
   if (!text || looksChinese(text)) return text || null;
   const chunks = splitTextChunks(text, CHUNK_MAX);
   async function translateChunk(chunk, depth = 0, chunkIndex = 0, chunkTotal = 1) {
     try {
-      let translated = await callModelStructuredText([
-        markdownPrompt(chunk, tone, glossaryPrompt),
-        '',
-        `你收到的是一篇长文章中的第 ${chunkIndex + 1}/${chunkTotal} 段正文，不是完整文章。`,
-        '不要为这一段单独生成标题、摘要、总结、点评或话题。',
-        '只返回最终中文 markdown 正文；不要再包 JSON、不要代码块、不要 text 字段标签。',
-        '不要输出“标题：”“正文：”“总结：”“点评：”“话题：”“topics：”等字段标签。',
-      ].join('\n'), 32000);
+      let translated = await callModelStructuredText(
+        markdownPrompt(chunk, glossaryPrompt, chunkIndex, chunkTotal),
+        32000
+      );
       translated = sanitizeTranslatedChunkMarkdown(translated, chunk);
       if (!looksChinese(translated) || looksLikeTranslationRefusal(translated)) {
         translated = await callModelStructuredText([
@@ -661,8 +667,9 @@ async function translateMarkdown(text, tone, glossaryPrompt = '') {
           glossaryPrompt,
           glossaryPrompt ? '' : '',
           `下面内容只是长文章中的第 ${chunkIndex + 1}/${chunkTotal} 段正文。`,
-          '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
-          '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/正文/总结/点评/话题标签；不要为分段单独起标题。',
+          '请完整翻成简体中文网站正文。',
+          '只输出中文 markdown 正文；保留 markdown 结构和专有名词原文；不要输出 JSON、代码块、字段标签；不要为分段单独起标题。',
+          '',
           chunk,
         ].join('\n'), 28000);
         translated = sanitizeTranslatedChunkMarkdown(translated, chunk);
@@ -674,8 +681,9 @@ async function translateMarkdown(text, tone, glossaryPrompt = '') {
           glossaryPrompt,
           glossaryPrompt ? '' : '',
           `下面内容只是长文章中的第 ${chunkIndex + 1}/${chunkTotal} 段正文。`,
-          '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
-          '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释；不要输出标题/正文/总结/点评/话题标签；不要为分段单独起标题。',
+          '请直接翻成简体中文网站正文。',
+          '只输出中文 markdown 正文；保留 markdown 结构和专有名词原文；不要解释；不要输出 JSON、代码块、字段标签。',
+          '',
           chunk,
         ].join('\n'), 28000);
         translated = sanitizeTranslatedChunkMarkdown(translated, chunk);
@@ -702,9 +710,30 @@ async function translateMarkdown(text, tone, glossaryPrompt = '') {
         translated = sanitizeTranslatedChunkMarkdown(translated, chunk);
       }
       if (hasCompleteChineseBody(translated, chunk) || hasUsableChineseBody(translated, chunk)) {
-        return translated;
+        return applyGlossaryMarkdown(translated, source);
       }
     } catch {}
+
+    if (USE_LLM_GATEWAY && HAS_OPENROUTER_FALLBACK && LLM_ROUTING.primaryProvider === 'local-lm') {
+      try {
+        const fallbackPrompt = [
+          NEWS_TRANSLATION_GUIDANCE,
+          '',
+          glossaryPrompt,
+          glossaryPrompt ? '' : '',
+          `下面内容只是长文章中的第 ${chunkIndex + 1}/${chunkTotal} 段正文。`,
+          '请把下面英文 Dota2 网站新闻正文完整翻成自然的简体中文。',
+          '只输出中文 markdown 正文；保留原有结构与专有名词原文；不要输出 JSON、代码块或字段标签。',
+          '',
+          chunk,
+        ].join('\n');
+        let translated = await callModelStructuredText(fallbackPrompt, 32000, { preferLocal: false });
+        translated = sanitizeTranslatedChunkMarkdown(translated, chunk);
+        if (hasCompleteChineseBody(translated, chunk) || hasUsableChineseBody(translated, chunk)) {
+          return applyGlossaryMarkdown(translated, source);
+        }
+      } catch {}
+    }
 
     if (depth >= 2 || chunk.length < 700) return null;
     const subchunks = splitChunkForRetry(chunk);
@@ -722,16 +751,16 @@ async function translateMarkdown(text, tone, glossaryPrompt = '') {
 
   const out = await mapWithConcurrency(
     chunks,
-    USE_OPENROUTER ? 1 : 2,
+    USE_LLM_GATEWAY ? 1 : 2,
     async (chunk, index) => translateChunk(chunk, 0, index, chunks.length)
   );
   if (out.some((chunk) => !chunk)) return null;
-  return trimTranslatedMarkdownNoise(out.join('\n\n'));
+  return applyGlossaryMarkdown(trimTranslatedMarkdownNoise(out.join('\n\n')), source);
 }
 
-async function translatePlainBodyFallback(text, tone, glossaryPrompt = '') {
-  const source = String(text || '').trim();
-  if (!source || looksChinese(source)) return source || null;
+async function translatePlainBodyFallback(text, source = {}, glossaryPrompt = '') {
+  const sourceText = String(text || '').trim();
+  if (!sourceText || looksChinese(sourceText)) return sourceText || null;
   async function translateBlock(block) {
     try {
       let out = await callModelStructuredText([
@@ -739,26 +768,26 @@ async function translatePlainBodyFallback(text, tone, glossaryPrompt = '') {
         '',
         glossaryPrompt,
         glossaryPrompt ? '' : '',
-        '下面是一段 Dota2 新闻正文。',
-        tone === 'gossip'
-          ? '请用自然的中文论坛转述口吻翻译，保留专有名词原文。'
-          : '请用自然的中文新闻转述口吻翻译，保留专有名词原文。',
+        '下面是一段网站新闻正文。',
+        '请完整翻成自然的简体中文正文，保留专有名词原文。',
         '如果 markdown 结构不好保留，可以退化成普通中文段落。',
-        '只输出中文正文，不要标题，不要摘要，不要点评，不要 JSON，不要解释。',
+        '只输出正文，不要标题，不要摘要，不要点评，不要 JSON，不要代码块，不要解释。',
         '',
         block,
       ].join('\n'), 32000);
       out = String(out || '').trim();
-      return (hasUsableChineseBody(out, block) || hasCompleteChineseBody(out, block)) ? out : null;
+      return (hasUsableChineseBody(out, block) || hasCompleteChineseBody(out, block))
+        ? applyGlossaryMarkdown(out, source)
+        : null;
     } catch {
       return null;
     }
   }
 
-  const whole = await translateBlock(source);
+  const whole = await translateBlock(sourceText);
   if (whole) return whole;
 
-  const chunks = splitTextChunks(source, Math.max(CHUNK_MAX, 900));
+  const chunks = splitTextChunks(sourceText, Math.max(CHUNK_MAX, 900));
   const translated = [];
   for (const chunk of chunks) {
     const out = await translateBlock(chunk);
@@ -767,7 +796,9 @@ async function translatePlainBodyFallback(text, tone, glossaryPrompt = '') {
   }
 
   const merged = translated.join('\n\n').trim();
-  return (hasCompleteChineseBody(merged, source) || hasUsableChineseBody(merged, source)) ? merged : null;
+  return (hasCompleteChineseBody(merged, sourceText) || hasUsableChineseBody(merged, sourceText))
+    ? applyGlossaryMarkdown(merged, source)
+    : null;
 }
 
 async function loadPending(limit, force = false) {
@@ -908,6 +939,7 @@ async function updateRow(row, zh) {
 async function translateOne(row, force = false) {
   const tone = detectTone(row);
   const glossaryPrompt = glossaryPromptForSource(row);
+  const requiredBodyGlossaryPrompt = requiredGlossaryPromptForSource(row);
   const keepTitle = !force && hasChineseTitle(row.title_zh, row.title_en);
   const keepSummary = !force && (!row.summary_en || hasChineseSummary(row.summary_zh, row.summary_en));
   const keepBody = !force && (
@@ -925,8 +957,8 @@ async function translateOne(row, force = false) {
     keepTitle ? Promise.resolve(row.title_zh) : translateTitle(row, tone),
     keepSummary ? Promise.resolve(row.summary_zh) : translateSummary(row),
     force
-      ? translateMarkdown(preparedMarkdown, tone, glossaryPrompt)
-      : (keepBody ? Promise.resolve(row.content_markdown_zh) : translateMarkdown(preparedMarkdown, tone, glossaryPrompt)),
+      ? translateMarkdown(preparedMarkdown, row, requiredBodyGlossaryPrompt)
+      : (keepBody ? Promise.resolve(row.content_markdown_zh) : translateMarkdown(preparedMarkdown, row, requiredBodyGlossaryPrompt)),
   ]);
   const content_zh = content_markdown_zh ? stripMarkdown(content_markdown_zh) : (row.content_en || null);
 
@@ -940,13 +972,13 @@ async function translateOne(row, force = false) {
   if (shouldRetryMissingBody) {
     console.warn(`[translate] body retry for ${row.id} after incomplete first pass`);
     await sleep(300);
-    let retriedBodyMarkdown = await translateMarkdown(preparedMarkdown, tone, glossaryPrompt).catch(() => null);
+    let retriedBodyMarkdown = await translateMarkdown(preparedMarkdown, row, requiredBodyGlossaryPrompt).catch(() => null);
     const hasRetriedBody = retriedBodyMarkdown && (
       hasCompleteChineseBody(retriedBodyMarkdown, preparedMarkdown)
       || hasUsableChineseBody(retriedBodyMarkdown, preparedMarkdown)
     );
     if (!hasRetriedBody) {
-      retriedBodyMarkdown = await translatePlainBodyFallback(preparedMarkdown, tone, glossaryPrompt).catch(() => null);
+      retriedBodyMarkdown = await translatePlainBodyFallback(preparedMarkdown, row, requiredBodyGlossaryPrompt).catch(() => null);
     }
     const retriedBodyText = retriedBodyMarkdown ? stripMarkdown(retriedBodyMarkdown) : (row.content_en || null);
     meta = await updateRow(row, {

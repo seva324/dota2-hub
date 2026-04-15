@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
   query: (sql: string, params?: unknown[]) => Promise<unknown[]>;
@@ -21,6 +21,8 @@ function renderSql(strings: TemplateStringsArray) {
 describe('runSyncLiquipedia', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-14T00:00:00Z'));
     process.env.DATABASE_URL = 'postgres://example.test/db';
     taggedMock.mockReset();
     db.query = vi.fn().mockResolvedValue([]);
@@ -39,21 +41,29 @@ describe('runSyncLiquipedia', () => {
       return [];
     });
 
-    const liquipediaHtml = (`
-      <div class="match-info">
-        <div data-timestamp="${Math.floor(Date.now() / 1000) + 3600}"></div>
-        <a href="/dota2/Glyph" title="Glyph"><img /></a>
-        <a href="/dota2/Cloud_Rising" title="Cloud Rising"><img /></a>
-        <div class="match-info-tournament" title="EPL World Series: SEA/S13"></div>
-        <span>(Bo3)</span>
+    const dltvHtml = (`
+      <div class="match upcoming" data-series-id="424242" data-matches-odd="2026-04-14 03:30:00">
+        <div class="match__head">
+          <div class="match__head-event"><span>EPL World Series: SEA Season 13</span></div>
+          <div class="match__head-format text-red">Group Stage</div>
+          <div class="match__head-format">Bo3</div>
+        </div>
+        <div class="match__body-details">
+          <div class="match__body-details__team">
+            <div class="team__title"><span>Glyph</span></div>
+          </div>
+          <div class="match__body-details__team">
+            <div class="team__title"><span>Cloud Rising</span></div>
+          </div>
+        </div>
       </div>
     ` + ' '.repeat(1200));
 
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      if (url.includes('liquipedia.net')) {
+      if (url.includes('dltv.org/matches')) {
         return {
           ok: true,
-          text: async () => JSON.stringify({ parse: { text: { '*': liquipediaHtml } } }),
+          text: async () => dltvHtml,
         } as Response;
       }
       if (url.includes('api.opendota.com')) {
@@ -66,7 +76,11 @@ describe('runSyncLiquipedia', () => {
     }));
   });
 
-  it('persists Liquipedia team names when a team id is missing', async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('persists DLTV team names when a team id is missing', async () => {
     const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
 
     await runSyncLiquipedia();
@@ -75,7 +89,10 @@ describe('runSyncLiquipedia', () => {
     expect(insertCall).toBeDefined();
 
     const values = insertCall?.slice(1) ?? [];
+    expect(values).toContain('dltv_424242');
     expect(values).toContain('Glyph');
     expect(values).toContain('Cloud Rising');
+    expect(values).toContain('EPL World Series: SEA Season 13');
+    expect(values).toContain('BO3');
   });
 });

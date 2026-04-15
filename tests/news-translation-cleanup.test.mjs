@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeTranslatedChunkMarkdown } from '../lib/news-translation-cleanup.js';
+import {
+  sanitizeTranslatedArticleMarkdown,
+  sanitizeTranslatedChunkMarkdown,
+  stripMarkdownEmphasis,
+} from '../lib/news-translation-cleanup.js';
 
 test('sanitizeTranslatedChunkMarkdown removes chunk-level title/body/summary scaffolding', () => {
   const input = [
@@ -57,4 +61,27 @@ test('sanitizeTranslatedChunkMarkdown drops injected short title paragraph for c
       '另外一些天梯热门英雄也被顺手削了一刀。',
     ].join('\n')
   );
+});
+
+test('stripMarkdownEmphasis removes inline emphasis markers without touching text', () => {
+  const input = '在最近结束的 **Premier Series** 中，*PARIVISION* 击败了 __Nigma Galaxy__。';
+  const output = stripMarkdownEmphasis(input);
+  assert.equal(output, '在最近结束的 Premier Series 中，PARIVISION 击败了 Nigma Galaxy。');
+});
+
+test('sanitizeTranslatedArticleMarkdown removes leading title and metadata lines', () => {
+  const input = [
+    '# MOUZ 注册 Lorenof 出战 DreamLeague Season 29 预选赛',
+    '',
+    '2026年4月11日',
+    '',
+    '5 分钟',
+    '',
+    '* Fenix',
+    '',
+    'Lorenof 将再次回归 MOUZ 阵容，接替 MidOne 出战本次预选赛。',
+  ].join('\n');
+
+  const output = sanitizeTranslatedArticleMarkdown(input, 'MOUZ 注册 Lorenof 参加 DreamLeague 第 29 赛季预选赛');
+  assert.equal(output, 'Lorenof 将再次回归 MOUZ 阵容，接替 MidOne 出战本次预选赛。');
 });

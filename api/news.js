@@ -3,12 +3,19 @@ import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
 import { callLlmText } from '../lib/openrouter.mjs';
 import { mapWithConcurrency } from '../lib/server/derived-refresh-utils.js';
+import { loadWebsiteNewsTranslationGuidance } from '../lib/news-translation-guidance.js';
+import { sanitizeTranslatedArticleMarkdown, stripMarkdownEmphasis } from '../lib/news-translation-cleanup.js';
 import {
   normalizeBo3CoverImageUrl,
   rewriteBo3ImageUrlsForClient,
   toChinaReachableBo3ImageUrl,
 } from '../lib/server/bo3-images.js';
-import { buildTranslationGlossaryPrompt } from '../lib/translation-glossary.js';
+import {
+  buildRequiredTranslationGlossaryPrompt,
+  buildTranslationGlossaryPrompt,
+  normalizeGlossaryTranslations,
+  normalizeGlossaryTranslationsInMarkdown,
+} from '../lib/translation-glossary.js';
 
 export { normalizeBo3CoverImageUrl } from '../lib/server/bo3-images.js';
 
@@ -77,22 +84,7 @@ const TRANSLATION_STATUS_PENDING = 'pending';
 const TRANSLATION_STATUS_PARTIAL = 'partial';
 const TRANSLATION_STATUS_COMPLETED = 'completed';
 let sql = null;
-const NEWS_TRANSLATION_GUIDANCE = [
-  '你现在是一个 Dota2 中文社区内容编辑，擅长把英文电竞新闻改写成中文论坛搬运帖风格。',
-  '',
-  '你的写作风格：',
-  '- 像资深 Dota2 观众在复述消息',
-  '- 轻松、自然、口语化',
-  '- 不要官方通稿腔，不要逐字直译',
-  '- 可以有一点互联网感，但不要乱玩梗',
-  '- 重点突出比赛结果、队伍状态、选手发言和观众最关心的信息',
-  '- 所有事实必须忠于原文，不能脑补',
-  '',
-  '每次我给你英文新闻时，请输出：',
-  '1. 一个适合中文社区传播的标题',
-  '2. 一段自然流畅的正文',
-  '3. 一句简短点评/总结',
-].join('\n');
+const NEWS_TRANSLATION_GUIDANCE = loadWebsiteNewsTranslationGuidance();
 
 function glossaryPromptForItem(item = {}) {
   return buildTranslationGlossaryPrompt({
@@ -100,6 +92,30 @@ function glossaryPromptForItem(item = {}) {
     summary: item?.summary || item?.summary_en || '',
     content: item?.content_markdown || item?.content_en || item?.content || '',
   });
+}
+
+function requiredGlossaryPromptForItem(item = {}) {
+  return buildRequiredTranslationGlossaryPrompt({
+    title: item?.title || item?.title_en || '',
+    summary: item?.summary || item?.summary_en || '',
+    content: item?.content_markdown || item?.content_en || item?.content || '',
+  });
+}
+
+function applyGlossaryText(value = '', item = {}) {
+  return normalizeGlossaryTranslations(value, {
+    title: item?.title || item?.title_en || '',
+    summary: item?.summary || item?.summary_en || '',
+    content: item?.content_markdown || item?.content_en || item?.content || '',
+  });
+}
+
+function applyGlossaryMarkdown(value = '', item = {}) {
+  return sanitizeTranslatedArticleMarkdown(stripMarkdownEmphasis(normalizeGlossaryTranslationsInMarkdown(value, {
+    title: item?.title || item?.title_en || '',
+    summary: item?.summary || item?.summary_en || '',
+    content: item?.content_markdown || item?.content_en || item?.content || '',
+  })), item?.title_zh || item?.title || item?.title_en || '');
 }
 
 function getDb() {
@@ -1025,9 +1041,18 @@ function parseCyberScorePublishedAt(detailHtml = '') {
   return parseCyberScoreDateText(textDate);
 }
 
-function isCloudflareChallengePage(html = '') {
+export function isCloudflareChallengePage(html = '') {
   const text = String(html || '');
-  return /Just a moment\.\.\.|Enable JavaScript and cookies to continue|__cf_chl_/i.test(text);
+  const hasChallengeMarkers = /Just a moment\.\.\.|Enable JavaScript and cookies to continue|__cf_chl_/i.test(text);
+  if (!hasChallengeMarkers) return false;
+
+  const hasUsablePageSignals = /<meta[^>]+property=["']og:(?:title|description|image)["']/i.test(text)
+    || /<article\b/i.test(text)
+    || /<(?:main|section|div)[^>]+(?:class|id)=["'][^"']*(?:content|article|post|entry|body|markdown)[^"']*["']/i.test(text)
+    || /https?:\/\/media\.cyberscore\.live\/static\/(?:posts|content)\//i.test(text)
+    || /(?:To the news list|Post Author|Other news|Schedule of games Dota 2 livescore)/i.test(text);
+
+  return !hasUsablePageSignals;
 }
 
 function trimCyberScoreContent(content = '') {
@@ -1291,7 +1316,7 @@ function hasCyberScoreUsableBody(item = {}) {
   return markdown.length >= 260;
 }
 
-function mergeCyberScoreDetail(primary = {}, secondary = {}) {
+export function mergeCyberScoreDetail(primary = {}, secondary = {}) {
   if (!secondary?.url) return primary;
   if (!primary?.url) return secondary;
 
@@ -1328,7 +1353,7 @@ async function fetchCyberScoreDetailFromJina(url, fallback = {}) {
   return parsed;
 }
 
-async function fetchCyberScoreDetail(url, context = {}) {
+export async function fetchCyberScoreDetail(url, context = {}) {
   const fallback = {
     id: context.id || generateId(url, 'cyberscore'),
     title: context.title || titleFromSlug(url),
@@ -1344,7 +1369,7 @@ async function fetchCyberScoreDetail(url, context = {}) {
 
   const detailResponse = await fetchWithTimeout(url, {}, 12000);
   const detailHtml = await detailResponse.text();
-  if (isCloudflareChallengePage(detailHtml) || !detailResponse.ok) {
+  if (!detailResponse.ok || isCloudflareChallengePage(detailHtml)) {
     return fetchCyberScoreDetailFromJina(url, fallback);
   }
 
@@ -1380,10 +1405,6 @@ async function fetchCyberScoreDetail(url, context = {}) {
     publishedAt,
     category: context.category || fallback.category,
   };
-
-  if (hasCyberScoreUsableBody(directItem)) {
-    return directItem;
-  }
 
   try {
     const jinaItem = await fetchCyberScoreDetailFromJina(url, {
@@ -2658,7 +2679,7 @@ function buildTranslationMeta(item, translated, provider = null) {
 
 async function translateCommunityTitle(apiKey, item) {
   if (!item?.title || looksChinese(item.title)) return item?.title || null;
-  const glossaryPrompt = glossaryPromptForItem(item);
+  const glossaryPrompt = requiredGlossaryPromptForItem(item);
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
@@ -2699,7 +2720,7 @@ async function translateCommunityTitle(apiKey, item) {
         output = await callTranslationModel(apiKey, finalPrompt, 400, 15000).catch(() => output);
       }
     }
-    return output || item.title;
+    return applyGlossaryText(output || item.title, item);
   } catch {
     return item.title;
   }
@@ -2708,7 +2729,7 @@ async function translateCommunityTitle(apiKey, item) {
 async function translateCommunitySummary(apiKey, item) {
   const seed = item?.summary || item?.content || item?.content_markdown || item?.title;
   if (!seed || looksChinese(seed)) return item?.summary || seed || null;
-  const glossaryPrompt = glossaryPromptForItem(item);
+  const glossaryPrompt = requiredGlossaryPromptForItem(item);
   try {
     const prompt = [
       NEWS_TRANSLATION_GUIDANCE,
@@ -2754,7 +2775,7 @@ async function translateCommunitySummary(apiKey, item) {
         output = await callTranslationModel(apiKey, finalPrompt, 400, 15000).catch(() => output);
       }
     }
-    return output || item.summary || item.title;
+    return applyGlossaryText(output || item.summary || item.title, item);
   } catch {
     return item.summary || item.title;
   }
@@ -2765,20 +2786,20 @@ async function translateLongMarkdown(apiKey, text, glossaryPrompt = '') {
   const chunks = splitTextChunks(text, 1300);
   const translated = [];
 
-  for (const chunk of chunks) {
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index];
     try {
       const prompt = [
         NEWS_TRANSLATION_GUIDANCE,
         '',
         glossaryPrompt,
         glossaryPrompt ? '' : '',
-        '请把下面 Dota2 英文新闻正文翻译成中文社区搬运帖风格。',
-        '要求：',
-        '- 保留 markdown 链接与图片语法',
-        '- 保留专有名词原文',
-        '- 保持段落结构',
-        '- 标题、摘要、正文、点评都要完整，不要只翻译一部分',
-        '- 只输出中文正文内容，不要额外解释',
+        chunks.length > 1
+          ? `下面内容是整篇网站文章中的第 ${index + 1}/${chunks.length} 段正文。`
+          : '下面内容是需要翻译的网站新闻正文。',
+        '只输出最终中文 markdown 正文。',
+        '保留 markdown 链接、图片、列表、标题等语法；保留专有名词原文；保持段落结构。',
+        '不要输出 JSON、代码块、字段标签，也不要额外补标题、摘要、总结、点评或话题。',
         '',
         chunk,
       ].join('\n');
@@ -2789,8 +2810,10 @@ async function translateLongMarkdown(apiKey, text, glossaryPrompt = '') {
           '',
           glossaryPrompt,
           glossaryPrompt ? '' : '',
-          '把下面英文 Dota2 新闻正文翻译成简体中文社区搬运帖风格。',
-          '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要道歉；不要要求补充材料；不要输出标题/总结标签。',
+          `下面内容只是长文章中的第 ${index + 1}/${chunks.length} 段正文。`,
+          '请完整翻成简体中文网站正文。',
+          '只输出中文 markdown 正文；保留 markdown 结构和专有名词原文；不要输出 JSON、代码块、字段标签；不要为分段单独起标题。',
+          '',
           chunk,
         ].join('\n');
         output = await callTranslationModel(apiKey, retryPrompt, 1800, 22000).catch(() => output);
@@ -2800,25 +2823,28 @@ async function translateLongMarkdown(apiKey, text, glossaryPrompt = '') {
             '',
             glossaryPrompt,
             glossaryPrompt ? '' : '',
-            '将下面英文 Dota2 新闻正文完整翻译为简体中文。',
-            '要求：必须输出中文正文；保留 markdown 结构；保留专有名词原文；不要解释。',
+            `下面内容只是长文章中的第 ${index + 1}/${chunks.length} 段正文。`,
+            '请直接翻成简体中文网站正文。',
+            '只输出中文 markdown 正文；保留 markdown 结构和专有名词原文；不要解释；不要输出 JSON、代码块、字段标签。',
+            '',
             chunk,
           ].join('\n');
           output = await callTranslationModel(apiKey, finalPrompt, 1800, 22000).catch(() => output);
         }
       }
-      translated.push(output);
+      translated.push(applyGlossaryMarkdown(output, item));
     } catch {
       translated.push(chunk);
     }
   }
 
-  return translated.join('\n\n');
+  return applyGlossaryMarkdown(translated.join('\n\n'), item);
 }
 
 async function translateItem(apiKey, item) {
   const sourceBody = item.content_markdown || item.content || '';
   const glossaryPrompt = glossaryPromptForItem(item);
+  const requiredBodyGlossaryPrompt = requiredGlossaryPromptForItem(item);
   const provider = getPreferredTranslationProvider(apiKey);
   if (!provider) {
     return {
@@ -2833,7 +2859,7 @@ async function translateItem(apiKey, item) {
   const [title_zh, summary_zh, content_markdown_zh] = await Promise.all([
     translateCommunityTitle(apiKey, item),
     translateCommunitySummary(apiKey, item),
-    sourceBody ? translateLongMarkdown(apiKey, sourceBody, glossaryPrompt) : Promise.resolve(sourceBody),
+    sourceBody ? translateLongMarkdown(apiKey, sourceBody, requiredBodyGlossaryPrompt) : Promise.resolve(sourceBody),
   ]);
 
   return {
@@ -2936,7 +2962,6 @@ export async function upsertSyncedNewsItems(db, items, options = {}) {
   const seenBatchTitleKeys = new Set();
   const beforeTitleDedupeCount = news.length;
   news = news.filter((item) => {
-    // Existing URLs should always pass so content can be refreshed.
     if (existingUrlSet.has(item.url)) return true;
 
     const key = normalizeTitleForDedupe(item.title);

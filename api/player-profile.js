@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { getPlayerProfilePayload } from '../lib/server/player-profile-cache.js';
-import { rebaseMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { getMirroredAssetUrl, rebaseMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -49,7 +49,7 @@ function rehydratePlayerProfilePayload(payload, req) {
     player: payload.player && typeof payload.player === 'object'
       ? {
           ...payload.player,
-          avatar_url: rebaseMirroredAssetUrl(payload.player.avatar_url || null, req),
+          avatar_url: getMirroredAssetUrl(payload.player.avatar_url || null, req),
         }
       : payload.player,
     recent_matches: Array.isArray(payload.recent_matches)
