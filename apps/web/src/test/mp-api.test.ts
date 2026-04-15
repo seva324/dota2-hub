@@ -49,10 +49,10 @@ function renderSql(strings: TemplateStringsArray) {
   return strings.join(' ').replace(/\s+/g, ' ').trim();
 }
 
-async function callMpRoute(query: Record<string, string>) {
+async function callMpRoute(query: Record<string, string>, headers: Record<string, string> = {}) {
   const { default: handler } = await import('../../../../api/matches.js');
   const res = createRes();
-  await handler({ method: 'GET', query } as never, res as never);
+  await handler({ method: 'GET', query, headers } as never, res as never);
   return res;
 }
 
@@ -60,6 +60,9 @@ describe('/api/mp/*', () => {
   beforeEach(() => {
     vi.resetModules();
     process.env.DATABASE_URL = 'postgres://example.test/db';
+    delete process.env.PUBLIC_SITE_ORIGIN;
+    delete process.env.VITE_PUBLIC_SITE_ORIGIN;
+    delete process.env.SITE_URL;
     taggedMock.mockReset();
     neonMock.mockClear();
     getLiveHeroPayloadsMock.mockReset();
@@ -110,7 +113,7 @@ describe('/api/mp/*', () => {
           source: 'BO3.gg',
           url: 'https://example.test/news-1',
           category: 'tournament',
-          image_url: 'https://example.test/news-1.png',
+          image_url: 'https://files.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp',
           published_at: 1700000200,
           title_en: 'English title',
           summary_en: 'English summary',
@@ -134,7 +137,10 @@ describe('/api/mp/*', () => {
       liveMap: null,
     }]);
 
-    const res = await callMpRoute({ __mp: 'home' });
+    const res = await callMpRoute(
+      { __mp: 'home' },
+      { host: 'pages-pro-7-e197.pages-scf-gz-pro.qcloudteo.com' },
+    );
 
     expect(res.statusCode).toBe(200);
     expect(res.payload).toEqual({
@@ -147,7 +153,10 @@ describe('/api/mp/*', () => {
           background_image_url: 'https://dotahub.cn/api/tournament-background?slug=dreamleague',
         })],
         upcoming: [expect.objectContaining({ series_id: '11' })],
-        news: [expect.objectContaining({ title: '中文标题' })],
+        news: [expect.objectContaining({
+          title: '中文标题',
+          image_url: 'https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Ffiles.bo3.gg%2Fuploads%2Fnews%2F471032%2Ftitle_image%2Fwebp-a1ad4563323fda40b1520cf8559625c2.webp',
+        })],
       }),
       error: null,
       meta: expect.objectContaining({
