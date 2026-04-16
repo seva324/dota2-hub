@@ -67,6 +67,12 @@ describe('runSyncLiquipedia', () => {
           text: async () => dltvHtml,
         } as Response;
       }
+      if (url === 'https://dltv.org/events' || url === 'https://r.jina.ai/http://dltv.org/events') {
+        return {
+          ok: true,
+          text: async () => '<html><body>No demo events</body></html>',
+        } as Response;
+      }
       if (url.includes('api.opendota.com')) {
         return {
           ok: true,
@@ -133,7 +139,7 @@ describe('runSyncLiquipedia', () => {
     db.query = vi.fn(async (sql: string, params?: unknown[]) => {
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
-          league_id: 19101,
+          league_id: 19538,
           name: 'RES Unchained - A Blast Dota Slam VII Qualifier SEA',
           tier: null,
           location: null,
@@ -219,6 +225,12 @@ describe('runSyncLiquipedia', () => {
           text: async () => dltvHtml,
         } as Response;
       }
+      if (url === 'https://dltv.org/events' || url === 'https://r.jina.ai/http://dltv.org/events') {
+        return {
+          ok: true,
+          text: async () => '<html><body>No demo events</body></html>',
+        } as Response;
+      }
       if (url.includes('blast-slam-vii-southeast-asia-closed-qualifier')) {
         return {
           ok: true,
@@ -246,10 +258,326 @@ describe('runSyncLiquipedia', () => {
 
     const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
     expect(upcomingInsertCall).toBeDefined();
-    expect(upcomingInsertCall?.slice(1)).toContain(19101);
+    expect(upcomingInsertCall?.slice(1)).toContain(19538);
     expect(upcomingInsertCall?.slice(1)).toContain('https://dltv.org/events/blast-slam-7/blast-slam-vii-southeast-asia-closed-qualifier');
     expect(upcomingInsertCall?.slice(1)).toContain('blast-slam-vii-southeast-asia-closed-qualifier');
     expect(upcomingInsertCall?.slice(1)).toContain('blast-slam-7');
+  });
+
+  it('hydrates demo tournament rows from the DLTV events catalog before match sync', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [];
+      }
+      return [];
+    });
+
+    db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
+        return [{
+          league_id: 19448,
+          name: 'DreamLeague Season 29 Qualifiers',
+          tier: 'A-QUAL',
+          location: null,
+          status: null,
+          start_time: null,
+          end_time: null,
+          prize_pool: null,
+          prize_pool_usd: null,
+          image: null,
+          location_flag_url: null,
+          source_url: null,
+          dltv_event_slug: null,
+          dltv_parent_slug: null,
+          event_group_slug: null,
+        }];
+      }
+      if (sql.includes('SELECT league_id FROM tournaments WHERE league_id =')) {
+        return [];
+      }
+      return [];
+    });
+
+    const eventsCatalogHtml = `
+      <html>
+        <body>
+          <div class="events__card">
+            <a href="https://dltv.org/events/dreamleague-season-29" class="events__card-head">
+              <div class="events__card-head__pic">
+                <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/dreamleague-main.png')">
+                  <div class="pic__tag">
+                    <span data-datetime-source="2026-05-13 00:00:00">May 12</span>
+                    -
+                    <span data-datetime-source="2026-05-24 00:00:00">May 23</span>
+                  </div>
+                </div>
+              </div>
+              <div class="events__card-head__info">
+                <div class="info__col">
+                  <div class="info__col-item name">DreamLeague 29</div>
+                  <div class="info__col-item"><span>Europe</span></div>
+                  <div class="info__col-item prize"><span>Prize pool <strong>$1,000,000</strong></span></div>
+                </div>
+                <div class="info__col width-50 abs">
+                  <div class="info__col-item align-right">A-Tier Tier</div>
+                  <div class="info__col-item align-right">8 participants</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="events__card">
+            <a href="https://dltv.org/events/blast-slam-7" class="events__card-head">
+              <div class="events__card-head__pic">
+                <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/blast-main.png')">
+                  <div class="pic__tag">
+                    <span data-datetime-source="2026-05-26 00:00:00">May 25</span>
+                    -
+                    <span data-datetime-source="2026-06-07 00:00:00">Jun 06</span>
+                  </div>
+                </div>
+              </div>
+              <div class="events__card-head__info">
+                <div class="info__col">
+                  <div class="info__col-item name">Blast Slam 7</div>
+                  <div class="info__col-item"><span>Denmark</span></div>
+                  <div class="info__col-item prize"><span>Prize pool <strong>$1,000,000</strong></span></div>
+                </div>
+                <div class="info__col width-50 abs">
+                  <div class="info__col-item align-right">A-Tier Tier</div>
+                  <div class="info__col-item align-right">12 participants</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </body>
+      </html>
+    `;
+    const dreamleagueMainHtml = `
+      <html>
+        <head>
+          <title>DreamLeague 29 overview | DLTV</title>
+          <meta name="description" content="Complete overview of DreamLeague 29 which will take place from May 13, 2026 to May 24, 2026, a $1,000,000 Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>DreamLeague 29</h1>
+          <div style="background-image: url('https://s3.dltv.org/uploads/events/big/dream-main.png')"></div>
+          <a href="https://dltv.org/events/dreamleague-season-29/dreamleague-season-29-china-closed-qualifier">China Closed Qualifier</a>
+          <a href="https://dltv.org/events/dreamleague-season-29/dreamleague-season-29-south-america-closed-qualifier">South America Closed Qualifier</a>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>MAY 13 - MAY 24, 2026</div>
+          <div>COUNTRY</div>
+          <div>EUROPE</div>
+          <div>EVENT TIER</div>
+          <div>A-TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$1,000,000</div>
+        </body>
+      </html>
+    `;
+    const dreamleagueChinaQualifierHtml = `
+      <html>
+        <head>
+          <title>DreamLeague 29: China Closed Qualifier overview | DLTV</title>
+          <meta name="description" content="Complete overview of DreamLeague 29: China Closed Qualifier held from Apr. 12, 2026 to Apr. 14, 2026, a Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>DreamLeague 29: China Closed Qualifier</h1>
+          <a href="https://dltv.org/events/dreamleague-season-29">Main event</a>
+          <a href="https://dltv.org/events/dreamleague-season-29-china-closed-qualifier/dreamleague-season-29-china-open-qualifier-1">Open Qualifier 1</a>
+          <div>FINISHED</div>
+          <div>DATES</div>
+          <div>APR 12 - APR 14, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>A-QUAL TIER</div>
+        </body>
+      </html>
+    `;
+    const dreamleagueChinaOpenHtml = `
+      <html>
+        <head>
+          <title>DreamLeague Season 29: China Open Qualifier 1 overview | DLTV</title>
+          <meta name="description" content="Complete overview of DreamLeague Season 29: China Open Qualifier 1 held from Apr. 08, 2026 to Apr. 09, 2026, a Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>DreamLeague Season 29: China Open Qualifier 1</h1>
+          <a href="https://dltv.org/events/dreamleague-season-29/dreamleague-season-29-china-closed-qualifier">China Closed Qualifier</a>
+          <div>FINISHED</div>
+          <div>DATES</div>
+          <div>APR 08 - APR 09, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>B-QUAL TIER</div>
+        </body>
+      </html>
+    `;
+    const dreamleagueSaQualifierHtml = `
+      <html>
+        <head>
+          <title>DreamLeague 29: South America Closed Qualifier overview | DLTV</title>
+          <meta name="description" content="Complete overview of DreamLeague 29: South America Closed Qualifier held from Apr. 12, 2026 to Apr. 14, 2026, a Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>DreamLeague 29: South America Closed Qualifier</h1>
+          <a href="https://dltv.org/events/dreamleague-season-29">Main event</a>
+          <div>FINISHED</div>
+          <div>DATES</div>
+          <div>APR 12 - APR 14, 2026</div>
+          <div>COUNTRY</div>
+          <div>SOUTH AMERICA</div>
+          <div>EVENT TIER</div>
+          <div>A-QUAL TIER</div>
+        </body>
+      </html>
+    `;
+    const blastMainHtml = `
+      <html>
+        <head>
+          <title>Blast Slam 7 overview | DLTV</title>
+          <meta name="description" content="Complete overview of Blast Slam 7 which will take place from May 26, 2026 to Jun. 07, 2026, a $1,000,000 Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>BLAST SLAM 7</h1>
+          <div style="background-image: url('https://s3.dltv.org/uploads/events/big/blast-main.png')"></div>
+          <a href="https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier">China Closed Qualifier</a>
+          <a href="https://dltv.org/events/blast-slam-7/blast-slam-vii-southeast-asia-closed-qualifier">SEA Closed Qualifier</a>
+          <a href="https://dltv.org/events/blast-slam-7/blast-slam-vii-europe-closed-qualifier">EU Closed Qualifier</a>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>MAY 26 - JUN 07, 2026</div>
+          <div>COUNTRY</div>
+          <div>DENMARK</div>
+          <div>EVENT TIER</div>
+          <div>A-TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$1,000,000</div>
+        </body>
+      </html>
+    `;
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('dltv.org/matches')) {
+        return {
+          ok: true,
+          text: async () => '<html><body>No upcoming matches</body></html>',
+        } as Response;
+      }
+      if (url === 'https://dltv.org/events') {
+        return {
+          ok: true,
+          text: async () => eventsCatalogHtml,
+        } as Response;
+      }
+      if (url.endsWith('/events/dreamleague-season-29')) {
+        return {
+          ok: true,
+          text: async () => dreamleagueMainHtml,
+        } as Response;
+      }
+      if (url.includes('dreamleague-season-29-china-closed-qualifier/dreamleague-season-29-china-open-qualifier-1')) {
+        return {
+          ok: true,
+          text: async () => dreamleagueChinaOpenHtml,
+        } as Response;
+      }
+      if (url.includes('dreamleague-season-29/dreamleague-season-29-china-closed-qualifier')) {
+        return {
+          ok: true,
+          text: async () => dreamleagueChinaQualifierHtml,
+        } as Response;
+      }
+      if (url.includes('dreamleague-season-29/dreamleague-season-29-south-america-closed-qualifier')) {
+        return {
+          ok: true,
+          text: async () => dreamleagueSaQualifierHtml,
+        } as Response;
+      }
+      if (url.endsWith('/events/blast-slam-7')) {
+        return {
+          ok: true,
+          text: async () => blastMainHtml,
+        } as Response;
+      }
+      if (url.includes('blast-slam-vii-china-closed-qualifier') || url.includes('blast-slam-vii-southeast-asia-closed-qualifier') || url.includes('blast-slam-vii-europe-closed-qualifier')) {
+        return {
+          ok: true,
+          text: async () => `
+            <html>
+              <head><title>Qualifier overview | DLTV</title></head>
+              <body>
+                <h1>Qualifier</h1>
+                <a href="https://dltv.org/events/blast-slam-7">Main event</a>
+                <div>FINISHED</div>
+                <div>DATES</div>
+                <div>APR 02 - APR 03, 2026</div>
+                <div>COUNTRY</div>
+                <div>SEA</div>
+                <div>EVENT TIER</div>
+                <div>A-QUAL TIER</div>
+              </body>
+            </html>
+          `,
+        } as Response;
+      }
+      if (url.includes('api.opendota.com')) {
+        return {
+          ok: true,
+          json: async () => ([]),
+        } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    await runSyncLiquipedia();
+
+    const tournamentInsertCalls = (db.query as any).mock.calls
+      .filter((call: unknown[]) => String(call[0] || '').includes('INSERT INTO tournaments'));
+    const blastMainInsert = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[0] === 19101);
+    const dreamQualifierInsert = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[0] === 19448);
+
+    expect(blastMainInsert).toBeDefined();
+    expect(blastMainInsert[1]).toEqual(expect.arrayContaining([
+      19101,
+      'Blast Slam 7',
+      'A',
+      'DENMARK',
+      'upcoming',
+      expect.any(Number),
+      expect.any(Number),
+      '$1,000,000',
+      1000000,
+      'https://s3.dltv.org/uploads/events/big/blast-main.png',
+      'https://flagcdn.com/w40/dk.png',
+      'https://dltv.org/events/blast-slam-7',
+      'blast-slam-7',
+      'blast-slam-7',
+      'blast-slam-7',
+    ]));
+
+    expect(dreamQualifierInsert).toBeDefined();
+    expect(dreamQualifierInsert[1]).toEqual(expect.arrayContaining([
+      19448,
+      'DreamLeague Season 29 Qualifiers',
+      'A-QUAL',
+      'Multiple regions',
+      'finished',
+      expect.any(Number),
+      expect.any(Number),
+      null,
+      null,
+      'https://s3.dltv.org/uploads/events/big/dream-main.png',
+      null,
+      'https://dltv.org/events/dreamleague-season-29#qualifiers',
+      'dreamleague-season-29-qualifiers',
+      'dreamleague-season-29',
+      'dreamleague-season-29',
+    ]));
   });
 
   it('falls back to Jina markdown when the direct DLTV matches page is rate limited', async () => {
@@ -326,6 +654,13 @@ Nemiga Gaming
           ok: true,
           status: 200,
           text: async () => dltvMarkdown,
+        } as Response;
+      }
+      if (url === 'https://dltv.org/events' || url === 'https://r.jina.ai/http://dltv.org/events') {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => '<html><body>No demo events</body></html>',
         } as Response;
       }
       if (url.includes('events/european-pro-league-season-36')) {

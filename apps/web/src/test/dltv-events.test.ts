@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   parseDltvEventPage,
+  parseDltvEventsListPage,
   scoreTournamentNameMatch,
 } from '../../../../lib/server/dltv-events.js';
 
@@ -15,6 +16,7 @@ describe('parseDltvEventPage', () => {
         </head>
         <body>
           <h1>BLAST SLAM 7</h1>
+          <div class="event__hero" style="background-image: url('https://s3.dltv.org/uploads/events/big/blast-main.png')"></div>
           <div>UPCOMING</div>
           <div>DATES</div>
           <div>MAY 26 - JUN 07, 2026</div>
@@ -41,6 +43,7 @@ describe('parseDltvEventPage', () => {
         locationFlagUrl: 'https://flagcdn.com/w40/dk.png',
         prizePool: '$1,000,000',
         prizePoolUsd: 1000000,
+        image: 'https://s3.dltv.org/uploads/events/big/blast-main.png',
         eventSlug: 'blast-slam-7',
         parentSlug: 'blast-slam-7',
         eventGroupSlug: 'blast-slam-7',
@@ -155,5 +158,85 @@ describe('scoreTournamentNameMatch', () => {
     expect(score.score).toBeGreaterThanOrEqual(12);
     expect(score.detailOverlap).toBeGreaterThanOrEqual(4);
     expect(score.groupOverlap).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('parseDltvEventsListPage', () => {
+  it('parses featured cards and qualifier rows from the DLTV events index', () => {
+    const raw = `
+      <html>
+        <body>
+          <div class="events__card">
+            <a href="https://dltv.org/events/dreamleague-season-29" class="events__card-head">
+              <div class="events__card-head__pic">
+                <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/dreamleague-main.png')">
+                  <div class="pic__tag">
+                    <span data-datetime-source="2026-05-13 00:00:00">May 12</span>
+                    -
+                    <span data-datetime-source="2026-05-24 00:00:00">May 23</span>
+                  </div>
+                </div>
+              </div>
+              <div class="events__card-head__info">
+                <div class="info__col">
+                  <div class="info__col-item name">DreamLeague 29</div>
+                  <div class="info__col-item">
+                    <div class="info__col-item__flag"></div>
+                    <span>Europe</span>
+                  </div>
+                  <div class="info__col-item prize">
+                    <span>Prize pool <strong>$1,000,000</strong></span>
+                  </div>
+                </div>
+                <div class="info__col width-50 abs">
+                  <div class="info__col-item align-right">A-Tier Tier</div>
+                  <div class="info__col-item align-right">8 participants</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <a href="https://dltv.org/events/blast-slam-7/blast-slam-vii-southeast-asia-closed-qualifier" class="table__body-row">
+            <div class="table__body-row__cell width-10 width-m-20">
+              <div class="cell__num">
+                <span data-datetime-source="2026-04-02 00:00:00">Apr 01</span>
+                -
+                <span data-datetime-source="2026-04-04 00:00:00">Apr 03</span>
+              </div>
+            </div>
+            <div class="table__body-row__cell width-28 width-m-80">
+              <div class="cell__logo" style="background-image: url('https://s3.dltv.org/uploads/events/small/blast-sea.png')"></div>
+              <div class="cell__name">BLAST Slam 7: Southeast Asia Closed Qualifier</div>
+            </div>
+            <div class="table__body-row__cell width-10 mobile-none"><div class="cell__text">SEA</div></div>
+            <div class="table__body-row__cell center width-10 mobile-none"><div class="cell__text">Online</div></div>
+            <div class="table__body-row__cell center width-10 mobile-none"><div class="cell__text">A-Qual Tier</div></div>
+            <div class="table__body-row__cell center width-10 mobile-none"><div class="cell__text">$0</div></div>
+          </a>
+        </body>
+      </html>
+    `;
+
+    expect(parseDltvEventsListPage(raw)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        sourceUrl: 'https://dltv.org/events/dreamleague-season-29',
+        title: 'DreamLeague 29',
+        eventSlug: 'dreamleague-season-29',
+        eventGroupSlug: 'dreamleague-season-29',
+        location: 'Europe',
+        prizePool: '$1,000,000',
+        tier: 'A',
+        image: 'https://s3.dltv.org/uploads/events/dreamleague-main.png',
+      }),
+      expect.objectContaining({
+        sourceUrl: 'https://dltv.org/events/blast-slam-7/blast-slam-vii-southeast-asia-closed-qualifier',
+        title: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+        eventSlug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+        eventGroupSlug: 'blast-slam-7',
+        location: 'SEA',
+        prizePool: '$0',
+        tier: 'A-QUAL',
+        image: 'https://s3.dltv.org/uploads/events/small/blast-sea.png',
+      }),
+    ]));
   });
 });

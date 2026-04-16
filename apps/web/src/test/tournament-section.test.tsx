@@ -732,6 +732,103 @@ describe('TournamentSection', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=0');
   });
 
+  it('switches BLAST 7 between main event and qualifier tracks without resetting the selection', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=blast-slam-7&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(1, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=blast-slam-7-sea-closed-qualifier&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(20, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'blast-slam-7',
+            league_id: 19101,
+            name: 'BLAST Slam 7',
+            status: 'upcoming',
+            tier: 'A',
+            location: 'Denmark',
+            start_time: 1_701_000_000,
+            end_time: 1_701_100_000,
+            dltv_event_slug: 'blast-slam-7',
+            event_group_slug: 'blast-slam-7',
+            related_tournaments: [
+              {
+                id: 'blast-slam-7-china-closed-qualifier',
+                league_id: 19520,
+                name: 'BLAST Slam 7: China Closed Qualifier',
+                status: 'completed',
+                tier: 'A',
+                location: 'China',
+                start_time: 1_700_800_000,
+                end_time: 1_700_860_000,
+                dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+                event_group_slug: 'blast-slam-7',
+              },
+              {
+                id: 'blast-slam-7-sea-closed-qualifier',
+                league_id: 19538,
+                name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+                status: 'completed',
+                tier: 'A',
+                location: 'SEA',
+                start_time: 1_700_700_000,
+                end_time: 1_700_760_000,
+                dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+                event_group_slug: 'blast-slam-7',
+              },
+              {
+                id: 'blast-slam-7-eu-closed-qualifier',
+                league_id: 19539,
+                name: 'BLAST Slam 7: Europe Closed Qualifier',
+                status: 'completed',
+                tier: 'A',
+                location: 'Europe',
+                start_time: 1_700_600_000,
+                end_time: 1_700_660_000,
+                dltv_event_slug: 'blast-slam-vii-europe-closed-qualifier',
+                event_group_slug: 'blast-slam-7',
+              },
+            ],
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    expect(await screen.findByText('Radiant 1')).toBeInTheDocument();
+    expect(screen.getByText('4 条赛事路径')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /BLAST Slam 7: Southeast Asia Closed Qualifier/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Radiant 20')).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=blast-slam-7-sea-closed-qualifier&limit=10&offset=0');
+    });
+
+    expect(screen.getAllByText('BLAST Slam 7: Southeast Asia Closed Qualifier').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('BLAST Slam 7').length).toBeGreaterThan(0);
+  });
+
   it('includes A-tier events in the default T1 filter', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
