@@ -53,7 +53,22 @@ export const tournamentSummarySchema = z.object({
   prize_pool: z.string().nullable().optional(),
   prize_pool_usd: z.number().nullable().optional(),
   image: z.string().nullable().optional(),
+  location_flag_url: z.string().nullable().optional(),
+  source_url: z.string().nullable().optional(),
+  dltv_event_slug: z.string().nullable().optional(),
+  event_group_slug: z.string().nullable().optional(),
   background_image_url: z.string().nullable().optional(),
+  related_tournaments: z.array(
+    z.object({
+      id: z.string(),
+      league_id: z.union([z.string(), z.number()]).nullable().optional(),
+      name: z.string(),
+      tier: z.string().nullable().optional(),
+      status: z.string().nullable().optional(),
+      start_time: z.number().nullable().optional(),
+      end_time: z.number().nullable().optional(),
+    })
+  ).optional(),
 });
 
 export type TournamentSummary = z.infer<typeof tournamentSummarySchema>;
@@ -77,6 +92,8 @@ export type SeriesGame = z.infer<typeof seriesGameSchema>;
 
 export const tournamentSeriesSchema = z.object({
   series_id: z.string(),
+  league_id: z.union([z.string(), z.number()]).nullable().optional(),
+  tournament_name: z.string().nullable().optional(),
   series_type: z.string().nullable().optional(),
   radiant_team_id: z.string().nullable().optional(),
   dire_team_id: z.string().nullable().optional(),

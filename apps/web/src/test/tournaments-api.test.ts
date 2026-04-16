@@ -123,6 +123,59 @@ describe('/api/tournaments lazy loading', () => {
     }));
   });
 
+  it('groups tournaments by event_group_slug and keeps related qualifiers on the representative row', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM tournaments') && !sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        return [
+          {
+            id: 'blast-slam-7',
+            league_id: 19099,
+            name: 'BLAST Slam 7',
+            tier: 'A',
+            status: 'upcoming',
+            start_time: 1701000000,
+            end_time: 1702000000,
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-7',
+          },
+          {
+            id: 'blast-slam-7-sea-qual',
+            league_id: 19101,
+            name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+            tier: 'A-QUAL',
+            status: 'finished',
+            start_time: 1700000000,
+            end_time: 1700100000,
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+          },
+        ];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: {} };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).tournaments).toEqual([
+      expect.objectContaining({
+        league_id: 19099,
+        name: 'BLAST Slam 7',
+        related_tournaments: [
+          expect.objectContaining({
+            league_id: 19101,
+            name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+          }),
+        ],
+      }),
+    ]);
+  });
+
   it('returns paginated series for a selected tournament', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = renderSql(strings);

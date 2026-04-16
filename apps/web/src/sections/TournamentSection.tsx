@@ -67,11 +67,26 @@ interface Tournament {
   end_time?: number;
   status: string;
   image?: string;
+  location_flag_url?: string | null;
+  source_url?: string | null;
+  dltv_event_slug?: string | null;
+  event_group_slug?: string | null;
   background_image_url?: string | null;
+  related_tournaments?: Array<{
+    id: string;
+    league_id?: string | number | null;
+    name: string;
+    tier?: string | null;
+    status?: string | null;
+    start_time?: number | null;
+    end_time?: number | null;
+  }>;
 }
 
 interface Series {
   series_id: string;
+  league_id?: string | number | null;
+  tournament_name?: string | null;
   series_type: string;
   radiant_team_id?: string | null;
   dire_team_id?: string | null;
@@ -413,6 +428,11 @@ function formatPrizeUsd(value?: number, fallback?: string): string {
 
 function getTournamentVisualUrl(tournament?: Tournament | null): string {
   return String(tournament?.background_image_url || tournament?.image || '').trim();
+}
+
+function isT1Tier(tier?: string | null): boolean {
+  const normalized = String(tier || '').toUpperCase();
+  return normalized === 'S' || normalized === 'A';
 }
 
 function parseEventDateTime(value?: string | null): Date | null {
@@ -1864,9 +1884,8 @@ export function TournamentSection({
 
   const sortedTournaments = useMemo(() => {
     return allSortedTournaments.filter((t) => {
-      const tier = String(t.tier || '').toUpperCase();
-      if (showT1Only) return tier === 'S';
-      return tier !== 'S';
+      if (showT1Only) return isT1Tier(t.tier);
+      return !isT1Tier(t.tier);
     });
   }, [allSortedTournaments, showT1Only]);
 
@@ -2443,6 +2462,13 @@ export function TournamentSection({
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <div className="flex items-center gap-2 min-w-0 text-slate-400">
                       <MapPin className="w-4 h-4" />
+                      {selectedTournament.location_flag_url ? (
+                        <img
+                          src={selectedTournament.location_flag_url}
+                          alt={selectedTournament.location || ''}
+                          className="h-3.5 w-5 rounded-[2px] object-cover"
+                        />
+                      ) : null}
                       <span>{selectedTournament.location || 'TBD'}</span>
                     </div>
                     <div className="flex items-center gap-2 min-w-0 text-slate-400">
@@ -2454,6 +2480,16 @@ export function TournamentSection({
                         <span className="font-bold">{formatPrizeUsd(selectedTournament.prize_pool_usd, selectedTournament.prize_pool)}</span>
                       </div>
                   </div>
+                  {selectedTournament.related_tournaments && selectedTournament.related_tournaments.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                      <span className="text-slate-400">关联赛事</span>
+                      {selectedTournament.related_tournaments.map((row) => (
+                        <span key={row.id} className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                          {row.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   {isFeaturedTournament(selectedTournament) ? (
                     <div className="mt-3 text-xs text-amber-200/80">
                       点击赛事标题可{isFeaturedSelectedTournamentExpanded ? '收起' : '展开'}主赛事定制视图
@@ -2571,6 +2607,11 @@ export function TournamentSection({
                                 <Badge variant="outline" className="hidden sm:inline-block border-slate-600 text-slate-400 text-xs">
                                   {getSeriesStageLabel(series)}
                                 </Badge>
+                                {series.tournament_name && selectedTournament && series.tournament_name !== selectedTournament.name ? (
+                                  <Badge variant="outline" className="hidden md:inline-block border-amber-500/30 text-amber-200 text-xs">
+                                    {series.tournament_name}
+                                  </Badge>
+                                ) : null}
                                 {hasCN && (
                                   <Badge className="bg-gradient-to-r from-red-600/30 to-orange-600/30 text-red-400 text-xs font-bold border border-red-500/30">
                                     <Flame className="w-3 h-3 mr-1" />
