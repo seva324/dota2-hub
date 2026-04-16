@@ -251,4 +251,107 @@ describe('runSyncLiquipedia', () => {
     expect(upcomingInsertCall?.slice(1)).toContain('blast-slam-vii-southeast-asia-closed-qualifier');
     expect(upcomingInsertCall?.slice(1)).toContain('blast-slam-7');
   });
+
+  it('falls back to Jina markdown when the direct DLTV matches page is rate limited', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [
+          { team_id: '111', name: 'Team Lynx', tag: 'Lynx' },
+          { team_id: '222', name: 'Nemiga Gaming', tag: 'Nemiga' },
+        ];
+      }
+      if (sql.includes('SELECT team_id FROM teams WHERE LOWER(name) =')) {
+        return [];
+      }
+      return [];
+    });
+
+    const dltvMarkdown = `
+Title: Dota 2 Matches & livescore – DLTV
+
+Markdown Content:
+#### April 16 - Thursday[](http://dltv.org/matches)
+
+[](https://dltv.org/events/european-pro-league-season-36)
+
+European Pro League Season 36
+
+Upper Bracket Final
+
+bo3
+
+[](https://dltv.org/matches/426144/team-lynx-vs-nemiga-gaming-european-pro-league-season-36)
+
+Team Lynx
+
+Apr 16**12:00**
+
+Starts in:**06 : 30 : 21**
+
+Nemiga Gaming
+
+[](https://dltv.org/matches/426144/team-lynx-vs-nemiga-gaming-european-pro-league-season-36#lineups)Stats
+`;
+
+    const eventHtml = `
+      <html>
+        <head>
+          <title>European Pro League Season 36 overview | DLTV</title>
+          <meta name="description" content="Complete overview of European Pro League Season 36 held from Apr. 10, 2026 to Apr. 20, 2026, a Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>European Pro League Season 36</h1>
+          <div>ONGOING</div>
+          <div>DATES</div>
+          <div>APR 10 - APR 20, 2026</div>
+          <div>COUNTRY</div>
+          <div>ONLINE</div>
+          <div>EVENT TIER</div>
+          <div>A-TIER</div>
+        </body>
+      </html>
+    `;
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url === 'https://dltv.org/matches') {
+        return {
+          ok: false,
+          status: 429,
+          text: async () => '',
+        } as Response;
+      }
+      if (url === 'https://r.jina.ai/http://dltv.org/matches') {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => dltvMarkdown,
+        } as Response;
+      }
+      if (url.includes('events/european-pro-league-season-36')) {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => eventHtml,
+        } as Response;
+      }
+      if (url.includes('api.opendota.com')) {
+        return {
+          ok: true,
+          json: async () => ([]),
+        } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    const result = await runSyncLiquipedia();
+
+    const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
+    expect(result.success).toBe(true);
+    expect(upcomingInsertCall).toBeDefined();
+    expect(upcomingInsertCall?.slice(1)).toContain('dltv_426144_1776340800');
+    expect(upcomingInsertCall?.slice(1)).toContain('https://dltv.org/events/european-pro-league-season-36');
+  });
 });

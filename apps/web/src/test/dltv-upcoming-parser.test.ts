@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  parseDltvUpcomingMatchesMarkdown,
   parseDltvUpcomingMatchesPage,
   parseUtcDateTimeToUnixSeconds,
 } from '../../../../lib/server/dltv-upcoming.js';
@@ -114,5 +115,57 @@ describe('parseDltvUpcomingMatchesPage', () => {
         timestamp: parseUtcDateTimeToUnixSeconds('2026-04-14 15:05:00'),
       }),
     ]);
+  });
+
+  it('parses Jina-rendered markdown match cards as a fallback source', () => {
+    const markdownFixture = `
+Title: Dota 2 Matches & livescore – DLTV
+
+Markdown Content:
+#### April 16 - Thursday[](http://dltv.org/matches)
+
+[](https://dltv.org/events/european-pro-league-season-36)
+
+European Pro League Season 36
+
+Upper Bracket Final
+
+bo3
+
+[](https://dltv.org/matches/426144/team-lynx-vs-nemiga-gaming-european-pro-league-season-36)
+
+Team Lynx
+
+Apr 16**12:00**
+
+Starts in:**06 : 30 : 21**
+
+Nemiga Gaming
+
+[](https://dltv.org/matches/426144/team-lynx-vs-nemiga-gaming-european-pro-league-season-36#lineups)Stats
+`;
+
+    const rows = parseDltvUpcomingMatchesMarkdown(markdownFixture, {
+      now: parseUtcDateTimeToUnixSeconds('2026-04-16 05:00:00'),
+      maxStartTime: parseUtcDateTimeToUnixSeconds('2026-04-17 00:00:00'),
+    });
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        seriesId: '426144',
+        radiantName: 'Team Lynx',
+        direName: 'Nemiga Gaming',
+        tournament: 'European Pro League Season 36',
+        eventUrl: 'https://dltv.org/events/european-pro-league-season-36',
+        stage: 'Upper Bracket Final',
+        bestOf: 'BO3',
+        timestamp: parseUtcDateTimeToUnixSeconds('2026-04-16 12:00:00'),
+      }),
+    ]);
+
+    expect(parseDltvUpcomingMatchesPage(markdownFixture, {
+      now: parseUtcDateTimeToUnixSeconds('2026-04-16 05:00:00'),
+      maxStartTime: parseUtcDateTimeToUnixSeconds('2026-04-17 00:00:00'),
+    })).toEqual(rows);
   });
 });

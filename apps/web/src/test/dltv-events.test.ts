@@ -90,6 +90,59 @@ describe('parseDltvEventPage', () => {
       parentSourceUrl: 'https://dltv.org/events/blast-slam-7',
     }));
   });
+
+  it('parses Jina-rendered markdown event pages without confusing nav labels for metadata', () => {
+    const raw = `
+Title: CCT Season 2: South America Series 4 overview | DLTV
+
+Markdown Content:
+# CCT Season 2: South America Series 4 overview | DLTV
+
+Country
+
+Type
+
+Tier
+
+# CCT Season 2: South America Series 4
+
+Apr 09 - Apr 17 2026
+
+live
+
+Dates
+
+Apr 09 - Apr 17, 2026
+
+Country
+
+South America
+
+Event tier
+
+C-Tier
+
+Event type
+
+Online
+
+Prize pool
+
+$20,000
+`;
+
+    expect(parseDltvEventPage(raw, 'https://dltv.org/events/cct-season-2-south-america-series-4')).toEqual(
+      expect.objectContaining({
+        title: 'CCT Season 2: South America Series 4',
+        status: 'ongoing',
+        tier: 'C',
+        location: 'South America',
+        prizePool: '$20,000',
+        prizePoolUsd: 20000,
+        eventSlug: 'cct-season-2-south-america-series-4',
+      })
+    );
+  });
 });
 
 describe('scoreTournamentNameMatch', () => {
