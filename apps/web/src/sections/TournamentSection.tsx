@@ -72,15 +72,7 @@ interface Tournament {
   dltv_event_slug?: string | null;
   event_group_slug?: string | null;
   background_image_url?: string | null;
-  related_tournaments?: Array<{
-    id: string;
-    league_id?: string | number | null;
-    name: string;
-    tier?: string | null;
-    status?: string | null;
-    start_time?: number | null;
-    end_time?: number | null;
-  }>;
+  related_tournaments?: Tournament[];
 }
 
 interface Series {
@@ -428,6 +420,59 @@ function formatPrizeUsd(value?: number, fallback?: string): string {
 
 function getTournamentVisualUrl(tournament?: Tournament | null): string {
   return String(tournament?.background_image_url || tournament?.image || '').trim();
+}
+
+function getTournamentGroupKey(tournament?: Tournament | null): string {
+  return String(tournament?.event_group_slug || tournament?.id || tournament?.league_id || '').trim();
+}
+
+function getTournamentTrackKind(tournament?: Tournament | null): 'main' | 'closed' | 'open' | 'qualifier' | 'event' {
+  const name = String(tournament?.name || '').toLowerCase();
+  if (tournament?.dltv_event_slug && tournament?.event_group_slug && tournament.dltv_event_slug === tournament.event_group_slug) {
+    return 'main';
+  }
+  if (name.includes('open qualifier')) return 'open';
+  if (name.includes('closed qualifier')) return 'closed';
+  if (name.includes('qualifier')) return 'qualifier';
+  return 'event';
+}
+
+function getTournamentTrackMeta(tournament?: Tournament | null) {
+  const kind = getTournamentTrackKind(tournament);
+  if (kind === 'main') {
+    return {
+      label: '主赛事',
+      chip: 'border-amber-300/25 bg-amber-400/10 text-amber-100',
+      active: 'border-amber-300/35 bg-[linear-gradient(145deg,rgba(245,158,11,0.22),rgba(15,23,42,0.88))] shadow-[0_20px_45px_rgba(245,158,11,0.16)]',
+      inactive: 'border-white/10 bg-slate-950/55 hover:border-amber-300/20 hover:bg-slate-900/80',
+      accent: 'from-amber-300/45 via-orange-300/14 to-transparent',
+    };
+  }
+  if (kind === 'closed') {
+    return {
+      label: '封闭预选',
+      chip: 'border-sky-300/25 bg-sky-400/10 text-sky-100',
+      active: 'border-sky-300/35 bg-[linear-gradient(145deg,rgba(56,189,248,0.18),rgba(15,23,42,0.9))] shadow-[0_20px_45px_rgba(56,189,248,0.14)]',
+      inactive: 'border-white/10 bg-slate-950/55 hover:border-sky-300/20 hover:bg-slate-900/80',
+      accent: 'from-sky-300/40 via-cyan-300/14 to-transparent',
+    };
+  }
+  if (kind === 'open') {
+    return {
+      label: '公开预选',
+      chip: 'border-emerald-300/25 bg-emerald-400/10 text-emerald-100',
+      active: 'border-emerald-300/35 bg-[linear-gradient(145deg,rgba(16,185,129,0.18),rgba(15,23,42,0.9))] shadow-[0_20px_45px_rgba(16,185,129,0.12)]',
+      inactive: 'border-white/10 bg-slate-950/55 hover:border-emerald-300/20 hover:bg-slate-900/80',
+      accent: 'from-emerald-300/40 via-teal-300/12 to-transparent',
+    };
+  }
+  return {
+    label: '预选赛',
+    chip: 'border-fuchsia-300/25 bg-fuchsia-400/10 text-fuchsia-100',
+    active: 'border-fuchsia-300/35 bg-[linear-gradient(145deg,rgba(232,121,249,0.18),rgba(15,23,42,0.9))] shadow-[0_20px_45px_rgba(232,121,249,0.12)]',
+    inactive: 'border-white/10 bg-slate-950/55 hover:border-fuchsia-300/20 hover:bg-slate-900/80',
+    accent: 'from-fuchsia-300/40 via-pink-300/12 to-transparent',
+  };
 }
 
 function isT1Tier(tier?: string | null): boolean {
@@ -1869,7 +1914,6 @@ export function TournamentSection({
     }
     return aliasMap;
   }, [effectiveTeams]);
-  const selectedTournamentVisual = getTournamentVisualUrl(selectedTournament);
 
   const allSortedTournaments = useMemo(() => {
     return [...(effectiveTournaments || [])].sort((a, b) => {
@@ -1889,7 +1933,7 @@ export function TournamentSection({
     });
   }, [allSortedTournaments, showT1Only]);
 
-  // Keep the selected tournament stable by id so rerenders do not loop on new object instances.
+  // Keep the selected tournament stable within its event group so main/qualifier switching survives refreshes.
   useEffect(() => {
     const nextTournament = sortedTournaments[0] || null;
     if (!nextTournament) {
@@ -1904,11 +1948,62 @@ export function TournamentSection({
       return;
     }
 
-    const selectedStillExists = sortedTournaments.some((t) => t.id === selectedTournament.id);
+    const selectedGroupKey = getTournamentGroupKey(selectedTournament);
+    const selectedStillExists = sortedTournaments.some((t) => (
+      t.id === selectedTournament.id
+      || getTournamentGroupKey(t) === selectedGroupKey
+      || Boolean(t.related_tournaments?.some((row) => row.id === selectedTournament.id))
+    ));
     if (!selectedStillExists) {
       setSelectedTournament(nextTournament);
+      return;
+    }
+
+    const representative = sortedTournaments.find((t) => (
+      t.id === selectedTournament.id
+      || getTournamentGroupKey(t) === selectedGroupKey
+      || Boolean(t.related_tournaments?.some((row) => row.id === selectedTournament.id))
+    )) || null;
+    const latestSelected = representative?.id === selectedTournament.id
+      ? representative
+      : representative?.related_tournaments?.find((row) => row.id === selectedTournament.id) || null;
+    if (latestSelected && latestSelected !== selectedTournament) {
+      setSelectedTournament(latestSelected);
     }
   }, [sortedTournaments, selectedTournament]);
+
+  const selectedTournamentRepresentative = useMemo(() => {
+    if (!selectedTournament) return null;
+    const selectedGroupKey = getTournamentGroupKey(selectedTournament);
+    return allSortedTournaments.find((t) => (
+      t.id === selectedTournament.id
+      || getTournamentGroupKey(t) === selectedGroupKey
+      || Boolean(t.related_tournaments?.some((row) => row.id === selectedTournament.id))
+    )) || selectedTournament;
+  }, [allSortedTournaments, selectedTournament]);
+
+  const selectedTournamentTracks = useMemo(() => {
+    if (!selectedTournamentRepresentative) return selectedTournament ? [selectedTournament] : [];
+    const merged = [selectedTournamentRepresentative, ...(selectedTournamentRepresentative.related_tournaments || [])];
+    const seen = new Set<string>();
+    return merged
+      .filter((row) => {
+        if (!row?.id || seen.has(row.id)) return false;
+        seen.add(row.id);
+        return true;
+      })
+      .sort((left, right) => {
+        const leftKind = getTournamentTrackKind(left);
+        const rightKind = getTournamentTrackKind(right);
+        if (leftKind === 'main' && rightKind !== 'main') return -1;
+        if (rightKind === 'main' && leftKind !== 'main') return 1;
+        const startDelta = Number(left.start_time || 0) - Number(right.start_time || 0);
+        if (startDelta !== 0) return startDelta;
+        return String(left.name || '').localeCompare(String(right.name || ''));
+      });
+  }, [selectedTournament, selectedTournamentRepresentative]);
+
+  const selectedTournamentVisual = getTournamentVisualUrl(selectedTournament);
 
   useEffect(() => {
     if (!isInView || hasBootstrapped || tournaments.length > 0 || teams.length > 0) return;
@@ -2381,7 +2476,10 @@ export function TournamentSection({
           <Card className="bg-slate-900/60 backdrop-blur-xl border border-white/10 overflow-hidden">
             <div className="flex gap-1 overflow-x-auto p-2 scrollbar-thin">
               {sortedTournaments.map((tournament) => {
-                const isSelected = selectedTournament?.id === tournament.id;
+                const isSelected = (
+                  selectedTournament?.id === tournament.id
+                  || (getTournamentGroupKey(selectedTournament) && getTournamentGroupKey(selectedTournament) === getTournamentGroupKey(tournament))
+                );
                 const statusInfo = statusMap[tournament.status] || statusMap.upcoming;
                 
                 return (
@@ -2480,14 +2578,67 @@ export function TournamentSection({
                         <span className="font-bold">{formatPrizeUsd(selectedTournament.prize_pool_usd, selectedTournament.prize_pool)}</span>
                       </div>
                   </div>
-                  {selectedTournament.related_tournaments && selectedTournament.related_tournaments.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                      <span className="text-slate-400">关联赛事</span>
-                      {selectedTournament.related_tournaments.map((row) => (
-                        <span key={row.id} className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                          {row.name}
-                        </span>
-                      ))}
+                  {selectedTournamentTracks.length > 1 ? (
+                    <div className="mt-5 rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.84),rgba(30,41,59,0.72),rgba(120,53,15,0.12))] p-3 shadow-[0_20px_70px_rgba(2,6,23,0.34)]">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-100/70">Event Ladder</div>
+                          <div className="mt-1 text-sm font-medium text-white">主赛事 / 预选赛切换</div>
+                          <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">
+                            当前赛事组已拆成独立赛段。切换后会载入对应赛段的 series，不需要离开当前赛事页。
+                          </p>
+                        </div>
+                        <div className="inline-flex items-center rounded-full border border-white/10 bg-slate-950/55 px-3 py-1 text-[11px] font-medium text-slate-300">
+                          {selectedTournamentTracks.length} 条赛事路径
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                        {selectedTournamentTracks.map((row) => {
+                          const isActive = selectedTournament?.id === row.id;
+                          const trackMeta = getTournamentTrackMeta(row);
+                          const statusInfo = statusMap[row.status || 'upcoming'] || statusMap.upcoming;
+                          const isMainTrack = getTournamentTrackKind(row) === 'main';
+                          return (
+                            <button
+                              key={row.id}
+                              type="button"
+                              onClick={() => setSelectedTournament(row)}
+                              className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300 ${isActive ? trackMeta.active : trackMeta.inactive} ${isMainTrack ? 'md:col-span-2 xl:col-span-2' : ''}`}
+                            >
+                              <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${trackMeta.accent} opacity-80`} />
+                              <div className="relative z-10">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${trackMeta.chip}`}>
+                                    {trackMeta.label}
+                                  </span>
+                                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusInfo.color}`}>
+                                    {statusInfo.label}
+                                  </span>
+                                </div>
+                                <div className="mt-3 flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <div className="truncate text-sm font-semibold text-white sm:text-[15px]">{row.name}</div>
+                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-300">
+                                      {row.tier ? <span className="font-medium text-slate-100">{row.tier}</span> : null}
+                                      {row.location ? (
+                                        <span className="inline-flex items-center gap-1">
+                                          <MapPin className="h-3 w-3 text-slate-500" />
+                                          {row.location}
+                                        </span>
+                                      ) : null}
+                                      <span className="inline-flex items-center gap-1">
+                                        <Clock className="h-3 w-3 text-slate-500" />
+                                        {formatDate(row.start_time || row.start_date)} ~ {formatDate(row.end_time || row.end_date)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <ChevronRight className={`h-4 w-4 shrink-0 transition-transform ${isActive ? 'translate-x-0 text-white' : 'text-slate-500 group-hover:translate-x-0.5 group-hover:text-slate-200'}`} />
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                   {isFeaturedTournament(selectedTournament) ? (
