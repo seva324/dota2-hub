@@ -580,6 +580,144 @@ describe('runSyncLiquipedia', () => {
     ]));
   });
 
+  it('falls back to a synthetic tournament id when an explicit Blast mapping collides with another production row', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
+      if (sql.includes('SELECT team_id FROM teams WHERE LOWER(name) =')) {
+        return [];
+      }
+      return [];
+    });
+
+    db.query = vi.fn(async (sql: string, params?: unknown[]) => {
+      if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
+        return [{
+          league_id: 19520,
+          name: 'ESL Challenger China Season 3: Open Qualifier 1',
+          tier: 'B-QUAL',
+          location: 'China',
+          status: 'upcoming',
+          start_time: 1776384000,
+          end_time: 1776643199,
+          prize_pool: '$14,000',
+          prize_pool_usd: 14000,
+          image: null,
+          location_flag_url: null,
+          source_url: null,
+          dltv_event_slug: null,
+          dltv_parent_slug: null,
+          event_group_slug: null,
+        }];
+      }
+      if (sql.includes('SELECT league_id FROM tournaments WHERE league_id =')) {
+        return [];
+      }
+      return [];
+    });
+
+    const qualifierHtml = `
+      <html>
+        <head>
+          <title>BLAST Slam 7: China Closed Qualifier overview | DLTV</title>
+          <meta name="description" content="Complete overview of BLAST Slam 7: China Closed Qualifier held from Apr. 02, 2026 to Apr. 03, 2026, a Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>BLAST SLAM 7: CHINA CLOSED QUALIFIER</h1>
+          <a href="https://dltv.org/events/blast-slam-7">MAIN EVENT</a>
+          <div>FINISHED</div>
+          <div>DATES</div>
+          <div>APR 02 - APR 03, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>A-QUAL TIER</div>
+        </body>
+      </html>
+    `;
+    const mainEventHtml = `
+      <html>
+        <head>
+          <title>Blast Slam 7 overview | DLTV</title>
+        </head>
+        <body>
+          <h1>BLAST SLAM 7</h1>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>MAY 26 - JUN 07, 2026</div>
+          <div>COUNTRY</div>
+          <div>DENMARK</div>
+          <div>EVENT TIER</div>
+          <div>A-TIER</div>
+        </body>
+      </html>
+    `;
+    const dltvHtml = (`
+      <div class="match upcoming" data-series-id="888888" data-matches-odd="2026-04-14 03:30:00">
+        <div class="match__head">
+          <a href="https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier"></a>
+          <div class="match__head-event"><span>BLAST Slam 7: China Closed Qualifier</span></div>
+          <div class="match__head-format text-red">Upper Bracket</div>
+          <div class="match__head-format">Bo3</div>
+        </div>
+        <div class="match__body-details">
+          <div class="match__body-details__team"><div class="team__title"><span>Glyph</span></div></div>
+          <div class="match__body-details__team"><div class="team__title"><span>Cloud Rising</span></div></div>
+        </div>
+      </div>
+    ` + ' '.repeat(1200));
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('dltv.org/matches')) {
+        return { ok: true, text: async () => dltvHtml } as Response;
+      }
+      if (url === 'https://dltv.org/events' || url === 'https://r.jina.ai/http://dltv.org/events') {
+        return { ok: true, text: async () => '<html><body>No demo events</body></html>' } as Response;
+      }
+      if (url.includes('blast-slam-vii-china-closed-qualifier')) {
+        return { ok: true, text: async () => qualifierHtml } as Response;
+      }
+      if (url.endsWith('/events/blast-slam-7')) {
+        return { ok: true, text: async () => mainEventHtml } as Response;
+      }
+      if (url.includes('api.opendota.com')) {
+        return { ok: true, json: async () => ([]) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    await runSyncLiquipedia();
+
+    const tournamentInsertCall = (db.query as any).mock.calls.find((call: unknown[]) => (
+      String(call[0] || '').includes('INSERT INTO tournaments')
+      && Array.isArray(call[1])
+      && call[1].includes('https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier')
+    ));
+    const insertedLeagueId = Number(tournamentInsertCall?.[1]?.[0]);
+
+    expect(tournamentInsertCall).toBeDefined();
+    expect(insertedLeagueId).not.toBe(19520);
+    expect(tournamentInsertCall?.[1]).toEqual(expect.arrayContaining([
+      insertedLeagueId,
+      'BLAST Slam 7: China Closed Qualifier',
+      'A-QUAL',
+      'CHINA',
+      'finished',
+      'https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier',
+      'blast-slam-vii-china-closed-qualifier',
+      'blast-slam-7',
+      'blast-slam-7',
+    ]));
+
+    const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
+    expect(upcomingInsertCall?.[3]).toBeTypeOf('number');
+    expect(upcomingInsertCall?.[3]).not.toBe(19520);
+  });
+
   it('falls back to Jina markdown when the direct DLTV matches page is rate limited', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
