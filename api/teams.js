@@ -63,6 +63,7 @@ export default async function handler(req, res) {
       is_cn_team: team.is_cn_team
     }));
 
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600');
     return res.status(200).json(teams);
   } catch (e) {
     console.error('[Teams API] Error:', e.message);

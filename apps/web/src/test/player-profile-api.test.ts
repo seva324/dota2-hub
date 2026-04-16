@@ -429,7 +429,7 @@ describe('/api/player-profile account_id filter regression', () => {
     expect((res.payload as any)?.next_match?.selected_team?.logo_url).toBe('https://prod.example.com/images/mirror/teams/8261500.png');
   });
 
-  it('returns a live uncached payload for fast mode when direct reads succeed, even if no cache exists', async () => {
+  it('returns a seed payload immediately for fast mode when no cache exists yet', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
       if (sql.includes('FROM player_profile_cache')) {
@@ -459,12 +459,12 @@ describe('/api/player-profile account_id filter regression', () => {
     await handler(req as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect(res.headers['X-Player-Profile-Cache']).toBe('live');
+    expect(res.headers['X-Player-Profile-Cache']).toBe('seed');
     expect((res.payload as any)?.player?.name).toBe('Seed Player');
     expect((res.payload as any)?.recent_matches).toEqual([]);
   });
 
-  it('prefers live derived reads for fast flyout requests and only falls back to cache on failure', async () => {
+  it('returns cached payload immediately for fast flyout requests without rebuilding inline', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
       if (sql.includes('FROM player_profile_cache')) {
@@ -513,8 +513,8 @@ describe('/api/player-profile account_id filter regression', () => {
     await handler(req as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect(res.headers['X-Player-Profile-Cache']).toBe('refresh');
-    expect((res.payload as any)?.player?.name).toBe('Player 9001');
-    expect(queryMock.mock.calls.find((call) => String(call[0]).includes('FROM player_stats ps'))).toBeDefined();
+    expect(res.headers['X-Player-Profile-Cache']).toBe('cache');
+    expect((res.payload as any)?.player?.name).toBe('Cached Player');
+    expect(queryMock.mock.calls.find((call) => String(call[0]).includes('FROM player_stats ps'))).toBeUndefined();
   });
 });

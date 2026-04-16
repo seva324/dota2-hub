@@ -8,6 +8,8 @@ import { mergeEnrichment } from '../../lib/server/pro-player-enrichment.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
 const STEAM64_BASE = 76561197960265728n;
+const DEFAULT_DB_RECENT_DAYS = 60;
+const DEFAULT_SKIP_UPDATED_HOURS = 24;
 
 const COUNTRY_CODE_MAP = {
   china: 'CN',
@@ -54,12 +56,16 @@ function usage() {
       'Options:',
       '  --url <url>                 Add a source URL (repeatable)',
       '  --urls <u1,u2,...>          Add comma-separated source URLs',
-      '  --from-db                   Build targets from pro_players rows with missing fields',
-      '  --account-id <id>           Enrich a specific pro_players row by account_id',
-      '  --limit <n>                 Row limit for --from-db (default: 50)',
-      '  --output <path>             Output JSON path (default: /tmp/pro-player-enrichment.json)',
-      '  --sql-output <path>         Output SQL path (default: /tmp/pro-player-enrichment.sql)',
-      '  --apply                     Apply UPSERTs to DB (requires DATABASE_URL/POSTGRES_URL)',
+       '  --from-db                   Build targets from pro_players rows with missing fields',
+       '  --account-id <id>           Enrich a specific pro_players row by account_id',
+       '  --limit <n>                 Row limit for --from-db (default: 50)',
+       `  --recent-days <n>           Only consider players active in the last N days (default: ${DEFAULT_DB_RECENT_DAYS})`,
+       `  --skip-updated-hours <n>    Skip rows updated in the last N hours (default: ${DEFAULT_SKIP_UPDATED_HOURS})`,
+       '  --require-team              Only include players that already have team_id/team_name context (default for --from-db)',
+       '  --include-missing-rows      Also include recent players with no pro_players row yet',
+       '  --output <path>             Output JSON path (default: /tmp/pro-player-enrichment.json)',
+       '  --sql-output <path>         Output SQL path (default: /tmp/pro-player-enrichment.sql)',
+       '  --apply                     Apply UPSERTs to DB (requires DATABASE_URL/POSTGRES_URL)',
       '  --help                      Show this help',
       '',
       'Examples:',
@@ -76,6 +82,10 @@ function parseArgs(argv) {
     fromDb: false,
     accountId: null,
     limit: 50,
+    recentDays: DEFAULT_DB_RECENT_DAYS,
+    skipUpdatedHours: DEFAULT_SKIP_UPDATED_HOURS,
+    requireTeam: true,
+    includeMissingRows: false,
     output: '/tmp/pro-player-enrichment.json',
     sqlOutput: '/tmp/pro-player-enrichment.sql',
     apply: false,
@@ -115,6 +125,30 @@ function parseArgs(argv) {
       const limit = Number(argv[i + 1]);
       if (Number.isFinite(limit) && limit > 0) options.limit = Math.trunc(limit);
       i += 1;
+      continue;
+    }
+    if (arg === '--recent-days' && argv[i + 1]) {
+      const recentDays = Number(argv[i + 1]);
+      if (Number.isFinite(recentDays) && recentDays > 0) {
+        options.recentDays = Math.trunc(recentDays);
+      }
+      i += 1;
+      continue;
+    }
+    if (arg === '--skip-updated-hours' && argv[i + 1]) {
+      const skipHours = Number(argv[i + 1]);
+      if (Number.isFinite(skipHours) && skipHours >= 0) {
+        options.skipUpdatedHours = Math.trunc(skipHours);
+      }
+      i += 1;
+      continue;
+    }
+    if (arg === '--include-missing-rows') {
+      options.includeMissingRows = true;
+      continue;
+    }
+    if (arg === '--require-team') {
+      options.requireTeam = true;
       continue;
     }
     if (arg === '--output' && argv[i + 1]) {
@@ -277,11 +311,15 @@ async function fetchUrlText(url, fetchImpl = fetch) {
 
   for (const attempt of attempts) {
     try {
-        const res = await fetchImpl(attempt.url, {
+      const signal = typeof AbortSignal?.timeout === 'function'
+        ? AbortSignal.timeout(12000)
+        : undefined;
+      const res = await fetchImpl(attempt.url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Dota2HubBot/1.0)',
           Accept: 'text/html,application/xhtml+xml,text/plain',
         },
+        signal,
       });
       if (!res.ok) continue;
       const text = await res.text();
@@ -498,20 +536,91 @@ function sqlLiteral(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
-async function loadDbCandidates(db, limit) {
-  return db.query(
-    `
-      SELECT account_id, name, name_cn, team_name, country_code, avatar_url, realname, birth_year, birth_month
-      FROM pro_players
-      WHERE country_code IS NULL
-         OR realname IS NULL
-         OR birth_year IS NULL
-         OR avatar_url IS NULL
-      ORDER BY updated_at DESC NULLS LAST, account_id ASC
-      LIMIT $1
+function hasMeaningfulEnrichment(current, next) {
+  const fields = ['name', 'name_cn', 'team_name', 'country_code', 'avatar_url', 'realname', 'birth_year', 'birth_month'];
+  return fields.some((field) => {
+    const currentValue = current?.[field] ?? null;
+    const nextValue = next?.[field] ?? null;
+    return nextValue !== null && nextValue !== '' && nextValue !== currentValue;
+  });
+}
+
+function preserveCurrentNameCasing(currentName, nextName) {
+  if (!currentName || !nextName) return nextName || currentName || null;
+  return normalizeName(currentName) === normalizeName(nextName) ? currentName : nextName;
+}
+
+export function buildDbCandidateQuery(options = {}) {
+  const recentDays = Math.max(1, Math.trunc(Number(options.recentDays || DEFAULT_DB_RECENT_DAYS)));
+  const skipUpdatedHours = Math.max(0, Math.trunc(Number(
+    options.skipUpdatedHours ?? DEFAULT_SKIP_UPDATED_HOURS
+  )));
+  const requireTeam = options.requireTeam !== false;
+  const includeMissingRows = options.includeMissingRows === true;
+  const limit = Math.max(1, Math.trunc(Number(options.limit || 50)));
+  const skipRecentlyUpdatedClause = skipUpdatedHours > 0
+    ? `
+      AND (
+        pp.updated_at IS NULL
+        OR pp.updated_at < NOW() - ($2 * INTERVAL '1 hour')
+      )`
+    : '';
+
+  return {
+    sql: `
+      WITH recent_players AS (
+        SELECT DISTINCT ON (ps.account_id::BIGINT)
+          ps.account_id::BIGINT AS account_id,
+          NULLIF(BTRIM(ps.personaname), '') AS recent_name,
+          ms.start_time AS last_match_start_time
+        FROM player_stats ps
+        JOIN match_summary ms ON ms.match_id = ps.match_id
+        WHERE ps.account_id IS NOT NULL
+          AND ms.start_time >= NOW() - ($1 * INTERVAL '1 day')
+        ORDER BY ps.account_id::BIGINT, ms.start_time DESC NULLS LAST, ps.match_id DESC
+      )
+      SELECT
+        rp.account_id,
+        COALESCE(NULLIF(BTRIM(pp.name), ''), rp.recent_name) AS name,
+        pp.name_cn,
+        pp.team_name,
+        pp.country_code,
+        pp.avatar_url,
+        pp.realname,
+        pp.birth_year,
+        pp.birth_month,
+        pp.updated_at,
+        rp.last_match_start_time,
+        (pp.account_id IS NULL) AS is_missing_row
+      FROM recent_players rp
+      LEFT JOIN pro_players pp ON pp.account_id::BIGINT = rp.account_id
+      WHERE COALESCE(NULLIF(BTRIM(pp.name), ''), rp.recent_name) IS NOT NULL
+        ${requireTeam ? `
+        AND (
+          pp.team_id IS NOT NULL
+          OR NULLIF(BTRIM(pp.team_name), '') IS NOT NULL
+        )` : ''}
+        AND (
+          ${includeMissingRows ? 'pp.account_id IS NULL OR' : ''}
+          pp.country_code IS NULL
+          OR pp.realname IS NULL
+          OR pp.birth_year IS NULL
+          OR pp.birth_month IS NULL
+          OR pp.avatar_url IS NULL
+        )${skipRecentlyUpdatedClause}
+      ORDER BY
+        rp.last_match_start_time DESC NULLS LAST,
+        pp.updated_at ASC NULLS FIRST,
+        rp.account_id ASC
+      LIMIT $3
     `,
-    [limit]
-  );
+    params: [recentDays, skipUpdatedHours, limit],
+  };
+}
+
+export async function loadDbCandidates(db, options = {}) {
+  const query = buildDbCandidateQuery(options);
+  return db.query(query.sql, query.params);
 }
 
 async function loadDbCandidateByAccountId(db, accountId) {
@@ -646,7 +755,13 @@ async function main() {
       process.exit(1);
     }
     await ensureProPlayerAuditLog(db);
-    const rows = await loadDbCandidates(db, options.limit);
+    const rows = await loadDbCandidates(db, {
+      limit: options.limit,
+      recentDays: options.recentDays,
+      skipUpdatedHours: options.skipUpdatedHours,
+      requireTeam: options.requireTeam,
+      includeMissingRows: options.includeMissingRows,
+    });
     for (const row of rows) {
       const accountId = Number(row.account_id);
       targets.push({
@@ -723,6 +838,8 @@ async function main() {
     if (!merged.name) {
       merged.name = pathAliasFromUrl(target.urls[0] || sources[0]?.url) || target.name || null;
     }
+    merged.name = preserveCurrentNameCasing(target.current?.name || null, merged.name || null);
+    merged.has_changes = hasMeaningfulEnrichment(target.current || {}, merged);
     results.push(merged);
   }
 
@@ -738,7 +855,7 @@ async function main() {
   };
   await fs.writeFile(options.output, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 
-  const upsertRows = results.filter((row) => row.account_id);
+  const upsertRows = results.filter((row) => row.account_id && row.has_changes);
   const sqlStatements = upsertRows.map(
     (row) => `
 /* name_source:enrich-pro-players */

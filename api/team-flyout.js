@@ -75,6 +75,56 @@ function formatTeam(team, req) {
   };
 }
 
+async function loadSelectedTeam(db, { teamId, teamName }) {
+  if (teamId) {
+    const rows = await db`
+      SELECT *
+      FROM teams
+      WHERE team_id = ${teamId}
+      LIMIT 1
+    `;
+    if (rows[0]) return rows[0];
+  }
+
+  const normalizedName = normalize(teamName);
+  if (!normalizedName) return null;
+
+  const rows = await db`
+    SELECT *
+    FROM teams
+    WHERE LOWER(COALESCE(name, '')) = ${normalizedName}
+       OR LOWER(COALESCE(name_cn, '')) = ${normalizedName}
+       OR LOWER(COALESCE(tag, '')) = ${normalizedName}
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
+
+async function loadTeamMapByIds(db, teamIds) {
+  const normalizedTeamIds = Array.from(
+    new Set(
+      (Array.isArray(teamIds) ? teamIds : [])
+        .map((teamId) => String(teamId || '').trim())
+        .filter(Boolean)
+    )
+  );
+  if (!normalizedTeamIds.length) {
+    return new Map();
+  }
+
+  const rows = await db`
+    SELECT *
+    FROM teams
+    WHERE team_id::TEXT = ANY(${normalizedTeamIds})
+  `;
+
+  return new Map(
+    rows
+      .filter((team) => team?.team_id !== undefined && team?.team_id !== null)
+      .map((team) => [String(team.team_id), team])
+  );
+}
+
 function formatMatchRow(match, teamMap, req) {
   const radiantId = match.radiant_team_id ? String(match.radiant_team_id) : null;
   const direId = match.dire_team_id ? String(match.dire_team_id) : null;
@@ -140,21 +190,7 @@ export default async function handler(req, res) {
     } catch {
       // Best-effort schema repair for older databases.
     }
-    const teams = await db`SELECT * FROM teams`;
-    const teamMap = new Map();
-    teams.forEach((team) => {
-      if (team?.team_id !== undefined && team?.team_id !== null) {
-        teamMap.set(String(team.team_id), team);
-      }
-    });
-
-    const selectedTeam = teams.find((team) => {
-      const currentTeamId = team?.team_id ? String(team.team_id) : null;
-      if (teamId && currentTeamId === teamId) return true;
-
-      const aliases = [team?.name, team?.name_cn, team?.tag];
-      return aliases.some((alias) => normalize(alias) === normalize(teamName));
-    });
+    const selectedTeam = await loadSelectedTeam(db, { teamId, teamName });
 
     if (!selectedTeam?.team_id) {
       return res.status(404).json({ error: 'Team not found' });
@@ -213,6 +249,14 @@ export default async function handler(req, res) {
       }),
     ]);
 
+    const relatedTeamIds = [
+      selectedTeamId,
+      ...recentRows.flatMap((row) => [row?.radiant_team_id, row?.dire_team_id]),
+      ...nextMatchRows.flatMap((row) => [row?.radiant_team_id, row?.dire_team_id]),
+    ];
+    const teamMap = await loadTeamMapByIds(db, relatedTeamIds);
+    teamMap.set(selectedTeamId, selectedTeam);
+
     const wins = recentStatsRows.filter((match) => {
       const isRadiant = String(match.radiant_team_id || '') === selectedTeamId;
       if (match.radiant_win === null || match.radiant_win === undefined) return false;
@@ -231,6 +275,7 @@ export default async function handler(req, res) {
     }));
     const nextMatch = nextMatchRows[0] ? formatMatchRow(nextMatchRows[0], teamMap, req) : null;
 
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({
       team: formatTeam(selectedTeam, req),
       recentMatches,

@@ -57,7 +57,12 @@ describe('/api/team-flyout', () => {
   it('returns 5 recent matches and next cursor for a team', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
-      if (sql === 'SELECT * FROM teams') {
+      if (sql.includes('FROM teams') && sql.includes('WHERE team_id =')) {
+        return [
+          { team_id: '1', name: 'Team Alpha', tag: 'ALP', logo_url: 'https://steamcdn-a.akamaihd.net/a.png', region: 'China', is_cn_team: 1 },
+        ];
+      }
+      if (sql.includes('FROM teams') && sql.includes('team_id::TEXT = ANY')) {
         return [
           { team_id: '1', name: 'Team Alpha', tag: 'ALP', logo_url: 'https://steamcdn-a.akamaihd.net/a.png', region: 'China', is_cn_team: 1 },
           { team_id: '2', name: 'Opp 1', tag: 'O1', logo_url: null, region: 'SEA', is_cn_team: 0 },
@@ -132,7 +137,12 @@ describe('/api/team-flyout', () => {
   it('rehydrates squad avatar urls against the current request host', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
-      if (sql === 'SELECT * FROM teams') {
+      if (sql.includes('FROM teams') && sql.includes('WHERE team_id =')) {
+        return [
+          { team_id: '1', name: 'Team Alpha', tag: 'ALP', logo_url: null, region: 'China', is_cn_team: 1 },
+        ];
+      }
+      if (sql.includes('FROM teams') && sql.includes('team_id::TEXT = ANY')) {
         return [
           { team_id: '1', name: 'Team Alpha', tag: 'ALP', logo_url: null, region: 'China', is_cn_team: 1 },
         ];
