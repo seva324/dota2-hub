@@ -7,6 +7,7 @@ import { buildDbUrlWithAppName, ensureProPlayerAuditLog } from '../../lib/server
 import { mergeEnrichment } from '../../lib/server/pro-player-enrichment.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+const STEAM64_BASE = 76561197960265728n;
 
 const COUNTRY_CODE_MAP = {
   china: 'CN',
@@ -54,6 +55,7 @@ function usage() {
       '  --url <url>                 Add a source URL (repeatable)',
       '  --urls <u1,u2,...>          Add comma-separated source URLs',
       '  --from-db                   Build targets from pro_players rows with missing fields',
+      '  --account-id <id>           Enrich a specific pro_players row by account_id',
       '  --limit <n>                 Row limit for --from-db (default: 50)',
       '  --output <path>             Output JSON path (default: /tmp/pro-player-enrichment.json)',
       '  --sql-output <path>         Output SQL path (default: /tmp/pro-player-enrichment.sql)',
@@ -63,6 +65,7 @@ function usage() {
       'Examples:',
       '  node scripts/manual-api/enrich-pro-players.js --url https://dltv.org/players/AME --url https://bo3.gg/dota2/players/nightfall --url https://liquipedia.net/dota2/Flyfly',
       '  node scripts/manual-api/enrich-pro-players.js --from-db --limit 100 --apply',
+      '  node scripts/manual-api/enrich-pro-players.js --account-id 206642367 --apply',
     ].join('\n')
   );
 }
@@ -71,6 +74,7 @@ function parseArgs(argv) {
   const options = {
     urls: [],
     fromDb: false,
+    accountId: null,
     limit: 50,
     output: '/tmp/pro-player-enrichment.json',
     sqlOutput: '/tmp/pro-player-enrichment.sql',
@@ -99,6 +103,12 @@ function parseArgs(argv) {
     }
     if (arg === '--from-db') {
       options.fromDb = true;
+      continue;
+    }
+    if (arg === '--account-id' && argv[i + 1]) {
+      const accountId = Number(argv[i + 1]);
+      if (Number.isFinite(accountId) && accountId > 0) options.accountId = Math.trunc(accountId);
+      i += 1;
       continue;
     }
     if (arg === '--limit' && argv[i + 1]) {
@@ -220,10 +230,29 @@ function pathAliasFromUrl(url) {
   }
 }
 
+function normalizeDltvPlayerProfileUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url, 'https://dltv.org');
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length !== 2 || parts[0] !== 'players') return null;
+    const slug = parts[1];
+    if (!slug || /\.(?:png|webp|jpe?g|svg)$/i.test(slug)) return null;
+    return `https://dltv.org/players/${slug}`;
+  } catch {
+    return null;
+  }
+}
+
 function steam64ToAccountId(steam64Raw) {
-  const steam64 = Number(steam64Raw);
-  if (!Number.isFinite(steam64) || steam64 <= 76561197960265728) return null;
-  return steam64 - 76561197960265728;
+  try {
+    const steam64 = BigInt(String(steam64Raw || '').trim());
+    if (steam64 <= STEAM64_BASE) return null;
+    const accountId = steam64 - STEAM64_BASE;
+    return accountId <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(accountId) : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizePlayerName(raw) {
@@ -240,7 +269,7 @@ function buildJinaUrl(url) {
   return `https://r.jina.ai/http://${String(url).replace(/^https?:\/\//i, '')}`;
 }
 
-async function fetchUrlText(url) {
+async function fetchUrlText(url, fetchImpl = fetch) {
   const attempts = [
     { url, hint: 'direct' },
     { url: buildJinaUrl(url), hint: 'jina' },
@@ -248,7 +277,7 @@ async function fetchUrlText(url) {
 
   for (const attempt of attempts) {
     try {
-      const res = await fetch(attempt.url, {
+        const res = await fetchImpl(attempt.url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Dota2HubBot/1.0)',
           Accept: 'text/html,application/xhtml+xml,text/plain',
@@ -265,6 +294,23 @@ async function fetchUrlText(url) {
   }
 
   return { raw: '', source: 'failed', url };
+}
+
+function buildDltvSearchUrl(name) {
+  return `https://dltv.org/search/players?q=${encodeURIComponent(normalizeWhitespace(name))}`;
+}
+
+function buildDltvDirectProfileUrl(name) {
+  const slug = normalizeWhitespace(name).toLowerCase().replace(/\s+/g, '-');
+  return slug ? `https://dltv.org/players/${encodeURIComponent(slug)}` : null;
+}
+
+export function extractDltvPlayerLinks(raw) {
+  const hrefMatches = [...String(raw || '').matchAll(/href=(["'])(\/players\/[^"'?#<> ]+|https?:\/\/dltv\.org\/players\/[^"'?#<> ]+)\1/gi)]
+    .map((match) => normalizeDltvPlayerProfileUrl(match[2]));
+  const inlineMatches = [...String(raw || '').matchAll(/(?:https?:\/\/dltv\.org)?(\/players\/[^"'?#<> ]+)/gi)]
+    .map((match) => normalizeDltvPlayerProfileUrl(match[0].startsWith('http') ? match[0] : `https://dltv.org${match[1]}`));
+  return Array.from(new Set([...hrefMatches, ...inlineMatches].filter(Boolean)));
 }
 
 function parseJsonLdPerson(raw) {
@@ -420,6 +466,32 @@ function parseProfileFromSource(sourceUrl, raw) {
   };
 }
 
+export async function resolveDltvProfileSourceByAccountId(target, fetchImpl = fetch) {
+  const accountId = Number(target?.account_id);
+  const name = normalizeWhitespace(target?.name || '');
+  if (!Number.isFinite(accountId) || accountId <= 0 || !name) return null;
+
+  const directUrl = buildDltvDirectProfileUrl(name);
+  const searchUrl = buildDltvSearchUrl(name);
+  const candidateUrls = [];
+  if (directUrl) candidateUrls.push(directUrl);
+
+  const searchResult = await fetchUrlText(searchUrl, fetchImpl);
+  if (searchResult.raw) {
+    candidateUrls.push(...extractDltvPlayerLinks(searchResult.raw));
+  }
+
+  for (const url of Array.from(new Set(candidateUrls)).slice(0, 12)) {
+    const fetched = await fetchUrlText(url, fetchImpl);
+    if (!fetched.raw) continue;
+    const parsed = parseProfileFromSource(url, fetched.raw);
+    if (Number(parsed.account_id) !== accountId) continue;
+    return { url, fetched, parsed };
+  }
+
+  return null;
+}
+
 function sqlLiteral(value) {
   if (value === null || value === undefined) return 'NULL';
   if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'NULL';
@@ -442,16 +514,17 @@ async function loadDbCandidates(db, limit) {
   );
 }
 
-function buildCandidateUrlsFromName(name) {
-  if (!name) return [];
-  const plain = normalizeWhitespace(name);
-  const slugDash = plain.toLowerCase().replace(/\s+/g, '-');
-  const slugUnderscore = plain.replace(/\s+/g, '_');
-  return [
-    `https://dltv.org/players/${encodeURIComponent(plain)}`,
-    `https://bo3.gg/dota2/players/${encodeURIComponent(slugDash)}`,
-    `https://liquipedia.net/dota2/${encodeURIComponent(slugUnderscore)}`,
-  ];
+async function loadDbCandidateByAccountId(db, accountId) {
+  const rows = await db.query(
+    `
+      SELECT account_id, name, name_cn, team_name, country_code, avatar_url, realname, birth_year, birth_month
+      FROM pro_players
+      WHERE account_id = $1
+      LIMIT 1
+    `,
+    [accountId]
+  );
+  return rows[0] || null;
 }
 
 async function resolveAccountIdByAlias(db, alias) {
@@ -512,11 +585,25 @@ async function applyUpserts(db, rows) {
   return count;
 }
 
+async function buildTargetSources(target) {
+  if (target?.account_id && target?.name) {
+    const dltvSource = await resolveDltvProfileSourceByAccountId(target);
+    if (dltvSource) return [dltvSource];
+    return [];
+  }
+
+  return (target?.urls || []).map((url) => ({
+    url,
+    fetched: null,
+    parsed: null,
+  }));
+}
+
 async function main() {
   const options = parseArgs(process.argv);
 
-  if (!options.fromDb && options.urls.length === 0) {
-    console.error('No work items: pass --url/--urls or --from-db');
+  if (!options.fromDb && !options.accountId && options.urls.length === 0) {
+    console.error('No work items: pass --url/--urls, --from-db, or --account-id');
     usage();
     process.exit(1);
   }
@@ -526,7 +613,34 @@ async function main() {
     : null;
   const targets = [];
 
-  if (options.fromDb) {
+  if (options.accountId) {
+    if (!db) {
+      console.error('--account-id requires DATABASE_URL or POSTGRES_URL');
+      process.exit(1);
+    }
+    await ensureProPlayerAuditLog(db);
+    const row = await loadDbCandidateByAccountId(db, options.accountId);
+    if (!row) {
+      console.error(`No pro_players row for account_id=${options.accountId}`);
+      process.exit(1);
+    }
+    const accountId = Number(row.account_id);
+    targets.push({
+      account_id: Number.isFinite(accountId) ? accountId : null,
+      name: row.name || null,
+      current: {
+        name: row.name || null,
+        name_cn: row.name_cn || null,
+        team_name: row.team_name || null,
+        country_code: row.country_code || null,
+        avatar_url: row.avatar_url || null,
+        realname: row.realname || null,
+        birth_year: row.birth_year ?? null,
+        birth_month: row.birth_month ?? null,
+      },
+      urls: [],
+    });
+  } else if (options.fromDb) {
     if (!db) {
       console.error('--from-db requires DATABASE_URL or POSTGRES_URL');
       process.exit(1);
@@ -548,7 +662,7 @@ async function main() {
           birth_year: row.birth_year ?? null,
           birth_month: row.birth_month ?? null,
         },
-        urls: buildCandidateUrlsFromName(row.name),
+        urls: [],
       });
     }
   }
@@ -577,11 +691,13 @@ async function main() {
       birth_month: target.current.birth_month ?? null,
       source_urls: [],
     };
+    const sources = await buildTargetSources(target);
 
-    for (const url of target.urls) {
-      const fetched = await fetchUrlText(url);
+    for (const source of sources) {
+      const url = source.url;
+      const fetched = source.fetched || await fetchUrlText(url);
       if (!fetched.raw) continue;
-      const parsed = parseProfileFromSource(url, fetched.raw);
+      const parsed = source.parsed || parseProfileFromSource(url, fetched.raw);
 
       const resolvedAlias = parsed.player_name || pathAliasFromUrl(url);
       if (!merged.account_id && db && resolvedAlias) {
@@ -605,7 +721,7 @@ async function main() {
     }
 
     if (!merged.name) {
-      merged.name = pathAliasFromUrl(target.urls[0]) || null;
+      merged.name = pathAliasFromUrl(target.urls[0] || sources[0]?.url) || target.name || null;
     }
     results.push(merged);
   }
