@@ -62,6 +62,7 @@ function usage() {
        `  --recent-days <n>           Only consider players active in the last N days (default: ${DEFAULT_DB_RECENT_DAYS})`,
        `  --skip-updated-hours <n>    Skip rows updated in the last N hours (default: ${DEFAULT_SKIP_UPDATED_HOURS})`,
        '  --require-team              Only include players that already have team_id/team_name context (default for --from-db)',
+       '  --no-require-team           Allow recent-player candidates without existing team context',
        '  --include-missing-rows      Also include recent players with no pro_players row yet',
        '  --output <path>             Output JSON path (default: /tmp/pro-player-enrichment.json)',
        '  --sql-output <path>         Output SQL path (default: /tmp/pro-player-enrichment.sql)',
@@ -149,6 +150,10 @@ function parseArgs(argv) {
     }
     if (arg === '--require-team') {
       options.requireTeam = true;
+      continue;
+    }
+    if (arg === '--no-require-team') {
+      options.requireTeam = false;
       continue;
     }
     if (arg === '--output' && argv[i + 1]) {
