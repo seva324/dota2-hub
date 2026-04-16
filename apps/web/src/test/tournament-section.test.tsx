@@ -731,4 +731,56 @@ describe('TournamentSection', () => {
     expect(screen.queryByText('OpenDota League 999999')).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=0');
   });
+
+  it('includes A-tier events in the default T1 filter', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=blast-slam-7&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(1, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'blast-slam-7',
+            league_id: 19099,
+            name: 'BLAST Slam 7',
+            status: 'upcoming',
+            tier: 'A',
+            location: 'Denmark',
+            start_time: 1_701_000_000,
+            end_time: 1_701_100_000,
+          },
+          {
+            id: 'epl-season-36',
+            league_id: 18865,
+            name: 'European Pro League Season 36',
+            status: 'ongoing',
+            tier: 'B',
+            location: 'EU',
+            start_time: 1_700_000_000,
+            end_time: 1_700_100_000,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    expect(await screen.findByText('Radiant 1')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=blast-slam-7&limit=10&offset=0');
+    expect(screen.queryByText('European Pro League Season 36')).not.toBeInTheDocument();
+  });
 });

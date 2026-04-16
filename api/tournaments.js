@@ -229,8 +229,46 @@ function formatTournament(tournament, req) {
     start_date: tournament.start_date ?? null,
     end_date: tournament.end_date ?? null,
     image: tournament.image || null,
+    location_flag_url: tournament.location_flag_url || null,
+    source_url: tournament.source_url || null,
+    dltv_event_slug: tournament.dltv_event_slug || null,
+    event_group_slug: tournament.event_group_slug || null,
     background_image_url: buildTournamentBackgroundUrl(tournament, req),
   };
+}
+
+function getTierPriority(tier) {
+  const normalized = String(tier || '').toUpperCase();
+  if (normalized === 'S') return 0;
+  if (normalized === 'A') return 1;
+  if (normalized === 'A-QUAL') return 2;
+  if (normalized === 'B') return 3;
+  if (normalized === 'C') return 4;
+  return 5;
+}
+
+function pickRepresentativeTournament(group) {
+  return [...group].sort((left, right) => {
+    const leftIsMain = left.event_group_slug && left.dltv_event_slug && left.event_group_slug === left.dltv_event_slug ? 0 : 1;
+    const rightIsMain = right.event_group_slug && right.dltv_event_slug && right.event_group_slug === right.dltv_event_slug ? 0 : 1;
+    if (leftIsMain !== rightIsMain) return leftIsMain - rightIsMain;
+    const tierDelta = getTierPriority(left.tier) - getTierPriority(right.tier);
+    if (tierDelta !== 0) return tierDelta;
+    const startDelta = Number(right.start_time || 0) - Number(left.start_time || 0);
+    if (startDelta !== 0) return startDelta;
+    return Number(right.end_time || 0) - Number(left.end_time || 0);
+  })[0] || null;
+}
+
+function buildRelatedTournaments(group, representative, req) {
+  return group
+    .filter((row) => String(row.league_id) !== String(representative.league_id))
+    .sort((left, right) => {
+      const startDelta = Number(left.start_time || 0) - Number(right.start_time || 0);
+      if (startDelta !== 0) return startDelta;
+      return String(left.name || '').localeCompare(String(right.name || ''));
+    })
+    .map((row) => formatTournament(row, req));
 }
 
 async function listTournamentSummaries(db, req) {
@@ -241,7 +279,28 @@ async function listTournamentSummaries(db, req) {
     ORDER BY COALESCE(start_time, 0) DESC, COALESCE(end_time, 0) DESC
   `;
 
-  return tournaments.map((tournament) => formatTournament(tournament, req));
+  const groups = new Map();
+  for (const tournament of tournaments) {
+    const key = String(tournament.event_group_slug || tournament.league_id);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(tournament);
+  }
+
+  return [...groups.values()]
+    .map((group) => {
+      const representative = pickRepresentativeTournament(group);
+      if (!representative) return null;
+      return {
+        ...formatTournament(representative, req),
+        related_tournaments: buildRelatedTournaments(group, representative, req),
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      const startDelta = Number(right.start_time || 0) - Number(left.start_time || 0);
+      if (startDelta !== 0) return startDelta;
+      return Number(right.end_time || 0) - Number(left.end_time || 0);
+    });
 }
 
 async function getTournamentById(db, tournamentId) {
@@ -252,6 +311,17 @@ async function getTournamentById(db, tournamentId) {
     LIMIT 1
   `;
   return rows[0] || null;
+}
+
+async function loadTournamentGroup(db, tournament) {
+  if (!tournament?.event_group_slug) return [tournament];
+  const rows = await db`
+    SELECT *
+    FROM tournaments
+    WHERE event_group_slug = ${tournament.event_group_slug}
+    ORDER BY COALESCE(start_time, 0) DESC, COALESCE(end_time, 0) DESC
+  `;
+  return rows.length > 0 ? rows : [tournament];
 }
 
 async function loadTeams(db) {
@@ -640,22 +710,51 @@ function enrichFeaturedPayload(payload, definition, teams, teamMap, seriesCandid
   };
 }
 
-async function loadSeriesPage(db, tournament, limit, offset) {
-  const totalRows = await db`
-    SELECT COUNT(*)::int AS count
-    FROM series
-    WHERE league_id = ${tournament.league_id}
-  `;
+async function loadSeriesPage(db, leagueIds, limit, offset) {
+  const normalizedLeagueIds = Array.from(
+    new Set(
+      (Array.isArray(leagueIds) ? leagueIds : [leagueIds])
+        .map((leagueId) => Number(leagueId))
+        .filter((leagueId) => Number.isFinite(leagueId))
+    )
+  );
+  const hasMultiple = normalizedLeagueIds.length > 1;
+  const totalRows = hasMultiple
+    ? await db.query(
+      `
+        SELECT COUNT(*)::int AS count
+        FROM series
+        WHERE league_id = ANY($1::int[])
+      `,
+      [normalizedLeagueIds]
+    )
+    : await db`
+      SELECT COUNT(*)::int AS count
+      FROM series
+      WHERE league_id = ${normalizedLeagueIds[0]}
+    `;
   const total = Number(totalRows?.[0]?.count || 0);
 
-  const pageSeries = await db`
-    SELECT *
-    FROM series
-    WHERE league_id = ${tournament.league_id}
-    ORDER BY start_time DESC
-    LIMIT ${limit}
-    OFFSET ${offset}
-  `;
+  const pageSeries = hasMultiple
+    ? await db.query(
+      `
+        SELECT *
+        FROM series
+        WHERE league_id = ANY($1::int[])
+        ORDER BY start_time DESC
+        LIMIT $2
+        OFFSET $3
+      `,
+      [normalizedLeagueIds, limit, offset]
+    )
+    : await db`
+      SELECT *
+      FROM series
+      WHERE league_id = ${normalizedLeagueIds[0]}
+      ORDER BY start_time DESC
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `;
 
   return { total, pageSeries };
 }
@@ -669,7 +768,7 @@ async function loadMatchesForSeries(db, seriesId) {
   `;
 }
 
-function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, req) {
+function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, leagueNameById, req) {
   return seriesRows.map((seriesRow) => {
     const radiantTeam = seriesRow.radiant_team_id ? teamMap.get(String(seriesRow.radiant_team_id)) : null;
     const direTeam = seriesRow.dire_team_id ? teamMap.get(String(seriesRow.dire_team_id)) : null;
@@ -696,11 +795,13 @@ function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, 
       };
     });
 
-    return {
-      series_id: String(seriesRow.series_id),
-      series_type: convertSeriesType(seriesRow.series_type),
-      radiant_team_id: seriesRow.radiant_team_id ? String(seriesRow.radiant_team_id) : null,
-      dire_team_id: seriesRow.dire_team_id ? String(seriesRow.dire_team_id) : null,
+      return {
+        series_id: String(seriesRow.series_id),
+        league_id: seriesRow.league_id ?? null,
+        tournament_name: leagueNameById.get(String(seriesRow.league_id || '')) || null,
+        series_type: convertSeriesType(seriesRow.series_type),
+        radiant_team_id: seriesRow.radiant_team_id ? String(seriesRow.radiant_team_id) : null,
+        dire_team_id: seriesRow.dire_team_id ? String(seriesRow.dire_team_id) : null,
       radiant_team_name: radiantTeam?.name || null,
       dire_team_name: direTeam?.name || null,
       radiant_team_logo: normalizeLogo(radiantTeam?.logo_url, req),
@@ -770,9 +871,12 @@ export default async function handler(req, res) {
     if (!tournament) {
       return res.status(404).json({ error: 'Tournament not found' });
     }
+    const groupedTournaments = await loadTournamentGroup(db, tournament);
+    const leagueIds = groupedTournaments.map((row) => row.league_id);
+    const leagueNameById = new Map(groupedTournaments.map((row) => [String(row.league_id), row.name || null]));
 
     const [{ total, pageSeries }, { teamMap }] = await Promise.all([
-      loadSeriesPage(db, tournament, limit, offset),
+      loadSeriesPage(db, leagueIds, limit, offset),
       loadTeams(db)
     ]);
 
@@ -785,10 +889,13 @@ export default async function handler(req, res) {
     );
 
     const stageWindows = normalizeStageWindows(tournament.stage_windows);
-    const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, req);
+    const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, leagueNameById, req);
 
     return res.status(200).json({
-      tournament: formatTournament(tournament, req),
+      tournament: {
+        ...formatTournament(tournament, req),
+        related_tournaments: buildRelatedTournaments(groupedTournaments, tournament, req),
+      },
       series,
       pagination: {
         limit,

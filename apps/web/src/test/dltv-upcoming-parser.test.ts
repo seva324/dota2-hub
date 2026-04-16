@@ -108,6 +108,7 @@ describe('parseDltvUpcomingMatchesPage', () => {
         radiantName: 'Team Lynx',
         direName: 'Modus',
         tournament: 'European Pro League Season 36',
+        eventUrl: 'https://dltv.org/events/european-pro-league-season-36',
         stage: 'Upper Bracket R1',
         bestOf: 'BO3',
         timestamp: parseUtcDateTimeToUnixSeconds('2026-04-14 15:05:00'),
