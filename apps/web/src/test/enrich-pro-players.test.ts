@@ -112,4 +112,24 @@ describe('loadDbCandidates', () => {
     expect(rows[0].sql).not.toContain('pp.account_id IS NULL OR');
     expect(rows[0].sql).not.toContain("pp.updated_at < NOW() - ($2 * INTERVAL '1 hour')");
   });
+
+  it('can disable the team-context gate for broader recent-player backfills', async () => {
+    const db = {
+      query: async (sql: string, params: unknown[]) => [{ sql, params }],
+    };
+
+    const rows = await loadDbCandidates(db as any, {
+      recentDays: 60,
+      skipUpdatedHours: 24,
+      limit: 25,
+      includeMissingRows: true,
+      requireTeam: false,
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].params).toEqual([60, 24, 25]);
+    expect(rows[0].sql).toContain('FROM recent_players rp');
+    expect(rows[0].sql).toContain('pp.account_id IS NULL OR');
+    expect(rows[0].sql).not.toContain('pp.team_id IS NOT NULL');
+  });
 });
