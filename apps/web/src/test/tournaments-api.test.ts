@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
   query: (...args: unknown[]) => Promise<unknown[]>;
@@ -45,10 +45,16 @@ describe('/api/tournaments lazy loading', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.unstubAllGlobals();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(1700500000 * 1000));
     process.env.DATABASE_URL = 'postgres://example.test/db';
     taggedMock.mockReset();
     queryMock.mockReset();
     neonMock.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('returns tournament summaries without series data when no tournamentId is provided', async () => {
