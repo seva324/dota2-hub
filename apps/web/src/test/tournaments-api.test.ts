@@ -317,6 +317,81 @@ describe('/api/tournaments lazy loading', () => {
     ]);
   });
 
+  it('hides qualifier series when the main-event tab is selected', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        return [{
+          id: 'blast-slam-7',
+          league_id: 19101,
+          name: 'BLAST Slam 7',
+          status: 'upcoming',
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-7',
+        }];
+      }
+      if (sql.includes('WHERE event_group_slug =')) {
+        return [
+          {
+            id: 'blast-slam-7',
+            league_id: 19101,
+            name: 'BLAST Slam 7',
+            status: 'upcoming',
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-7',
+          },
+          {
+            id: 'blast-slam-7-sea-qual',
+            league_id: 19538,
+            name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+            status: 'finished',
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+          },
+        ];
+      }
+      if (sql.includes('COUNT(*)::int AS count')) {
+        expect(values).toEqual([19101]);
+        return [{ count: 1 }];
+      }
+      if (sql.includes('FROM series')) {
+        expect(values).toEqual([19101, 10, 0]);
+        return [{
+          series_id: 'blast-main-series-stale',
+          league_id: 19101,
+          tournament_name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_wins: 2,
+          dire_wins: 1,
+          series_type: 1,
+          stage: 'Playoffs',
+          start_time: 1700500000,
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
+          { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
+        ];
+      }
+      if (sql.includes('FROM matches')) {
+        expect(values).toEqual(['blast-main-series-stale']);
+        return [];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: { tournamentId: '19101', limit: '10', offset: '0' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).series).toEqual([]);
+  });
+
   it('returns paginated series for a selected tournament', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = renderSql(strings);

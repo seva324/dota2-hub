@@ -10,6 +10,7 @@ import {
   fetchFeaturedTournamentPayload,
   resolveFeaturedTournamentDefinition,
 } from '../lib/server/featured-tournament.js';
+import { scoreTournamentNameMatch } from '../lib/server/dltv-events.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
@@ -286,6 +287,19 @@ function dedupeTournamentGroup(group) {
     }
   }
   return Array.from(deduped.values());
+}
+
+function filterSeriesForSelectedTournament(series, tournament) {
+  const tournamentName = normalizeText(tournament?.name);
+  if (!tournamentName) return series;
+  return (series || []).filter((entry) => {
+    const seriesName = normalizeText(entry?.tournament_name);
+    if (!seriesName) return true;
+    const match = scoreTournamentNameMatch(tournamentName, seriesName);
+    if (match.hasEditionMismatch || match.hasRegionMismatch) return false;
+    if (match.eventHasQualifier !== match.candidateHasQualifier) return false;
+    return match.score >= 8;
+  });
 }
 
 function buildRelatedTournaments(group, representative, req) {
@@ -827,7 +841,7 @@ function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, 
       return {
         series_id: String(seriesRow.series_id),
         league_id: seriesRow.league_id ?? null,
-        tournament_name: leagueNameById.get(String(seriesRow.league_id || '')) || null,
+        tournament_name: seriesRow.tournament_name || leagueNameById.get(String(seriesRow.league_id || '')) || null,
         series_type: convertSeriesType(seriesRow.series_type),
         radiant_team_id: seriesRow.radiant_team_id ? String(seriesRow.radiant_team_id) : null,
         dire_team_id: seriesRow.dire_team_id ? String(seriesRow.dire_team_id) : null,
@@ -918,7 +932,10 @@ export default async function handler(req, res) {
     );
 
     const stageWindows = normalizeStageWindows(tournament.stage_windows);
-    const series = buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, leagueNameById, req);
+    const series = filterSeriesForSelectedTournament(
+      buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, leagueNameById, req),
+      tournament,
+    );
 
     return res.status(200).json({
       tournament: {
