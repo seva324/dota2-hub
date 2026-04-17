@@ -323,6 +323,86 @@ describe('/api/tournaments lazy loading', () => {
     ]);
   });
 
+  it('loads aliased historical series for Blast China qualifier within the qualifier window', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        return [{
+          id: 'blast-slam-7-china-qual',
+          league_id: 1654929015,
+          name: 'BLAST Slam 7: China Closed Qualifier',
+          status: 'finished',
+          start_time: 1775088000,
+          end_time: 1775260799,
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+        }];
+      }
+      if (sql.includes('WHERE event_group_slug =')) {
+        return [{
+          id: 'blast-slam-7-china-qual',
+          league_id: 1654929015,
+          name: 'BLAST Slam 7: China Closed Qualifier',
+          status: 'finished',
+          start_time: 1775088000,
+          end_time: 1775260799,
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 8261500, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/xg.png' },
+          { team_id: 726228, name: 'Vici Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/vg.png' },
+        ];
+      }
+      if (sql.includes('FROM matches')) {
+        expect(values).toEqual(['blast-china-series-1']);
+        return [];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string, values?: unknown[]) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM series') && normalized.includes('COUNT(*)::int AS count')) {
+        expect(values).toEqual([[1654929015, 19520], 1775044800, 1775303999]);
+        return [{ count: 1 }];
+      }
+      if (normalized.includes('FROM series') && normalized.includes('ORDER BY start_time DESC')) {
+        expect(values).toEqual([[1654929015, 19520], 1775044800, 1775303999, 10, 0]);
+        return [{
+          series_id: 'blast-china-series-1',
+          league_id: 19520,
+          radiant_team_id: 8261500,
+          dire_team_id: 726228,
+          radiant_wins: 2,
+          dire_wins: 1,
+          series_type: 1,
+          start_time: 1775201161,
+        }];
+      }
+      throw new Error(`Unexpected query SQL: ${normalized}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: { tournamentId: '1654929015', limit: '10', offset: '0' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).series).toEqual([
+      expect.objectContaining({
+        series_id: 'blast-china-series-1',
+        league_id: 19520,
+        tournament_name: 'BLAST Slam 7: China Closed Qualifier',
+        radiant_team_name: 'Xtreme Gaming',
+        dire_team_name: 'Vici Gaming',
+      }),
+    ]);
+  });
+
   it('hides qualifier series when the main-event tab is selected', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = renderSql(strings);
@@ -396,6 +476,96 @@ describe('/api/tournaments lazy loading', () => {
 
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).series).toEqual([]);
+  });
+
+  it('falls back to upcoming qualifier rows when no series exist in the tournament window', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        return [{
+          id: 'esl-china-open-qual-1',
+          league_id: 19520,
+          name: 'ESL Challenger China Season 3: Open Qualifier 1',
+          status: 'upcoming',
+          start_time: 1776384000,
+          end_time: 1776643199,
+          event_group_slug: 'esl-challenger-china-season-3',
+          dltv_event_slug: 'esl-challenger-china-season-3-open-qualifier-1',
+        }];
+      }
+      if (sql.includes('WHERE event_group_slug =')) {
+        return [{
+          id: 'esl-china-open-qual-1',
+          league_id: 19520,
+          name: 'ESL Challenger China Season 3: Open Qualifier 1',
+          status: 'upcoming',
+          start_time: 1776384000,
+          end_time: 1776643199,
+          event_group_slug: 'esl-challenger-china-season-3',
+          dltv_event_slug: 'esl-challenger-china-season-3-open-qualifier-1',
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 9894442, name: 'Cloud Dawning', logo_url: 'https://steamcdn-a.akamaihd.net/cloud-dawning.png' },
+          { team_id: 9895695, name: 'ToLight', logo_url: 'https://steamcdn-a.akamaihd.net/tolight.png' },
+        ];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string, values?: unknown[]) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM series') && normalized.includes('COUNT(*)::int AS count')) {
+        expect(values).toEqual([[19520], 1776340800, 1776686399]);
+        return [{ count: 0 }];
+      }
+      if (normalized.includes('FROM series') && normalized.includes('ORDER BY start_time DESC')) {
+        expect(values).toEqual([[19520], 1776340800, 1776686399, 10, 0]);
+        return [];
+      }
+      if (normalized.includes('FROM upcoming_series') && normalized.includes('COUNT(*)::int AS count')) {
+        expect(values).toEqual([[19520], 1776340800, 1776686399]);
+        return [{ count: 2 }];
+      }
+      if (normalized.includes('FROM upcoming_series') && normalized.includes('ORDER BY start_time DESC')) {
+        expect(values).toEqual([[19520], 1776340800, 1776686399, 10, 0]);
+        return [{
+          id: 'dltv_426167_1776405600',
+          series_id: 'dltv_426167',
+          league_id: 19520,
+          radiant_team_id: null,
+          dire_team_id: 9894442,
+          radiant_team_name: 'YB.Xiongchumo',
+          dire_team_name: 'Cloud Dawning',
+          tournament_name: 'ESL Challenger China Season 3: Open Qualifier 1',
+          series_type: 'BO1',
+          start_time: 1776405600,
+          status: 'upcoming',
+        }];
+      }
+      throw new Error(`Unexpected query SQL: ${normalized}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: { tournamentId: '19520', limit: '10', offset: '0' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).series).toEqual([
+      expect.objectContaining({
+        series_id: 'dltv_426167',
+        tournament_name: 'ESL Challenger China Season 3: Open Qualifier 1',
+        radiant_team_name: 'YB.Xiongchumo',
+        dire_team_name: 'Cloud Dawning',
+        radiant_score: 0,
+        dire_score: 0,
+        games: [],
+      }),
+    ]);
+    expect((res.payload as any).pagination.total).toBe(2);
   });
 
   it('returns paginated series for a selected tournament', async () => {

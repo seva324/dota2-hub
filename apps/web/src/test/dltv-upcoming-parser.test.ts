@@ -117,6 +117,58 @@ describe('parseDltvUpcomingMatchesPage', () => {
     ]);
   });
 
+  it('reuses the nearest event header when sibling cards omit head metadata', () => {
+    const groupedFixture = `
+      <div class="match upcoming " data-matches-odd="2026-04-18 07:00:00" data-series-id="426172">
+        <div class="match__head">
+          <a href="https://dltv.org/events/pgl-wallachia-season-8"></a>
+          <div class="match__head-event"><span>PGL Wallachia Season 8</span></div>
+          <div class="match__head-format red"><span>Group Stage</span></div>
+          <div class="match__head-format"><span>bo3</span></div>
+        </div>
+        <div class="match__body-details">
+          <div class="match__body-details__team"><div class="team__title"><span>Xtreme Gaming</span></div></div>
+          <div class="match__body-details__team"><div class="team__title"><span>Natus Vincere</span></div></div>
+        </div>
+      </div>
+      <div class="match upcoming " data-matches-odd="2026-04-18 08:00:00" data-series-id="426173">
+        <div class="match__body">
+          <div class="match__body-details">
+            <a href="https://dltv.org/matches/426173/team-spirit-vs-vici-gaming-pgl-wallachia-season-8"></a>
+            <div class="match__body-details__team"><div class="team__title"><span>Team Spirit</span></div></div>
+            <div class="match__body-details__timer">
+              <small data-moment="MMM DD">2026-04-18 08:00:00</small>
+              <strong data-moment="HH:mm">2026-04-18 08:00:00</strong>
+            </div>
+            <div class="match__body-details__team"><div class="team__title"><span>Vici Gaming</span></div></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const rows = parseDltvUpcomingMatchesPage(groupedFixture, {
+      now: parseUtcDateTimeToUnixSeconds('2026-04-18 00:00:00'),
+      maxStartTime: parseUtcDateTimeToUnixSeconds('2026-04-19 00:00:00'),
+    });
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        seriesId: '426172',
+        tournament: 'PGL Wallachia Season 8',
+      }),
+      expect.objectContaining({
+        seriesId: '426173',
+        radiantName: 'Team Spirit',
+        direName: 'Vici Gaming',
+        tournament: 'PGL Wallachia Season 8',
+        eventUrl: 'https://dltv.org/events/pgl-wallachia-season-8',
+        stage: 'Group Stage',
+        bestOf: 'BO3',
+        timestamp: parseUtcDateTimeToUnixSeconds('2026-04-18 08:00:00'),
+      }),
+    ]);
+  });
+
   it('parses Jina-rendered markdown match cards as a fallback source', () => {
     const markdownFixture = `
 Title: Dota 2 Matches & livescore – DLTV
