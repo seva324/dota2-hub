@@ -718,6 +718,299 @@ describe('runSyncLiquipedia', () => {
     expect(upcomingInsertCall?.[3]).not.toBe(19520);
   });
 
+  it('reuses the existing synthetic Blast China qualifier row and removes duplicate rows on later syncs', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
+      if (sql.includes('SELECT team_id FROM teams WHERE LOWER(name) =')) {
+        return [];
+      }
+      return [];
+    });
+
+    db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
+        return [
+          {
+            league_id: 19520,
+            name: 'ESL Challenger China Season 3: Open Qualifier 1',
+            tier: 'B-QUAL',
+            location: 'China',
+            status: 'upcoming',
+            source_url: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-1',
+            dltv_event_slug: 'esl-challenger-china-season-3-open-qualifier-1',
+            event_group_slug: 'esl-challenger-china-season-3',
+          },
+          {
+            league_id: 1654929017,
+            name: 'BLAST Slam 7: China Closed Qualifier',
+            tier: 'A-QUAL',
+            location: 'China',
+            status: 'finished',
+            source_url: 'https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier',
+            dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+            dltv_parent_slug: 'blast-slam-7',
+            event_group_slug: 'blast-slam-7',
+          },
+          {
+            league_id: 1654929015,
+            name: 'BLAST Slam 7: China Closed Qualifier',
+            tier: 'A-QUAL',
+            location: 'China',
+            status: 'finished',
+            source_url: 'https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier',
+            dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+            dltv_parent_slug: 'blast-slam-7',
+            event_group_slug: 'blast-slam-7',
+          },
+        ];
+      }
+      if (sql.includes('SELECT league_id FROM tournaments WHERE league_id =')) {
+        return [];
+      }
+      return [];
+    });
+
+    const qualifierHtml = `
+      <html>
+        <head><title>BLAST Slam 7: China Closed Qualifier overview | DLTV</title></head>
+        <body>
+          <h1>BLAST SLAM 7: CHINA CLOSED QUALIFIER</h1>
+          <a href="https://dltv.org/events/blast-slam-7">MAIN EVENT</a>
+          <div>FINISHED</div>
+          <div>DATES</div>
+          <div>APR 02 - APR 03, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>A-QUAL TIER</div>
+        </body>
+      </html>
+    `;
+    const dltvHtml = (`
+      <div class="match upcoming" data-series-id="999001" data-matches-odd="2026-04-14 03:30:00">
+        <div class="match__head">
+          <a href="https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier"></a>
+          <div class="match__head-event"><span>BLAST Slam 7: China Closed Qualifier</span></div>
+          <div class="match__head-format">Bo3</div>
+        </div>
+        <div class="match__body-details">
+          <div class="match__body-details__team"><div class="team__title"><span>Glyph</span></div></div>
+          <div class="match__body-details__team"><div class="team__title"><span>Cloud Rising</span></div></div>
+        </div>
+      </div>
+    ` + ' '.repeat(1200));
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('dltv.org/matches')) {
+        return { ok: true, text: async () => dltvHtml } as Response;
+      }
+      if (url === 'https://dltv.org/events' || url === 'https://r.jina.ai/http://dltv.org/events') {
+        return { ok: true, text: async () => '<html><body>No demo events</body></html>' } as Response;
+      }
+      if (url.includes('blast-slam-vii-china-closed-qualifier')) {
+        return { ok: true, text: async () => qualifierHtml } as Response;
+      }
+      if (url.endsWith('/events/blast-slam-7')) {
+        return { ok: true, text: async () => '<html><body>Blast main</body></html>' } as Response;
+      }
+      if (url.includes('api.opendota.com')) {
+        return { ok: true, json: async () => ([]) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    await runSyncLiquipedia();
+
+    const tournamentInsertCall = (db.query as any).mock.calls.find((call: unknown[]) => (
+      String(call[0] || '').includes('INSERT INTO tournaments')
+      && Array.isArray(call[1])
+      && call[1].includes('https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier')
+    ));
+    expect(tournamentInsertCall?.[1]?.[0]).toBe(1654929015);
+
+    const deleteCall = (db.query as any).mock.calls.find((call: unknown[]) => (
+      String(call[0] || '').includes('DELETE FROM tournaments WHERE league_id = $1')
+      && Array.isArray(call[1])
+      && call[1][0] === 1654929017
+    ));
+    expect(deleteCall).toBeDefined();
+  });
+
+  it('restores PGL Wallachia Season 7 and creates a separate Season 8 row', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '2163', name: 'Team Liquid', tag: 'TL' }];
+      }
+      if (sql.includes('SELECT team_id FROM teams WHERE LOWER(name) =')) {
+        return [];
+      }
+      return [];
+    });
+
+    db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
+        return [{
+          league_id: 19435,
+          name: 'PGL Wallachia Season 8',
+          tier: 'A',
+          location: 'Romania',
+          status: 'upcoming',
+          start_time: 1776470400,
+          end_time: 1777247999,
+          prize_pool: '$1,000,000',
+          prize_pool_usd: 1000000,
+          image: 'https://s3.dltv.org/uploads/events/big/pgl-s8.png',
+          location_flag_url: 'https://flagcdn.com/w40/ro.png',
+          source_url: 'https://dltv.org/events/pgl-wallachia-season-8',
+          dltv_event_slug: 'pgl-wallachia-season-8',
+          dltv_parent_slug: null,
+          event_group_slug: 'pgl-wallachia-season-8',
+        }];
+      }
+      if (sql.includes('SELECT league_id FROM tournaments WHERE league_id =')) {
+        return [];
+      }
+      return [];
+    });
+
+    const eventsCatalogHtml = `
+      <html>
+        <body>
+          <div class="events__card">
+            <a href="https://dltv.org/events/pgl-wallachia-season-8" class="events__card-head">
+              <div class="events__card-head__pic">
+                <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/pgl-s8-card.png')">
+                  <div class="pic__tag">
+                    <span data-datetime-source="2026-04-18 00:00:00">Apr 18</span>
+                    -
+                    <span data-datetime-source="2026-04-26 00:00:00">Apr 26</span>
+                  </div>
+                </div>
+              </div>
+              <div class="events__card-head__info">
+                <div class="info__col">
+                  <div class="info__col-item name">PGL Wallachia Season 8</div>
+                  <div class="info__col-item"><span>Romania</span></div>
+                  <div class="info__col-item prize"><span>Prize pool <strong>$1,000,000</strong></span></div>
+                </div>
+                <div class="info__col width-50 abs">
+                  <div class="info__col-item align-right">A-Tier Tier</div>
+                  <div class="info__col-item align-right">16 participants</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </body>
+      </html>
+    `;
+    const s7Html = `
+      <html>
+        <head><title>PGL Wallachia Season 7 overview | DLTV</title></head>
+        <body>
+          <h1>PGL Wallachia Season 7</h1>
+          <div>FINISHED</div>
+          <div>DATES</div>
+          <div>MAR 08 - MAR 16, 2026</div>
+          <div>COUNTRY</div>
+          <div>ROMANIA</div>
+          <div>EVENT TIER</div>
+          <div>A-TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$1,000,000</div>
+        </body>
+      </html>
+    `;
+    const s8Html = `
+      <html>
+        <head><title>PGL Wallachia Season 8 overview | DLTV</title></head>
+        <body>
+          <h1>PGL Wallachia Season 8</h1>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>APR 18 - APR 26, 2026</div>
+          <div>COUNTRY</div>
+          <div>ROMANIA</div>
+          <div>EVENT TIER</div>
+          <div>A-TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$1,000,000</div>
+        </body>
+      </html>
+    `;
+    const dltvHtml = (`
+      <div class="match upcoming" data-series-id="999002" data-matches-odd="2026-04-18 03:30:00">
+        <div class="match__head">
+          <a href="https://dltv.org/events/pgl-wallachia-season-8"></a>
+          <div class="match__head-event"><span>PGL Wallachia Season 8</span></div>
+          <div class="match__head-format">Bo3</div>
+        </div>
+        <div class="match__body-details">
+          <div class="match__body-details__team"><div class="team__title"><span>Team Liquid</span></div></div>
+          <div class="match__body-details__team"><div class="team__title"><span>Aurora Gaming</span></div></div>
+        </div>
+      </div>
+    ` + ' '.repeat(1200));
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('dltv.org/matches')) {
+        return { ok: true, text: async () => dltvHtml } as Response;
+      }
+      if (url === 'https://dltv.org/events') {
+        return { ok: true, text: async () => eventsCatalogHtml } as Response;
+      }
+      if (url === 'https://r.jina.ai/http://dltv.org/events') {
+        return { ok: true, text: async () => eventsCatalogHtml } as Response;
+      }
+      if (url.endsWith('/events/pgl-wallachia-season-7')) {
+        return { ok: true, text: async () => s7Html } as Response;
+      }
+      if (url.endsWith('/events/pgl-wallachia-season-8')) {
+        return { ok: true, text: async () => s8Html } as Response;
+      }
+      if (url.includes('api.opendota.com')) {
+        return { ok: true, json: async () => ([]) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    await runSyncLiquipedia();
+
+    const tournamentInsertCalls = (db.query as any).mock.calls
+      .filter((call: unknown[]) => String(call[0] || '').includes('INSERT INTO tournaments'));
+
+    const repairedS7 = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[0] === 19435);
+    const insertedS8 = tournamentInsertCalls.find((call: unknown[]) => (
+      Array.isArray(call[1])
+      && call[1][0] !== 19435
+      && call[1].includes('https://dltv.org/events/pgl-wallachia-season-8')
+    ));
+
+    expect(repairedS7?.[1]).toEqual(expect.arrayContaining([
+      19435,
+      'PGL Wallachia Season 7',
+      'A',
+      'ROMANIA',
+      'finished',
+      'https://dltv.org/events/pgl-wallachia-season-7',
+      'pgl-wallachia-season-7',
+      'pgl-wallachia-season-7',
+    ]));
+    expect(insertedS8).toBeDefined();
+    expect(insertedS8?.[1]?.[0]).not.toBe(19435);
+
+    const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
+    expect(upcomingInsertCall?.[3]).not.toBe(19435);
+    expect(upcomingInsertCall?.slice(1)).toContain('PGL Wallachia Season 8');
+  });
+
   it('falls back to Jina markdown when the direct DLTV matches page is rate limited', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
