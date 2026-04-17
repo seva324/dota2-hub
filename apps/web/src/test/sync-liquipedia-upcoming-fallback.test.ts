@@ -1294,7 +1294,7 @@ Nemiga Gaming
     const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
     expect(result.success).toBe(true);
     expect(upcomingInsertCall).toBeDefined();
-    expect(upcomingInsertCall?.slice(1)).toContain('dltv_426144_1776340800');
+    expect(upcomingInsertCall?.slice(1)).toContain('dltv_426144');
     expect(upcomingInsertCall?.slice(1)).toContain('https://dltv.org/events/european-pro-league-season-36');
   });
 });
