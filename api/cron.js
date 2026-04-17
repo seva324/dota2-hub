@@ -232,10 +232,22 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
     const phase = ['full', 'metadata', 'upcoming', 'fast'].includes(requestedPhase)
       ? requestedPhase
       : 'fast';
-    return { action, result: await runSyncLiquipedia({ phase }) };
+    return {
+      action,
+      result: await runSyncLiquipedia({
+        phase,
+        seedUrls: raw.url || raw.urls,
+      }),
+    };
   }
   if (action === 'sync-liquipedia-metadata') {
-    return { action, result: await runSyncLiquipedia({ phase: 'metadata' }) };
+    return {
+      action,
+      result: await runSyncLiquipedia({
+        phase: 'metadata',
+        seedUrls: raw.url || raw.urls,
+      }),
+    };
   }
   if (action === 'sync-liquipedia-upcoming') {
     return { action, result: await runSyncLiquipedia({ phase: 'upcoming' }) };
