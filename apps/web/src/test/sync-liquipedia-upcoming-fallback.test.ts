@@ -136,7 +136,7 @@ describe('runSyncLiquipedia', () => {
       return [];
     });
 
-    db.query = vi.fn(async (sql: string, params?: unknown[]) => {
+    db.query = vi.fn(async (sql: string) => {
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
           league_id: 19538,
@@ -592,7 +592,7 @@ describe('runSyncLiquipedia', () => {
       return [];
     });
 
-    db.query = vi.fn(async (sql: string, params?: unknown[]) => {
+    db.query = vi.fn(async (sql: string) => {
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
           league_id: 19520,
