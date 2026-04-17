@@ -228,7 +228,17 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
     return { action, result: await runSyncOpenDota() };
   }
   if (action === 'sync-liquipedia') {
-    return { action, result: await runSyncLiquipedia() };
+    const requestedPhase = pickParam(raw.phase, '').trim().toLowerCase();
+    const phase = ['full', 'metadata', 'upcoming', 'fast'].includes(requestedPhase)
+      ? requestedPhase
+      : 'fast';
+    return { action, result: await runSyncLiquipedia({ phase }) };
+  }
+  if (action === 'sync-liquipedia-metadata') {
+    return { action, result: await runSyncLiquipedia({ phase: 'metadata' }) };
+  }
+  if (action === 'sync-liquipedia-upcoming') {
+    return { action, result: await runSyncLiquipedia({ phase: 'upcoming' }) };
   }
   if (action === 'backfill-dltv-team-logos') {
     const db = getDb();
