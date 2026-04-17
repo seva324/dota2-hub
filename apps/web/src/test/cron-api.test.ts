@@ -253,6 +253,48 @@ describe('/api/cron incremental refresh actions', () => {
     expect((res.payload as any)?.result?.provider).toBe('minimax');
   });
 
+  it('defaults sync-liquipedia to the fast phase for the public shortcut', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'sync-liquipedia',
+      },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(runSyncLiquipediaMock).toHaveBeenCalledWith({ phase: 'fast' });
+  });
+
+  it('exposes dedicated liquipedia metadata and upcoming actions', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const metadataReq = {
+      method: 'POST',
+      query: {
+        action: 'sync-liquipedia-metadata',
+      },
+    };
+    const upcomingReq = {
+      method: 'POST',
+      query: {
+        action: 'sync-liquipedia-upcoming',
+      },
+    };
+    const metadataRes = createRes();
+    const upcomingRes = createRes();
+
+    await handler(metadataReq as never, metadataRes as never);
+    await handler(upcomingReq as never, upcomingRes as never);
+
+    expect(metadataRes.statusCode).toBe(200);
+    expect(upcomingRes.statusCode).toBe(200);
+    expect(runSyncLiquipediaMock).toHaveBeenNthCalledWith(1, { phase: 'metadata' });
+    expect(runSyncLiquipediaMock).toHaveBeenNthCalledWith(2, { phase: 'upcoming' });
+  });
+
   it('rejects cron requests without token when D2HUB_CRON_TOKEN is configured', async () => {
     process.env.D2HUB_CRON_TOKEN = 'expected-token';
     const { default: handler } = await import('../../../../api/cron.js');
