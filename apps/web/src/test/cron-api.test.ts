@@ -295,6 +295,26 @@ describe('/api/cron incremental refresh actions', () => {
     expect(runSyncLiquipediaMock).toHaveBeenNthCalledWith(2, { phase: 'upcoming' });
   });
 
+  it('passes explicit metadata seed urls through the liquipedia metadata action', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'sync-liquipedia-metadata',
+        url: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+      },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(runSyncLiquipediaMock).toHaveBeenCalledWith({
+      phase: 'metadata',
+      seedUrls: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+    });
+  });
+
   it('rejects cron requests without token when D2HUB_CRON_TOKEN is configured', async () => {
     process.env.D2HUB_CRON_TOKEN = 'expected-token';
     const { default: handler } = await import('../../../../api/cron.js');
