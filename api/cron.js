@@ -1,6 +1,6 @@
 import { syncNewsToDb, translateNewsBackfill } from './news.js';
 import { runSyncOpenDota } from '../lib/server/sync-opendota.js';
-import { runSyncLiquipedia } from '../lib/server/sync-liquipedia.js';
+import { runSyncLiquipedia, upsertLiquipediaTournamentMetadata } from '../lib/server/sync-liquipedia.js';
 import { neon } from '@neondatabase/serverless';
 import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
@@ -251,6 +251,27 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
   }
   if (action === 'sync-liquipedia-upcoming') {
     return { action, result: await runSyncLiquipedia({ phase: 'upcoming' }) };
+  }
+  if (action === 'upsert-liquipedia-tournament') {
+    return {
+      action,
+      result: await upsertLiquipediaTournamentMetadata({
+        url: raw.url || raw.sourceUrl,
+        sourceUrl: raw.sourceUrl || raw.url,
+        title: raw.title,
+        tier: raw.tier,
+        location: raw.location,
+        startTime: raw.startTime,
+        endTime: raw.endTime,
+        prizePool: raw.prizePool,
+        prizePoolUsd: raw.prizePoolUsd,
+        image: raw.image,
+        locationFlagUrl: raw.locationFlagUrl,
+        eventSlug: raw.eventSlug,
+        parentSlug: raw.parentSlug,
+        eventGroupSlug: raw.eventGroupSlug,
+      }),
+    };
   }
   if (action === 'backfill-dltv-team-logos') {
     const db = getDb();

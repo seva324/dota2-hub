@@ -6,6 +6,7 @@ const warmPlayerProfileCacheMock = vi.fn();
 const warmTeamFlyoutCacheMock = vi.fn();
 const runSyncOpenDotaMock = vi.fn();
 const runSyncLiquipediaMock = vi.fn();
+const upsertLiquipediaTournamentMetadataMock = vi.fn();
 const syncNewsToDbMock = vi.fn();
 const translateNewsBackfillMock = vi.fn();
 
@@ -27,6 +28,7 @@ vi.mock('../../../../lib/server/sync-opendota.js', () => ({
 
 vi.mock('../../../../lib/server/sync-liquipedia.js', () => ({
   runSyncLiquipedia: runSyncLiquipediaMock,
+  upsertLiquipediaTournamentMetadata: upsertLiquipediaTournamentMetadataMock,
 }));
 
 vi.mock('../../../../api/news.js', () => ({
@@ -70,6 +72,7 @@ describe('/api/cron incremental refresh actions', () => {
     warmTeamFlyoutCacheMock.mockReset();
     runSyncOpenDotaMock.mockReset();
     runSyncLiquipediaMock.mockReset();
+    upsertLiquipediaTournamentMetadataMock.mockReset();
     syncNewsToDbMock.mockReset();
     translateNewsBackfillMock.mockReset();
 
@@ -77,6 +80,7 @@ describe('/api/cron incremental refresh actions', () => {
     warmTeamFlyoutCacheMock.mockResolvedValue({ selected: 8, refreshed: 8, failed: 0, mode: 'incremental' });
     runSyncOpenDotaMock.mockResolvedValue({ success: true });
     runSyncLiquipediaMock.mockResolvedValue({ success: true });
+    upsertLiquipediaTournamentMetadataMock.mockResolvedValue({ success: true });
     syncNewsToDbMock.mockResolvedValue({ success: true });
     translateNewsBackfillMock.mockResolvedValue({ translated: 5, completed: 5, pending: 0, provider: 'minimax' });
   });
@@ -312,6 +316,47 @@ describe('/api/cron incremental refresh actions', () => {
     expect(runSyncLiquipediaMock).toHaveBeenCalledWith({
       phase: 'metadata',
       seedUrls: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+    });
+  });
+
+  it('exposes a direct liquipedia tournament upsert action for manual metadata writes', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: {
+        action: 'upsert-liquipedia-tournament',
+        url: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+        title: 'ESL Challenger China Season 3: Open Qualifier 2',
+        tier: 'B-QUAL',
+        location: 'China',
+        startTime: '1776470400',
+        endTime: '1776643199',
+        prizePool: '$14,000',
+        prizePoolUsd: '14000',
+        parentSlug: 'esl-challenger-china-season-3',
+        eventGroupSlug: 'esl-challenger-china-season-3',
+      },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(upsertLiquipediaTournamentMetadataMock).toHaveBeenCalledWith({
+      url: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+      sourceUrl: 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+      title: 'ESL Challenger China Season 3: Open Qualifier 2',
+      tier: 'B-QUAL',
+      location: 'China',
+      startTime: '1776470400',
+      endTime: '1776643199',
+      prizePool: '$14,000',
+      prizePoolUsd: '14000',
+      image: undefined,
+      locationFlagUrl: undefined,
+      eventSlug: undefined,
+      parentSlug: 'esl-challenger-china-season-3',
+      eventGroupSlug: 'esl-challenger-china-season-3',
     });
   });
 
