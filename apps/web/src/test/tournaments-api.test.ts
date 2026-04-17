@@ -150,6 +150,30 @@ describe('/api/tournaments lazy loading', () => {
             event_group_slug: 'blast-slam-7',
             dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
           },
+          {
+            id: 'blast-slam-7-china-a',
+            league_id: 1654929015,
+            name: 'BLAST Slam 7: China Closed Qualifier',
+            tier: 'A-QUAL',
+            status: 'finished',
+            start_time: 1699900000,
+            end_time: 1700000000,
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+            source_url: 'https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier',
+          },
+          {
+            id: 'blast-slam-7-china-b',
+            league_id: 1654929018,
+            name: 'BLAST Slam 7: China Closed Qualifier',
+            tier: 'A-QUAL',
+            status: 'finished',
+            start_time: 1699950000,
+            end_time: 1700000000,
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
+            source_url: 'https://dltv.org/events/blast-slam-7/blast-slam-vii-china-closed-qualifier',
+          },
         ];
       }
       throw new Error(`Unexpected SQL: ${sql}`);
@@ -168,10 +192,127 @@ describe('/api/tournaments lazy loading', () => {
         name: 'BLAST Slam 7',
         related_tournaments: [
           expect.objectContaining({
+            league_id: 1654929015,
+            name: 'BLAST Slam 7: China Closed Qualifier',
+          }),
+          expect.objectContaining({
             league_id: 19101,
             name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
           }),
         ],
+      }),
+    ]);
+  });
+
+  it('loads only the selected qualifier series instead of the full event group', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        return [{
+          id: 'blast-slam-7-sea-qual',
+          league_id: 19538,
+          name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+          status: 'finished',
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+        }];
+      }
+      if (sql.includes('WHERE event_group_slug =')) {
+        return [
+          {
+            id: 'blast-slam-7',
+            league_id: 19101,
+            name: 'BLAST Slam 7',
+            status: 'upcoming',
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-7',
+          },
+          {
+            id: 'blast-slam-7-sea-qual',
+            league_id: 19538,
+            name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+            status: 'finished',
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+          },
+          {
+            id: 'blast-slam-7-sea-qual-dup',
+            league_id: 19540,
+            name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+            status: 'finished',
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+          },
+          {
+            id: 'blast-slam-7-eu-qual',
+            league_id: 19539,
+            name: 'BLAST Slam 7: Europe Closed Qualifier',
+            status: 'finished',
+            event_group_slug: 'blast-slam-7',
+            dltv_event_slug: 'blast-slam-vii-europe-closed-qualifier',
+          },
+        ];
+      }
+      if (sql.includes('COUNT(*)::int AS count')) {
+        expect(values).toEqual([19538]);
+        return [{ count: 1 }];
+      }
+      if (sql.includes('FROM series')) {
+        expect(values).toEqual([19538, 10, 0]);
+        return [{
+          series_id: 'blast-sea-series-1',
+          league_id: 19538,
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_wins: 2,
+          dire_wins: 1,
+          series_type: 1,
+          stage: 'Playoffs',
+          start_time: 1700500000,
+        }];
+      }
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
+          { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
+        ];
+      }
+      if (sql.includes('FROM matches')) {
+        expect(values).toEqual(['blast-sea-series-1']);
+        return [{
+          match_id: 101,
+          series_id: 'blast-sea-series-1',
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_score: 30,
+          dire_score: 20,
+          radiant_win: true,
+          start_time: 1700500000,
+          duration: 2400,
+          picks_bans: [],
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: { tournamentId: '19538', limit: '10', offset: '0' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).tournament).toEqual(expect.objectContaining({
+      league_id: 19538,
+      related_tournaments: [
+        expect.objectContaining({ league_id: 19101, name: 'BLAST Slam 7' }),
+        expect.objectContaining({ league_id: 19539, name: 'BLAST Slam 7: Europe Closed Qualifier' }),
+      ],
+    }));
+    expect((res.payload as any).series).toEqual([
+      expect.objectContaining({
+        series_id: 'blast-sea-series-1',
+        tournament_name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
       }),
     ]);
   });

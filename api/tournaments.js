@@ -260,8 +260,36 @@ function pickRepresentativeTournament(group) {
   })[0] || null;
 }
 
+function getTournamentTrackKey(tournament) {
+  const eventSlug = String(tournament?.dltv_event_slug || '').trim().toLowerCase();
+  if (eventSlug) return `slug:${eventSlug}`;
+  const sourceUrl = String(tournament?.source_url || '').trim().toLowerCase();
+  if (sourceUrl) return `source:${sourceUrl}`;
+  const name = String(tournament?.name || '').trim().toLowerCase();
+  if (name) return `name:${name}`;
+  return `league:${String(tournament?.league_id || '')}`;
+}
+
+function dedupeTournamentGroup(group) {
+  const deduped = new Map();
+  for (const row of group || []) {
+    const key = getTournamentTrackKey(row);
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, row);
+      continue;
+    }
+    const existingLeagueId = Number(existing.league_id || Number.MAX_SAFE_INTEGER);
+    const nextLeagueId = Number(row.league_id || Number.MAX_SAFE_INTEGER);
+    if (nextLeagueId < existingLeagueId) {
+      deduped.set(key, row);
+    }
+  }
+  return Array.from(deduped.values());
+}
+
 function buildRelatedTournaments(group, representative, req) {
-  return group
+  return dedupeTournamentGroup(group)
     .filter((row) => String(row.league_id) !== String(representative.league_id))
     .sort((left, right) => {
       const startDelta = Number(left.start_time || 0) - Number(right.start_time || 0);
@@ -288,11 +316,12 @@ async function listTournamentSummaries(db, req) {
 
   return [...groups.values()]
     .map((group) => {
-      const representative = pickRepresentativeTournament(group);
+      const dedupedGroup = dedupeTournamentGroup(group);
+      const representative = pickRepresentativeTournament(dedupedGroup);
       if (!representative) return null;
       return {
         ...formatTournament(representative, req),
-        related_tournaments: buildRelatedTournaments(group, representative, req),
+        related_tournaments: buildRelatedTournaments(dedupedGroup, representative, req),
       };
     })
     .filter(Boolean)
@@ -321,7 +350,7 @@ async function loadTournamentGroup(db, tournament) {
     WHERE event_group_slug = ${tournament.event_group_slug}
     ORDER BY COALESCE(start_time, 0) DESC, COALESCE(end_time, 0) DESC
   `;
-  return rows.length > 0 ? rows : [tournament];
+  return dedupeTournamentGroup(rows.length > 0 ? rows : [tournament]);
 }
 
 async function loadTeams(db) {
@@ -872,8 +901,8 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Tournament not found' });
     }
     const groupedTournaments = await loadTournamentGroup(db, tournament);
-    const leagueIds = groupedTournaments.map((row) => row.league_id);
-    const leagueNameById = new Map(groupedTournaments.map((row) => [String(row.league_id), row.name || null]));
+    const leagueIds = [tournament.league_id];
+    const leagueNameById = new Map([[String(tournament.league_id), tournament.name || null]]);
 
     const [{ total, pageSeries }, { teamMap }] = await Promise.all([
       loadSeriesPage(db, leagueIds, limit, offset),
