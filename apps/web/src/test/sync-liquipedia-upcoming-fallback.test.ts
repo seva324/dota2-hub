@@ -327,6 +327,30 @@ describe('runSyncLiquipedia', () => {
             </a>
           </div>
           <div class="events__card">
+            <a href="https://dltv.org/events/esl-challenger-china-season-3" class="events__card-head">
+              <div class="events__card-head__pic">
+                <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/esl-china-main.png')">
+                  <div class="pic__tag">
+                    <span data-datetime-source="2026-04-30 00:00:00">Apr 30</span>
+                    -
+                    <span data-datetime-source="2026-05-02 00:00:00">May 02</span>
+                  </div>
+                </div>
+              </div>
+              <div class="events__card-head__info">
+                <div class="info__col">
+                  <div class="info__col-item name">ESL Challenger China Season 3</div>
+                  <div class="info__col-item"><span>China</span></div>
+                  <div class="info__col-item prize"><span>Prize pool <strong>$172,000</strong></span></div>
+                </div>
+                <div class="info__col width-50 abs">
+                  <div class="info__col-item align-right">B-Tier Tier</div>
+                  <div class="info__col-item align-right">8 participants</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="events__card">
             <a href="https://dltv.org/events/blast-slam-7" class="events__card-head">
               <div class="events__card-head__pic">
                 <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/blast-main.png')">
@@ -350,6 +374,71 @@ describe('runSyncLiquipedia', () => {
               </div>
             </a>
           </div>
+        </body>
+      </html>
+    `;
+    const eslChinaMainHtml = `
+      <html>
+        <head>
+          <title>ESL Challenger China Season 3 overview | DLTV</title>
+          <meta name="description" content="Complete overview of ESL Challenger China Season 3 which will take place from May 01, 2026 to May 03, 2026, a $172,000 Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>ESL Challenger China Season 3</h1>
+          <div style="background-image: url('https://s3.dltv.org/uploads/events/big/esl-china-main.png')"></div>
+          <a href="https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-1">Open Qualifier 1</a>
+          <a href="https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2">Open Qualifier 2</a>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>MAY 01 - MAY 03, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>B-TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$172,000</div>
+        </body>
+      </html>
+    `;
+    const eslChinaOpenQualifier1Html = `
+      <html>
+        <head>
+          <title>ESL Challenger China Season 3: Open Qualifier 1 overview | DLTV</title>
+          <meta name="description" content="Complete overview of ESL Challenger China Season 3: Open Qualifier 1 which will take place from Apr 16, 2026 to Apr 18, 2026, a $14,000 Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>ESL Challenger China Season 3: Open Qualifier 1</h1>
+          <a href="https://dltv.org/events/esl-challenger-china-season-3">Main event</a>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>APR 16 - APR 18, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>B-QUAL TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$14,000</div>
+        </body>
+      </html>
+    `;
+    const eslChinaOpenQualifier2Html = `
+      <html>
+        <head>
+          <title>ESL Challenger China Season 3: Open Qualifier 2 overview | DLTV</title>
+          <meta name="description" content="Complete overview of ESL Challenger China Season 3: Open Qualifier 2 which will take place from Apr 17, 2026 to Apr 19, 2026, a $14,000 Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>ESL Challenger China Season 3: Open Qualifier 2</h1>
+          <a href="https://dltv.org/events/esl-challenger-china-season-3">Main event</a>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>APR 17 - APR 19, 2026</div>
+          <div>COUNTRY</div>
+          <div>CHINA</div>
+          <div>EVENT TIER</div>
+          <div>B-QUAL TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$14,000</div>
         </body>
       </html>
     `;
@@ -478,6 +567,24 @@ describe('runSyncLiquipedia', () => {
           text: async () => dreamleagueMainHtml,
         } as Response;
       }
+      if (url.endsWith('/events/esl-challenger-china-season-3')) {
+        return {
+          ok: true,
+          text: async () => eslChinaMainHtml,
+        } as Response;
+      }
+      if (url.includes('esl-challenger-china-season-3-open-qualifier-1')) {
+        return {
+          ok: true,
+          text: async () => eslChinaOpenQualifier1Html,
+        } as Response;
+      }
+      if (url.includes('esl-challenger-china-season-3-open-qualifier-2')) {
+        return {
+          ok: true,
+          text: async () => eslChinaOpenQualifier2Html,
+        } as Response;
+      }
       if (url.includes('dreamleague-season-29-china-closed-qualifier/dreamleague-season-29-china-open-qualifier-1')) {
         return {
           ok: true,
@@ -540,6 +647,8 @@ describe('runSyncLiquipedia', () => {
       .filter((call: unknown[]) => String(call[0] || '').includes('INSERT INTO tournaments'));
     const blastMainInsert = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[0] === 19101);
     const dreamQualifierInsert = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[0] === 19448);
+    const eslMainInsert = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[11] === 'https://dltv.org/events/esl-challenger-china-season-3');
+    const eslQualifier2Insert = tournamentInsertCalls.find((call: unknown[]) => call[1]?.[11] === 'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2');
 
     expect(blastMainInsert).toBeDefined();
     expect(blastMainInsert[1]).toEqual(expect.arrayContaining([
@@ -577,6 +686,44 @@ describe('runSyncLiquipedia', () => {
       'dreamleague-season-29-qualifiers',
       'dreamleague-season-29',
       'dreamleague-season-29',
+    ]));
+
+    expect(eslMainInsert).toBeDefined();
+    expect(eslMainInsert?.[1]).toEqual(expect.arrayContaining([
+      expect.any(Number),
+      'ESL Challenger China Season 3',
+      'B',
+      'CHINA',
+      'upcoming',
+      expect.any(Number),
+      expect.any(Number),
+      '$172,000',
+      172000,
+      'https://s3.dltv.org/uploads/events/big/esl-china-main.png',
+      'https://flagcdn.com/w40/cn.png',
+      'https://dltv.org/events/esl-challenger-china-season-3',
+      'esl-challenger-china-season-3',
+      'esl-challenger-china-season-3',
+      'esl-challenger-china-season-3',
+    ]));
+
+    expect(eslQualifier2Insert).toBeDefined();
+    expect(eslQualifier2Insert?.[1]).toEqual(expect.arrayContaining([
+      expect.any(Number),
+      'ESL Challenger China Season 3: Open Qualifier 2',
+      'B-QUAL',
+      'CHINA',
+      'upcoming',
+      expect.any(Number),
+      expect.any(Number),
+      '$14,000',
+      14000,
+      null,
+      'https://flagcdn.com/w40/cn.png',
+      'https://dltv.org/events/esl-challenger-china-season-3/esl-challenger-china-season-3-open-qualifier-2',
+      'esl-challenger-china-season-3-open-qualifier-2',
+      'esl-challenger-china-season-3',
+      'esl-challenger-china-season-3',
     ]));
   });
 
