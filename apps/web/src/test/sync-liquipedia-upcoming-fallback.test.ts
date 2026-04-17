@@ -25,7 +25,12 @@ describe('runSyncLiquipedia', () => {
     vi.setSystemTime(new Date('2026-04-14T00:00:00Z'));
     process.env.DATABASE_URL = 'postgres://example.test/db';
     taggedMock.mockReset();
-    db.query = vi.fn().mockResolvedValue([]);
+    db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
+      return [];
+    });
 
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
@@ -137,6 +142,9 @@ describe('runSyncLiquipedia', () => {
     });
 
     db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
           league_id: 19538,
@@ -274,6 +282,9 @@ describe('runSyncLiquipedia', () => {
     });
 
     db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [];
+      }
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
           league_id: 19448,
@@ -740,6 +751,9 @@ describe('runSyncLiquipedia', () => {
     });
 
     db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
           league_id: 19520,
@@ -878,6 +892,9 @@ describe('runSyncLiquipedia', () => {
     });
 
     db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '9886289', name: 'Cloud Rising', tag: 'CR' }];
+      }
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [
           {
@@ -1001,6 +1018,9 @@ describe('runSyncLiquipedia', () => {
     });
 
     db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [{ team_id: '2163', name: 'Team Liquid', tag: 'TL' }];
+      }
       if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
         return [{
           league_id: 19435,
@@ -1256,6 +1276,16 @@ Nemiga Gaming
       }
       throw new Error(`unexpected fetch: ${url}`);
     }));
+
+    db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [
+          { team_id: '111', name: 'Team Lynx', tag: 'Lynx' },
+          { team_id: '222', name: 'Nemiga Gaming', tag: 'Nemiga' },
+        ];
+      }
+      return [];
+    });
 
     const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
 
