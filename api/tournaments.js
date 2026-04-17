@@ -11,6 +11,7 @@ import {
   resolveFeaturedTournamentDefinition,
 } from '../lib/server/featured-tournament.js';
 import { scoreTournamentNameMatch } from '../lib/server/dltv-events.js';
+import { deriveTournamentStatus } from '../lib/server/tournament-status.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
@@ -222,7 +223,7 @@ function formatTournament(tournament, req) {
     name_cn: tournament.name_cn,
     tier: tournament.tier,
     location: tournament.location,
-    status: tournament.status,
+    status: deriveTournamentStatus(tournament.start_time ?? null, tournament.end_time ?? null),
     start_time: tournament.start_time ?? null,
     end_time: tournament.end_time ?? null,
     prize_pool: tournament.prize_pool ?? null,

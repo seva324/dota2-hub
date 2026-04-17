@@ -1,11 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   parseDltvEventPage,
   parseDltvEventsListPage,
   scoreTournamentNameMatch,
 } from '../../../../lib/server/dltv-events.js';
+import { deriveTournamentStatus } from '../../../../lib/server/tournament-status.js';
 
 describe('parseDltvEventPage', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-14T00:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('parses main-event metadata and qualifier grouping links', () => {
     const raw = `
       <html>
@@ -83,7 +93,7 @@ describe('parseDltvEventPage', () => {
       'https://dltv.org/events/blast-slam-7/blast-slam-vii-southeast-asia-closed-qualifier'
     )).toEqual(expect.objectContaining({
       title: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
-      status: 'finished',
+      status: 'completed',
       tier: 'A-QUAL',
       location: 'SEA',
       locationFlagUrl: null,
@@ -158,6 +168,37 @@ describe('scoreTournamentNameMatch', () => {
     expect(score.score).toBeGreaterThanOrEqual(12);
     expect(score.detailOverlap).toBeGreaterThanOrEqual(4);
     expect(score.groupOverlap).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('deriveTournamentStatus', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-14T00:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('defaults to upcoming when the tournament interval is incomplete', () => {
+    expect(deriveTournamentStatus(1776124800, null)).toBe('upcoming');
+    expect(deriveTournamentStatus(null, 1776211199)).toBe('upcoming');
+  });
+
+  it('derives upcoming, ongoing, and completed from the tournament window', () => {
+    expect(deriveTournamentStatus(
+      Date.parse('2026-04-20T00:00:00Z') / 1000,
+      Date.parse('2026-04-21T23:59:59Z') / 1000,
+    )).toBe('upcoming');
+    expect(deriveTournamentStatus(
+      Date.parse('2026-04-10T00:00:00Z') / 1000,
+      Date.parse('2026-04-18T23:59:59Z') / 1000,
+    )).toBe('ongoing');
+    expect(deriveTournamentStatus(
+      Date.parse('2026-04-01T00:00:00Z') / 1000,
+      Date.parse('2026-04-05T23:59:59Z') / 1000,
+    )).toBe('completed');
   });
 });
 
