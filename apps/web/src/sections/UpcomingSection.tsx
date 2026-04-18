@@ -297,11 +297,7 @@ export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: 
     setFlyoutTeam({
       team_id: team.team_id ? String(team.team_id) : null,
       name: team.name,
-      logo_url: resolveTeamLogo(
-        { teamId: team.team_id ? String(team.team_id) : null, name: team.name },
-        effectiveTeams,
-        team.logo_url || null,
-      ) || null,
+      logo_url: team.logo_url || null
     });
     setFlyoutOpen(true);
   };

@@ -4,7 +4,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getHeroImageUrl, toCnAssetUrl } from '@/lib/assetUrls';
-import { resolveTeamLogo } from '@/lib/teams';
 import { MatchGraphs } from './MatchGraphs';
 import { LaningAnalysis } from './LaningAnalysis';
 import { AIReportSection } from './AIReportSection';
@@ -318,28 +317,14 @@ export function MatchDetailModal({ matchId, open, onOpenChange, onTeamClick, onP
     ? {
         team_id: match.radiant_team?.team_id ? String(match.radiant_team.team_id) : (match.radiant_team_id ? String(match.radiant_team_id) : null),
         name: radiantTeamName,
-        logo_url: resolveTeamLogo(
-          {
-            teamId: match.radiant_team?.team_id ? String(match.radiant_team.team_id) : (match.radiant_team_id ? String(match.radiant_team_id) : null),
-            name: radiantTeamName,
-          },
-          [],
-          match.radiant_team?.logo_url || null,
-        ) || null,
+        logo_url: match.radiant_team?.logo_url || null,
       }
     : null;
   const direTeamRef = match
     ? {
         team_id: match.dire_team?.team_id ? String(match.dire_team.team_id) : (match.dire_team_id ? String(match.dire_team_id) : null),
         name: direTeamName,
-        logo_url: resolveTeamLogo(
-          {
-            teamId: match.dire_team?.team_id ? String(match.dire_team.team_id) : (match.dire_team_id ? String(match.dire_team_id) : null),
-            name: direTeamName,
-          },
-          [],
-          match.dire_team?.logo_url || null,
-        ) || null,
+        logo_url: match.dire_team?.logo_url || null,
       }
     : null;
 

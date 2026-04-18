@@ -24,27 +24,6 @@ function normalizeCompact(value?: string | number | null): string {
   return normalize(value).replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
 }
 
-const TEAM_LOGO_WHITE_OVERRIDES_BY_ID: Record<string, string> = {
-  '2163': '/images/mirror/teams/2163-white.png',
-  '7119388': '/images/mirror/teams/7119388-white.png',
-  '8291895': '/images/mirror/teams/8291895-white.png',
-  '9964962': '/images/mirror/teams/9964962-white.png',
-};
-
-const TEAM_LOGO_WHITE_OVERRIDES_BY_NAME: Record<string, string> = {
-  gl: '/images/mirror/teams/9964962-white.png',
-  liquid: '/images/mirror/teams/2163-white.png',
-  spirit: '/images/mirror/teams/7119388-white.png',
-  tl: '/images/mirror/teams/2163-white.png',
-  ts: '/images/mirror/teams/7119388-white.png',
-  teamliquid: '/images/mirror/teams/2163-white.png',
-  teamspirit: '/images/mirror/teams/7119388-white.png',
-  tspirit: '/images/mirror/teams/7119388-white.png',
-  tundra: '/images/mirror/teams/8291895-white.png',
-  tundraesports: '/images/mirror/teams/8291895-white.png',
-  gamerlegion: '/images/mirror/teams/9964962-white.png',
-};
-
 const TEAM_LOGO_FALLBACKS: Record<string, string> = {
   xg: '/images/mirror/teams/8261500.png',
   xtremegaming: '/images/mirror/teams/8261500.png',
@@ -71,17 +50,6 @@ const TEAM_LOGO_FALLBACKS: Record<string, string> = {
   heroic: '/images/mirror/teams/9303484.png',
   teamspirit: '/images/mirror/teams/7119388.png',
 };
-
-function resolveLogoOverride(teamId?: string | number | null, teamName?: string | null): string {
-  const idNorm = normalize(teamId);
-  if (idNorm && TEAM_LOGO_WHITE_OVERRIDES_BY_ID[idNorm]) {
-    return TEAM_LOGO_WHITE_OVERRIDES_BY_ID[idNorm];
-  }
-
-  const compact = normalizeCompact(teamName);
-  if (!compact) return '';
-  return TEAM_LOGO_WHITE_OVERRIDES_BY_NAME[compact] || '';
-}
 
 function isChinaRegion(region?: string | null): boolean {
   const normalized = normalize(region).replace(/[\s_-]+/g, '');
@@ -161,12 +129,7 @@ export function resolveTeamLogo(
 ): string {
   const teamId = typeof team === 'string' ? undefined : team?.teamId;
   const teamName = typeof team === 'string' ? team : team?.name;
-  const directOverride = resolveLogoOverride(teamId, teamName);
-  if (directOverride) return directOverride;
-
   const row = getTeamRow(teams, teamId, teamName);
-  const rowOverride = resolveLogoOverride(row?.team_id ?? row?.id, row?.name ?? row?.name_cn ?? row?.tag);
-  if (rowOverride) return rowOverride;
 
   if (row?.logo_url) return String(row.logo_url);
   if (explicitLogo) return String(explicitLogo);
