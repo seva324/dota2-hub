@@ -32,10 +32,14 @@ const TEAM_LOGO_WHITE_OVERRIDES_BY_ID: Record<string, string> = {
 };
 
 const TEAM_LOGO_WHITE_OVERRIDES_BY_NAME: Record<string, string> = {
+  gl: '/images/mirror/teams/9964962-white.png',
   liquid: '/images/mirror/teams/2163-white.png',
   spirit: '/images/mirror/teams/7119388-white.png',
+  tl: '/images/mirror/teams/2163-white.png',
+  ts: '/images/mirror/teams/7119388-white.png',
   teamliquid: '/images/mirror/teams/2163-white.png',
   teamspirit: '/images/mirror/teams/7119388-white.png',
+  tspirit: '/images/mirror/teams/7119388-white.png',
   tundra: '/images/mirror/teams/8291895-white.png',
   tundraesports: '/images/mirror/teams/8291895-white.png',
   gamerlegion: '/images/mirror/teams/9964962-white.png',

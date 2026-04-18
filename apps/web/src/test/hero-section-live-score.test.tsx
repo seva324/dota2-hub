@@ -175,4 +175,77 @@ describe('HeroSection live spotlight', () => {
     expect(screen.queryByText('直播对局')).not.toBeInTheDocument();
     expect(screen.getByText('DreamLeague')).toBeInTheDocument();
   });
+
+  it('uses white override logos for shorthand live team names instead of hawk assets', async () => {
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/upcoming')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            upcoming: [],
+            teams: [],
+          }),
+        } as Response);
+      }
+      if (url.includes('/api/live-hero')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            live: {
+              leagueName: 'PGL Wallachia Season 8',
+              bestOf: 'BO3',
+              seriesScore: '0 - 0',
+              startedAt: '2026-03-08T15:00:00.000000Z',
+              teams: [
+                { side: 'team1', name: 'TL', logo: 'https://hawk.live/storage/teams/liquid.png' },
+                { side: 'team2', name: 'GL', logo: 'https://hawk.live/storage/teams/gamerlegion.png' },
+              ],
+              maps: [
+                { label: 'Map 1', score: '12 - 9', status: 'live', gameTime: 620, team1Score: 12, team2Score: 9, team1NetWorthLead: 32640, team2NetWorthLead: null },
+              ],
+              liveMap: { label: 'Map 1', score: '12 - 9', status: 'live', gameTime: 620, team1Score: 12, team2Score: 9, team1NetWorthLead: 32640, team2NetWorthLead: null },
+              live: true,
+              source: 'hawk.live',
+              sourceUrl: 'https://hawk.live/dota-2/matches/pgl-wallachia-season-8/tl-vs-gl',
+            },
+            liveMatches: [
+              {
+                leagueName: 'PGL Wallachia Season 8',
+                bestOf: 'BO3',
+                seriesScore: '0 - 0',
+                startedAt: '2026-03-08T15:00:00.000000Z',
+                teams: [
+                  { side: 'team1', name: 'TL', logo: 'https://hawk.live/storage/teams/liquid.png' },
+                  { side: 'team2', name: 'GL', logo: 'https://hawk.live/storage/teams/gamerlegion.png' },
+                ],
+                maps: [
+                  { label: 'Map 1', score: '12 - 9', status: 'live', gameTime: 620, team1Score: 12, team2Score: 9, team1NetWorthLead: 32640, team2NetWorthLead: null },
+                ],
+                liveMap: { label: 'Map 1', score: '12 - 9', status: 'live', gameTime: 620, team1Score: 12, team2Score: 9, team1NetWorthLead: 32640, team2NetWorthLead: null },
+                live: true,
+                source: 'hawk.live',
+                sourceUrl: 'https://hawk.live/dota-2/matches/pgl-wallachia-season-8/tl-vs-gl',
+              },
+            ],
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch ${url}`));
+    }));
+
+    render(<HeroSection upcoming={[]} teams={[]} />);
+
+    const liveCard = (await screen.findAllByTestId('hero-live-card'))[0];
+    const imageSources = Array.from(liveCard.querySelectorAll('img')).map((node) => node.getAttribute('src') || '');
+
+    expect(imageSources).toEqual(expect.arrayContaining([
+      '/images/mirror/teams/2163-white.png',
+      '/images/mirror/teams/9964962-white.png',
+    ]));
+    expect(imageSources).not.toEqual(expect.arrayContaining([
+      'https://hawk.live/storage/teams/liquid.png',
+      'https://hawk.live/storage/teams/gamerlegion.png',
+    ]));
+  });
 });

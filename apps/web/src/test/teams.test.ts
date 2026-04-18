@@ -16,6 +16,13 @@ describe('resolveTeamLogo', () => {
     expect(resolveTeamLogo({ teamId: '9964962', name: 'GamerLegion' }, teams)).toBe('/images/mirror/teams/9964962-white.png');
   });
 
+  it('prefers white variants for common live-score aliases over explicit hawk logos', () => {
+    expect(resolveTeamLogo({ name: 'TL' }, [], 'https://hawk.live/storage/teams/liquid.png')).toBe('/images/mirror/teams/2163-white.png');
+    expect(resolveTeamLogo({ name: 'TS' }, [], 'https://hawk.live/storage/teams/spirit.png')).toBe('/images/mirror/teams/7119388-white.png');
+    expect(resolveTeamLogo({ name: 'tspirit' }, [], 'https://hawk.live/storage/teams/spirit.png')).toBe('/images/mirror/teams/7119388-white.png');
+    expect(resolveTeamLogo({ name: 'GL' }, [], 'https://hawk.live/storage/teams/gamerlegion.png')).toBe('/images/mirror/teams/9964962-white.png');
+  });
+
   it('keeps other team logos unchanged', () => {
     expect(
       resolveTeamLogo(
