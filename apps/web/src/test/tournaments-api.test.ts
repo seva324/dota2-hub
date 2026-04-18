@@ -786,6 +786,7 @@ describe('/api/tournaments lazy loading', () => {
     await handler(req as never, res as never);
 
     expect(res.statusCode).toBe(200);
+    expect(res.headers['Cache-Control']).toBe('public, max-age=30, s-maxage=120, stale-while-revalidate=300');
     expect((res.payload as any).groupStage.standings[0]).toEqual(expect.objectContaining({
       teamId: '2163',
       teamName: 'Team Liquid',

@@ -34,6 +34,28 @@ const FEATURED_TEAM_ALIAS_OVERRIDES = {
     yb: 'yakultbrothers',
     yakult: 'yakultbrothers',
   },
+  'pgl-wallachia-s8': {
+    aurora: 'aurora',
+    bb: 'betboomteam',
+    betboom: 'betboomteam',
+    falcons: 'teamfalcons',
+    gl: 'gamerlegion',
+    heroic: 'heroic',
+    liquid: 'teamliquid',
+    mouz: 'mouz',
+    "na'vi": 'natusvincere',
+    navi: 'natusvincere',
+    pari: 'parivision',
+    parivision: 'parivision',
+    sar: 'southamericarejects',
+    spirit: 'teamspirit',
+    tundra: 'tundraesports',
+    vici: 'vicigaming',
+    vp: 'virtuspro',
+    xg: 'xtremegaming',
+    xtreme: 'xtremegaming',
+    yandex: 'teamyandex',
+  },
   'esl-one-birmingham-2026': {
     bb: 'betboomteam',
     betboom: 'betboomteam',
@@ -980,6 +1002,7 @@ export default async function handler(req, res) {
   try {
     const wantsFeatured = String(req.query?.featured || '').trim() === '1';
     if (wantsFeatured) {
+      res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300');
       if (!tournamentId) {
         return res.status(400).json({ error: 'tournamentId is required' });
       }
@@ -989,8 +1012,9 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Featured tournament not configured' });
       }
 
+      const forceRefresh = String(req.query?.refresh || '').trim() === '1';
       const [payload, { teams, teamMap }, seriesCandidates] = await Promise.all([
-        fetchFeaturedTournamentPayload(tournamentId),
+        fetchFeaturedTournamentPayload(tournamentId, { forceRefresh }),
         loadTeams(db),
         loadFeaturedSeriesCandidates(db, definition.leagueId),
       ]);

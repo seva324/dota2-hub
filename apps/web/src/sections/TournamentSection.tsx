@@ -230,10 +230,16 @@ interface FeaturedTournamentState {
 }
 
 const DEFAULT_SERIES_PAGE_SIZE = 10;
+const FEATURED_AUTO_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 const FEATURED_TOURNAMENT_KEYS = new Set([
   'pgl-wallachia-s7',
   '19435',
   'pgl wallachia season 7',
+  'pgl-wallachia-season-7',
+  'pgl-wallachia-s8',
+  '1507737505',
+  'pgl wallachia season 8',
+  'pgl-wallachia-season-8',
   'esl-one-birmingham-2026',
   '19422',
   '19669',
@@ -255,6 +261,12 @@ const FALLBACK_TEAM_ABBR: Record<string, string> = {
   'Team Nemesis': 'Nemesis', '1w Team': '1w',
   'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
   'Gaimin Gladiators': 'GG', 'HEROIC': 'HEROIC',
+};
+
+const FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW: Record<string, boolean> = {
+  'pgl-wallachia-s7': true,
+  'pgl-wallachia-s8': false,
+  'esl-one-birmingham-2026': true,
 };
 
 function normalizeTeamAlias(name?: string | null): string {
@@ -512,7 +524,7 @@ function formatFeaturedFetchTime(value?: string | null): string {
 
 function isFeaturedTournament(tournament: Tournament | null): boolean {
   if (!tournament) return false;
-  const keys = [tournament.id, tournament.league_id, tournament.name]
+  const keys = [tournament.id, tournament.league_id, tournament.name, tournament.dltv_event_slug, tournament.event_group_slug]
     .map((value) => String(value || '').trim().toLowerCase())
     .filter(Boolean);
   return keys.some((key) => FEATURED_TOURNAMENT_KEYS.has(key));
@@ -523,9 +535,22 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
 
   const normalizedName = String(tournament.name || '').trim().toLowerCase();
   const normalizedLeagueId = String(tournament.league_id || '').trim().toLowerCase();
+  const normalizedEventSlug = String(tournament.dltv_event_slug || tournament.event_group_slug || '').trim().toLowerCase();
 
-  if (normalizedLeagueId === '19435' || normalizedName === 'pgl wallachia season 7') {
+  if (
+    normalizedLeagueId === '19435'
+    || normalizedName === 'pgl wallachia season 7'
+    || normalizedEventSlug === 'pgl-wallachia-season-7'
+  ) {
     return 'pgl-wallachia-s7';
+  }
+
+  if (
+    normalizedLeagueId === '1507737505'
+    || normalizedName === 'pgl wallachia season 8'
+    || normalizedEventSlug === 'pgl-wallachia-season-8'
+  ) {
+    return 'pgl-wallachia-s8';
   }
 
   if (
@@ -538,6 +563,16 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
   }
 
   return String(tournament.id || tournament.league_id || tournament.name || '').trim() || null;
+}
+
+function getFeaturedDefaultCompactView(tournament: Tournament | null, payload?: FeaturedTournamentPayload | null): boolean {
+  const requestId = payload?.tournamentId || getFeaturedTournamentRequestId(tournament);
+  return FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW[requestId || ''] ?? false;
+}
+
+function shouldAutoRefreshFeaturedTournament(tournament: Tournament | null): boolean {
+  const normalizedStatus = String(tournament?.status || '').trim().toLowerCase();
+  return normalizedStatus === 'ongoing' || normalizedStatus === 'upcoming';
 }
 
 function FeaturedTeamChip({
@@ -755,12 +790,14 @@ function FeaturedCompactPlayoffMatch({
   teams,
   onOpenMatch,
   className,
+  compactView = true,
 }: {
   match: FeaturedEventPlayoffMatch;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
   onOpenMatch: (matchId: string) => void;
   className: string;
+  compactView?: boolean;
 }) {
   const resolvedTeams = match.teams.length
     ? match.teams
@@ -774,7 +811,7 @@ function FeaturedCompactPlayoffMatch({
       href={match.href}
       matchId={match.matchId}
       onOpenMatch={onOpenMatch}
-      className={`block rounded-xl border p-2.5 text-left transition-colors hover:border-white/20 ${className}`}
+      className={`block rounded-xl border text-left transition-colors hover:border-white/20 ${compactView ? 'p-2.5' : 'p-3'} ${className}`}
     >
       <div className="space-y-1.5">
         {resolvedTeams.map((team, index) => (
@@ -786,10 +823,11 @@ function FeaturedCompactPlayoffMatch({
               isCnTeam={team.isCnTeam}
               aliasToTag={aliasToTag}
               teams={teams}
-              className="text-xs"
-              abbreviate
+              className={compactView ? 'text-xs' : 'text-sm'}
+              abbreviate={compactView}
+              preferFullName={!compactView}
             />
-            <span className="min-w-[16px] text-right text-xs font-semibold text-white">{team.score ?? '-'}</span>
+            <span className={`min-w-[16px] text-right font-semibold text-white ${compactView ? 'text-xs' : 'text-sm'}`}>{team.score ?? '-'}</span>
           </div>
         ))}
       </div>
@@ -802,11 +840,13 @@ function FeaturedCompactPlayoffRound({
   aliasToTag,
   teams,
   onOpenMatch,
+  compactView = true,
 }: {
   round: FeaturedEventPlayoffRound;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
   onOpenMatch: (matchId: string) => void;
+  compactView?: boolean;
 }) {
   const toneClass = getFeaturedPlayoffTone(round.roundName);
   const matches = round.matches.length
@@ -825,6 +865,7 @@ function FeaturedCompactPlayoffRound({
             teams={teams}
             onOpenMatch={onOpenMatch}
             className={toneClass}
+            compactView={compactView}
           />
         ))}
       </div>
@@ -930,11 +971,13 @@ function FeaturedDltvPlayoffMatch({
   aliasToTag,
   teams,
   onOpenMatch,
+  compactView = false,
 }: {
   match: FeaturedEventPlayoffMatch;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
   onOpenMatch: (matchId: string) => void;
+  compactView?: boolean;
 }) {
   const resolvedTeams = match.teams.length
     ? match.teams
@@ -951,7 +994,7 @@ function FeaturedDltvPlayoffMatch({
       className="relative block rounded-none border border-white/10 bg-slate-900/90 text-left shadow-[0_8px_18px_rgba(2,6,23,0.2)] transition-colors hover:border-white/20 hover:bg-slate-900"
     >
       <div className="absolute inset-y-0 left-[30px] w-px bg-white/10" />
-      <div className="absolute inset-y-0 left-0 flex w-[30px] flex-col items-center justify-center border-r border-white/10 bg-slate-950/30 text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-300">
+      <div className={`absolute inset-y-0 left-0 flex w-[30px] flex-col items-center justify-center border-r border-white/10 bg-slate-950/30 font-semibold uppercase tracking-[0.08em] text-slate-300 ${compactView ? 'text-[8px]' : 'text-[9px]'}`}>
         {(() => {
           const { month, day } = formatBracketDateLabel(match.startTime);
           return month && day ? (
@@ -962,36 +1005,36 @@ function FeaturedDltvPlayoffMatch({
           ) : null;
         })()}
       </div>
-      <div className="relative min-h-[102px] pl-[30px]">
+      <div className={`relative pl-[30px] ${compactView ? 'min-h-[96px]' : 'min-h-[102px]'}`}>
         {resolvedTeams.map((team, index) => {
           const logoUrl = resolveTeamLogo({ teamId: team.teamId, name: team.name }, teams, team.logoUrl);
           const isTop = index === 0;
           return (
             <div
               key={`${team.name}-${index}`}
-              className={`flex h-[50px] items-center gap-2.5 px-2.5 ${isTop ? 'border-b border-white/10' : ''}`}
+              className={`flex items-center gap-2.5 px-2.5 ${compactView ? 'h-[47px]' : 'h-[50px]'} ${isTop ? 'border-b border-white/10' : ''}`}
             >
               {logoUrl ? (
                 <img
                   src={logoUrl}
                   alt={team.name || 'Team'}
-                  className={`h-7 w-7 shrink-0 object-contain opacity-90 ${team.isCnTeam ? 'border border-red-400/35 bg-red-500/10 p-0.5' : 'border border-white/10 bg-slate-950/80 p-0.5'}`}
+                  className={`${compactView ? 'h-6 w-6' : 'h-7 w-7'} shrink-0 object-contain opacity-90 ${team.isCnTeam ? 'border border-red-400/35 bg-red-500/10 p-0.5' : 'border border-white/10 bg-slate-950/80 p-0.5'}`}
                 />
               ) : (
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-white/10 bg-slate-950/80 text-[9px] font-semibold text-slate-300">
+                <div className={`flex shrink-0 items-center justify-center border border-white/10 bg-slate-950/80 font-semibold text-slate-300 ${compactView ? 'h-6 w-6 text-[8px]' : 'h-7 w-7 text-[9px]'}`}>
                   {team.name === 'TBD' ? '' : getTeamAbbrev(team.name, aliasToTag)}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <span className={`block truncate text-xs leading-none ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`}>
-                  {team.name === 'TBD' ? 'TBD' : getTeamAbbrev(team.name, aliasToTag)}
+                <span className={`block truncate leading-none ${compactView ? 'text-[11px]' : 'text-xs'} ${team.isCnTeam ? 'font-semibold text-red-100' : 'font-semibold text-slate-100'}`}>
+                  {team.name === 'TBD' ? 'TBD' : compactView ? getTeamAbbrev(team.name, aliasToTag) : team.name}
                 </span>
               </div>
-              <span className="min-w-[14px] text-right text-sm font-semibold leading-none text-slate-300">{team.score ?? '-'}</span>
+              <span className={`min-w-[14px] text-right font-semibold leading-none text-slate-300 ${compactView ? 'text-xs' : 'text-sm'}`}>{team.score ?? '-'}</span>
             </div>
           );
         })}
-        <div className="pointer-events-none absolute left-[61px] top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1 text-[11px] font-black tracking-tight text-white">
+        <div className={`pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 bg-slate-900 px-1 font-black tracking-tight text-white ${compactView ? 'left-[56px] text-[10px]' : 'left-[61px] text-[11px]'}`}>
           VS
         </div>
       </div>
@@ -1117,12 +1160,14 @@ function FeaturedDesktopCompactBracket({
   onOpenMatch,
   aliasToTag,
   teams,
+  compactView = false,
 }: {
   payload: FeaturedTournamentPayload;
   schema: FeaturedBracketSchema;
   onOpenMatch: (matchId: string) => void;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
+  compactView?: boolean;
 }) {
   const roundByKey = getFeaturedRoundMap(payload);
   const placementByLabel = getPlacementPrizeMap(payload);
@@ -1135,7 +1180,7 @@ function FeaturedDesktopCompactBracket({
   const laneMap = new Map(lanes.map((lane) => [lane.roundKey, lane]));
 
   return (
-    <div className="hidden overflow-x-auto md:block">
+    <div className="hidden overflow-x-auto md:block" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
       <div className="pb-3" style={{ minWidth: schema.minWidth }}>
         <div className="relative" style={{ height: canvasHeight }}>
           {lanes.map((lane) => (
@@ -1180,6 +1225,7 @@ function FeaturedDesktopCompactBracket({
                   aliasToTag={aliasToTag}
                   teams={teams}
                   onOpenMatch={onOpenMatch}
+                  compactView={compactView}
                 />
               </div>
             ));
@@ -1209,14 +1255,14 @@ function FeaturedDesktopCompactBracket({
   );
 }
 
-const ESL_BIRMINGHAM_BRACKET_SCHEMA: FeaturedBracketSchema = {
-  minWidth: 1220,
+const ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  minWidth: 980,
   columns: 5,
-  columnWidth: 172,
-  columnGap: 56,
-  headerWidth: 172,
+  columnWidth: 170,
+  columnGap: 30,
+  headerWidth: 170,
   headerHeight: 54,
-  matchWidth: 172,
+  matchWidth: 170,
   matchHeight: 102,
   rowUnit: 28,
   lanes: [
@@ -1241,14 +1287,23 @@ const ESL_BIRMINGHAM_BRACKET_SCHEMA: FeaturedBracketSchema = {
   ],
 };
 
-const PGL_WALLACHIA_BRACKET_SCHEMA: FeaturedBracketSchema = {
-  minWidth: 1420,
+const ESL_BIRMINGHAM_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  ...ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA,
+  minWidth: 620,
+  columnWidth: 96,
+  columnGap: 30,
+  headerWidth: 96,
+  matchWidth: 96,
+};
+
+const PGL_WALLACHIA_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  minWidth: 990,
   columns: 5,
-  columnWidth: 172,
-  columnGap: 60,
-  headerWidth: 172,
+  columnWidth: 170,
+  columnGap: 30,
+  headerWidth: 170,
   headerHeight: 54,
-  matchWidth: 172,
+  matchWidth: 170,
   matchHeight: 102,
   rowUnit: 28,
   lanes: [
@@ -1277,38 +1332,85 @@ const PGL_WALLACHIA_BRACKET_SCHEMA: FeaturedBracketSchema = {
     { fromLane: 'lower-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
   ],
   placements: [
-    { placement: '1st Place', fallbackPrize: '$300,000', laneKey: 'grand-finals', slot: 0, dx: 28, dy: 108 },
-    { placement: '2nd Place', fallbackPrize: '$175,000', laneKey: 'grand-finals', slot: 0, dx: 28, dy: 152 },
-    { placement: '3rd Place', fallbackPrize: '$120,000', laneKey: 'lower-finals', slot: 0, dx: -6, dy: 128 },
-    { placement: '4th Place', fallbackPrize: '$80,000', laneKey: 'lower-r3', slot: 0, dx: -6, dy: 128 },
-    { placement: '5th - 6th Place', fallbackPrize: '$60,000', laneKey: 'lower-r2', slot: 1, dx: -18, dy: 152 },
+    { placement: '1st Place', fallbackPrize: '$300,000', laneKey: 'grand-finals', slot: 0, dx: 16, dy: 110 },
+    { placement: '2nd Place', fallbackPrize: '$175,000', laneKey: 'grand-finals', slot: 0, dx: 16, dy: 154 },
+    { placement: '3rd Place', fallbackPrize: '$120,000', laneKey: 'lower-finals', slot: 0, dx: -8, dy: 130 },
+    { placement: '4th Place', fallbackPrize: '$80,000', laneKey: 'lower-r3', slot: 0, dx: -8, dy: 130 },
+    { placement: '5th - 6th Place', fallbackPrize: '$60,000', laneKey: 'lower-r2', slot: 1, dx: -8, dy: 154 },
     { placement: '7th - 8th Place', fallbackPrize: '$40,000', laneKey: 'lower-r1', slot: 1, dx: -8, dy: 168 },
   ],
 };
 
+const PGL_WALLACHIA_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  ...PGL_WALLACHIA_STANDARD_BRACKET_SCHEMA,
+  minWidth: 620,
+  columnWidth: 96,
+  columnGap: 30,
+  headerWidth: 96,
+  matchWidth: 96,
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$300,000', laneKey: 'grand-finals', slot: 0, dx: 12, dy: 102 },
+    { placement: '2nd Place', fallbackPrize: '$175,000', laneKey: 'grand-finals', slot: 0, dx: 12, dy: 146 },
+    { placement: '3rd Place', fallbackPrize: '$120,000', laneKey: 'lower-finals', slot: 0, dx: -2, dy: 122 },
+    { placement: '4th Place', fallbackPrize: '$80,000', laneKey: 'lower-r3', slot: 0, dx: -2, dy: 122 },
+    { placement: '5th - 6th Place', fallbackPrize: '$60,000', laneKey: 'lower-r2', slot: 1, dx: -2, dy: 146 },
+    { placement: '7th - 8th Place', fallbackPrize: '$40,000', laneKey: 'lower-r1', slot: 1, dx: -2, dy: 160 },
+  ],
+};
+
+function FeaturedPlayoffModeToggle({
+  compactView,
+  onChange,
+}: {
+  compactView: boolean;
+  onChange: (nextValue: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-slate-400">
+      <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
+      <button
+        type="button"
+        aria-pressed={compactView}
+        onClick={() => onChange(true)}
+        className={`rounded-md border px-2 py-1 transition-colors ${compactView ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'}`}
+      >
+        Yes
+      </button>
+      <button
+        type="button"
+        aria-pressed={!compactView}
+        onClick={() => onChange(false)}
+        className={`rounded-md border px-2 py-1 transition-colors ${compactView ? 'border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200' : 'border-amber-300/20 bg-amber-400/10 text-amber-100'}`}
+      >
+        No
+      </button>
+    </div>
+  );
+}
 
 function FeaturedPlayoffBracket({
   payload,
   onOpenMatch,
   aliasToTag,
   teams,
+  compactView,
+  onToggleCompactView,
 }: {
   payload: FeaturedTournamentPayload;
   onOpenMatch: (matchId: string) => void;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
+  compactView: boolean;
+  onToggleCompactView: (nextValue: boolean) => void;
 }) {
   if (payload.tournamentId === 'esl-one-birmingham-2026') {
     const rounds = getFeaturedSortedRounds(payload);
+    const schema = compactView ? ESL_BIRMINGHAM_COMPACT_BRACKET_SCHEMA : ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA;
     return (
-      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
+      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
-            <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
-            <span className="rounded-md border border-white/10 px-2 py-1">No</span>
-          </div>
+          <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
         </div>
         <div className="grid gap-3 md:hidden">
           {rounds.map((round) => (
@@ -1318,31 +1420,30 @@ function FeaturedPlayoffBracket({
               aliasToTag={aliasToTag}
               teams={teams}
               onOpenMatch={onOpenMatch}
+              compactView={compactView}
             />
           ))}
         </div>
         <FeaturedDesktopCompactBracket
           payload={payload}
-          schema={ESL_BIRMINGHAM_BRACKET_SCHEMA}
+          schema={schema}
           onOpenMatch={onOpenMatch}
           aliasToTag={aliasToTag}
           teams={teams}
+          compactView={compactView}
         />
       </div>
     );
   }
 
-  if (payload.tournamentId === 'pgl-wallachia-s7') {
+  if (payload.tournamentId === 'pgl-wallachia-s7' || payload.tournamentId === 'pgl-wallachia-s8') {
     const rounds = getFeaturedSortedRounds(payload);
+    const schema = compactView ? PGL_WALLACHIA_COMPACT_BRACKET_SCHEMA : PGL_WALLACHIA_STANDARD_BRACKET_SCHEMA;
     return (
-      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
+      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
-            <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
-            <span className="rounded-md border border-white/10 px-2 py-1">No</span>
-          </div>
+          <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
         </div>
         <div className="grid gap-3 md:hidden">
           {rounds.map((round) => (
@@ -1352,15 +1453,17 @@ function FeaturedPlayoffBracket({
               aliasToTag={aliasToTag}
               teams={teams}
               onOpenMatch={onOpenMatch}
+              compactView={compactView}
             />
           ))}
         </div>
         <FeaturedDesktopCompactBracket
           payload={payload}
-          schema={PGL_WALLACHIA_BRACKET_SCHEMA}
+          schema={schema}
           onOpenMatch={onOpenMatch}
           aliasToTag={aliasToTag}
           teams={teams}
+          compactView={compactView}
         />
       </div>
     );
@@ -1371,13 +1474,10 @@ function FeaturedPlayoffBracket({
     : [{ roundName: 'Grand Finals', matches: [] }];
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4">
+    <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
       <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <span className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">Yes</span>
-          <span className="rounded-md border border-white/10 px-2 py-1">No</span>
-        </div>
+        <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
       </div>
 
       <div className="grid gap-3 md:hidden">
@@ -1388,6 +1488,7 @@ function FeaturedPlayoffBracket({
             aliasToTag={aliasToTag}
             teams={teams}
             onOpenMatch={onOpenMatch}
+            compactView={compactView}
           />
         ))}
       </div>
@@ -1395,12 +1496,13 @@ function FeaturedPlayoffBracket({
       <div className="hidden md:block overflow-x-auto">
         <div className="flex min-w-max items-start gap-3 pb-1">
           {rounds.map((round) => (
-            <div key={round.roundName} className="w-[240px] shrink-0">
+            <div key={round.roundName} className={`${compactView ? 'w-[200px]' : 'w-[240px]'} shrink-0`}>
               <FeaturedCompactPlayoffRound
                 round={round}
                 aliasToTag={aliasToTag}
                 teams={teams}
                 onOpenMatch={onOpenMatch}
+                compactView={compactView}
               />
             </div>
           ))}
@@ -1543,6 +1645,8 @@ function FeaturedTournamentPanel({
   onOpenMatch,
   aliasToTag,
   teams,
+  compactView,
+  onToggleCompactView,
 }: {
   payload: FeaturedTournamentPayload | null;
   loading: boolean;
@@ -1551,6 +1655,8 @@ function FeaturedTournamentPanel({
   onOpenMatch: (matchId: string) => void;
   aliasToTag: Map<string, string>;
   teams: NonNullable<TournamentSectionProps['teams']>;
+  compactView: boolean;
+  onToggleCompactView: (nextValue: boolean) => void;
 }) {
   if (loading && !payload) {
     return (
@@ -1759,7 +1865,14 @@ function FeaturedTournamentPanel({
             <p className="text-xs text-slate-400">淘汰赛对阵信息</p>
             <p className="text-[11px] text-slate-400 md:text-xs">Bracket rounds and pairings</p>
           </div>
-          <FeaturedPlayoffBracket payload={payload} onOpenMatch={onOpenMatch} aliasToTag={aliasToTag} teams={teams} />
+          <FeaturedPlayoffBracket
+            payload={payload}
+            onOpenMatch={onOpenMatch}
+            aliasToTag={aliasToTag}
+            teams={teams}
+            compactView={compactView}
+            onToggleCompactView={onToggleCompactView}
+          />
         </section>
 
         <section className="hidden rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
@@ -1891,6 +2004,7 @@ export function TournamentSection({
   const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
   const [seriesStateByTournament, setSeriesStateByTournament] = useState<Record<string, TournamentSeriesState>>({});
   const [featuredStateByTournament, setFeaturedStateByTournament] = useState<Record<string, FeaturedTournamentState>>({});
+  const [featuredCompactViewByTournament, setFeaturedCompactViewByTournament] = useState<Record<string, boolean>>({});
   const [lazyTournaments, setLazyTournaments] = useState<Tournament[]>([]);
   const [lazyTeams, setLazyTeams] = useState<NonNullable<TournamentSectionProps['teams']>>([]);
   const [hasBootstrapped, setHasBootstrapped] = useState(false);
@@ -2046,7 +2160,7 @@ export function TournamentSection({
   }, [hasBootstrapped, isInView, teams.length, tournaments.length]);
 
   /*
-  const fetchFeaturedTournament = useCallback(async (tournament: Tournament) => {
+  const fetchFeaturedTournament = useCallback(async (tournament: Tournament, options?: { forceRefresh?: boolean }) => {
     const tournamentKey = tournament.id;
     setFeaturedStateByTournament((prev) => ({
       ...prev,
@@ -2101,7 +2215,7 @@ export function TournamentSection({
   }, []);
   */
 
-  const fetchFeaturedTournament = useCallback(async (tournament: Tournament) => {
+  const fetchFeaturedTournament = useCallback(async (tournament: Tournament, options?: { forceRefresh?: boolean }) => {
     const tournamentKey = tournament.id;
     setFeaturedStateByTournament((prev) => ({
       ...prev,
@@ -2118,7 +2232,15 @@ export function TournamentSection({
         throw new Error('featured_tournament_missing_request_id');
       }
 
-      const response = await fetch(`/api/tournaments?tournamentId=${encodeURIComponent(featuredRequestId)}&featured=1`);
+      const params = new URLSearchParams({
+        tournamentId: featuredRequestId,
+        featured: '1',
+      });
+      if (options?.forceRefresh) {
+        params.set('refresh', '1');
+      }
+
+      const response = await fetch(`/api/tournaments?${params.toString()}`);
       const payload = await response.json();
 
       if (!response.ok) {
@@ -2250,6 +2372,25 @@ export function TournamentSection({
     void fetchFeaturedTournament(selectedTournament);
   }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
 
+  useEffect(() => {
+    if (
+      !isInView
+      || !selectedTournament
+      || !isFeaturedTournament(selectedTournament)
+      || expandedFeaturedTournamentId !== selectedTournament.id
+      || !shouldAutoRefreshFeaturedTournament(selectedTournament)
+    ) return;
+
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) return;
+      const currentFeaturedState = featuredStateByTournament[selectedTournament.id];
+      if (currentFeaturedState?.loading) return;
+      void fetchFeaturedTournament(selectedTournament);
+    }, FEATURED_AUTO_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
+
   // Load heroes data on mount
   useEffect(() => {
     loadHeroesData().then(() => {
@@ -2306,6 +2447,9 @@ export function TournamentSection({
   const currentFeaturedData = currentFeaturedState?.data || null;
   const currentFeaturedLoading = Boolean(currentFeaturedState?.loading);
   const currentFeaturedError = currentFeaturedState?.error || '';
+  const currentFeaturedCompactView = selectedTournament
+    ? featuredCompactViewByTournament[selectedTournament.id] ?? getFeaturedDefaultCompactView(selectedTournament, currentFeaturedData)
+    : false;
   const isFeaturedSelectedTournamentExpanded = Boolean(
     selectedTournament
     && isFeaturedTournament(selectedTournament)
@@ -2354,6 +2498,19 @@ export function TournamentSection({
       setExpandedFeaturedTournamentId(null);
     }
   }, [expandedFeaturedTournamentId, selectedTournament]);
+
+  useEffect(() => {
+    if (!selectedTournament || !isFeaturedTournament(selectedTournament)) return;
+    setFeaturedCompactViewByTournament((prev) => {
+      if (Object.prototype.hasOwnProperty.call(prev, selectedTournament.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [selectedTournament.id]: getFeaturedDefaultCompactView(selectedTournament, currentFeaturedData),
+      };
+    });
+  }, [currentFeaturedData, selectedTournament]);
 
   if (!sortedTournaments.length) {
     return (
@@ -2657,10 +2814,18 @@ export function TournamentSection({
                   payload={currentFeaturedData}
                   loading={currentFeaturedLoading}
                   error={currentFeaturedError}
-                  onRetry={() => void fetchFeaturedTournament(selectedTournament)}
+                  onRetry={() => void fetchFeaturedTournament(selectedTournament, { forceRefresh: true })}
                   onOpenMatch={(matchId) => setSelectedMatchId(Number(matchId))}
                   aliasToTag={teamAliasToTag}
                   teams={effectiveTeams}
+                  compactView={currentFeaturedCompactView}
+                  onToggleCompactView={(nextValue) => {
+                    if (!selectedTournament) return;
+                    setFeaturedCompactViewByTournament((prev) => ({
+                      ...prev,
+                      [selectedTournament.id]: nextValue,
+                    }));
+                  }}
                 />
               ) : null}
 
