@@ -680,6 +680,124 @@ describe('TournamentSection', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&featured=1');
   });
 
+  it('routes PGL Wallachia S8 to the featured view and toggles playoff compact mode', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=1507737505&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(30, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s8&featured=1') {
+        return createJsonResponse({
+          tournamentId: 'pgl-wallachia-s8',
+          title: 'Main Event',
+          sourceLabel: 'DLTV',
+          sourceUrl: 'https://dltv.org/events/pgl-wallachia-season-8',
+          fetchedAt: '2026-04-18T08:00:00.000Z',
+          groupStage: {
+            title: 'Group Stage',
+            rounds: ['R 1'],
+            standings: [
+              {
+                rank: 1,
+                teamId: '2586976',
+                teamName: 'PARIVISION',
+                country: 'Russia',
+                record: '1 - 0',
+                logoUrl: null,
+                isCnTeam: false,
+                advancement: 'playoff',
+                rounds: [
+                  {
+                    roundLabel: 'R 1',
+                    pending: false,
+                    matchId: '4261761',
+                    href: 'https://dltv.org/matches/426176/parivision-vs-mouz-pgl-wallachia-season-8',
+                    opponentName: 'MOUZ',
+                    opponentTeamId: 'team-mouz',
+                    opponentLogoUrl: null,
+                    opponentIsCnTeam: false,
+                    score: '2 - 0',
+                  },
+                ],
+              },
+            ],
+          },
+          playoffs: {
+            title: 'Playoffs',
+            rounds: [
+              {
+                roundName: 'Upper Bracket R1',
+                roundKey: 'upper-r1',
+                matches: [
+                  {
+                    href: 'https://dltv.org/matches/426180/tbd-vs-tbd-pgl-wallachia-season-8',
+                    startTime: '2026-04-22 03:00:00',
+                    teams: [
+                      { name: 'PARIVISION', logoUrl: null, score: '0' },
+                      { name: 'MOUZ', logoUrl: null, score: '0' },
+                    ],
+                  },
+                ],
+              },
+            ],
+            placementPrizes: [
+              { placement: '1st Place', prize: '$300,000' },
+            ],
+          },
+          matches: {
+            title: 'Matches & Scores',
+            upcoming: [],
+            finished: [],
+          },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: '1507737505',
+            league_id: 1507737505,
+            name: 'PGL Wallachia Season 8',
+            dltv_event_slug: 'pgl-wallachia-season-8',
+            status: 'ongoing',
+            tier: 'S',
+            location: 'Romania',
+            start_time: 1_776_355_200,
+            end_time: 1_777_046_400,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 8' })[1]);
+    expect(await screen.findByText('Bracket rounds and pairings')).toBeInTheDocument();
+
+    const noButton = screen.getByRole('button', { name: 'No' });
+    const yesButton = screen.getByRole('button', { name: 'Yes' });
+    expect(noButton).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('[data-featured-bracket-mode="standard"]')).not.toBeNull();
+
+    fireEvent.click(yesButton);
+    expect(yesButton).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('[data-featured-bracket-mode="compact"]')).not.toBeNull();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s8&featured=1');
+  });
+
   it('does not render tournaments whose tier is empty', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
