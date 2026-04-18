@@ -1171,10 +1171,10 @@ describe('runSyncLiquipedia', () => {
       'pgl-wallachia-season-7',
     ]));
     expect(insertedS8).toBeDefined();
-    expect(insertedS8?.[1]?.[0]).not.toBe(19435);
+    expect(insertedS8?.[1]?.[0]).toBe(19543);
 
     const upcomingInsertCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('INSERT INTO upcoming_series'));
-    expect(upcomingInsertCall?.[3]).not.toBe(19435);
+    expect(upcomingInsertCall?.[3]).toBe(19543);
     expect(upcomingInsertCall?.slice(1)).toContain('PGL Wallachia Season 8');
   });
 

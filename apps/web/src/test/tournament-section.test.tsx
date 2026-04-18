@@ -686,7 +686,7 @@ describe('TournamentSection', () => {
       if (url === '/api/heroes') {
         return createJsonResponse({});
       }
-      if (url === '/api/tournaments?tournamentId=1507737505&limit=10&offset=0') {
+      if (url === '/api/tournaments?tournamentId=19543&limit=10&offset=0') {
         return createJsonResponse({
           series: buildSeries(30, 1),
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
@@ -765,8 +765,8 @@ describe('TournamentSection', () => {
       <TournamentSection
         tournaments={[
           {
-            id: '1507737505',
-            league_id: 1507737505,
+            id: '19543',
+            league_id: 19543,
             name: 'PGL Wallachia Season 8',
             dltv_event_slug: 'pgl-wallachia-season-8',
             status: 'ongoing',
