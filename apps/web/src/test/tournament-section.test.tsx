@@ -118,6 +118,68 @@ describe('TournamentSection', () => {
     });
   }, 30000);
 
+  it('uses uploaded SVG overrides in the series list for the four custom teams', async () => {
+    const rawLiquidLogo = 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fs3.dltv.org%2Fuploads%2Fteams%2FjzS2BJn2w338twINzzRUUElFEDvdcQgp.png.webp';
+    const rawGamerLegionLogo = 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fs3.dltv.org%2Fuploads%2Fteams%2Fmedium%2FSL5XvIyOVg02fCankoCetSnjT3x7FdVY.png';
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=0') {
+        return createJsonResponse({
+          series: [
+            {
+              series_id: 'series-svg-logos',
+              series_type: 'BO3',
+              radiant_team_id: '2163',
+              dire_team_id: '9964962',
+              radiant_team_name: 'Team Liquid',
+              dire_team_name: 'GamerLegion',
+              radiant_team_logo: rawLiquidLogo,
+              dire_team_logo: rawGamerLegionLogo,
+              radiant_score: 0,
+              dire_score: 0,
+              games: [],
+              stage: 'Playoffs',
+              stage_kind: 'playoff',
+            },
+          ],
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'dreamleague-s28',
+            league_id: 42,
+            name: 'DreamLeague Season 28',
+            status: 'ongoing',
+            tier: 'S',
+            location: 'EU',
+            start_time: 1_700_000_000,
+            end_time: 1_700_100_000,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    const [liquidLogo] = await screen.findAllByAltText('Team Liquid');
+    const [gamerLegionLogo] = await screen.findAllByAltText('GamerLegion');
+
+    expect(liquidLogo).toHaveAttribute('src', '/images/mirror/teams/team-liquid-white.svg');
+    expect(gamerLegionLogo).toHaveAttribute('src', '/images/mirror/teams/gamerlegion-white.svg');
+  });
+
   it('defaults to the newest tournament even when an older event is marked ongoing', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
