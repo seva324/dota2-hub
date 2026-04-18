@@ -2413,7 +2413,11 @@ export function TournamentSection({
     setFlyoutTeam({
       team_id: team.team_id ? String(team.team_id) : null,
       name: team.name,
-      logo_url: team.logo_url || null
+      logo_url: resolveTeamLogo(
+        { teamId: team.team_id ? String(team.team_id) : null, name: team.name },
+        teams,
+        team.logo_url || null,
+      ) || null,
     });
     setFlyoutOpen(true);
   };
