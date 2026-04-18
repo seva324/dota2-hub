@@ -50,7 +50,6 @@ function TeamInline({
   align?: 'left' | 'right';
   onNameClick?: (() => void) | undefined;
 }) {
-  const resolvedLogoUrl = resolveTeamLogo({ name: name || undefined }, [], logoUrl || null) || null;
   const nameNode = onNameClick && name ? (
     <button
       type="button"
@@ -69,8 +68,8 @@ function TeamInline({
         <>
           {nameNode}
           <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
-            {resolvedLogoUrl ? (
-              <img src={resolvedLogoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
+            {logoUrl ? (
+              <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
             ) : (
               <span className="text-[10px] text-slate-500">队</span>
             )}
@@ -79,8 +78,8 @@ function TeamInline({
       ) : (
         <>
           <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
-            {resolvedLogoUrl ? (
-              <img src={resolvedLogoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
+            {logoUrl ? (
+              <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-cover" />
             ) : (
               <span className="text-[10px] text-slate-500">队</span>
             )}

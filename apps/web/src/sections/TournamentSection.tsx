@@ -2413,11 +2413,7 @@ export function TournamentSection({
     setFlyoutTeam({
       team_id: team.team_id ? String(team.team_id) : null,
       name: team.name,
-      logo_url: resolveTeamLogo(
-        { teamId: team.team_id ? String(team.team_id) : null, name: team.name },
-        teams,
-        team.logo_url || null,
-      ) || null,
+      logo_url: team.logo_url || null
     });
     setFlyoutOpen(true);
   };
@@ -2889,16 +2885,6 @@ export function TournamentSection({
                     const teamBIsCN = isChineseTeam({ teamId: series.dire_team_id, name: series.dire_team_name });
                     const hasCN = teamAIsCN || teamBIsCN;
                     const isExpanded = expandedSeries.has(series.series_id);
-                    const radiantTeamLogo = resolveTeamLogo(
-                      { teamId: series.radiant_team_id, name: series.radiant_team_name },
-                      teams,
-                      series.radiant_team_logo
-                    );
-                    const direTeamLogo = resolveTeamLogo(
-                      { teamId: series.dire_team_id, name: series.dire_team_name },
-                      teams,
-                      series.dire_team_logo
-                    );
                     
                     return (
                       <div
@@ -2966,10 +2952,10 @@ export function TournamentSection({
                                   });
                                 }}
                               >
-                                {radiantTeamLogo ? (
+                                {series.radiant_team_logo ? (
                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamAIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
                                     <img 
-                                      src={radiantTeamLogo} 
+                                      src={series.radiant_team_logo} 
                                       alt={series.radiant_team_name} 
                                       className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                                       onError={(e) => {
@@ -3048,10 +3034,10 @@ export function TournamentSection({
                                   });
                                 }}
                               >
-                                {direTeamLogo ? (
+                                {series.dire_team_logo ? (
                                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${teamBIsCN ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border border-red-500/30' : 'bg-slate-800 border border-slate-700'}`}>
                                     <img 
-                                      src={direTeamLogo} 
+                                      src={series.dire_team_logo} 
                                       alt={series.dire_team_name} 
                                       className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                                       onError={(e) => {

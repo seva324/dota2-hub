@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { getHeroImageUrl } from '@/lib/assetUrls';
-import { isChineseTeam, resolveTeamLogo } from '@/lib/teams';
+import { isChineseTeam } from '@/lib/teams';
 import { toFlagImageUrl } from '@/lib/playerProfile';
 
 type TeamLike = {
@@ -445,11 +445,6 @@ export function TeamFlyout({
   const wins = serverStats?.wins ?? model?.wins ?? 0;
   const losses = serverStats?.losses ?? model?.losses ?? 0;
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
-  const selectedTeamLogoUrl = resolveTeamLogo(
-    { teamId: selectedTeam?.team_id || undefined, name: selectedTeam?.name || undefined },
-    [],
-    selectedTeam?.logo_url || null,
-  ) || null;
 
   return (
     <>
@@ -459,8 +454,8 @@ export function TeamFlyout({
             <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30 p-6 pr-12">
               <div className="flex flex-col items-center justify-center gap-4 text-center">
                 <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-                  {selectedTeamLogoUrl ? (
-                    <img src={selectedTeamLogoUrl} alt={selectedTeam?.name} width={72} height={72} className="w-18 h-18 object-contain" />
+                  {selectedTeam?.logo_url ? (
+                    <img src={selectedTeam.logo_url} alt={selectedTeam.name} width={72} height={72} className="w-18 h-18 object-contain" />
                   ) : (
                     <Shield className="w-9 h-9 text-slate-400" />
                   )}
@@ -604,16 +599,6 @@ export function TeamFlyout({
                       : row.won === false
                         ? 'border-red-500/60 text-red-300'
                         : 'border-slate-600 text-slate-200';
-                    const selectedRowLogoUrl = resolveTeamLogo(
-                      { teamId: row.selectedTeamId || undefined, name: row.selectedName || undefined },
-                      [],
-                      row.selectedLogo || null,
-                    ) || null;
-                    const opponentRowLogoUrl = resolveTeamLogo(
-                      { teamId: row.opponentTeamId || undefined, name: row.opponentName || undefined },
-                      [],
-                      row.opponentLogo || null,
-                    ) || null;
                     return (
                       <div key={row.key} className="rounded-lg border border-slate-700 bg-slate-800/40 p-3">
                         <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_7.5rem_minmax(0,1fr)] sm:gap-2 md:gap-3">
@@ -622,14 +607,14 @@ export function TeamFlyout({
                             type="button"
                             aria-label={`查看战队 ${row.selectedName}`}
                             className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-slate-700/60 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-                            onClick={() => onTeamSelect?.({ team_id: row.selectedTeamId || null, name: row.selectedName, logo_url: selectedRowLogoUrl })}
+                            onClick={() => onTeamSelect?.({ team_id: row.selectedTeamId || null, name: row.selectedName, logo_url: row.selectedLogo || null })}
                           >
-                            {selectedRowLogoUrl ? <img src={selectedRowLogoUrl} alt={row.selectedName} width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" /> : <span className="text-[10px]">TEAM</span>}
+                            {row.selectedLogo ? <img src={row.selectedLogo} alt={row.selectedName} width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" /> : <span className="text-[10px]">TEAM</span>}
                           </button>
                           <button
                             type="button"
                             className="text-xs sm:text-sm text-slate-100 truncate hover:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
-                            onClick={() => onTeamSelect?.({ team_id: row.selectedTeamId || null, name: row.selectedName, logo_url: selectedRowLogoUrl })}
+                            onClick={() => onTeamSelect?.({ team_id: row.selectedTeamId || null, name: row.selectedName, logo_url: row.selectedLogo || null })}
                           >
                             {row.selectedName}
                           </button>
@@ -651,7 +636,7 @@ export function TeamFlyout({
                             <button
                               type="button"
                               className="text-xs sm:text-sm text-slate-100 truncate hover:text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded"
-                              onClick={() => onTeamSelect?.({ team_id: row.opponentTeamId || null, name: row.opponentName, logo_url: opponentRowLogoUrl })}
+                              onClick={() => onTeamSelect?.({ team_id: row.opponentTeamId || null, name: row.opponentName, logo_url: row.opponentLogo || null })}
                             >
                               {row.opponentName}
                             </button>
@@ -659,9 +644,9 @@ export function TeamFlyout({
                               type="button"
                               aria-label={`查看战队 ${row.opponentName}`}
                               className="h-7 w-7 sm:h-8 sm:w-8 rounded bg-slate-700/60 flex items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-                              onClick={() => onTeamSelect?.({ team_id: row.opponentTeamId || null, name: row.opponentName, logo_url: opponentRowLogoUrl })}
+                              onClick={() => onTeamSelect?.({ team_id: row.opponentTeamId || null, name: row.opponentName, logo_url: row.opponentLogo || null })}
                             >
-                              {opponentRowLogoUrl ? <img src={opponentRowLogoUrl} alt={row.opponentName} width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" /> : <span className="text-[10px]">OPP</span>}
+                              {row.opponentLogo ? <img src={row.opponentLogo} alt={row.opponentName} width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7 object-contain" /> : <span className="text-[10px]">OPP</span>}
                             </button>
                           </div>
                         </div>
