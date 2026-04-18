@@ -237,7 +237,7 @@ const FEATURED_TOURNAMENT_KEYS = new Set([
   'pgl wallachia season 7',
   'pgl-wallachia-season-7',
   'pgl-wallachia-s8',
-  '1507737505',
+  '19543',
   'pgl wallachia season 8',
   'pgl-wallachia-season-8',
   'esl-one-birmingham-2026',
@@ -546,7 +546,7 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
   }
 
   if (
-    normalizedLeagueId === '1507737505'
+    normalizedLeagueId === '19543'
     || normalizedName === 'pgl wallachia season 8'
     || normalizedEventSlug === 'pgl-wallachia-season-8'
   ) {

@@ -161,7 +161,7 @@ describe('parseDltvFeaturedTournamentPage', () => {
   it('resolves the Wallachia Season 8 featured definition', () => {
     expect(resolveFeaturedTournamentDefinition('pgl-wallachia-s8')).toEqual(expect.objectContaining({
       id: 'pgl-wallachia-s8',
-      leagueId: '1507737505',
+      leagueId: '19543',
       sourceUrl: 'https://dltv.org/events/pgl-wallachia-season-8',
     }));
   });
