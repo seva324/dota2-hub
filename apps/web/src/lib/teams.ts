@@ -24,6 +24,27 @@ function normalizeCompact(value?: string | number | null): string {
   return normalize(value).replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
 }
 
+const TEAM_LOGO_OVERRIDES_BY_ID: Record<string, string> = {
+  '2163': '/images/mirror/teams/team-liquid-white.svg',
+  '7119388': '/images/mirror/teams/team-spirit-white.svg',
+  '8291895': '/images/mirror/teams/tundra-esports-white.svg',
+  '9964962': '/images/mirror/teams/gamerlegion-white.svg',
+};
+
+const TEAM_LOGO_OVERRIDES_BY_NAME: Record<string, string> = {
+  gamerlegion: '/images/mirror/teams/gamerlegion-white.svg',
+  gl: '/images/mirror/teams/gamerlegion-white.svg',
+  liquid: '/images/mirror/teams/team-liquid-white.svg',
+  teamliquid: '/images/mirror/teams/team-liquid-white.svg',
+  tl: '/images/mirror/teams/team-liquid-white.svg',
+  spirit: '/images/mirror/teams/team-spirit-white.svg',
+  teamspirit: '/images/mirror/teams/team-spirit-white.svg',
+  ts: '/images/mirror/teams/team-spirit-white.svg',
+  tspirit: '/images/mirror/teams/team-spirit-white.svg',
+  tundra: '/images/mirror/teams/tundra-esports-white.svg',
+  tundraesports: '/images/mirror/teams/tundra-esports-white.svg',
+};
+
 const TEAM_LOGO_FALLBACKS: Record<string, string> = {
   xg: '/images/mirror/teams/8261500.png',
   xtremegaming: '/images/mirror/teams/8261500.png',
@@ -54,6 +75,17 @@ const TEAM_LOGO_FALLBACKS: Record<string, string> = {
 function isChinaRegion(region?: string | null): boolean {
   const normalized = normalize(region).replace(/[\s_-]+/g, '');
   return normalized === 'cn' || normalized === 'china' || normalized === 'prchina' || normalized === '中国';
+}
+
+function resolveLogoOverride(teamId?: string | number | null, teamName?: string | null): string {
+  const idNorm = normalize(teamId);
+  if (idNorm && TEAM_LOGO_OVERRIDES_BY_ID[idNorm]) {
+    return TEAM_LOGO_OVERRIDES_BY_ID[idNorm];
+  }
+
+  const compact = normalizeCompact(teamName);
+  if (!compact) return '';
+  return TEAM_LOGO_OVERRIDES_BY_NAME[compact] || '';
 }
 
 function truthy(value?: number | boolean | null): boolean {
@@ -129,7 +161,12 @@ export function resolveTeamLogo(
 ): string {
   const teamId = typeof team === 'string' ? undefined : team?.teamId;
   const teamName = typeof team === 'string' ? team : team?.name;
+  const directOverride = resolveLogoOverride(teamId, teamName);
+  if (directOverride) return directOverride;
+
   const row = getTeamRow(teams, teamId, teamName);
+  const rowOverride = resolveLogoOverride(row?.team_id ?? row?.id, row?.name ?? row?.name_cn ?? row?.tag);
+  if (rowOverride) return rowOverride;
 
   if (row?.logo_url) return String(row.logo_url);
   if (explicitLogo) return String(explicitLogo);

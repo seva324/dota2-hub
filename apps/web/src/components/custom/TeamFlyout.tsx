@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { getHeroImageUrl } from '@/lib/assetUrls';
-import { isChineseTeam } from '@/lib/teams';
+import { isChineseTeam, resolveTeamLogo } from '@/lib/teams';
 import { toFlagImageUrl } from '@/lib/playerProfile';
 
 type TeamLike = {
@@ -428,6 +428,12 @@ export function TeamFlyout({
     };
   }, [selectedTeam, resolvedTeams, resolvedMatches, resolvedUpcoming]);
 
+  const selectedTeamLogoUrl = resolveTeamLogo(
+    { teamId: selectedTeam?.team_id || undefined, name: selectedTeam?.name || undefined },
+    resolvedTeams,
+    selectedTeam?.logo_url || model?.meta?.logo_url || null
+  ) || null;
+
   const topFiveHeroes = useMemo(() => {
     if (serverTopHeroes.length) return serverTopHeroes.map((hero) => [hero.heroId, hero.matches] as const);
     const counts = new Map<number, number>();
@@ -454,8 +460,8 @@ export function TeamFlyout({
             <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30 p-6 pr-12">
               <div className="flex flex-col items-center justify-center gap-4 text-center">
                 <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-                  {selectedTeam?.logo_url ? (
-                    <img src={selectedTeam.logo_url} alt={selectedTeam.name} width={72} height={72} className="w-18 h-18 object-contain" />
+                  {selectedTeamLogoUrl ? (
+                    <img src={selectedTeamLogoUrl} alt={selectedTeam?.name} width={72} height={72} className="w-18 h-18 object-contain" />
                   ) : (
                     <Shield className="w-9 h-9 text-slate-400" />
                   )}

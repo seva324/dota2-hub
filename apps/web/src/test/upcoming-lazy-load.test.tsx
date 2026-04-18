@@ -106,7 +106,9 @@ describe('UpcomingSection lazy loading', () => {
     expect(await screen.findByText('DreamLeague')).toBeInTheDocument();
     expect(screen.queryByText('Too Late Cup')).not.toBeInTheDocument();
     expect(screen.getByText('本周场次').nextElementSibling).toHaveTextContent('1');
-    expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src'))).toContain('https://dota2-hub.vercel.app/images/mirror/teams/7119388.png');
+    expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
+      expect.arrayContaining([expect.stringContaining('/images/mirror/teams/team-spirit-white.svg')])
+    );
   });
 
   it('shows Liquipedia fallback names and disables team flyout when the opponent is missing from teams', async () => {
@@ -145,7 +147,7 @@ describe('UpcomingSection lazy loading', () => {
     expect(await screen.findByText('Team Liquid')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Team Liquid/i })).not.toBeInTheDocument();
     expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
-      expect.arrayContaining([expect.stringContaining('/images/mirror/teams/2163.png')])
+      expect.arrayContaining([expect.stringContaining('/images/mirror/teams/team-liquid-white.svg')])
     );
   });
 });
