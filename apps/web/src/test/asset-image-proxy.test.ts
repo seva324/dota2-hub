@@ -52,6 +52,12 @@ describe('asset image proxy helpers', () => {
     ).toBe('https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fcdn.cloudflare.steamstatic.com%2Fapps%2Fdota2%2Fimages%2Fdota_react%2Fitems%2Faegis.png')
   })
 
+  it('rewrites curated GitHub raw team logos to the same-origin asset proxy', () => {
+    expect(
+      toChinaReachableAssetUrl('https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp')
+    ).toBe('/api/asset-image?url=https%3A%2F%2Fraw.githubusercontent.com%2Fseva324%2Fdota2-hub%2Fmain%2Fpublic%2Fimages%2Fmirror%2Fteams%2Fteam-liquid.webp')
+  })
+
   it('adds the akamai Steam fallback candidate for proxied Steam assets', () => {
     expect(
       getAssetImageFetchCandidates('https://steamcdn-a.akamaihd.net/apps/dota2/images/heroes/antimage_lg.png')
@@ -67,6 +73,14 @@ describe('asset image proxy helpers', () => {
     ).toEqual([
       'https://dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp',
       'https://s3.dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp',
+    ])
+  })
+
+  it('keeps curated GitHub raw team logos as a direct fetch candidate', () => {
+    expect(
+      getAssetImageFetchCandidates('https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp')
+    ).toEqual([
+      'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp',
     ])
   })
 
@@ -116,5 +130,42 @@ describe('asset image proxy helpers', () => {
     )
     expect(arrayBuffer).not.toHaveBeenCalled()
     expect(res.statusCode).toBe(200)
+  })
+
+  it('allows curated GitHub raw team SVG placeholders through the asset proxy handler', async () => {
+    const arrayBuffer = vi.fn(async () => new TextEncoder().encode('<svg></svg>').buffer)
+    const fetchMock = vi.fn(async () => ({
+      status: 200,
+      ok: true,
+      headers: {
+        get(name: string) {
+          const values: Record<string, string> = {
+            'content-type': 'image/svg+xml',
+            'content-length': '32',
+          }
+          return values[name.toLowerCase()] ?? null
+        },
+      },
+      arrayBuffer,
+    }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const res = createResponse()
+    await assetImageHandler(
+      {
+        method: 'GET',
+        query: {
+          url: 'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/zero-tenacity.svg',
+        },
+      },
+      res
+    )
+
+    expect(res.statusCode).toBe(200)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/zero-tenacity.svg',
+      expect.objectContaining({ method: 'GET' })
+    )
   })
 })

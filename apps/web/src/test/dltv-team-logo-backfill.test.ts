@@ -12,9 +12,9 @@ const fixture = `
   </div>
 </div>
 <div class="ranking__list-case__item">
-  <a class="item__info-logo" href="/teams/2163-team-liquid" data-theme-light="/uploads/teams/liquid.png"></a>
+  <a class="item__info-logo" href="/teams/10007878-team-refuser" data-theme-light="/uploads/teams/refuser.png"></a>
   <div class="item__info-team">
-    <a href="/teams/2163-team-liquid" class="item__info-team__name"><div class="name">Team Liquid</div></a>
+    <a href="/teams/10007878-team-refuser" class="item__info-team__name"><div class="name">Team Refuser</div></a>
   </div>
 </div>
 `;
@@ -50,10 +50,10 @@ describe('backfillDltvTeamLogos', () => {
             logo_url: 'https://cdn.steamusercontent.com/ugc/old-c/',
           },
           {
-            team_id: '2163',
-            name: 'Team Liquid',
-            tag: 'Liquid',
-            logo_url: 'https://dltv.org/uploads/teams/liquid.png',
+            team_id: '10007878',
+            name: 'Team Refuser',
+            tag: 'Refuser',
+            logo_url: 'https://dltv.org/uploads/teams/refuser.png',
           },
         ];
       }
@@ -95,10 +95,29 @@ describe('backfillDltvTeamLogos', () => {
     expect(db).toHaveBeenCalledTimes(1);
   });
 
+  it('prefers curated GitHub-backed team logos before DLTV fallbacks', async () => {
+    const db = vi.fn(async (strings: TemplateStringsArray) => (
+      renderSql(strings).includes('SELECT team_id')
+        ? [{ team_id: '2163', name: 'Team Liquid', tag: 'Liquid', logo_url: 'https://s3.dltv.org/uploads/teams/liquid.png' }]
+        : []
+    )) as unknown as TaggedFn;
+    const fetchImpl = vi.fn();
+
+    const result = await backfillDltvTeamLogos(db, {
+      index: buildDltvRankingLogoIndex(fixture),
+      fetchImpl,
+    });
+
+    expect(result.matched).toBe(1);
+    expect(result.updated).toBe(1);
+    expect(result.updates[0]?.logoUrl).toBe('https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it('ignores DLTV placeholder logos so existing sources can remain as fallback', async () => {
     const db = vi.fn(async (strings: TemplateStringsArray) => (
       renderSql(strings).includes('SELECT team_id')
-        ? [{ team_id: '10101464', name: 'Mideng dreamer', logo_url: 'https://cdn.steamusercontent.com/ugc/existing/' }]
+        ? [{ team_id: '10101464', name: 'Dream Placeholder', logo_url: 'https://cdn.steamusercontent.com/ugc/existing/' }]
         : []
     )) as unknown as TaggedFn;
     const fetchImpl = vi.fn(async () => ({
@@ -109,9 +128,9 @@ describe('backfillDltvTeamLogos', () => {
     const result = await backfillDltvTeamLogos(db, {
       index: buildDltvRankingLogoIndex(`
         <div class="ranking__list-case__item">
-          <a class="item__info-logo" href="/teams/10101464-mideng-dreamer" data-theme-light="https://dltv.org/images/desktop/empty/team.svg"></a>
+          <a class="item__info-logo" href="/teams/10101464-dream-placeholder" data-theme-light="https://dltv.org/images/desktop/empty/team.svg"></a>
           <div class="item__info-team">
-            <a href="/teams/10101464-mideng-dreamer" class="item__info-team__name"><div class="name">Mideng dreamer</div></a>
+            <a href="/teams/10101464-dream-placeholder" class="item__info-team__name"><div class="name">Dream Placeholder</div></a>
           </div>
         </div>
       `),

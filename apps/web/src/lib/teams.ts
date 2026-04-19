@@ -1,3 +1,5 @@
+import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
+
 export interface TeamLike {
   team_id?: string | number | null;
   id?: string | number | null;
@@ -27,21 +29,14 @@ function normalizeCompact(value?: string | number | null): string {
 const TEAM_LOGO_OVERRIDES_BY_ID: Record<string, string> = {
   '2163': '/images/mirror/teams/team-liquid-white.svg',
   '7119388': '/images/mirror/teams/team-spirit-white.svg',
-  '8261500': '/images/mirror/teams/xtreme_icon_only_fixed.svg',
   '8291895': '/images/mirror/teams/tundra-esports-white.svg',
-  '9467224': '/images/mirror/teams/aurora_gaming.svg',
   '9964962': '/images/mirror/teams/gamerlegion-white.svg',
 };
 
 const TEAM_LOGO_OVERRIDES_BY_NAME: Record<string, string> = {
-  aurora: '/images/mirror/teams/aurora_gaming.svg',
-  auroragaming: '/images/mirror/teams/aurora_gaming.svg',
   gamerlegion: '/images/mirror/teams/gamerlegion-white.svg',
   gl: '/images/mirror/teams/gamerlegion-white.svg',
   liquid: '/images/mirror/teams/team-liquid-white.svg',
-  sar: '/images/mirror/teams/south_america_rejects.svg',
-  sarejects: '/images/mirror/teams/south_america_rejects.svg',
-  southamericarejects: '/images/mirror/teams/south_america_rejects.svg',
   teamliquid: '/images/mirror/teams/team-liquid-white.svg',
   tl: '/images/mirror/teams/team-liquid-white.svg',
   spirit: '/images/mirror/teams/team-spirit-white.svg',
@@ -50,9 +45,6 @@ const TEAM_LOGO_OVERRIDES_BY_NAME: Record<string, string> = {
   tspirit: '/images/mirror/teams/team-spirit-white.svg',
   tundra: '/images/mirror/teams/tundra-esports-white.svg',
   tundraesports: '/images/mirror/teams/tundra-esports-white.svg',
-  xg: '/images/mirror/teams/xtreme_icon_only_fixed.svg',
-  xtreme: '/images/mirror/teams/xtreme_icon_only_fixed.svg',
-  xtremegaming: '/images/mirror/teams/xtreme_icon_only_fixed.svg',
 };
 
 const TEAM_LOGO_FALLBACKS: Record<string, string> = {
@@ -174,9 +166,22 @@ export function resolveTeamLogo(
   const directOverride = resolveLogoOverride(teamId, teamName);
   if (directOverride) return directOverride;
 
+  const curatedMirror = getCuratedTeamLogoMirrorPath({
+    teamId,
+    name: teamName,
+  });
+  if (curatedMirror) return curatedMirror;
+
   const row = getTeamRow(teams, teamId, teamName);
   const rowOverride = resolveLogoOverride(row?.team_id ?? row?.id, row?.name ?? row?.name_cn ?? row?.tag);
   if (rowOverride) return rowOverride;
+
+  const rowCuratedMirror = getCuratedTeamLogoMirrorPath({
+    teamId: row?.team_id ?? row?.id,
+    name: row?.name ?? row?.name_cn ?? row?.tag,
+    tag: row?.tag,
+  });
+  if (rowCuratedMirror) return rowCuratedMirror;
 
   if (row?.logo_url) return String(row.logo_url);
   if (explicitLogo) return String(explicitLogo);
