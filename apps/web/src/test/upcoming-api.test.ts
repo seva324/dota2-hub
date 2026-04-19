@@ -88,7 +88,7 @@ describe('/api/upcoming', () => {
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).days).toBe(2);
     expect((res.payload as any).upcoming).toHaveLength(1);
-    expect((res.payload as any).upcoming[0].radiant_team_logo).toBe('/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Flogo.png');
+    expect((res.payload as any).upcoming[0].radiant_team_logo).toBe('/images/mirror/teams/xtreme-gaming.webp');
 
     const upcomingCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
     expect(upcomingCall).toBeDefined();
@@ -118,6 +118,43 @@ describe('/api/upcoming', () => {
     expect(match.radiant_team_name).toBe('Xtreme Gaming');
     expect(match.dire_team_name).toBe('Team Liquid');
     expect(match.dire_team_name_cn).toBe('液体');
-    expect(match.dire_team_logo).toBeNull();
+    expect(match.dire_team_logo).toBe('/images/mirror/teams/team-liquid.webp');
+  });
+
+  it('fills curated logos by series name when the team row and team id are both missing', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM upcoming_series')) {
+        return [{
+          id: 2,
+          series_id: 22,
+          radiant_team_id: null,
+          dire_team_id: null,
+          radiant_team_name: '1win Team',
+          dire_team_name: 'Ivory',
+          radiant_team_name_cn: null,
+          dire_team_name_cn: null,
+          start_time: 100,
+          series_type: 1,
+          tournament_name: 'DreamLeague',
+          tournament_name_cn: null,
+          tournament_tier: 'S',
+          status: 'upcoming',
+        }];
+      }
+      if (sql.includes('SELECT * FROM teams')) {
+        return [];
+      }
+      return [];
+    });
+
+    const { default: handler } = await import('../../../../api/upcoming.js');
+    const res = createRes();
+
+    await handler({ method: 'GET', query: {} } as never, res as never);
+
+    const [match] = (res.payload as any).upcoming;
+    expect(match.radiant_team_logo).toBe('/images/mirror/teams/1win-team.webp');
+    expect(match.dire_team_logo).toBe('/images/mirror/teams/ivory.webp');
   });
 });

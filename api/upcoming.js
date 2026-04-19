@@ -6,6 +6,7 @@
 import { neon } from '@neondatabase/serverless';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { ensureUpcomingSeriesColumns } from '../lib/server/upcoming-series-columns.js';
+import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
@@ -26,6 +27,14 @@ function getDb() {
 // Normalize logo URL
 function normalizeLogo(url, req) {
   return getMirroredAssetUrl(url, req);
+}
+
+function resolvePreferredTeamLogo(teamRow, fallbackTeam, req) {
+  const curatedLogo = getCuratedTeamLogoGithubUrl({
+    teamId: teamRow?.team_id ?? fallbackTeam?.teamId,
+    name: teamRow?.name ?? fallbackTeam?.name,
+  });
+  return normalizeLogo(curatedLogo || teamRow?.logo_url || null, req);
 }
 
 // Convert OpenDota series_type to human-readable format
@@ -90,18 +99,26 @@ export default async function handler(req, res) {
     const result = upcoming.map(s => {
       const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
       const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
+      const radiantTeamName = radiantTeam?.name || s.radiant_team_name || null;
+      const direTeamName = direTeam?.name || s.dire_team_name || null;
 
       return {
         id: s.id,
         series_id: s.series_id ? String(s.series_id) : null,
         radiant_team_id: s.radiant_team_id,
         dire_team_id: s.dire_team_id,
-        radiant_team_name: radiantTeam?.name || s.radiant_team_name || null,
-        dire_team_name: direTeam?.name || s.dire_team_name || null,
+        radiant_team_name: radiantTeamName,
+        dire_team_name: direTeamName,
         radiant_team_name_cn: radiantTeam?.name_cn || s.radiant_team_name_cn || null,
         dire_team_name_cn: direTeam?.name_cn || s.dire_team_name_cn || null,
-        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url, req),
-        dire_team_logo: normalizeLogo(direTeam?.logo_url, req),
+        radiant_team_logo: resolvePreferredTeamLogo(radiantTeam, {
+          teamId: s.radiant_team_id,
+          name: radiantTeamName,
+        }, req),
+        dire_team_logo: resolvePreferredTeamLogo(direTeam, {
+          teamId: s.dire_team_id,
+          name: direTeamName,
+        }, req),
         start_time: s.start_time,
         series_type: convertSeriesType(s.series_type),
         tournament_name: s.tournament_name || null,
@@ -119,7 +136,7 @@ export default async function handler(req, res) {
         name: t.name,
         name_cn: t.name_cn,
         tag: t.tag,
-        logo_url: normalizeLogo(t.logo_url, req),
+        logo_url: resolvePreferredTeamLogo(t, { teamId: t.team_id, name: t.name }, req),
         region: t.region,
         is_cn_team: t.is_cn_team
       }))

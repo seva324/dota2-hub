@@ -100,7 +100,10 @@ describe('live hero service league matching', () => {
 
     expect(payloads).toEqual([
       expect.objectContaining({
-        teams: [{ name: 'OG' }, { name: 'BetBoom Team' }],
+        teams: expect.arrayContaining([
+          expect.objectContaining({ name: 'OG', logo: '/images/mirror/teams/og.png' }),
+          expect.objectContaining({ name: 'BetBoom Team', logo: '/images/mirror/teams/betboom-team.webp' }),
+        ]),
       }),
     ]);
   });
@@ -156,6 +159,20 @@ describe('live hero service league matching', () => {
 
     expect(fetchLiveSeriesDetails).toHaveBeenCalled();
     expect(payloads).toHaveLength(2);
+    expect(upsertHeroLiveScore).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'PARIVISION',
+            logo: '/images/mirror/teams/parivision.webp',
+          }),
+          expect.objectContaining({
+            name: 'Natus Vincere',
+            logo: '/images/mirror/teams/natus-vincere.webp',
+          }),
+        ]),
+      }),
+    }), expect.anything());
     expect(payloads).toEqual(expect.arrayContaining([
       expect.objectContaining({
         teams: expect.arrayContaining([
@@ -177,7 +194,13 @@ describe('live hero service league matching', () => {
       {
         series_key: 'natus vincere::parivision',
         last_seen_at: '2026-03-08T16:00:00.000Z',
-        payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'PARIVISION' }, { name: 'Natus Vincere' }] },
+        payload: {
+          leagueName: 'PGL Wallachia Season 7: Group Stage',
+          teams: [
+            { name: 'PARIVISION', logo: 'https://hawk.live/storage/teams/parivision.png' },
+            { name: 'Natus Vincere', logo: 'https://hawk.live/storage/teams/navi.png' },
+          ],
+        },
       },
     ]);
     const db = {
@@ -193,8 +216,14 @@ describe('live hero service league matching', () => {
     expect(payloads).toEqual([
       expect.objectContaining({
         teams: expect.arrayContaining([
-          expect.objectContaining({ name: 'PARIVISION' }),
-          expect.objectContaining({ name: 'Natus Vincere' }),
+          expect.objectContaining({
+            name: 'PARIVISION',
+            logo: '/images/mirror/teams/parivision.webp',
+          }),
+          expect.objectContaining({
+            name: 'Natus Vincere',
+            logo: '/images/mirror/teams/natus-vincere.webp',
+          }),
         ]),
       }),
     ]);
