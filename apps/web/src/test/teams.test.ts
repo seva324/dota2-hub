@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 import { resolveTeamLogo } from '@/lib/teams';
 
 describe('resolveTeamLogo', () => {
@@ -15,13 +16,13 @@ describe('resolveTeamLogo', () => {
 
   it('keeps the refreshed Xtreme Gaming mirror fallback', () => {
     expect(resolveTeamLogo({ teamId: '8261500', name: 'Xtreme Gaming' }, [], null))
-      .toBe('/images/mirror/teams/xtreme-gaming.webp');
+      .toBe(getCuratedTeamLogoMirrorPath('Xtreme Gaming'));
   });
 
   it('prefers curated mirrored logo paths for name-only teams over external explicit logos', () => {
     expect(resolveTeamLogo('Team Yandex', [], 'https://hawk.live/storage/teams/yandex.png'))
-      .toBe('/images/mirror/teams/team-yandex.webp');
+      .toBe(getCuratedTeamLogoMirrorPath('Team Yandex'));
     expect(resolveTeamLogo('Zero Tenacity', [], 'https://dltv.org/images/desktop/empty/team.svg'))
-      .toBe('/images/mirror/teams/zero-tenacity.webp');
+      .toBe(getCuratedTeamLogoMirrorPath('Zero Tenacity'));
   });
 });

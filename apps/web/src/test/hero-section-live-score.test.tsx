@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { within } from '@testing-library/react';
+import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
 import { HeroSection } from '@/sections/HeroSection';
 
@@ -126,8 +127,8 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[1]).getByText('时长 28:58')).toBeInTheDocument();
     expect(Array.from(cards[1].querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
       expect.arrayContaining([
-        '/images/mirror/teams/aurora.png',
-        '/images/mirror/teams/heroic.webp',
+        getCuratedTeamLogoMirrorPath('Aurora'),
+        getCuratedTeamLogoMirrorPath('Heroic'),
       ])
     );
 

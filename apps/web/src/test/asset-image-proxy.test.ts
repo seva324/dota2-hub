@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { getCuratedTeamLogoGithubUrl } from '../../../../lib/team-logo-overrides.js'
 
 import {
   getAssetImageFetchCandidates,
@@ -53,9 +54,10 @@ describe('asset image proxy helpers', () => {
   })
 
   it('rewrites curated GitHub raw team logos to the same-origin asset proxy', () => {
+    const teamLiquidUrl = getCuratedTeamLogoGithubUrl('Team Liquid')
     expect(
-      toChinaReachableAssetUrl('https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp')
-    ).toBe('/api/asset-image?url=https%3A%2F%2Fraw.githubusercontent.com%2Fseva324%2Fdota2-hub%2Fmain%2Fpublic%2Fimages%2Fmirror%2Fteams%2Fteam-liquid.webp')
+      toChinaReachableAssetUrl(teamLiquidUrl)
+    ).toBe(`/api/asset-image?url=${encodeURIComponent(teamLiquidUrl || '')}`)
   })
 
   it('adds the akamai Steam fallback candidate for proxied Steam assets', () => {
@@ -77,10 +79,11 @@ describe('asset image proxy helpers', () => {
   })
 
   it('keeps curated GitHub raw team logos as a direct fetch candidate', () => {
+    const teamLiquidUrl = getCuratedTeamLogoGithubUrl('Team Liquid')
     expect(
-      getAssetImageFetchCandidates('https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp')
+      getAssetImageFetchCandidates(teamLiquidUrl)
     ).toEqual([
-      'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp',
+      teamLiquidUrl,
     ])
   })
 
@@ -133,6 +136,7 @@ describe('asset image proxy helpers', () => {
   })
 
   it('allows curated GitHub raw team SVG placeholders through the asset proxy handler', async () => {
+    const modusUrl = getCuratedTeamLogoGithubUrl('Modus')
     const arrayBuffer = vi.fn(async () => new TextEncoder().encode('<svg></svg>').buffer)
     const fetchMock = vi.fn(async () => ({
       status: 200,
@@ -156,7 +160,7 @@ describe('asset image proxy helpers', () => {
       {
         method: 'GET',
         query: {
-          url: 'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/modus.svg',
+          url: modusUrl,
         },
       },
       res
@@ -164,7 +168,7 @@ describe('asset image proxy helpers', () => {
 
     expect(res.statusCode).toBe(200)
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/modus.svg',
+      modusUrl,
       expect.objectContaining({ method: 'GET' })
     )
   })

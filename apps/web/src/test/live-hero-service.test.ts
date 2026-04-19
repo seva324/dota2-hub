@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
 const ensureHeroLiveScoresTable = vi.fn();
 const listRecentActiveHeroLiveScores = vi.fn();
@@ -101,8 +102,8 @@ describe('live hero service league matching', () => {
     expect(payloads).toEqual([
       expect.objectContaining({
         teams: expect.arrayContaining([
-          expect.objectContaining({ name: 'OG', logo: '/images/mirror/teams/og.png' }),
-          expect.objectContaining({ name: 'BetBoom Team', logo: '/images/mirror/teams/betboom-team.webp' }),
+          expect.objectContaining({ name: 'OG', logo: getCuratedTeamLogoMirrorPath('OG') }),
+          expect.objectContaining({ name: 'BetBoom Team', logo: getCuratedTeamLogoMirrorPath('BetBoom Team') }),
         ]),
       }),
     ]);
@@ -164,11 +165,11 @@ describe('live hero service league matching', () => {
         teams: expect.arrayContaining([
           expect.objectContaining({
             name: 'PARIVISION',
-            logo: '/images/mirror/teams/parivision.webp',
+            logo: getCuratedTeamLogoMirrorPath('PARIVISION'),
           }),
           expect.objectContaining({
             name: 'Natus Vincere',
-            logo: '/images/mirror/teams/natus-vincere.webp',
+            logo: getCuratedTeamLogoMirrorPath('Natus Vincere'),
           }),
         ]),
       }),
@@ -218,11 +219,11 @@ describe('live hero service league matching', () => {
         teams: expect.arrayContaining([
           expect.objectContaining({
             name: 'PARIVISION',
-            logo: '/images/mirror/teams/parivision.webp',
+            logo: getCuratedTeamLogoMirrorPath('PARIVISION'),
           }),
           expect.objectContaining({
             name: 'Natus Vincere',
-            logo: '/images/mirror/teams/natus-vincere.webp',
+            logo: getCuratedTeamLogoMirrorPath('Natus Vincere'),
           }),
         ]),
       }),

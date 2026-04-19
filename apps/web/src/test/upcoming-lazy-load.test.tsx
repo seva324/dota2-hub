@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
 vi.mock('@/components/custom/TeamFlyout', () => ({
   TeamFlyout: () => null,
@@ -108,7 +109,7 @@ describe('UpcomingSection lazy loading', () => {
     expect(screen.getByText('本周场次').nextElementSibling).toHaveTextContent('1');
     expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('/images/mirror/teams/xtreme-gaming.webp'),
+        expect.stringContaining(getCuratedTeamLogoMirrorPath('Xtreme Gaming') || ''),
         expect.stringContaining('/images/mirror/teams/team-spirit-white.svg'),
       ])
     );

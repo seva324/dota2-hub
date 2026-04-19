@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { backfillDltvTeamLogos } from '../../../../lib/server/dltv-team-logo-backfill.js';
 import { buildDltvRankingLogoIndex } from '../../../../lib/server/dltv-team-assets.js';
+import { getCuratedTeamLogoGithubUrl } from '../../../../lib/team-logo-overrides.js';
 
 type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {};
 
@@ -110,7 +111,7 @@ describe('backfillDltvTeamLogos', () => {
 
     expect(result.matched).toBe(1);
     expect(result.updated).toBe(1);
-    expect(result.updates[0]?.logoUrl).toBe('https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/team-liquid.webp');
+    expect(result.updates[0]?.logoUrl).toBe(getCuratedTeamLogoGithubUrl('Team Liquid'));
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 

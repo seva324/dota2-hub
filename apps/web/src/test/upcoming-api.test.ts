@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
 type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
   query: (sql: string, params?: unknown[]) => Promise<unknown[]>;
@@ -88,7 +89,7 @@ describe('/api/upcoming', () => {
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).days).toBe(2);
     expect((res.payload as any).upcoming).toHaveLength(1);
-    expect((res.payload as any).upcoming[0].radiant_team_logo).toBe('/images/mirror/teams/xtreme-gaming.webp');
+    expect((res.payload as any).upcoming[0].radiant_team_logo).toBe(getCuratedTeamLogoMirrorPath('Xtreme Gaming'));
 
     const upcomingCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
     expect(upcomingCall).toBeDefined();
@@ -118,7 +119,7 @@ describe('/api/upcoming', () => {
     expect(match.radiant_team_name).toBe('Xtreme Gaming');
     expect(match.dire_team_name).toBe('Team Liquid');
     expect(match.dire_team_name_cn).toBe('液体');
-    expect(match.dire_team_logo).toBe('/images/mirror/teams/team-liquid.webp');
+    expect(match.dire_team_logo).toBe(getCuratedTeamLogoMirrorPath('Team Liquid'));
   });
 
   it('fills curated logos by series name when the team row and team id are both missing', async () => {
@@ -154,7 +155,7 @@ describe('/api/upcoming', () => {
     await handler({ method: 'GET', query: {} } as never, res as never);
 
     const [match] = (res.payload as any).upcoming;
-    expect(match.radiant_team_logo).toBe('/images/mirror/teams/1win-team.webp');
-    expect(match.dire_team_logo).toBe('/images/mirror/teams/ivory.webp');
+    expect(match.radiant_team_logo).toBe(getCuratedTeamLogoMirrorPath('1win Team'));
+    expect(match.dire_team_logo).toBe(getCuratedTeamLogoMirrorPath('Ivory'));
   });
 });
