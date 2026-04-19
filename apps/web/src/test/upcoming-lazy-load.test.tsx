@@ -108,7 +108,7 @@ describe('UpcomingSection lazy loading', () => {
     expect(screen.getByText('本周场次').nextElementSibling).toHaveTextContent('1');
     expect(Array.from(document.querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('/images/mirror/teams/xtreme_icon_only_fixed.svg'),
+        expect.stringContaining('/images/mirror/teams/xtreme-gaming.webp'),
         expect.stringContaining('/images/mirror/teams/team-spirit-white.svg'),
       ])
     );

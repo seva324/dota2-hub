@@ -124,10 +124,10 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Heroic')).toBeInTheDocument();
     expect(within(cards[1]).getByText('时长 28:58')).toBeInTheDocument();
-    expect(Array.from(cards[1].querySelectorAll('img')).map((node) => node.getAttribute('src'))).toEqual(
+    expect(Array.from(cards[1].querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
       expect.arrayContaining([
-        '/images/mirror/teams/aurora_gaming.svg',
-        'https://dota2-hub.vercel.app/images/mirror/teams/9303484.png',
+        '/images/mirror/teams/aurora.png',
+        '/images/mirror/teams/heroic.webp',
       ])
     );
 
