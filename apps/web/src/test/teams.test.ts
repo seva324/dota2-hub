@@ -22,6 +22,6 @@ describe('resolveTeamLogo', () => {
     expect(resolveTeamLogo('Team Yandex', [], 'https://hawk.live/storage/teams/yandex.png'))
       .toBe('/images/mirror/teams/team-yandex.webp');
     expect(resolveTeamLogo('Zero Tenacity', [], 'https://dltv.org/images/desktop/empty/team.svg'))
-      .toBe('/images/mirror/teams/zero-tenacity.svg');
+      .toBe('/images/mirror/teams/zero-tenacity.webp');
   });
 });

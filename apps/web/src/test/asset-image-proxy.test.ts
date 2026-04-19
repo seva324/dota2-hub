@@ -156,7 +156,7 @@ describe('asset image proxy helpers', () => {
       {
         method: 'GET',
         query: {
-          url: 'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/zero-tenacity.svg',
+          url: 'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/modus.svg',
         },
       },
       res
@@ -164,7 +164,7 @@ describe('asset image proxy helpers', () => {
 
     expect(res.statusCode).toBe(200)
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/zero-tenacity.svg',
+      'https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/modus.svg',
       expect.objectContaining({ method: 'GET' })
     )
   })
