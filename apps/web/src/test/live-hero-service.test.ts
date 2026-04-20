@@ -73,28 +73,16 @@ describe('live hero service league matching', () => {
     ]);
   });
 
-  it('filters cached live rows by matched league names', async () => {
+  it('returns cached live rows immediately when fresh cache exists', async () => {
     listRecentActiveHeroLiveScores.mockResolvedValue([
-      { series_key: 'betboom team::og', league_name: 'PGL Wallachia Season 7: Group Stage', payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'OG' }, { name: 'BetBoom Team' }] } },
-      { series_key: 'other::series', league_name: 'Unknown Weekly Cup', payload: { leagueName: 'Unknown Weekly Cup', teams: [{ name: 'A' }, { name: 'B' }] } },
-    ]);
-    const db = {
-      query: vi.fn().mockResolvedValue([
-        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: null, tier: 'S' },
-      ]),
-    };
-    fetchHtml.mockResolvedValue('<html></html>');
-    parseHawkHomepageSeriesList.mockReturnValue([
       {
-        id: '92350',
-        slug: 'og-vs-betboom-team',
-        leagueName: 'PGL Wallachia Season 7: Group Stage',
-        team1Name: 'OG',
-        team2Name: 'BetBoom Team',
-        teamKey: 'betboom team::og',
-        url: 'https://hawk.live/example',
+        series_key: 'betboom team::og',
+        last_seen_at: '2026-03-08T16:00:00.000Z',
+        league_name: 'PGL Wallachia Season 7: Group Stage',
+        payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'OG' }, { name: 'BetBoom Team' }] },
       },
     ]);
+    const db = { query: vi.fn() };
 
     const { getLiveHeroPayloads } = await import('../../../../lib/server/live-hero-service.js');
     const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
@@ -107,9 +95,12 @@ describe('live hero service league matching', () => {
         ]),
       }),
     ]);
+    expect(fetchHtml).not.toHaveBeenCalled();
+    expect(fetchLiveSeriesDetails).not.toHaveBeenCalled();
+    expect(upsertHeroLiveScore).not.toHaveBeenCalled();
   });
 
-  it('merges fresh live snapshots with cached rows instead of short-circuiting on cache hit', async () => {
+  it('force refresh bypasses the fresh cache and stores rebuilt live snapshots', async () => {
     listRecentActiveHeroLiveScores.mockResolvedValue([
       {
         series_key: 'aurora::heroic',
@@ -156,10 +147,10 @@ describe('live hero service league matching', () => {
     }));
 
     const { getLiveHeroPayloads } = await import('../../../../lib/server/live-hero-service.js');
-    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
+    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: true, maxAgeSeconds: 180 });
 
     expect(fetchLiveSeriesDetails).toHaveBeenCalled();
-    expect(payloads).toHaveLength(2);
+    expect(payloads).toHaveLength(1);
     expect(upsertHeroLiveScore).toHaveBeenCalledWith(expect.objectContaining({
       payload: expect.objectContaining({
         teams: expect.arrayContaining([
@@ -174,20 +165,14 @@ describe('live hero service league matching', () => {
         ]),
       }),
     }), expect.anything());
-    expect(payloads).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        teams: expect.arrayContaining([
-          expect.objectContaining({ name: 'Aurora' }),
-          expect.objectContaining({ name: 'Heroic' }),
-        ]),
-      }),
+    expect(payloads).toEqual([
       expect.objectContaining({
         teams: expect.arrayContaining([
           expect.objectContaining({ name: 'PARIVISION' }),
           expect.objectContaining({ name: 'Natus Vincere' }),
         ]),
       }),
-    ]));
+    ]);
   });
 
   it('falls back to cached rows when live refresh fails', async () => {
@@ -225,6 +210,74 @@ describe('live hero service league matching', () => {
             name: 'Natus Vincere',
             logo: getCuratedTeamLogoMirrorPath('Natus Vincere'),
           }),
+        ]),
+      }),
+    ]);
+  });
+
+  it('keeps successful live snapshots when one detail request fails', async () => {
+    listRecentActiveHeroLiveScores.mockResolvedValue([]);
+    const db = {
+      query: vi.fn().mockResolvedValue([
+        { league_id: 19435, name: 'PGL Wallachia Season 7', name_cn: null, tier: 'S' },
+      ]),
+    };
+    fetchHtml.mockResolvedValue('<html></html>');
+    parseHawkHomepageSeriesList.mockReturnValue([
+      {
+        id: '92352',
+        slug: 'parivision-vs-natus-vincere',
+        leagueName: 'PGL Wallachia Season 7: Group Stage',
+        team1Name: 'PARIVISION',
+        team2Name: 'Natus Vincere',
+        teamKey: 'natus vincere::parivision',
+        url: 'https://hawk.live/pgl',
+      },
+      {
+        id: '92353',
+        slug: 'aurora-vs-heroic',
+        leagueName: 'PGL Wallachia Season 7: Group Stage',
+        team1Name: 'Aurora',
+        team2Name: 'Heroic',
+        teamKey: 'aurora::heroic',
+        url: 'https://hawk.live/pgl-2',
+      },
+    ]);
+    fetchLiveSeriesDetails.mockImplementation(async (seriesRow) => {
+      if (seriesRow.slug === 'aurora-vs-heroic') {
+        throw new Error('temporary detail failure');
+      }
+      return {
+        id: '92352',
+        slug: 'parivision-vs-natus-vincere',
+        url: 'https://hawk.live/pgl',
+        leagueName: 'PGL Wallachia Season 7: Group Stage',
+        team1Name: 'PARIVISION',
+        team2Name: 'Natus Vincere',
+        detail: {
+          bestOf: 3,
+          team1Name: 'PARIVISION',
+          team2Name: 'Natus Vincere',
+          maps: [],
+          liveMap: null,
+        },
+      };
+    });
+    upsertHeroLiveScore.mockImplementation(async (snapshot) => ({
+      series_key: snapshot.series_key,
+      last_seen_at: '2026-03-08T16:01:00.000Z',
+      payload: snapshot.payload,
+    }));
+
+    const { getLiveHeroPayloads } = await import('../../../../lib/server/live-hero-service.js');
+    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: true, maxAgeSeconds: 180 });
+
+    expect(fetchLiveSeriesDetails).toHaveBeenCalledTimes(2);
+    expect(payloads).toEqual([
+      expect.objectContaining({
+        teams: expect.arrayContaining([
+          expect.objectContaining({ name: 'PARIVISION' }),
+          expect.objectContaining({ name: 'Natus Vincere' }),
         ]),
       }),
     ]);

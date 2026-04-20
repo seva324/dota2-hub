@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const ensureHeroLiveScoresTable = vi.fn();
-const getLiveHeroPayload = vi.fn();
 const getLiveHeroPayloads = vi.fn();
 const explainLiveHeroMatching = vi.fn();
 
@@ -11,7 +10,6 @@ vi.mock('../../../../lib/server/hero-live-score-cache.js', () => ({
 
 vi.mock('../../../../lib/server/live-hero-service.js', () => ({
   explainLiveHeroMatching,
-  getLiveHeroPayload,
   getLiveHeroPayloads,
 }));
 
@@ -47,20 +45,11 @@ describe('/api/live-hero', () => {
     vi.resetModules();
     process.env.DATABASE_URL = 'postgres://example.test/db';
     ensureHeroLiveScoresTable.mockReset();
-    getLiveHeroPayload.mockReset();
     getLiveHeroPayloads.mockReset();
     explainLiveHeroMatching.mockReset();
   });
 
   it('returns the live hero payload', async () => {
-    getLiveHeroPayload.mockResolvedValue({
-      leagueName: 'PGL Wallachia Season 7: Group Stage',
-      seriesScore: '1 - 1',
-      teams: [{ name: 'Aurora' }, { name: 'Heroic' }],
-      maps: [],
-      live: true,
-      source: 'hawk.live',
-    });
     getLiveHeroPayloads.mockResolvedValue([{
       leagueName: 'PGL Wallachia Season 7: Group Stage',
       seriesScore: '1 - 1',
@@ -79,13 +68,12 @@ describe('/api/live-hero', () => {
     expect((res.payload as any).live?.leagueName).toBe('PGL Wallachia Season 7: Group Stage');
     expect((res.payload as any).liveMatches).toHaveLength(1);
     expect((res.payload as any).meta.liveCount).toBe(1);
-    expect(getLiveHeroPayload).not.toHaveBeenCalled();
     expect(getLiveHeroPayloads).toHaveBeenCalled();
     expect(ensureHeroLiveScoresTable).toHaveBeenCalled();
+    expect(res.headers['Cache-Control']).toBe('public, max-age=15, s-maxage=30, stale-while-revalidate=60');
   });
 
   it('passes refresh intent and team filters through to the live hero service', async () => {
-    getLiveHeroPayload.mockResolvedValue(null);
     getLiveHeroPayloads.mockResolvedValue([]);
     const { default: handler } = await import('../../../../api/live-hero.js');
     const res = createRes();
@@ -98,18 +86,11 @@ describe('/api/live-hero', () => {
       teamA: 'Aurora',
       teamB: 'Heroic',
     }));
-    expect(getLiveHeroPayload).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      forceRefresh: true,
-      maxAgeSeconds: 90,
-      teamA: 'Aurora',
-      teamB: 'Heroic',
-    }));
     expect((res.payload as any).live).toBeNull();
     expect((res.payload as any).liveMatches).toEqual([]);
   });
 
   it('includes debug matching details when requested', async () => {
-    getLiveHeroPayload.mockResolvedValue(null);
     getLiveHeroPayloads.mockResolvedValue([]);
     explainLiveHeroMatching.mockResolvedValue({
       matched: [{ reason: 'matched_by_league_name' }],

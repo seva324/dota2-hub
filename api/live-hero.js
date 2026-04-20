@@ -1,8 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 import { ensureHeroLiveScoresTable } from '../lib/server/hero-live-score-cache.js';
-import { explainLiveHeroMatching, getLiveHeroPayload, getLiveHeroPayloads } from '../lib/server/live-hero-service.js';
+import { explainLiveHeroMatching, getLiveHeroPayloads } from '../lib/server/live-hero-service.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const LIVE_HERO_CACHE_CONTROL = 'public, max-age=15, s-maxage=30, stale-while-revalidate=60';
 let sql = null;
 
 function getDb() {
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', LIVE_HERO_CACHE_CONTROL);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -44,7 +46,7 @@ export default async function handler(req, res) {
       teamB: String(req.query?.team_b || '').trim() || undefined,
     };
     const liveMatches = await getLiveHeroPayloads(db, options);
-    const live = liveMatches[0] || await getLiveHeroPayload(db, options);
+    const live = liveMatches[0] || null;
     const debug = options.debug ? await explainLiveHeroMatching(db, options) : undefined;
 
     return res.status(200).json({
