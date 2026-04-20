@@ -128,4 +128,56 @@ describe('TournamentSection lazy loading', () => {
     expect(await screen.findByText('Team A')).toBeInTheDocument();
     expect(screen.getByText('总场次').nextElementSibling).toHaveTextContent('1');
   });
+
+  it('does not refetch empty tournament series forever after an empty response', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
+      }
+      if (url.startsWith('/api/tournaments?')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            series: [],
+            pagination: {
+              total: 0,
+              hasMore: false,
+              limit: 10,
+              offset: 0,
+            },
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'blast-slam-7',
+            league_id: 19101,
+            name: 'Blast Slam 7',
+            status: 'upcoming',
+            tier: 'S',
+            start_time: 1700000000,
+            end_time: 1701000000,
+          },
+        ]}
+      />
+    );
+
+    await act(async () => {
+      MockIntersectionObserver.instances[0]?.trigger(true);
+    });
+
+    expect(await screen.findByText('暂无比赛数据')).toBeInTheDocument();
+
+    await waitFor(() => {
+      const seriesCalls = fetchMock.mock.calls.filter(([input]) => String(input) === '/api/tournaments?tournamentId=blast-slam-7&limit=10&offset=0');
+      expect(seriesCalls).toHaveLength(1);
+    });
+  });
 });

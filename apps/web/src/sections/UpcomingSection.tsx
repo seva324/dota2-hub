@@ -58,6 +58,10 @@ interface UpcomingSectionProps {
   }>;
 }
 
+const EMPTY_UPCOMING_MATCHES: Match[] = [];
+const EMPTY_UPCOMING_ALL_MATCHES: NonNullable<UpcomingSectionProps['allMatches']> = [];
+const EMPTY_UPCOMING_TEAMS: NonNullable<UpcomingSectionProps['teams']> = [];
+
 
 const UPCOMING_DEFAULT_DAYS = 2;
 const UPCOMING_PLACEHOLDER_CARD_COUNT = 3;
@@ -199,7 +203,11 @@ function getMatchPeriod(timestamp: number): string {
   return '晚上';
 }
 
-export function UpcomingSection({ upcoming = [], allMatches = [], teams = [] }: UpcomingSectionProps) {
+export function UpcomingSection({
+  upcoming = EMPTY_UPCOMING_MATCHES,
+  allMatches = EMPTY_UPCOMING_ALL_MATCHES,
+  teams = EMPTY_UPCOMING_TEAMS
+}: UpcomingSectionProps) {
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
   const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
   const [lazyTeams, setLazyTeams] = useState<NonNullable<UpcomingSectionProps['teams']>>([]);

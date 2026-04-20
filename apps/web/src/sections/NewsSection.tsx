@@ -24,6 +24,8 @@ interface NewsItem {
   category: string;
 }
 
+const EMPTY_NEWS: NewsItem[] = [];
+
 const categoryColors: Record<string, string> = {
   transfer: 'bg-purple-500/20 text-purple-400',
   drama: 'bg-rose-500/20 text-rose-400',
@@ -199,7 +201,7 @@ function renderRichContent(rawText: string) {
   return blocks;
 }
 
-export function NewsSection({ news = [] }: { news?: NewsItem[] }) {
+export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [showAllNews, setShowAllNews] = useState(false);
   const [lazyNews, setLazyNews] = useState<NewsItem[]>([]);

@@ -60,6 +60,9 @@ interface LiveHeroPayload {
   } | null;
 }
 
+const EMPTY_HERO_UPCOMING: Match[] = [];
+const EMPTY_HERO_TEAMS: TeamLike[] = [];
+
 const teamAbbr: Record<string, string> = {
   'Xtreme Gaming': 'XG',
   'Yakult Brothers': 'YB',
@@ -189,7 +192,10 @@ function buildHeroLiveApiUrl(): string {
   return '/api/live-hero';
 }
 
-export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[]; teams?: TeamLike[] }) {
+export function HeroSection({
+  upcoming = EMPTY_HERO_UPCOMING,
+  teams = EMPTY_HERO_TEAMS
+}: { upcoming?: Match[]; teams?: TeamLike[] }) {
   const [showCountdown, setShowCountdown] = useState(true);
   const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
   const [lazyTeams, setLazyTeams] = useState<TeamLike[]>([]);

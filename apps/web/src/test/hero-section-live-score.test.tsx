@@ -143,6 +143,22 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[1]).queryByText('Map 1 已结束')).not.toBeInTheDocument();
   }, 15000);
 
+  it('does not refetch live or upcoming data in a render loop when props are omitted', async () => {
+    const fetchMock = vi.mocked(fetch);
+
+    render(<HeroSection />);
+
+    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      '/api/live-hero',
+      '/api/upcoming?days=1',
+    ]);
+  });
+
   it('falls back cleanly when the live API returns no match', async () => {
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
