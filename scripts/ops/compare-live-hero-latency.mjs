@@ -44,6 +44,14 @@ function getScoreSignature(payload = {}) {
   });
 }
 
+function getSnapshotSignature(snapshot = {}) {
+  return JSON.stringify({
+    seriesScore: snapshot?.seriesScore || null,
+    liveMap: snapshot?.liveMapScore || null,
+    gameTime: snapshot?.gameTime || null,
+  });
+}
+
 async function loadHawkSeriesSnapshot(targetTeamKey = null) {
   const homeHtml = await fetchHtml('https://hawk.live/');
   const rows = parseHawkHomepageSeriesList(homeHtml)
@@ -60,8 +68,12 @@ async function loadHawkSeriesSnapshot(targetTeamKey = null) {
       liveMapScore: row.detail.liveMap?.score || null,
       gameTime: row.detail.liveMap?.gameTime || null,
       sourceUrl: row.url || null,
+      signature: null,
     }];
-  });
+  }).map((snapshot) => ({
+    ...snapshot,
+    signature: getSnapshotSignature(snapshot),
+  }));
 }
 
 async function loadSiteSeriesSnapshot(siteUrl, targetTeamKey = null) {
@@ -128,11 +140,7 @@ async function main() {
     for (const key of allKeys) {
       const hawk = hawkByKey.get(key);
       const site = siteByKey.get(key);
-      const hawkSignature = hawk ? JSON.stringify({
-        seriesScore: hawk.seriesScore,
-        liveMapScore: hawk.liveMapScore,
-        gameTime: hawk.gameTime,
-      }) : null;
+      const hawkSignature = hawk?.signature || null;
       const siteSignature = site?.signature || null;
 
       if (hawkSignature && lastHawkSignatures.get(key) !== hawkSignature) {
