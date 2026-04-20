@@ -278,14 +278,20 @@ describe('/api/tournaments lazy loading', () => {
           start_time: 1700500000,
         }];
       }
-      if (sql === 'SELECT * FROM teams') {
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string, values?: unknown[]) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM teams') && normalized.includes('team_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['1', '2']]);
         return [
           { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
           { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
         ];
       }
-      if (sql.includes('FROM matches')) {
-        expect(values).toEqual(['blast-sea-series-1']);
+      if (normalized.includes('FROM matches') && normalized.includes('series_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['blast-sea-series-1']]);
         return [{
           match_id: 101,
           series_id: 'blast-sea-series-1',
@@ -299,7 +305,7 @@ describe('/api/tournaments lazy loading', () => {
           picks_bans: [],
         }];
       }
-      throw new Error(`Unexpected SQL: ${sql}`);
+      throw new Error(`Unexpected query SQL: ${normalized}`);
     });
 
     const { default: handler } = await import('../../../../api/tournaments.js');
@@ -325,7 +331,7 @@ describe('/api/tournaments lazy loading', () => {
   });
 
   it('loads aliased historical series for Blast China qualifier within the qualifier window', async () => {
-    taggedMock.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);
       if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
         return [{
@@ -351,16 +357,6 @@ describe('/api/tournaments lazy loading', () => {
           dltv_event_slug: 'blast-slam-vii-china-closed-qualifier',
         }];
       }
-      if (sql === 'SELECT * FROM teams') {
-        return [
-          { team_id: 8261500, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/xg.png' },
-          { team_id: 726228, name: 'Vici Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/vg.png' },
-        ];
-      }
-      if (sql.includes('FROM matches')) {
-        expect(values).toEqual(['blast-china-series-1']);
-        return [];
-      }
       throw new Error(`Unexpected SQL: ${sql}`);
     });
 
@@ -382,6 +378,17 @@ describe('/api/tournaments lazy loading', () => {
           series_type: 1,
           start_time: 1775201161,
         }];
+      }
+      if (normalized.includes('FROM teams') && normalized.includes('team_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['8261500', '726228']]);
+        return [
+          { team_id: 8261500, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/xg.png' },
+          { team_id: 726228, name: 'Vici Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/vg.png' },
+        ];
+      }
+      if (normalized.includes('FROM matches') && normalized.includes('series_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['blast-china-series-1']]);
+        return [];
       }
       throw new Error(`Unexpected query SQL: ${normalized}`);
     });
@@ -456,17 +463,23 @@ describe('/api/tournaments lazy loading', () => {
           start_time: 1700500000,
         }];
       }
-      if (sql === 'SELECT * FROM teams') {
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string, values?: unknown[]) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM teams') && normalized.includes('team_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['1', '2']]);
         return [
           { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
           { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
         ];
       }
-      if (sql.includes('FROM matches')) {
-        expect(values).toEqual(['blast-main-series-stale']);
+      if (normalized.includes('FROM matches') && normalized.includes('series_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['blast-main-series-stale']]);
         return [];
       }
-      throw new Error(`Unexpected SQL: ${sql}`);
+      throw new Error(`Unexpected query SQL: ${normalized}`);
     });
 
     const { default: handler } = await import('../../../../api/tournaments.js');
@@ -506,12 +519,6 @@ describe('/api/tournaments lazy loading', () => {
           dltv_event_slug: 'esl-challenger-china-season-3-open-qualifier-1',
         }];
       }
-      if (sql === 'SELECT * FROM teams') {
-        return [
-          { team_id: 9894442, name: 'Cloud Dawning', logo_url: 'https://steamcdn-a.akamaihd.net/cloud-dawning.png' },
-          { team_id: 9895695, name: 'ToLight', logo_url: 'https://steamcdn-a.akamaihd.net/tolight.png' },
-        ];
-      }
       throw new Error(`Unexpected SQL: ${sql}`);
     });
 
@@ -544,6 +551,13 @@ describe('/api/tournaments lazy loading', () => {
           start_time: 1776405600,
           status: 'upcoming',
         }];
+      }
+      if (normalized.includes('FROM teams') && normalized.includes('team_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['9894442']]);
+        return [
+          { team_id: 9894442, name: 'Cloud Dawning', logo_url: 'https://steamcdn-a.akamaihd.net/cloud-dawning.png' },
+          { team_id: 9895695, name: 'ToLight', logo_url: 'https://steamcdn-a.akamaihd.net/tolight.png' },
+        ];
       }
       throw new Error(`Unexpected query SQL: ${normalized}`);
     });
@@ -598,14 +612,20 @@ describe('/api/tournaments lazy loading', () => {
           start_time: 1700500000,
         }];
       }
-      if (sql === 'SELECT * FROM teams') {
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string, values?: unknown[]) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM teams') && normalized.includes('team_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['1', '2']]);
         return [
           { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
           { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
         ];
       }
-      if (sql.includes('FROM matches')) {
-        expect(values).toEqual(['series-1']);
+      if (normalized.includes('FROM matches') && normalized.includes('series_id::TEXT = ANY($1::text[])')) {
+        expect(values).toEqual([['series-1']]);
         return [{
           match_id: 101,
           series_id: 'series-1',
@@ -619,7 +639,7 @@ describe('/api/tournaments lazy loading', () => {
           picks_bans: [{ hero_id: 1, team: 'radiant', is_pick: true, order: 1 }],
         }];
       }
-      throw new Error(`Unexpected SQL: ${sql}`);
+      throw new Error(`Unexpected query SQL: ${normalized}`);
     });
 
     const { default: handler } = await import('../../../../api/tournaments.js');

@@ -143,6 +143,16 @@ function uniqueValues(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function normalizeStringIds(values) {
+  return Array.from(
+    new Set(
+      (Array.isArray(values) ? values : [values])
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 function getLookupKeys(value) {
   const raw = normalizeText(value);
   const compact = normalizeCompact(value);
@@ -425,6 +435,28 @@ async function loadTeams(db) {
     teamMap.set(String(team.team_id), team);
   }
   return { teams, teamMap };
+}
+
+async function loadTeamMapByIds(db, teamIds) {
+  const normalizedTeamIds = normalizeStringIds(teamIds);
+  if (normalizedTeamIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db.query(
+    `
+      SELECT *
+      FROM teams
+      WHERE team_id::TEXT = ANY($1::text[])
+    `,
+    [normalizedTeamIds]
+  );
+
+  return new Map(
+    rows
+      .filter((team) => team?.team_id !== undefined && team?.team_id !== null)
+      .map((team) => [String(team.team_id), team])
+  );
 }
 
 function buildFeaturedTeamResolver(teams, featuredTournamentId) {
@@ -898,13 +930,35 @@ async function loadUpcomingSeriesPage(db, leagueIds, limit, offset, options = {}
   return { total, pageSeries };
 }
 
-async function loadMatchesForSeries(db, seriesId) {
-  return db`
-    SELECT *
-    FROM matches
-    WHERE series_id = ${seriesId}
-    ORDER BY start_time ASC
-  `;
+async function loadMatchesBySeriesIds(db, seriesIds) {
+  const normalizedSeriesIds = normalizeStringIds(seriesIds);
+  if (normalizedSeriesIds.length === 0) {
+    return {};
+  }
+
+  const rows = await db.query(
+    `
+      SELECT *
+      FROM matches
+      WHERE series_id::TEXT = ANY($1::text[])
+      ORDER BY series_id::TEXT ASC, start_time ASC
+    `,
+    [normalizedSeriesIds]
+  );
+
+  return rows.reduce((acc, row) => {
+    const key = String(row?.series_id || '');
+    if (!key) return acc;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(row);
+    return acc;
+  }, {});
+}
+
+function collectTeamIds(rows) {
+  return normalizeStringIds(
+    (rows || []).flatMap((row) => [row?.radiant_team_id, row?.dire_team_id])
+  );
 }
 
 function buildSeriesPayload(seriesRows, matchesBySeries, teamMap, stageWindows, leagueNameById, req) {
@@ -1053,23 +1107,17 @@ export default async function handler(req, res) {
     }
     const timeWindow = getTournamentSeriesWindow(tournament);
 
-    const [{ total: totalSeries, pageSeries }, { teamMap }] = await Promise.all([
-      loadSeriesPage(db, leagueIds, limit, offset, { timeWindow }),
-      loadTeams(db)
-    ]);
+    const { total: totalSeries, pageSeries } = await loadSeriesPage(db, leagueIds, limit, offset, { timeWindow });
 
     const stageWindows = normalizeStageWindows(tournament.stage_windows);
     let total = totalSeries;
     let series = [];
 
     if (pageSeries.length > 0) {
-      const matchesBySeries = {};
-      await Promise.all(
-        pageSeries.map(async (seriesRow) => {
-          const rows = await loadMatchesForSeries(db, seriesRow.series_id);
-          matchesBySeries[String(seriesRow.series_id)] = rows;
-        })
-      );
+      const [matchesBySeries, teamMap] = await Promise.all([
+        loadMatchesBySeriesIds(db, pageSeries.map((seriesRow) => seriesRow.series_id)),
+        loadTeamMapByIds(db, collectTeamIds(pageSeries)),
+      ]);
 
       series = filterSeriesForSelectedTournament(
         buildSeriesPayload(pageSeries, matchesBySeries, teamMap, stageWindows, leagueNameById, req),
@@ -1079,6 +1127,7 @@ export default async function handler(req, res) {
 
     if (pageSeries.length === 0) {
       const upcomingPage = await loadUpcomingSeriesPage(db, leagueIds, limit, offset, { timeWindow });
+      const teamMap = await loadTeamMapByIds(db, collectTeamIds(upcomingPage.pageSeries));
       total = upcomingPage.total;
       series = buildUpcomingSeriesPayload(upcomingPage.pageSeries, teamMap, stageWindows, leagueNameById, req);
     }
