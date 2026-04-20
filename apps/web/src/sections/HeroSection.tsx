@@ -185,6 +185,10 @@ function buildHeroUpcomingApiUrl(days: number = HERO_DEFAULT_DAYS): string {
   return `/api/upcoming?${params.toString()}`;
 }
 
+function buildHeroLiveApiUrl(): string {
+  return '/api/live-hero';
+}
+
 export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[]; teams?: TeamLike[] }) {
   const [showCountdown, setShowCountdown] = useState(true);
   const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
@@ -195,23 +199,12 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
   useEffect(() => {
     let cancelled = false;
 
-    const loadHeroData = async () => {
+    const loadLiveHeroData = async () => {
       try {
-        const [upcomingResponse, liveResponse] = await Promise.all([
-          fetch(buildHeroUpcomingApiUrl()),
-          fetch('/api/live-hero'),
-        ]);
-
-        if (!upcomingResponse.ok) {
-          throw new Error(`Upcoming HTTP ${upcomingResponse.status}`);
-        }
-
-        const upcomingPayload = await upcomingResponse.json();
+        const liveResponse = await fetch(buildHeroLiveApiUrl());
         const livePayload = liveResponse.ok ? await liveResponse.json() : { live: null };
         if (cancelled) return;
 
-        setLazyUpcoming(Array.isArray(upcomingPayload?.upcoming) ? upcomingPayload.upcoming : []);
-        setLazyTeams(Array.isArray(upcomingPayload?.teams) ? upcomingPayload.teams : []);
         const nextLiveHeroes = Array.isArray(livePayload?.liveMatches)
           ? livePayload.liveMatches
           : livePayload?.live
@@ -220,14 +213,33 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
         setLiveHeroes(nextLiveHeroes);
       } catch (error) {
         if (cancelled) return;
-        console.error('[HeroSection] Failed to load hero data:', error);
-        setLazyUpcoming(upcoming);
-        setLazyTeams(teams);
+        console.error('[HeroSection] Failed to load live hero data:', error);
         setLiveHeroes([]);
       }
     };
 
-    void loadHeroData();
+    const loadUpcomingData = async () => {
+      try {
+        const upcomingResponse = await fetch(buildHeroUpcomingApiUrl());
+        if (!upcomingResponse.ok) {
+          throw new Error(`Upcoming HTTP ${upcomingResponse.status}`);
+        }
+
+        const upcomingPayload = await upcomingResponse.json();
+        if (cancelled) return;
+
+        setLazyUpcoming(Array.isArray(upcomingPayload?.upcoming) ? upcomingPayload.upcoming : []);
+        setLazyTeams(Array.isArray(upcomingPayload?.teams) ? upcomingPayload.teams : []);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[HeroSection] Failed to load upcoming hero data:', error);
+        setLazyUpcoming(upcoming);
+        setLazyTeams(teams);
+      }
+    };
+
+    void loadLiveHeroData();
+    void loadUpcomingData();
 
     return () => {
       cancelled = true;
@@ -435,7 +447,7 @@ export function HeroSection({ upcoming = [], teams = [] }: { upcoming?: Match[];
                                 <div key={`${team.side}-${team.name}`} className="grid min-h-[3.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
                                   <div className="flex min-w-0 items-center gap-2">
                                     {getTeamLogo(team.name, team.logo) ? (
-                                      <img src={getTeamLogo(team.name, team.logo)} alt="" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
+                                      <img src={getTeamLogo(team.name, team.logo)} alt="" decoding="async" fetchPriority="high" className="w-8 h-8 object-contain rounded-full bg-white/5 p-1" />
                                     ) : (
                                       <div className="w-8 h-8 rounded-full bg-slate-800" />
                                     )}
