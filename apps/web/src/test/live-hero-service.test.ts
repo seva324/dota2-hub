@@ -9,6 +9,9 @@ const upsertHeroLiveScore = vi.fn();
 const fetchHtml = vi.fn();
 const fetchLiveSeriesDetails = vi.fn();
 const parseHawkHomepageSeriesList = vi.fn(() => []);
+const readLiveHeroHotCache = vi.fn();
+const writeLiveHeroHotCache = vi.fn();
+const tryAcquireLiveHeroRefreshLock = vi.fn();
 
 vi.mock('../../../../lib/server/hero-live-score-cache.js', () => ({
   ensureHeroLiveScoresTable,
@@ -25,6 +28,12 @@ vi.mock('../../../../lib/server/hawk-live.js', () => ({
   parseHawkHomepageSeriesList,
 }));
 
+vi.mock('../../../../lib/server/live-hero-hot-cache.js', () => ({
+  readLiveHeroHotCache,
+  writeLiveHeroHotCache,
+  tryAcquireLiveHeroRefreshLock,
+}));
+
 describe('live hero service league matching', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -37,6 +46,15 @@ describe('live hero service league matching', () => {
     fetchLiveSeriesDetails.mockReset();
     parseHawkHomepageSeriesList.mockReset();
     parseHawkHomepageSeriesList.mockReturnValue([]);
+    readLiveHeroHotCache.mockReset();
+    writeLiveHeroHotCache.mockReset();
+    tryAcquireLiveHeroRefreshLock.mockReset();
+    readLiveHeroHotCache.mockResolvedValue(null);
+    writeLiveHeroHotCache.mockResolvedValue(undefined);
+    tryAcquireLiveHeroRefreshLock.mockResolvedValue(false);
+    listRecentActiveHeroLiveScores.mockResolvedValue([]);
+    listActiveHeroLiveScores.mockResolvedValue([]);
+    markHeroLiveScoreEnded.mockResolvedValue(null);
   });
 
   it('matches hawk league names against tournaments by keyword', async () => {
@@ -73,19 +91,19 @@ describe('live hero service league matching', () => {
     ]);
   });
 
-  it('returns cached live rows immediately when fresh cache exists', async () => {
-    listRecentActiveHeroLiveScores.mockResolvedValue([
-      {
-        series_key: 'betboom team::og',
-        last_seen_at: '2026-03-08T16:00:00.000Z',
-        league_name: 'PGL Wallachia Season 7: Group Stage',
-        payload: { leagueName: 'PGL Wallachia Season 7: Group Stage', teams: [{ name: 'OG' }, { name: 'BetBoom Team' }] },
-      },
-    ]);
-    const db = { query: vi.fn() };
+  it('returns hot cache payloads immediately when the live hot cache is fresh', async () => {
+    readLiveHeroHotCache.mockResolvedValue({
+      refreshedAt: new Date().toISOString(),
+      payloads: [
+        {
+          leagueName: 'PGL Wallachia Season 7: Group Stage',
+          teams: [{ name: 'OG' }, { name: 'BetBoom Team' }],
+        },
+      ],
+    });
 
     const { getLiveHeroPayloads } = await import('../../../../lib/server/live-hero-service.js');
-    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
+    const payloads = await getLiveHeroPayloads(null as never, { forceRefresh: false, maxAgeSeconds: 180 });
 
     expect(payloads).toEqual([
       expect.objectContaining({
@@ -95,9 +113,11 @@ describe('live hero service league matching', () => {
         ]),
       }),
     ]);
+    expect(listRecentActiveHeroLiveScores).not.toHaveBeenCalled();
     expect(fetchHtml).not.toHaveBeenCalled();
     expect(fetchLiveSeriesDetails).not.toHaveBeenCalled();
     expect(upsertHeroLiveScore).not.toHaveBeenCalled();
+    expect(writeLiveHeroHotCache).not.toHaveBeenCalled();
   });
 
   it('force refresh bypasses the fresh cache and stores rebuilt live snapshots', async () => {

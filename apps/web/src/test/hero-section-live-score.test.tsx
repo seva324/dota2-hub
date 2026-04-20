@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { within } from '@testing-library/react';
 import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
@@ -102,6 +102,10 @@ describe('HeroSection live spotlight', () => {
     }));
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders the live spotlight card and the CN upcoming preview together', async () => {
     render(<HeroSection upcoming={[]} teams={[]} />);
 
@@ -156,6 +160,36 @@ describe('HeroSection live spotlight', () => {
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
       '/api/live-hero',
       '/api/upcoming?days=1',
+    ]);
+  });
+
+  it('polls the live API every 3 seconds without refetching upcoming data', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.mocked(fetch);
+
+    render(<HeroSection />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('直播对局')).toBeInTheDocument();
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      '/api/live-hero',
+      '/api/upcoming?days=1',
+    ]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      '/api/live-hero',
+      '/api/upcoming?days=1',
+      '/api/live-hero',
     ]);
   });
 

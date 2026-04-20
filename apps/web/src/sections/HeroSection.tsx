@@ -182,6 +182,7 @@ function sortLiveHeroesForDisplay(items: LiveHeroPayload[]) {
 }
 
 const HERO_DEFAULT_DAYS = 1;
+const HERO_LIVE_POLL_INTERVAL_MS = 3000;
 
 function buildHeroUpcomingApiUrl(days: number = HERO_DEFAULT_DAYS): string {
   const params = new URLSearchParams({ days: String(days) });
@@ -207,7 +208,7 @@ export function HeroSection({
 
     const loadLiveHeroData = async () => {
       try {
-        const liveResponse = await fetch(buildHeroLiveApiUrl());
+        const liveResponse = await fetch(buildHeroLiveApiUrl(), { cache: 'no-store' });
         const livePayload = liveResponse.ok ? await liveResponse.json() : { live: null };
         if (cancelled) return;
 
@@ -247,8 +248,22 @@ export function HeroSection({
     void loadLiveHeroData();
     void loadUpcomingData();
 
+    const livePollTimer = window.setInterval(() => {
+      if (document.hidden) return;
+      void loadLiveHeroData();
+    }, HERO_LIVE_POLL_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) return;
+      void loadLiveHeroData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      window.clearInterval(livePollTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [teams, upcoming]);
 
