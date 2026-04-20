@@ -565,6 +565,14 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
   return String(tournament.id || tournament.league_id || tournament.name || '').trim() || null;
 }
 
+function getTournamentSeriesRequestId(tournament: Tournament | null): string | null {
+  if (!tournament) return null;
+  if (isFeaturedTournament(tournament) && tournament.league_id) {
+    return String(tournament.league_id).trim() || null;
+  }
+  return String(tournament.id || tournament.league_id || tournament.name || '').trim() || null;
+}
+
 function getFeaturedDefaultCompactView(tournament: Tournament | null, payload?: FeaturedTournamentPayload | null): boolean {
   const requestId = payload?.tournamentId || getFeaturedTournamentRequestId(tournament);
   return FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW[requestId || ''] ?? false;
@@ -2279,11 +2287,13 @@ export function TournamentSection({
     }
   }, []);
 
-  const fetchTournamentSeries = useCallback(async (tournamentId: string, offset = 0) => {
+  const fetchTournamentSeries = useCallback(async (tournament: Tournament, offset = 0) => {
+    const tournamentKey = tournament.id;
+    const requestId = getTournamentSeriesRequestId(tournament) || tournamentKey;
     setSeriesStateByTournament((prev) => {
-      const current = prev[tournamentId] || {
-        items: seriesByTournament?.[tournamentId] || [],
-        total: (seriesByTournament?.[tournamentId] || []).length,
+      const current = prev[tournamentKey] || {
+        items: seriesByTournament?.[tournamentKey] || [],
+        total: (seriesByTournament?.[tournamentKey] || []).length,
         hasMore: false,
         loading: false,
         error: ''
@@ -2291,7 +2301,7 @@ export function TournamentSection({
 
       return {
         ...prev,
-        [tournamentId]: {
+        [tournamentKey]: {
           ...current,
           loading: true,
           error: ''
@@ -2301,7 +2311,7 @@ export function TournamentSection({
 
     try {
       const params = new URLSearchParams({
-        tournamentId,
+        tournamentId: requestId,
         limit: String(DEFAULT_SERIES_PAGE_SIZE),
         offset: String(offset)
       });
@@ -2317,12 +2327,12 @@ export function TournamentSection({
       const hasMore = Boolean(payload.pagination?.hasMore);
 
       setSeriesStateByTournament((prev) => {
-        const current = prev[tournamentId];
+        const current = prev[tournamentKey];
         const mergedItems = offset > 0 ? [...(current?.items || []), ...nextItems] : nextItems;
 
         return {
           ...prev,
-          [tournamentId]: {
+          [tournamentKey]: {
             items: mergedItems,
             total: total || mergedItems.length,
             hasMore,
@@ -2333,7 +2343,7 @@ export function TournamentSection({
       });
     } catch (error) {
       setSeriesStateByTournament((prev) => {
-        const current = prev[tournamentId] || {
+        const current = prev[tournamentKey] || {
           items: [],
           total: 0,
           hasMore: false,
@@ -2343,7 +2353,7 @@ export function TournamentSection({
 
         return {
           ...prev,
-          [tournamentId]: {
+          [tournamentKey]: {
             ...current,
             loading: false,
             error: error instanceof Error ? error.message : '赛事详情加载失败'
@@ -2357,7 +2367,7 @@ export function TournamentSection({
     if (!isInView || !selectedTournament?.id) return;
     const currentState = seriesStateByTournament[selectedTournament.id];
     if (currentState?.items?.length || currentState?.loading) return;
-    void fetchTournamentSeries(selectedTournament.id, 0);
+    void fetchTournamentSeries(selectedTournament, 0);
   }, [fetchTournamentSeries, isInView, selectedTournament?.id, seriesStateByTournament]);
 
   useEffect(() => {
@@ -2871,7 +2881,7 @@ export function TournamentSection({
                   {selectedTournament && (
                     <button
                       type="button"
-                      onClick={() => void fetchTournamentSeries(selectedTournament.id, 0)}
+                      onClick={() => void fetchTournamentSeries(selectedTournament, 0)}
                       className="inline-flex items-center rounded-xl border border-red-500/30 bg-red-600/10 px-4 py-2 text-sm text-red-300 hover:bg-red-600/20 transition-colors"
                     >
                       重试加载
@@ -3185,7 +3195,7 @@ export function TournamentSection({
                     <div className="pt-2 flex justify-center">
                       <button
                         type="button"
-                        onClick={() => void fetchTournamentSeries(selectedTournament.id, currentSeries.length)}
+                        onClick={() => void fetchTournamentSeries(selectedTournament, currentSeries.length)}
                         disabled={currentSeriesLoading}
                         className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/80 px-4 py-2 text-sm text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >

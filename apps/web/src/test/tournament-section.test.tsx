@@ -186,7 +186,7 @@ describe('TournamentSection', () => {
       if (url === '/api/heroes') {
         return createJsonResponse({});
       }
-      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0') {
+      if (url === '/api/tournaments?tournamentId=19435&limit=10&offset=0') {
         return createJsonResponse({
           series: [
             {
@@ -339,7 +339,7 @@ describe('TournamentSection', () => {
     expect(await screen.findByText('PARIVISION')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0');
+      expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=19435&limit=10&offset=0');
     });
     expect(fetchMock).not.toHaveBeenCalledWith('/api/tournaments?tournamentId=epl-world-series&limit=10&offset=0');
   });
@@ -350,7 +350,7 @@ describe('TournamentSection', () => {
       if (url === '/api/heroes') {
         return createJsonResponse({});
       }
-      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0') {
+      if (url === '/api/tournaments?tournamentId=19435&limit=10&offset=0') {
         return createJsonResponse({
           series: buildSeries(1, 1),
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
@@ -483,7 +483,7 @@ describe('TournamentSection', () => {
       if (url === '/api/heroes') {
         return createJsonResponse({});
       }
-      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0') {
+      if (url === '/api/tournaments?tournamentId=19435&limit=10&offset=0') {
         return createJsonResponse({
           series: buildSeries(1, 1),
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
@@ -562,7 +562,7 @@ describe('TournamentSection', () => {
       if (url === '/api/heroes') {
         return createJsonResponse({});
       }
-      if (url === '/api/tournaments?tournamentId=esl-one-birmingham-2026&limit=10&offset=0') {
+      if (url === '/api/tournaments?tournamentId=19422&limit=10&offset=0') {
         return createJsonResponse({
           series: buildSeries(1, 1),
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
@@ -653,7 +653,7 @@ describe('TournamentSection', () => {
       if (url === '/api/heroes') {
         return createJsonResponse({});
       }
-      if (url === '/api/tournaments?tournamentId=pgl-wallachia-s7&limit=10&offset=0') {
+      if (url === '/api/tournaments?tournamentId=19435&limit=10&offset=0') {
         return createJsonResponse({
           series: buildSeries(1, 1),
           pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
