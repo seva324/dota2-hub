@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ensureHeroLiveScoresTable = vi.fn();
 const getLiveHeroPayloads = vi.fn();
 const explainLiveHeroMatching = vi.fn();
-
-vi.mock('../../../../lib/server/hero-live-score-cache.js', () => ({
-  ensureHeroLiveScoresTable,
-}));
 
 vi.mock('../../../../lib/server/live-hero-service.js', () => ({
   explainLiveHeroMatching,
@@ -44,7 +39,6 @@ describe('/api/live-hero', () => {
   beforeEach(() => {
     vi.resetModules();
     process.env.DATABASE_URL = 'postgres://example.test/db';
-    ensureHeroLiveScoresTable.mockReset();
     getLiveHeroPayloads.mockReset();
     explainLiveHeroMatching.mockReset();
   });
@@ -69,8 +63,7 @@ describe('/api/live-hero', () => {
     expect((res.payload as any).liveMatches).toHaveLength(1);
     expect((res.payload as any).meta.liveCount).toBe(1);
     expect(getLiveHeroPayloads).toHaveBeenCalled();
-    expect(ensureHeroLiveScoresTable).toHaveBeenCalled();
-    expect(res.headers['Cache-Control']).toBe('public, max-age=15, s-maxage=30, stale-while-revalidate=60');
+    expect(res.headers['Cache-Control']).toBe('public, max-age=2, s-maxage=2, stale-while-revalidate=3');
   });
 
   it('passes refresh intent and team filters through to the live hero service', async () => {
@@ -88,6 +81,7 @@ describe('/api/live-hero', () => {
     }));
     expect((res.payload as any).live).toBeNull();
     expect((res.payload as any).liveMatches).toEqual([]);
+    expect(res.headers['Cache-Control']).toBe('no-store');
   });
 
   it('includes debug matching details when requested', async () => {
@@ -109,5 +103,6 @@ describe('/api/live-hero', () => {
       matched: [{ reason: 'matched_by_league_name' }],
       unmatchedHawkSeries: [{ reason: 'no_matching_tournament_keyword' }],
     });
+    expect(res.headers['Cache-Control']).toBe('no-store');
   });
 });
