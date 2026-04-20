@@ -93,6 +93,7 @@ describe('/api/tournaments lazy loading', () => {
         }),
       ],
     });
+    expect(res.headers['Cache-Control']).toBe('public, max-age=30, s-maxage=120, stale-while-revalidate=300');
     expect(taggedMock.mock.calls.some((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM series'))).toBe(false);
   });
 
@@ -654,6 +655,7 @@ describe('/api/tournaments lazy loading', () => {
         hasMore: true,
       },
     });
+    expect(res.headers['Cache-Control']).toBe('public, max-age=15, s-maxage=60, stale-while-revalidate=120');
   });
 
   it('enriches featured tournament data with site teams and internal match ids', async () => {

@@ -16,6 +16,9 @@ import { deriveTournamentStatus } from '../lib/server/tournament-status.js';
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
 const MAX_SERIES_LIMIT = 50;
+const TOURNAMENT_SUMMARY_CACHE_CONTROL = 'public, max-age=30, s-maxage=120, stale-while-revalidate=300';
+const TOURNAMENT_DETAIL_CACHE_CONTROL = 'public, max-age=15, s-maxage=60, stale-while-revalidate=120';
+const FEATURED_TOURNAMENT_CACHE_CONTROL = 'public, max-age=30, s-maxage=120, stale-while-revalidate=300';
 const FEATURED_TEAM_ALIAS_OVERRIDES = {
   'pgl-wallachia-s7': {
     aurora: 'auroragaming',
@@ -1002,7 +1005,7 @@ export default async function handler(req, res) {
   try {
     const wantsFeatured = String(req.query?.featured || '').trim() === '1';
     if (wantsFeatured) {
-      res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300');
+      res.setHeader('Cache-Control', FEATURED_TOURNAMENT_CACHE_CONTROL);
       if (!tournamentId) {
         return res.status(400).json({ error: 'tournamentId is required' });
       }
@@ -1029,10 +1032,12 @@ export default async function handler(req, res) {
     }
 
     if (!tournamentId) {
+      res.setHeader('Cache-Control', TOURNAMENT_SUMMARY_CACHE_CONTROL);
       const tournaments = await listTournamentSummaries(db, req);
       return res.status(200).json({ tournaments });
     }
 
+    res.setHeader('Cache-Control', TOURNAMENT_DETAIL_CACHE_CONTROL);
     const tournament = await getTournamentById(db, tournamentId);
     if (!tournament) {
       return res.status(404).json({ error: 'Tournament not found' });
