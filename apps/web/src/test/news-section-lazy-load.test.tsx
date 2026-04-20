@@ -69,4 +69,19 @@ describe('NewsSection lazy loading', () => {
 
     expect(await screen.findByText('DreamLeague Finals Locked')).toBeInTheDocument();
   });
+
+  it('does not re-request news in a render loop when props are omitted', async () => {
+    const fetchMock = vi.mocked(fetch);
+
+    render(<NewsSection />);
+
+    await act(async () => {
+      MockIntersectionObserver.instances[0]?.trigger(true);
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/news');
+  });
 });

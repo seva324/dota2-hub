@@ -124,6 +124,7 @@ interface TournamentSeriesState {
   hasMore: boolean;
   loading: boolean;
   error: string;
+  loaded: boolean;
 }
 
 interface FeaturedEventRoundCell {
@@ -268,6 +269,11 @@ const FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW: Record<string, boolean> = {
   'pgl-wallachia-s8': false,
   'esl-one-birmingham-2026': true,
 };
+
+const EMPTY_TOURNAMENTS: Tournament[] = [];
+const EMPTY_TOURNAMENT_ALL_MATCHES: NonNullable<TournamentSectionProps['allMatches']> = [];
+const EMPTY_TOURNAMENT_UPCOMING: NonNullable<TournamentSectionProps['upcoming']> = [];
+const EMPTY_TOURNAMENT_TEAMS: NonNullable<TournamentSectionProps['teams']> = [];
 
 function normalizeTeamAlias(name?: string | null): string {
   return String(name || '').trim().toLowerCase();
@@ -1993,11 +1999,11 @@ function getSeriesStartTime(series: Series): number {
 }
 
 export function TournamentSection({
-  tournaments = [],
+  tournaments = EMPTY_TOURNAMENTS,
   seriesByTournament,
-  allMatches = [],
-  upcoming = [],
-  teams = []
+  allMatches = EMPTY_TOURNAMENT_ALL_MATCHES,
+  upcoming = EMPTY_TOURNAMENT_UPCOMING,
+  teams = EMPTY_TOURNAMENT_TEAMS
 }: TournamentSectionProps) {
   const [showT1Only, setShowT1Only] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
@@ -2296,7 +2302,8 @@ export function TournamentSection({
         total: (seriesByTournament?.[tournamentKey] || []).length,
         hasMore: false,
         loading: false,
-        error: ''
+        error: '',
+        loaded: false
       };
 
       return {
@@ -2304,7 +2311,8 @@ export function TournamentSection({
         [tournamentKey]: {
           ...current,
           loading: true,
-          error: ''
+          error: '',
+          loaded: current.loaded
         }
       };
     });
@@ -2337,7 +2345,8 @@ export function TournamentSection({
             total: total || mergedItems.length,
             hasMore,
             loading: false,
-            error: ''
+            error: '',
+            loaded: true
           }
         };
       });
@@ -2348,7 +2357,8 @@ export function TournamentSection({
           total: 0,
           hasMore: false,
           loading: false,
-          error: ''
+          error: '',
+          loaded: false
         };
 
         return {
@@ -2356,7 +2366,8 @@ export function TournamentSection({
           [tournamentKey]: {
             ...current,
             loading: false,
-            error: error instanceof Error ? error.message : '赛事详情加载失败'
+            error: error instanceof Error ? error.message : '赛事详情加载失败',
+            loaded: true
           }
         };
       });
@@ -2366,7 +2377,7 @@ export function TournamentSection({
   useEffect(() => {
     if (!isInView || !selectedTournament?.id) return;
     const currentState = seriesStateByTournament[selectedTournament.id];
-    if (currentState?.items?.length || currentState?.loading) return;
+    if (currentState?.items?.length || currentState?.loading || currentState?.loaded) return;
     void fetchTournamentSeries(selectedTournament, 0);
   }, [fetchTournamentSeries, isInView, selectedTournament?.id, seriesStateByTournament]);
 

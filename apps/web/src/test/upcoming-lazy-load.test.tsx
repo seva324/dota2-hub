@@ -154,4 +154,26 @@ describe('UpcomingSection lazy loading', () => {
       expect.arrayContaining([expect.stringContaining('/images/mirror/teams/team-liquid-white.svg')])
     );
   });
+
+  it('does not re-request upcoming data in a render loop when props are omitted', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        upcoming: [],
+        teams: [],
+      }),
+    } as Response);
+
+    render(<UpcomingSection />);
+
+    await act(async () => {
+      MockIntersectionObserver.instances[0]?.trigger(true);
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/upcoming?days=2');
+  });
 });
