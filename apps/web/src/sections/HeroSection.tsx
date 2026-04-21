@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, Calendar, Clock3, Flame, Radio, Trophy, TrendingUp, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -167,22 +167,56 @@ function toSortTimestamp(value: string | number | null | undefined): number {
   return 0;
 }
 
+function compareLiveHeroesForDisplay(a: LiveHeroPayload, b: LiveHeroPayload) {
+  const aStart = toSortTimestamp(a.startedAt);
+  const bStart = toSortTimestamp(b.startedAt);
+  if (aStart !== bStart) return aStart - bStart;
+  const aLeague = String(a.leagueName || '');
+  const bLeague = String(b.leagueName || '');
+  if (aLeague !== bLeague) return aLeague.localeCompare(bLeague);
+  const aTeams = (a.teams || []).map((team) => team.name).join(' vs ');
+  const bTeams = (b.teams || []).map((team) => team.name).join(' vs ');
+  return aTeams.localeCompare(bTeams);
+}
+
 function sortLiveHeroesForDisplay(items: LiveHeroPayload[]) {
-  return [...items].sort((a, b) => {
-    const aStart = toSortTimestamp(a.startedAt);
-    const bStart = toSortTimestamp(b.startedAt);
-    if (aStart !== bStart) return aStart - bStart;
-    const aLeague = String(a.leagueName || '');
-    const bLeague = String(b.leagueName || '');
-    if (aLeague !== bLeague) return aLeague.localeCompare(bLeague);
-    const aTeams = (a.teams || []).map((team) => team.name).join(' vs ');
-    const bTeams = (b.teams || []).map((team) => team.name).join(' vs ');
-    return aTeams.localeCompare(bTeams);
+  return [...items].sort(compareLiveHeroesForDisplay);
+}
+
+function getLiveHeroCardKey(liveHero: LiveHeroPayload) {
+  const teams = liveHero.teams || [];
+  return `${liveHero.sourceUrl || liveHero.leagueName}-${teams[0]?.name || ''}-${teams[1]?.name || ''}`;
+}
+
+function mergeLiveHeroesForDisplay(current: LiveHeroPayload[], next: LiveHeroPayload[]) {
+  if (current.length === 0) {
+    return sortLiveHeroesForDisplay(next);
+  }
+
+  const previousOrder = new Map(
+    current.map((item, index) => [getLiveHeroCardKey(item), index])
+  );
+
+  return [...next].sort((a, b) => {
+    const aPreviousIndex = previousOrder.get(getLiveHeroCardKey(a));
+    const bPreviousIndex = previousOrder.get(getLiveHeroCardKey(b));
+    const aHasPreviousIndex = aPreviousIndex !== undefined;
+    const bHasPreviousIndex = bPreviousIndex !== undefined;
+
+    if (aHasPreviousIndex && bHasPreviousIndex && aPreviousIndex !== bPreviousIndex) {
+      return aPreviousIndex - bPreviousIndex;
+    }
+    if (aHasPreviousIndex !== bHasPreviousIndex) {
+      return aHasPreviousIndex ? -1 : 1;
+    }
+
+    return compareLiveHeroesForDisplay(a, b);
   });
 }
 
 const HERO_DEFAULT_DAYS = 1;
 const HERO_LIVE_POLL_INTERVAL_MS = 3000;
+const HERO_LIVE_EMPTY_GRACE_POLLS = 2;
 
 function buildHeroUpcomingApiUrl(days: number = HERO_DEFAULT_DAYS): string {
   const params = new URLSearchParams({ days: String(days) });
@@ -202,11 +236,24 @@ export function HeroSection({
   const [lazyTeams, setLazyTeams] = useState<TeamLike[]>([]);
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
   const [selectedMapKeys, setSelectedMapKeys] = useState<Record<string, string>>({});
+  const transientEmptyLivePollsRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    const loadLiveHeroData = async () => {
+    const keepCurrentLiveHeroesOnTransientFailure = (current: LiveHeroPayload[]) => {
+      if (current.length === 0) return [];
+
+      transientEmptyLivePollsRef.current += 1;
+      if (transientEmptyLivePollsRef.current <= HERO_LIVE_EMPTY_GRACE_POLLS) {
+        return current;
+      }
+
+      transientEmptyLivePollsRef.current = 0;
+      return [];
+    };
+
+    const loadLiveHeroData = async ({ preserveOnTransientFailure = false } = {}) => {
       try {
         const liveResponse = await fetch(buildHeroLiveApiUrl(), { cache: 'no-store' });
         const livePayload = liveResponse.ok ? await liveResponse.json() : { live: null };
@@ -217,11 +264,24 @@ export function HeroSection({
           : livePayload?.live
             ? [livePayload.live]
             : [];
-        setLiveHeroes(nextLiveHeroes);
+
+        if (nextLiveHeroes.length > 0) {
+          transientEmptyLivePollsRef.current = 0;
+          setLiveHeroes((current) => mergeLiveHeroesForDisplay(current, nextLiveHeroes));
+          return;
+        }
+
+        setLiveHeroes((current) => {
+          if (!preserveOnTransientFailure) return [];
+          return keepCurrentLiveHeroesOnTransientFailure(current);
+        });
       } catch (error) {
         if (cancelled) return;
         console.error('[HeroSection] Failed to load live hero data:', error);
-        setLiveHeroes([]);
+        setLiveHeroes((current) => {
+          if (!preserveOnTransientFailure) return [];
+          return keepCurrentLiveHeroesOnTransientFailure(current);
+        });
       }
     };
 
@@ -250,12 +310,12 @@ export function HeroSection({
 
     const livePollTimer = window.setInterval(() => {
       if (document.hidden) return;
-      void loadLiveHeroData();
+      void loadLiveHeroData({ preserveOnTransientFailure: true });
     }, HERO_LIVE_POLL_INTERVAL_MS);
 
     const handleVisibilityChange = () => {
       if (document.hidden) return;
-      void loadLiveHeroData();
+      void loadLiveHeroData({ preserveOnTransientFailure: true });
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -269,7 +329,7 @@ export function HeroSection({
 
   const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
   const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
-  const sortedLiveHeroes = useMemo(() => sortLiveHeroesForDisplay(liveHeroes), [liveHeroes]);
+  const sortedLiveHeroes = liveHeroes;
   const primaryLiveHero = sortedLiveHeroes[0] || null;
   const getTeamLogo = (teamName?: string | null, explicitLogo?: string | null) =>
     resolveTeamLogo({ name: teamName }, effectiveTeams, explicitLogo);
@@ -411,7 +471,7 @@ export function HeroSection({
                 <div className="grid gap-3 md:grid-cols-2" data-testid="hero-live-grid">
                   {sortedLiveHeroes.map((liveHero) => {
                     const teams = liveHero.teams || [];
-                    const cardKey = `${liveHero.sourceUrl || liveHero.leagueName}-${teams[0]?.name || ''}-${teams[1]?.name || ''}`;
+                    const cardKey = getLiveHeroCardKey(liveHero);
                     const selectedMapLabel = selectedMapKeys[cardKey];
                     const selectedMap = liveHero.maps.find((map) => map.label === selectedMapLabel)
                       || liveHero.liveMap
