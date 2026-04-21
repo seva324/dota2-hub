@@ -1178,6 +1178,172 @@ describe('runSyncLiquipedia', () => {
     expect(upcomingInsertCall?.slice(1)).toContain('PGL Wallachia Season 8');
   });
 
+  it('merges DreamLeague Division 2 Season 4 metadata into the OpenDota row and removes the duplicate synthetic row', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [];
+      }
+      return [];
+    });
+
+    db.query = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT team_id, name, tag FROM teams')) {
+        return [];
+      }
+      if (sql.includes('FROM tournaments') && sql.includes('ORDER BY updated_at DESC NULLS LAST')) {
+        return [
+          {
+            league_id: 19532,
+            name: 'DreamLeague Division 2 Season 4',
+            tier: 'B',
+            location: null,
+            status: null,
+            start_time: null,
+            end_time: null,
+            prize_pool: null,
+            prize_pool_usd: null,
+            image: null,
+            location_flag_url: null,
+            source_url: null,
+            dltv_event_slug: null,
+            dltv_parent_slug: null,
+            event_group_slug: null,
+          },
+          {
+            league_id: 1189012183,
+            name: 'DreamLeague Division 2 Season 4',
+            tier: 'B',
+            location: 'Europe',
+            status: 'upcoming',
+            start_time: 1776499200,
+            end_time: 1777612800,
+            prize_pool: '$45,000',
+            prize_pool_usd: 45000,
+            image: 'https://s3.dltv.org/uploads/events/dreamleague-div2-card.png',
+            location_flag_url: 'https://flagcdn.com/w40/eu.png',
+            source_url: 'https://dltv.org/events/dreamleague-division-2-season-4',
+            dltv_event_slug: 'dreamleague-division-2-season-4',
+            dltv_parent_slug: null,
+            event_group_slug: 'dreamleague-division-2-season-4',
+          },
+        ];
+      }
+      if (sql.includes('SELECT league_id FROM tournaments WHERE league_id =')) {
+        return [];
+      }
+      return [];
+    });
+
+    const eventsCatalogHtml = `
+      <html>
+        <body>
+          <div class="events__card">
+            <a href="https://dltv.org/events/dreamleague-division-2-season-4" class="events__card-head">
+              <div class="events__card-head__pic">
+                <div class="pic" style="background-image: url('https://s3.dltv.org/uploads/events/dreamleague-div2-card.png')">
+                  <div class="pic__tag">
+                    <span data-datetime-source="2026-04-18 00:00:00">Apr 18</span>
+                    -
+                    <span data-datetime-source="2026-04-30 00:00:00">Apr 30</span>
+                  </div>
+                </div>
+              </div>
+              <div class="events__card-head__info">
+                <div class="info__col">
+                  <div class="info__col-item name">DreamLeague Division 2 Season 4</div>
+                  <div class="info__col-item"><span>Europe</span></div>
+                  <div class="info__col-item prize"><span>Prize pool <strong>$45,000</strong></span></div>
+                </div>
+                <div class="info__col width-50 abs">
+                  <div class="info__col-item align-right">B-Tier Tier</div>
+                  <div class="info__col-item align-right">8 participants</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </body>
+      </html>
+    `;
+    const dreamleagueHtml = `
+      <html>
+        <head>
+          <title>DreamLeague Division 2 Season 4 overview | DLTV</title>
+          <meta name="description" content="Complete overview of DreamLeague Division 2 Season 4 which will take place from Apr 18, 2026 to Apr 30, 2026, a $45,000 Dota 2 tournament.">
+        </head>
+        <body>
+          <h1>DreamLeague Division 2 Season 4</h1>
+          <div style="background-image: url('https://s3.dltv.org/uploads/events/big/dreamleague-div2.png')"></div>
+          <div>UPCOMING</div>
+          <div>DATES</div>
+          <div>APR 18 - APR 30, 2026</div>
+          <div>COUNTRY</div>
+          <div>EUROPE</div>
+          <div>EVENT TIER</div>
+          <div>B-TIER</div>
+          <div>PRIZE POOL</div>
+          <div>$45,000</div>
+        </body>
+      </html>
+    `;
+    const dltvHtml = (`
+      <div class="match upcoming" data-series-id="200001" data-matches-odd="2026-04-18 03:30:00">
+        <div class="match__head">
+          <a href="https://dltv.org/events/dreamleague-division-2-season-4"></a>
+          <div class="match__head-event"><span>DreamLeague Division 2 Season 4</span></div>
+          <div class="match__head-format">Bo3</div>
+        </div>
+        <div class="match__body-details">
+          <div class="match__body-details__team"><div class="team__title"><span>Nigma Galaxy</span></div></div>
+          <div class="match__body-details__team"><div class="team__title"><span>1win Team</span></div></div>
+        </div>
+      </div>
+    ` + ' '.repeat(1200));
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('dltv.org/matches')) {
+        return { ok: true, text: async () => dltvHtml } as Response;
+      }
+      if (url === 'https://dltv.org/events' || url === 'https://r.jina.ai/http://dltv.org/events') {
+        return { ok: true, text: async () => eventsCatalogHtml } as Response;
+      }
+      if (url.endsWith('/events/dreamleague-division-2-season-4')) {
+        return { ok: true, text: async () => dreamleagueHtml } as Response;
+      }
+      if (url.includes('api.opendota.com')) {
+        return { ok: true, json: async () => ([]) } as Response;
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const { runSyncLiquipedia } = await import('../../../../lib/server/sync-liquipedia.js');
+
+    await runSyncLiquipedia({ phase: 'metadata', seedUrls: 'https://dltv.org/events/dreamleague-division-2-season-4' });
+
+    const tournamentInsertCalls = (db.query as any).mock.calls
+      .filter((call: unknown[]) => String(call[0] || '').includes('INSERT INTO tournaments'));
+    const repairedCall = tournamentInsertCalls.find((call: unknown[]) => (
+      Array.isArray(call[1]) && call[1][0] === 19532
+    ));
+    expect(repairedCall?.[1]).toEqual(expect.arrayContaining([
+      19532,
+      'DreamLeague Division 2 Season 4',
+      'B',
+      'EUROPE',
+      'upcoming',
+      'https://dltv.org/events/dreamleague-division-2-season-4',
+      'dreamleague-division-2-season-4',
+      'dreamleague-division-2-season-4',
+    ]));
+
+    const deleteCall = (db.query as any).mock.calls.find((call: unknown[]) => (
+      String(call[0] || '').includes('DELETE FROM tournaments WHERE league_id = $1')
+      && Array.isArray(call[1])
+      && call[1][0] === 1189012183
+    ));
+    expect(deleteCall).toBeDefined();
+  });
+
   it('falls back to Jina markdown when the direct DLTV matches page is rate limited', async () => {
     taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const sql = renderSql(strings);

@@ -76,7 +76,15 @@ const CUSTOM_BODY_FILE = getArg('body-file', null);
 const CUSTOM_TOPIC = getArg('topic', null);
 const PRESET = getArg('preset', process.env.XHS_POST_PRESET || 'default');
 const AI_REWRITE = !['0', 'false', 'no', 'off'].includes(String(getArg('ai-rewrite', process.env.XHS_AI_REWRITE || 'true')).toLowerCase());
-const REWRITE_MODEL = getArg('rewrite-model', process.env.XHS_REWRITE_MODEL || process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash');
+const REWRITE_MODEL = getArg(
+  'rewrite-model',
+  process.env.XHS_REWRITE_MODEL
+    || process.env.LOCAL_LLM_MODEL
+    || process.env.LM_STUDIO_MODEL
+    || process.env.LMSTUDIO_MODEL
+    || process.env.OPENROUTER_MODEL
+    || 'google/gemini-2.5-flash'
+);
 const REWRITE_TIMEOUT_MS = Math.max(5000, Number(getArg('ai-timeout-ms', process.env.XHS_REWRITE_TIMEOUT_MS || '60000')) || 60000);
 const XHS_POST_TIMEOUT_MS = Math.max(10000, Number(getArg('post-timeout-ms', process.env.XHS_POST_TIMEOUT_MS || '180000')) || 180000);
 const LOCK_STALE_MS = Math.max(60000, Number(getArg('lock-stale-ms', process.env.XHS_POST_LOCK_STALE_MS || '900000')) || 900000);

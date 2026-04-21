@@ -49,4 +49,16 @@ describe('tournament backgrounds', () => {
       }
     )).toBe('https://dotahub.cn/api/tournament-background?slug=dreamleague');
   });
+
+  it('preserves the local dev port when building background urls', () => {
+    expect(buildTournamentBackgroundUrl(
+      { name: 'DreamLeague Season 31' },
+      {
+        headers: {
+          host: '127.0.0.1:4173',
+          'x-forwarded-proto': 'http',
+        },
+      }
+    )).toBe('http://127.0.0.1:4173/api/tournament-background?slug=dreamleague');
+  });
 });

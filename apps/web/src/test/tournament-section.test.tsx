@@ -647,6 +647,92 @@ describe('TournamentSection', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=esl-one-birmingham-2026&featured=1');
   });
 
+  it('routes DreamLeague Division 2 Season 4 to the featured bracket view', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=19532&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(50, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=dreamleague-division-2-season-4&featured=1') {
+        return createJsonResponse({
+          tournamentId: 'dreamleague-division-2-season-4',
+          title: 'Main Event',
+          sourceLabel: 'DLTV',
+          sourceUrl: 'https://dltv.org/events/dreamleague-division-2-season-4',
+          fetchedAt: '2026-04-21T08:00:00.000Z',
+          groupStage: {
+            title: 'Group Stage',
+            format: 'round-robin',
+            rounds: [],
+            groups: [],
+            standings: [],
+          },
+          playoffs: {
+            title: 'Playoffs',
+            rounds: [
+              { roundName: 'Upper Bracket R1', roundKey: 'upper-r1', matches: [] },
+              { roundName: 'Upper Bracket R2', roundKey: 'upper-r2', matches: [] },
+              { roundName: 'Upper Bracket Finals', roundKey: 'upper-finals', matches: [] },
+              { roundName: 'Grand Finals', roundKey: 'grand-finals', matches: [] },
+              { roundName: 'Lower Bracket R1', roundKey: 'lower-r1', matches: [] },
+              { roundName: 'Lower Bracket R2', roundKey: 'lower-r2', matches: [] },
+              { roundName: 'Lower Bracket R3', roundKey: 'lower-r3', matches: [] },
+              { roundName: 'Lower Bracket R4', roundKey: 'lower-r4', matches: [] },
+              { roundName: 'Lower Bracket Finals', roundKey: 'lower-finals', matches: [] },
+            ],
+            placementPrizes: [
+              { placement: '1st Place', prize: '$15,000' },
+              { placement: '2nd Place', prize: '$10,000' },
+            ],
+          },
+          matches: {
+            title: 'Matches & Scores',
+            upcoming: [],
+            finished: [],
+          },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: '19532',
+            league_id: 19532,
+            name: 'DreamLeague Division 2 Season 4',
+            dltv_event_slug: 'dreamleague-division-2-season-4',
+            status: 'ongoing',
+            tier: 'B',
+            location: 'Europe',
+            start_time: 1_776_556_800,
+            end_time: 1_777_679_999,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '小型比赛' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'DreamLeague Division 2 Season 4' })[1]);
+    expect(await screen.findByText('DreamLeague playoffs')).toBeInTheDocument();
+    expect(screen.getAllByText('Upper Bracket R2').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Lower Bracket R4').length).toBeGreaterThan(0);
+    expect(screen.getByText('$15,000')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-division-2-season-4&featured=1');
+  });
+
   it('renders PGL Wallachia playoff compact structure with upper semis and prize placements', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

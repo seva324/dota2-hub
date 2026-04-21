@@ -166,6 +166,14 @@ describe('parseDltvFeaturedTournamentPage', () => {
     }));
   });
 
+  it('resolves the DreamLeague Division 2 Season 4 featured definition', () => {
+    expect(resolveFeaturedTournamentDefinition('dreamleague-division-2-season-4')).toEqual(expect.objectContaining({
+      id: 'dreamleague-division-2-season-4',
+      leagueId: '19532',
+      sourceUrl: 'https://dltv.org/events/dreamleague-division-2-season-4',
+    }));
+  });
+
   it('extracts group stage, playoffs, and match score panels', () => {
     const payload = parseDltvFeaturedTournamentPage(fixture, definition as never);
 

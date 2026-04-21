@@ -246,6 +246,9 @@ const FEATURED_TOURNAMENT_KEYS = new Set([
   '19669',
   'esl one birmingham 2026',
   'esl one season birmingham',
+  'dreamleague-division-2-season-4',
+  '19532',
+  'dreamleague division 2 season 4',
 ]);
 
 // Team data type for team abbreviations
@@ -267,7 +270,8 @@ const FALLBACK_TEAM_ABBR: Record<string, string> = {
 const FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW: Record<string, boolean> = {
   'pgl-wallachia-s7': true,
   'pgl-wallachia-s8': false,
-  'esl-one-birmingham-2026': true,
+  'esl-one-birmingham-2026': false,
+  'dreamleague-division-2-season-4': false,
 };
 
 const EMPTY_TOURNAMENTS: Tournament[] = [];
@@ -557,6 +561,14 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
     || normalizedEventSlug === 'pgl-wallachia-season-8'
   ) {
     return 'pgl-wallachia-s8';
+  }
+
+  if (
+    normalizedLeagueId === '19532'
+    || normalizedName === 'dreamleague division 2 season 4'
+    || normalizedEventSlug === 'dreamleague-division-2-season-4'
+  ) {
+    return 'dreamleague-division-2-season-4';
   }
 
   if (
@@ -889,12 +901,14 @@ function FeaturedCompactPlayoffRound({
 
 const FEATURED_PLAYOFF_ORDER = [
   'upper-r1',
+  'upper-r2',
   'upper-semis',
   'upper-finals',
   'grand-finals',
   'lower-r1',
   'lower-r2',
   'lower-r3',
+  'lower-r4',
   'lower-finals',
 ] as const;
 
@@ -944,11 +958,13 @@ function normalizeFeaturedPlayoffRoundKey(roundName: string) {
   const normalized = String(roundName || '').trim().toLowerCase();
   if (normalized.includes('grand final')) return 'grand-finals';
   if (normalized.includes('upper bracket') && normalized.includes('r1')) return 'upper-r1';
+  if (normalized.includes('upper bracket') && normalized.includes('r2')) return 'upper-r2';
   if (normalized.includes('upper bracket') && normalized.includes('semi')) return 'upper-semis';
   if (normalized.includes('upper bracket') && normalized.includes('final')) return 'upper-finals';
   if (normalized.includes('lower bracket') && normalized.includes('r1')) return 'lower-r1';
   if (normalized.includes('lower bracket') && normalized.includes('r2')) return 'lower-r2';
   if (normalized.includes('lower bracket') && normalized.includes('r3')) return 'lower-r3';
+  if (normalized.includes('lower bracket') && normalized.includes('r4')) return 'lower-r4';
   if (normalized.includes('lower bracket') && normalized.includes('final')) return 'lower-finals';
   return normalized;
 }
@@ -1270,7 +1286,7 @@ function FeaturedDesktopCompactBracket({
 }
 
 const ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
-  minWidth: 980,
+  minWidth: 1040,
   columns: 5,
   columnWidth: 170,
   columnGap: 30,
@@ -1280,13 +1296,13 @@ const ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
   matchHeight: 102,
   rowUnit: 28,
   lanes: [
-    { roundKey: 'upper-r1', fallbackTitle: 'Upper Bracket R1', column: 1, headerRow: 0, slotRows: [2.3, 8.0], section: 'upper' },
-    { roundKey: 'upper-finals', fallbackTitle: 'Upper Bracket Finals', column: 3, headerRow: 0, slotRows: [5.15], section: 'upper' },
-    { roundKey: 'grand-finals', fallbackTitle: 'Grand Finals', column: 4, headerRow: 0, slotRows: [13.0], section: 'upper' },
-    { roundKey: 'lower-r1', fallbackTitle: 'Lower Bracket R1', column: 0, headerRow: 16.0, slotRows: [18.6, 24.0], section: 'lower' },
-    { roundKey: 'lower-r2', fallbackTitle: 'Lower Bracket R2', column: 1, headerRow: 16.0, slotRows: [17.4, 22.8], section: 'lower' },
-    { roundKey: 'lower-r3', fallbackTitle: 'Lower Bracket R3', column: 2, headerRow: 16.0, slotRows: [20.1], section: 'lower' },
-    { roundKey: 'lower-finals', fallbackTitle: 'Lower Bracket Finals', column: 3, headerRow: 16.0, slotRows: [17.4], section: 'lower' },
+    { roundKey: 'upper-r1', fallbackTitle: 'Upper Bracket R1 (bo3)', column: 0, headerRow: 0, slotRows: [2.4, 11.8], section: 'upper' },
+    { roundKey: 'upper-finals', fallbackTitle: 'Upper Bracket Finals (bo3)', column: 2, headerRow: 0, slotRows: [7.1], section: 'upper' },
+    { roundKey: 'grand-finals', fallbackTitle: 'Grand Finals (bo5)', column: 4, headerRow: 0, slotRows: [17.2], section: 'upper' },
+    { roundKey: 'lower-r1', fallbackTitle: 'Lower Bracket R1 (bo3)', column: 0, headerRow: 19.4, slotRows: [21.9, 27.2], section: 'lower' },
+    { roundKey: 'lower-r2', fallbackTitle: 'Lower Bracket R2 (bo3)', column: 1, headerRow: 19.4, slotRows: [20.7, 26.0], section: 'lower' },
+    { roundKey: 'lower-r3', fallbackTitle: 'Lower Bracket R3 (bo3)', column: 2, headerRow: 19.4, slotRows: [23.35], section: 'lower' },
+    { roundKey: 'lower-finals', fallbackTitle: 'Lower Bracket Finals (bo3)', column: 3, headerRow: 19.4, slotRows: [20.7], section: 'lower' },
   ],
   connections: [
     { fromLane: 'upper-r1', fromSlot: 0, toLane: 'upper-finals', toSlot: 0 },
@@ -1299,6 +1315,14 @@ const ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
     { fromLane: 'lower-r3', fromSlot: 0, toLane: 'lower-finals', toSlot: 0 },
     { fromLane: 'lower-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
   ],
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$290,000', laneKey: 'grand-finals', slot: 0, dx: 16, dy: 116 },
+    { placement: '2nd Place', fallbackPrize: '$130,000', laneKey: 'grand-finals', slot: 0, dx: 16, dy: 160 },
+    { placement: '3rd Place', fallbackPrize: '$105,000', laneKey: 'lower-finals', slot: 0, dx: 0, dy: 128 },
+    { placement: '4th Place', fallbackPrize: '$80,000', laneKey: 'lower-r3', slot: 0, dx: 0, dy: 128 },
+    { placement: '5th - 6th Place', fallbackPrize: '$55,000', laneKey: 'lower-r2', slot: 1, dx: 0, dy: 154 },
+    { placement: '7th - 8th Place', fallbackPrize: '$40,000', laneKey: 'lower-r1', slot: 1, dx: 0, dy: 166 },
+  ],
 };
 
 const ESL_BIRMINGHAM_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
@@ -1308,6 +1332,81 @@ const ESL_BIRMINGHAM_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
   columnGap: 30,
   headerWidth: 96,
   matchWidth: 96,
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$290,000', laneKey: 'grand-finals', slot: 0, dx: 12, dy: 104 },
+    { placement: '2nd Place', fallbackPrize: '$130,000', laneKey: 'grand-finals', slot: 0, dx: 12, dy: 148 },
+    { placement: '3rd Place', fallbackPrize: '$105,000', laneKey: 'lower-finals', slot: 0, dx: -2, dy: 120 },
+    { placement: '4th Place', fallbackPrize: '$80,000', laneKey: 'lower-r3', slot: 0, dx: -2, dy: 120 },
+    { placement: '5th - 6th Place', fallbackPrize: '$55,000', laneKey: 'lower-r2', slot: 1, dx: -2, dy: 144 },
+    { placement: '7th - 8th Place', fallbackPrize: '$40,000', laneKey: 'lower-r1', slot: 1, dx: -2, dy: 156 },
+  ],
+};
+
+const DREAMLEAGUE_DIV2_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  minWidth: 1248,
+  columns: 6,
+  columnWidth: 168,
+  columnGap: 30,
+  headerWidth: 168,
+  headerHeight: 54,
+  matchWidth: 168,
+  matchHeight: 102,
+  rowUnit: 26,
+  lanes: [
+    { roundKey: 'upper-r1', fallbackTitle: 'Upper Bracket R1', column: 0, headerRow: 0, slotRows: [2.1, 6.9, 11.7, 16.5], section: 'upper' },
+    { roundKey: 'upper-r2', fallbackTitle: 'Upper Bracket R2', column: 1, headerRow: 0, slotRows: [4.5, 14.1], section: 'upper' },
+    { roundKey: 'upper-finals', fallbackTitle: 'Upper Bracket Finals', column: 3, headerRow: 0, slotRows: [9.3], section: 'upper' },
+    { roundKey: 'grand-finals', fallbackTitle: 'Grand Finals', column: 5, headerRow: 0, slotRows: [23.6], section: 'upper' },
+    { roundKey: 'lower-r1', fallbackTitle: 'Lower Bracket R1', column: 0, headerRow: 22.0, slotRows: [24.4, 29.2, 34.0, 38.8], section: 'lower' },
+    { roundKey: 'lower-r2', fallbackTitle: 'Lower Bracket R2', column: 1, headerRow: 22.0, slotRows: [26.8, 36.4], section: 'lower' },
+    { roundKey: 'lower-r3', fallbackTitle: 'Lower Bracket R3', column: 2, headerRow: 22.0, slotRows: [25.6, 35.2], section: 'lower' },
+    { roundKey: 'lower-r4', fallbackTitle: 'Lower Bracket R4', column: 3, headerRow: 22.0, slotRows: [30.4], section: 'lower' },
+    { roundKey: 'lower-finals', fallbackTitle: 'Lower Bracket Finals', column: 4, headerRow: 22.0, slotRows: [25.6], section: 'lower' },
+  ],
+  connections: [
+    { fromLane: 'upper-r1', fromSlot: 0, toLane: 'upper-r2', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 1, toLane: 'upper-r2', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 2, toLane: 'upper-r2', toSlot: 1 },
+    { fromLane: 'upper-r1', fromSlot: 3, toLane: 'upper-r2', toSlot: 1 },
+    { fromLane: 'upper-r2', fromSlot: 0, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-r2', fromSlot: 1, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 0, toLane: 'lower-r2', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 1, toLane: 'lower-r2', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 2, toLane: 'lower-r2', toSlot: 1 },
+    { fromLane: 'lower-r1', fromSlot: 3, toLane: 'lower-r2', toSlot: 1 },
+    { fromLane: 'lower-r2', fromSlot: 0, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r2', fromSlot: 1, toLane: 'lower-r3', toSlot: 1 },
+    { fromLane: 'lower-r3', fromSlot: 0, toLane: 'lower-r4', toSlot: 0 },
+    { fromLane: 'lower-r3', fromSlot: 1, toLane: 'lower-r4', toSlot: 0 },
+    { fromLane: 'lower-r4', fromSlot: 0, toLane: 'lower-finals', toSlot: 0 },
+    { fromLane: 'lower-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+  ],
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$15,000', laneKey: 'grand-finals', slot: 0, dx: 14, dy: 116 },
+    { placement: '2nd Place', fallbackPrize: '$10,000', laneKey: 'grand-finals', slot: 0, dx: 14, dy: 160 },
+    { placement: '3rd Place', fallbackPrize: '$8,000', laneKey: 'lower-finals', slot: 0, dx: 0, dy: 126 },
+    { placement: '4th Place', fallbackPrize: '$7,000', laneKey: 'lower-r4', slot: 0, dx: 0, dy: 126 },
+    { placement: '5th - 6th Place', fallbackPrize: '$4,000', laneKey: 'lower-r3', slot: 1, dx: 0, dy: 152 },
+    { placement: '7th - 8th Place', fallbackPrize: '$1,000', laneKey: 'lower-r2', slot: 1, dx: 0, dy: 170 },
+  ],
+};
+
+const DREAMLEAGUE_DIV2_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  ...DREAMLEAGUE_DIV2_STANDARD_BRACKET_SCHEMA,
+  minWidth: 760,
+  columnWidth: 104,
+  columnGap: 26,
+  headerWidth: 104,
+  matchWidth: 104,
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$15,000', laneKey: 'grand-finals', slot: 0, dx: 8, dy: 104 },
+    { placement: '2nd Place', fallbackPrize: '$10,000', laneKey: 'grand-finals', slot: 0, dx: 8, dy: 148 },
+    { placement: '3rd Place', fallbackPrize: '$8,000', laneKey: 'lower-finals', slot: 0, dx: -4, dy: 118 },
+    { placement: '4th Place', fallbackPrize: '$7,000', laneKey: 'lower-r4', slot: 0, dx: -4, dy: 118 },
+    { placement: '5th - 6th Place', fallbackPrize: '$4,000', laneKey: 'lower-r3', slot: 1, dx: -4, dy: 142 },
+    { placement: '7th - 8th Place', fallbackPrize: '$1,000', laneKey: 'lower-r2', slot: 1, dx: -4, dy: 160 },
+  ],
 };
 
 const PGL_WALLACHIA_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
@@ -1417,6 +1516,42 @@ function FeaturedPlayoffBracket({
   compactView: boolean;
   onToggleCompactView: (nextValue: boolean) => void;
 }) {
+  if (payload.tournamentId === 'dreamleague-division-2-season-4') {
+    const rounds = getFeaturedSortedRounds(payload);
+    const schema = compactView ? DREAMLEAGUE_DIV2_COMPACT_BRACKET_SCHEMA : DREAMLEAGUE_DIV2_STANDARD_BRACKET_SCHEMA;
+    return (
+      <div
+        className="rounded-[28px] border border-cyan-300/12 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),rgba(2,6,23,0.92)_36%),linear-gradient(180deg,rgba(8,47,73,0.22),rgba(2,6,23,0.95))] p-3 md:p-4"
+        data-featured-bracket-mode={compactView ? 'compact' : 'standard'}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3 border-b border-cyan-200/10 pb-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100/85">DreamLeague playoffs</div>
+          <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
+        </div>
+        <div className="grid gap-3 md:hidden">
+          {rounds.map((round) => (
+            <FeaturedCompactPlayoffRound
+              key={round.roundName}
+              round={round}
+              aliasToTag={aliasToTag}
+              teams={teams}
+              onOpenMatch={onOpenMatch}
+              compactView={compactView}
+            />
+          ))}
+        </div>
+        <FeaturedDesktopCompactBracket
+          payload={payload}
+          schema={schema}
+          onOpenMatch={onOpenMatch}
+          aliasToTag={aliasToTag}
+          teams={teams}
+          compactView={compactView}
+        />
+      </div>
+    );
+  }
+
   if (payload.tournamentId === 'esl-one-birmingham-2026') {
     const rounds = getFeaturedSortedRounds(payload);
     const schema = compactView ? ESL_BIRMINGHAM_COMPACT_BRACKET_SCHEMA : ESL_BIRMINGHAM_STANDARD_BRACKET_SCHEMA;
