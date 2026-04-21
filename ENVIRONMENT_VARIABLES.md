@@ -29,11 +29,12 @@
 | `XHS_AI_REWRITE` | Enables AI rewrite before XHS post | optional | optional | no | `true` |
 | `XHS_POST_PRESET` | XHS posting preset name | optional | optional | no | `default` |
 | `LOCAL_LLM_BASE_URL` | OpenAI-compatible LAN endpoint for LM Studio/local inference (the helper appends `/v1` automatically when needed) | optional | optional | no | `http://100.109.56.73:1234` |
-| `LOCAL_LLM_MODEL` | Preferred LAN model id for translation/XHS rewrite | optional | optional | no | `google/gemma-4-e4b` |
+| `LOCAL_LLM_MODEL` | Preferred LAN model id for translation and XHS rewrite/enhance; changing this switches both local workflows together | optional | optional | no | `google/gemma-4-e4b` |
 | `LOCAL_LLM_TIMEOUT_MS` | Timeout for LAN model requests | optional | optional | no | `45000` |
 | `XHS_REVERSE_CLI` | XHS CLI binary override | optional | optional | no | `xhs` |
 | `XHS_CODEX_BIN` | Codex binary override for XHS scripts | optional | optional | no | `codex` |
 | `XHS_CODEX_MODEL` | Codex model override for XHS scripts | optional | optional | no | `gpt-5.4-mini` |
+| `XHS_REWRITE_MODEL` | Optional dedicated model override for `post-news-to-xhs`; defaults to `LOCAL_LLM_MODEL` before OpenRouter fallback | optional | optional | no | `google/gemma-4-e4b` |
 | `XHS_REWRITE_TIMEOUT_MS` | XHS AI rewrite timeout | optional | optional | no | `45000` |
 | `XHS_REWRITE_PROMPT_FILE` | Prompt file path for XHS rewrite | optional | optional | no | `docs/xhs-community-post-prompt.md` |
 | `NEWS_TRANSLATE_CODEX_MODEL` | Codex model override when no LAN/OpenRouter provider is available | optional | optional | no | `gpt-5.4-mini` |

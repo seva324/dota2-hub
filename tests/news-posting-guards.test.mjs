@@ -3,27 +3,26 @@ import assert from 'node:assert/strict';
 import {
   evaluateAutoPostSafety,
   hasCompleteTranslatedNewsRow,
-  isGemma4Model,
+  isLocalLlmProvider,
 } from '../lib/news-posting-guards.js';
 
-test('isGemma4Model recognizes aliases and canonical ids', () => {
-  assert.equal(isGemma4Model('gemma4'), true);
-  assert.equal(isGemma4Model('google/gemma-4-31b-it'), true);
-  assert.equal(isGemma4Model('GOOGLE/GEMMA-4'), true);
-  assert.equal(isGemma4Model('gpt-5.4-mini'), false);
+test('isLocalLlmProvider recognizes the local gateway provider', () => {
+  assert.equal(isLocalLlmProvider('local-lm'), true);
+  assert.equal(isLocalLlmProvider('LOCAL-LM'), true);
+  assert.equal(isLocalLlmProvider('openrouter'), false);
 });
 
-test('evaluateAutoPostSafety blocks incomplete or non-gemma translation runs', () => {
+test('evaluateAutoPostSafety blocks incomplete or non-local translation runs', () => {
   assert.deepEqual(
-    evaluateAutoPostSafety({ autoPostEnabled: true, translationCompleted: false, gemmaTranslationTriggered: true }),
+    evaluateAutoPostSafety({ autoPostEnabled: true, translationCompleted: false, localTranslationTriggered: true }),
     { ok: false, reason: 'translation_incomplete' },
   );
   assert.deepEqual(
-    evaluateAutoPostSafety({ autoPostEnabled: true, translationCompleted: true, gemmaTranslationTriggered: false }),
-    { ok: false, reason: 'gemma4_not_triggered' },
+    evaluateAutoPostSafety({ autoPostEnabled: true, translationCompleted: true, localTranslationTriggered: false }),
+    { ok: false, reason: 'local_model_not_triggered' },
   );
   assert.deepEqual(
-    evaluateAutoPostSafety({ autoPostEnabled: true, translationCompleted: true, gemmaTranslationTriggered: true }),
+    evaluateAutoPostSafety({ autoPostEnabled: true, translationCompleted: true, localTranslationTriggered: true }),
     { ok: true, reason: 'ready' },
   );
 });

@@ -18,7 +18,7 @@ import {
   sanitizeTranslatedChunkMarkdown,
   stripMarkdownEmphasis,
 } from '../lib/news-translation-cleanup.js';
-import { evaluateAutoPostSafety, isGemma4Model, TRANSLATION_STATUS_COMPLETED } from '../lib/news-posting-guards.js';
+import { evaluateAutoPostSafety, isLocalLlmProvider, TRANSLATION_STATUS_COMPLETED } from '../lib/news-posting-guards.js';
 
 const DB_URL =
   process.env.DATABASE_URL_UNPOOLED ||
@@ -77,7 +77,7 @@ const FORCE = ['1', 'true', 'yes', 'on'].includes(String(arg('force', 'false')).
 const XHS_AUTO_POST = ['1', 'true', 'yes', 'on'].includes(String(process.env.XHS_AUTO_POST || '').toLowerCase());
 const TARGET_IDS = Array.from(new Set(getArgs('id').map((x) => String(x).trim()).filter(Boolean)));
 const RECENT_CUTOFF_SECONDS = Math.floor(Date.now() / 1000) - (RECENT_DAYS * 24 * 60 * 60);
-const AUTO_POST_REQUIRES_GEMMA4 = isGemma4Model(MODEL);
+const AUTO_POST_REQUIRES_LOCAL_MODEL = isLocalLlmProvider(TRANSLATION_PROVIDER);
 
 function isTransientDbError(error) {
   const message = String(error?.message || '');
@@ -141,7 +141,7 @@ function maybeAutoPostXhs(row, context = {}) {
   const safety = evaluateAutoPostSafety({
     autoPostEnabled: XHS_AUTO_POST,
     translationCompleted: context.translationCompleted,
-    gemmaTranslationTriggered: context.gemmaTranslationTriggered,
+    localTranslationTriggered: context.localTranslationTriggered,
   });
   if (!safety.ok) {
     console.log(`[xhs] auto post skipped for ${row.id}: ${safety.reason}`);
@@ -947,7 +947,7 @@ async function translateOne(row, force = false) {
     || hasUsableChineseBody(row.content_markdown_zh || row.content_zh || '', row.content_markdown_en || row.content_en || '')
   );
   const preparedMarkdown = prepareSourceMarkdown(row.content_markdown_en || row.content_en || '', row.title_en || '');
-  const gemmaTranslationTriggered = AUTO_POST_REQUIRES_GEMMA4 && Boolean(
+  const localTranslationTriggered = AUTO_POST_REQUIRES_LOCAL_MODEL && Boolean(
     (!keepTitle && row.title_en)
       || (!keepSummary && (row.summary_en || row.content_en || row.content_markdown_en || row.title_en))
       || (!keepBody && preparedMarkdown)
@@ -995,7 +995,7 @@ async function translateOne(row, force = false) {
 
   maybeAutoPostXhs(row, {
     translationCompleted: meta.status === TRANSLATION_STATUS_COMPLETED,
-    gemmaTranslationTriggered,
+    localTranslationTriggered,
   });
 
   return meta;
