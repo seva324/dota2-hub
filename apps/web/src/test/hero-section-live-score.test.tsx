@@ -296,6 +296,58 @@ describe('HeroSection live spotlight', () => {
     expect(within(cards[1]).getByText('15')).toBeInTheDocument();
   });
 
+  it('keeps a live card mounted when a refresh briefly omits only that card', async () => {
+    vi.useFakeTimers();
+
+    const partialResponses = [
+      buildLiveHeroResponse(),
+      buildLiveHeroResponse([cloneLiveMatches()[1]]),
+      buildLiveHeroResponse(),
+    ];
+
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/upcoming')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            upcoming: [],
+            teams: [],
+          }),
+        } as Response);
+      }
+      if (url.includes('/api/live-hero')) {
+        const nextResponse = partialResponses.shift() ?? buildLiveHeroResponse();
+        return Promise.resolve({
+          ok: true,
+          json: async () => nextResponse,
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch ${url}`));
+    }));
+
+    render(<HeroSection />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    let cards = screen.getAllByTestId('hero-live-card');
+    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    cards = screen.getAllByTestId('hero-live-card');
+    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
+  });
+
   it('falls back cleanly when the live API returns no match', async () => {
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = String(input);

@@ -217,6 +217,45 @@ function mergeLiveHeroesForDisplay(current: LiveHeroPayload[], next: LiveHeroPay
 const HERO_DEFAULT_DAYS = 1;
 const HERO_LIVE_POLL_INTERVAL_MS = 3000;
 const HERO_LIVE_EMPTY_GRACE_POLLS = 2;
+const HERO_LIVE_PARTIAL_MISSING_GRACE_POLLS = 2;
+
+function mergeLiveHeroesWithTransientGrace(
+  current: LiveHeroPayload[],
+  next: LiveHeroPayload[],
+  missingPollsByKey: Record<string, number>,
+) {
+  if (current.length === 0) {
+    for (const key of Object.keys(missingPollsByKey)) delete missingPollsByKey[key];
+    return sortLiveHeroesForDisplay(next);
+  }
+
+  const nextByKey = new Map(next.map((item) => [getLiveHeroCardKey(item), item]));
+  const currentByKey = new Map(current.map((item) => [getLiveHeroCardKey(item), item]));
+
+  for (const key of nextByKey.keys()) {
+    delete missingPollsByKey[key];
+  }
+
+  const merged = [...next];
+  for (const [key, item] of currentByKey.entries()) {
+    if (nextByKey.has(key)) continue;
+    const missCount = (missingPollsByKey[key] || 0) + 1;
+    if (missCount <= HERO_LIVE_PARTIAL_MISSING_GRACE_POLLS) {
+      missingPollsByKey[key] = missCount;
+      merged.push(item);
+    } else {
+      delete missingPollsByKey[key];
+    }
+  }
+
+  for (const key of Object.keys(missingPollsByKey)) {
+    if (!nextByKey.has(key) && !currentByKey.has(key)) {
+      delete missingPollsByKey[key];
+    }
+  }
+
+  return mergeLiveHeroesForDisplay(current, merged);
+}
 
 function buildHeroUpcomingApiUrl(days: number = HERO_DEFAULT_DAYS): string {
   const params = new URLSearchParams({ days: String(days) });
@@ -237,6 +276,7 @@ export function HeroSection({
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
   const [selectedMapKeys, setSelectedMapKeys] = useState<Record<string, string>>({});
   const transientEmptyLivePollsRef = useRef(0);
+  const transientMissingLiveCardsRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -267,7 +307,11 @@ export function HeroSection({
 
         if (nextLiveHeroes.length > 0) {
           transientEmptyLivePollsRef.current = 0;
-          setLiveHeroes((current) => mergeLiveHeroesForDisplay(current, nextLiveHeroes));
+          setLiveHeroes((current) => mergeLiveHeroesWithTransientGrace(
+            current,
+            nextLiveHeroes,
+            transientMissingLiveCardsRef.current,
+          ));
           return;
         }
 
