@@ -190,6 +190,72 @@ describe('live hero service league matching', () => {
     }));
   });
 
+  it('merges recent DB live rows into the hot cache when Hawk omits one live series', async () => {
+    readLiveHeroHotCache
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    listRecentActiveHeroLiveScores.mockResolvedValue([
+      {
+        series_key: 'team spirit::xtreme gaming',
+        last_seen_at: new Date().toISOString(),
+        payload: {
+          sourceSeriesId: 'hawk-xg-spirit',
+          sourceUrl: 'https://hawk.live/pgl-xg-spirit',
+          leagueName: 'PGL Wallachia Season 8: Group Stage',
+          startedAt: '2026-04-22T15:00:00.000Z',
+          fetchedAt: new Date().toISOString(),
+          teams: [{ name: 'Xtreme Gaming' }, { name: 'Team Spirit' }],
+        },
+      },
+    ]);
+    const db = { query: vi.fn() };
+    fetchHtml.mockResolvedValue('<html></html>');
+    parseHawkHomepageSeriesList.mockReturnValue([
+      {
+        id: 'hawk-lynx-nemiga',
+        slug: 'team-lynx-vs-nemiga-gaming',
+        leagueName: 'DreamLeague Division 2 Season 4: Group Stage',
+        team1Name: 'Team Lynx',
+        team2Name: 'Nemiga Gaming',
+        teamKey: 'nemiga gaming::team lynx',
+        url: 'https://hawk.live/dreamleague-lynx',
+      },
+    ]);
+    fetchLiveSeriesDetails.mockResolvedValue({
+      id: 'hawk-lynx-nemiga',
+      slug: 'team-lynx-vs-nemiga-gaming',
+      url: 'https://hawk.live/dreamleague-lynx',
+      leagueName: 'DreamLeague Division 2 Season 4: Group Stage',
+      team1Name: 'Team Lynx',
+      team2Name: 'Nemiga Gaming',
+      detail: {
+        bestOf: 3,
+        team1Name: 'Team Lynx',
+        team2Name: 'Nemiga Gaming',
+        maps: [],
+        liveMap: null,
+      },
+    });
+    upsertHeroLiveScore.mockImplementation(async (snapshot) => ({
+      series_key: snapshot.series_key,
+      last_seen_at: snapshot.last_seen_at,
+      payload: snapshot.payload,
+    }));
+
+    const { getLiveHeroPayloads } = await import('../../../../lib/server/live-hero-service.js');
+    const payloads = await getLiveHeroPayloads(db as never, { forceRefresh: false, maxAgeSeconds: 180 });
+
+    expect(payloads).toHaveLength(2);
+    expect(listRecentActiveHeroLiveScores).toHaveBeenCalledWith(db, 180, 50);
+    expect(upsertHeroLiveScore).toHaveBeenCalledTimes(1);
+    expect(writeLiveHeroHotCache).toHaveBeenCalledWith(expect.objectContaining({
+      payloads: expect.arrayContaining([
+        expect.objectContaining({ sourceSeriesId: 'hawk-xg-spirit' }),
+        expect.objectContaining({ sourceSeriesId: 'hawk-lynx-nemiga' }),
+      ]),
+    }));
+  });
+
   it('force refresh bypasses the fresh cache and stores rebuilt live snapshots', async () => {
     listRecentActiveHeroLiveScores.mockResolvedValue([
       {
