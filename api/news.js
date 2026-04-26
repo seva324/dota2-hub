@@ -1505,8 +1505,8 @@ function normalizeTavernaNewsUrl(rawUrl, baseUrl = 'https://taverna.gg') {
     const hostname = url.hostname.replace(/^www\./i, '').toLowerCase();
     if (hostname !== 'taverna.gg') return '';
     const parts = url.pathname.split('/').filter(Boolean);
-    if (parts.length < 3 || parts[0] !== 'dota2' || parts[1] !== 'news' || !parts[2]) return '';
-    url.pathname = `/dota2/news/${parts[2]}/`;
+    if (parts.length < 3 || parts[0] !== 'dota2' || (parts[1] !== 'news' && parts[1] !== 'articles') || !parts[2]) return '';
+    url.pathname = `/dota2/${parts[1]}/${parts[2]}/`;
     url.hash = '';
     for (const key of Array.from(url.searchParams.keys())) {
       if (/^utm_/i.test(key) || ['fbclid', 'gclid'].includes(key.toLowerCase())) {
@@ -1559,13 +1559,13 @@ function extractTavernaNewsUrls(html, baseUrl = 'https://taverna.gg') {
     if (normalized) urls.add(normalized);
   }
 
-  const absoluteRegex = /https?:\/\/(?:www\.)?taverna\.gg\/dota2\/news\/[a-z0-9-]+\/?/gi;
+  const absoluteRegex = /https?:\/\/(?:www\.)?taverna\.gg\/dota2\/(?:news|articles)\/[a-z0-9-]+\/?/gi;
   while ((match = absoluteRegex.exec(html)) !== null) {
     const normalized = normalizeTavernaNewsUrl(match[0], baseUrl);
     if (normalized) urls.add(normalized);
   }
 
-  const pathRegex = /\/dota2\/news\/[a-z0-9-]+\/?/gi;
+  const pathRegex = /\/dota2\/(?:news|articles)\/[a-z0-9-]+\/?/gi;
   while ((match = pathRegex.exec(html)) !== null) {
     const normalized = normalizeTavernaNewsUrl(match[0], baseUrl);
     if (normalized) urls.add(normalized);
