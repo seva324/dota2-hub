@@ -1,28 +1,13 @@
 import { syncNewsToDb, translateNewsBackfill } from './news.js';
 import { runSyncOpenDota } from '../lib/server/sync-opendota.js';
 import { runSyncLiquipedia, upsertLiquipediaTournamentMetadata } from '../lib/server/sync-liquipedia.js';
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-let sql = null;
 let cronActionGateReady = false;
 const inMemoryCronActionGate = new Map();
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (error) {
-      console.error('[cron] Failed to create db client:', error.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 function pickParam(value, fallback = '') {
   if (Array.isArray(value)) return String(value[0] || fallback);

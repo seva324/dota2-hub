@@ -1,15 +1,5 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { loadMatchDetailPayload } from '../lib/server/mp-api.js';
-
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    sql = neon(DATABASE_URL);
-  }
-  return sql;
-}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -1,17 +1,8 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { explainLiveHeroMatching, getLiveHeroPayloads } from '../lib/server/live-hero-service.js';
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const LIVE_HERO_CACHE_CONTROL = 'public, max-age=2, s-maxage=2, stale-while-revalidate=3';
 const LIVE_HERO_NO_STORE_CACHE_CONTROL = 'no-store';
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    sql = neon(DATABASE_URL);
-  }
-  return sql;
-}
 
 function toPositiveInt(value, fallback, { min = 1, max = 3600 } = {}) {
   const parsed = Number(value);

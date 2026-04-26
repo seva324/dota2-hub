@@ -2,7 +2,7 @@
  * Team flyout API
  * Returns team summary, next match, and paginated recent matches for a team.
  */
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import {
   enrichRecentMatchesWithTeamHeroes,
@@ -10,24 +10,9 @@ import {
 } from '../lib/server/team-flyout-cache.js';
 import { ensureUpcomingSeriesColumns } from '../lib/server/upcoming-series-columns.js';
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
 const HISTORY_WINDOW_SECONDS = 90 * 24 * 60 * 60;
-
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (error) {
-      console.error('[TeamFlyout API] Failed to create client:', error.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 function normalize(value) {
   return String(value || '').trim().toLowerCase();

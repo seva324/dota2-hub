@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { createHash } from 'node:crypto';
 import { classifyNewsCategory } from '../lib/server/news-category.js';
 import { callLlmText } from '../lib/openrouter.mjs';
@@ -43,11 +43,6 @@ const MAX_CONTENT_LENGTH = 5000;
 const DEFAULT_NEWS_INCREMENTAL_WINDOW_SECONDS = 24 * 60 * 60;
 const JINA_PROXY = 'https://r.jina.ai/http://';
 const BO3_API_BASE = 'https://api.bo3.gg/api/v1';
-const DATABASE_URL =
-  process.env.DATABASE_URL_UNPOOLED ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL;
 const CYBERSCORE_CATEGORIES = [
   {
     key: 'competitive',
@@ -87,7 +82,6 @@ const OPENROUTER_TRANSLATION_PROVIDER = 'openrouter';
 const TRANSLATION_STATUS_PENDING = 'pending';
 const TRANSLATION_STATUS_PARTIAL = 'partial';
 const TRANSLATION_STATUS_COMPLETED = 'completed';
-let sql = null;
 const NEWS_TRANSLATION_GUIDANCE = loadWebsiteNewsTranslationGuidance();
 
 function glossaryPromptForItem(item = {}) {
@@ -120,13 +114,6 @@ function applyGlossaryMarkdown(value = '', item = {}) {
     summary: item?.summary || item?.summary_en || '',
     content: item?.content_markdown || item?.content_en || item?.content || '',
   })), item?.title_zh || item?.title || item?.title_en || '');
-}
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    sql = neon(DATABASE_URL);
-  }
-  return sql;
 }
 
 function generateId(url, prefix) {
@@ -2985,7 +2972,10 @@ async function translateNewsWithMiniMax(news) {
   }
 }
 
+let newsTableReady = false;
+
 async function ensureNewsTable(db) {
+  if (newsTableReady) return;
   await db`
     CREATE TABLE IF NOT EXISTS news_articles (
       id TEXT PRIMARY KEY,
@@ -3013,6 +3003,7 @@ async function ensureNewsTable(db) {
     )
   `;
 
+  // Migration safety net — runs once per process lifetime (DDL on cold start only)
   await db`ALTER TABLE news_articles DROP COLUMN IF EXISTS content_images`;
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_status TEXT`;
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_provider TEXT`;
@@ -3020,6 +3011,9 @@ async function ensureNewsTable(db) {
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS summary_zh_provider TEXT`;
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS content_zh_provider TEXT`;
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translated_at TIMESTAMPTZ`;
+  await db`CREATE INDEX IF NOT EXISTS idx_news_articles_published_at ON news_articles(published_at DESC)`;
+
+  newsTableReady = true;
 }
 
 function splitTextChunks(text, maxLen = 1400) {
