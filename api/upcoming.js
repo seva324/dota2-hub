@@ -86,7 +86,7 @@ export default async function handler(req, res) {
       if (s.dire_team_id) teamIds.add(s.dire_team_id);
     }
     const teams = teamIds.size > 0
-      ? await db`SELECT team_id, name, name_cn, tag, logo_url, region, is_cn_team FROM teams WHERE team_id = ANY(${Array.from(teamIds)})`
+      ? await db`SELECT * FROM teams WHERE team_id = ANY(${Array.from(teamIds)})`
       : [];
 
     const result = upcoming.map(s => {
