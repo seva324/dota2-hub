@@ -1,22 +1,6 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { getPlayerProfilePayload } from '../lib/server/player-profile-cache.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
-
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (error) {
-      console.error('[PlayerProfile API] Failed to create client:', error.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 function parseAccountId(rawAccountId) {
   const parsed = Number(rawAccountId);

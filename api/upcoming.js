@@ -3,26 +3,10 @@
  * Data: Neon PostgreSQL
  */
 
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { ensureUpcomingSeriesColumns } from '../lib/server/upcoming-series-columns.js';
 import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
-
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (e) {
-      console.error('[Upcoming API] Failed to create client:', e.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 // Normalize logo URL
 function normalizeLogo(url, req) {
@@ -81,26 +65,33 @@ export default async function handler(req, res) {
     const maxStartTime = now + days * 86400;
 
     const upcoming = await db`
-      SELECT s.*
+      SELECT s.*,
+             rt.name AS radiant_team_name, rt.name_cn AS radiant_team_name_cn,
+             rt.logo_url AS radiant_team_logo, rt.region AS radiant_region,
+             dt.name AS dire_team_name, dt.name_cn AS dire_team_name_cn,
+             dt.logo_url AS dire_team_logo, dt.region AS dire_region
       FROM upcoming_series s
+      LEFT JOIN teams rt ON rt.team_id = s.radiant_team_id
+      LEFT JOIN teams dt ON dt.team_id = s.dire_team_id
       WHERE s.start_time > ${now}
         AND s.start_time <= ${maxStartTime}
       ORDER BY s.start_time ASC
       LIMIT 50
     `;
 
-    // Get teams for logo lookup
-    const teams = await db`SELECT * FROM teams`;
-    const teamMap = new Map();
-    for (const t of teams) {
-      teamMap.set(t.team_id, t);
+    // Only fetch full teams list when the response actually includes it (keeps backward compat)
+    const teamIds = new Set();
+    for (const s of upcoming) {
+      if (s.radiant_team_id) teamIds.add(s.radiant_team_id);
+      if (s.dire_team_id) teamIds.add(s.dire_team_id);
     }
+    const teams = teamIds.size > 0
+      ? await db`SELECT team_id, name, name_cn, tag, logo_url, region, is_cn_team FROM teams WHERE team_id = ANY(${Array.from(teamIds)})`
+      : [];
 
     const result = upcoming.map(s => {
-      const radiantTeam = s.radiant_team_id ? teamMap.get(s.radiant_team_id) : null;
-      const direTeam = s.dire_team_id ? teamMap.get(s.dire_team_id) : null;
-      const radiantTeamName = radiantTeam?.name || s.radiant_team_name || null;
-      const direTeamName = direTeam?.name || s.dire_team_name || null;
+      const radiantTeamName = s.radiant_team_name || null;
+      const direTeamName = s.dire_team_name || null;
 
       return {
         id: s.id,
@@ -109,13 +100,13 @@ export default async function handler(req, res) {
         dire_team_id: s.dire_team_id,
         radiant_team_name: radiantTeamName,
         dire_team_name: direTeamName,
-        radiant_team_name_cn: radiantTeam?.name_cn || s.radiant_team_name_cn || null,
-        dire_team_name_cn: direTeam?.name_cn || s.dire_team_name_cn || null,
-        radiant_team_logo: resolvePreferredTeamLogo(radiantTeam, {
+        radiant_team_name_cn: s.radiant_team_name_cn || null,
+        dire_team_name_cn: s.dire_team_name_cn || null,
+        radiant_team_logo: resolvePreferredTeamLogo({ name: radiantTeamName, logo_url: s.radiant_team_logo }, {
           teamId: s.radiant_team_id,
           name: radiantTeamName,
         }, req),
-        dire_team_logo: resolvePreferredTeamLogo(direTeam, {
+        dire_team_logo: resolvePreferredTeamLogo({ name: direTeamName, logo_url: s.dire_team_logo }, {
           teamId: s.dire_team_id,
           name: direTeamName,
         }, req),

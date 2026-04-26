@@ -3,7 +3,7 @@
  * Data: Neon PostgreSQL
  */
 
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { buildTournamentBackgroundUrl } from '../lib/tournament-backgrounds.js';
 import {
@@ -13,7 +13,6 @@ import {
 import { scoreTournamentNameMatch } from '../lib/server/dltv-events.js';
 import { deriveTournamentStatus } from '../lib/server/tournament-status.js';
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const DEFAULT_SERIES_LIMIT = 10;
 const MAX_SERIES_LIMIT = 50;
 const TOURNAMENT_SUMMARY_CACHE_CONTROL = 'public, max-age=30, s-maxage=120, stale-while-revalidate=300';
@@ -104,20 +103,6 @@ const TOURNAMENT_SERIES_LEAGUE_ALIASES = {
   'blast-slam-vii-china-closed-qualifier': [19520],
 };
 const TOURNAMENT_SERIES_WINDOW_PADDING_SECONDS = 12 * 60 * 60;
-
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (e) {
-      console.error('[Tournaments API] Failed to create client:', e.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);

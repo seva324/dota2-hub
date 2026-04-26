@@ -3,25 +3,9 @@
  * Data: Neon PostgreSQL
  */
 
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { handleMpRoute } from '../lib/server/mp-route-handler.js';
-
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (e) {
-      console.error('[Matches API] Failed to create client:', e.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 function normalizeLogo(url, req) {
   return getMirroredAssetUrl(url, req);
@@ -63,20 +47,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const teams = await db`SELECT * FROM teams`;
-    const teamMap = new Map();
-    for (const t of teams) {
-      teamMap.set(t.team_id, t);
-    }
-
     const normalize = (value) => String(value || '').trim().toLowerCase();
     const requestedTeamId = req.query.team_id ? String(req.query.team_id).trim() : '';
     const requestedTeamName = req.query.team_name ? String(req.query.team_name).trim() : '';
     const requestedLimit = Math.max(
       1,
       Math.min(
-        5000,
-        Number(req.query.limit) || (requestedTeamId || requestedTeamName ? 120 : 500)
+        500,
+        Number(req.query.limit) || (requestedTeamId || requestedTeamName ? 120 : 200)
       )
     );
 
@@ -85,22 +63,27 @@ export default async function handler(req, res) {
       teamIds = [requestedTeamId];
     } else if (requestedTeamName) {
       const needle = normalize(requestedTeamName);
-      teamIds = teams
-        .filter((t) => {
-          const aliases = [t.team_id, t.name, t.name_cn, t.tag];
-          return aliases.some((alias) => normalize(alias) === needle);
-        })
-        .map((t) => String(t.team_id))
-        .filter(Boolean);
+      const matchingTeams = await db`
+        SELECT team_id FROM teams
+        WHERE LOWER(name) = ${needle}
+           OR LOWER(tag) = ${needle}
+           OR LOWER(COALESCE(name_cn, '')) = ${needle}
+        LIMIT 5
+      `;
+      teamIds = matchingTeams.map((t) => String(t.team_id)).filter(Boolean);
     }
 
     let matches;
     if (teamIds.length > 0) {
       matches = await db.query(
         `
-          SELECT m.*, s.league_id
+          SELECT m.*, s.league_id,
+                 rt.name AS radiant_team_name, rt.logo_url AS radiant_team_logo,
+                 dt.name AS dire_team_name, dt.logo_url AS dire_team_logo
           FROM matches m
           LEFT JOIN series s ON m.series_id = s.series_id
+          LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
+          LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
           WHERE CAST(m.radiant_team_id AS TEXT) = ANY($1::text[])
              OR CAST(m.dire_team_id AS TEXT) = ANY($1::text[])
           ORDER BY m.start_time DESC
@@ -111,9 +94,13 @@ export default async function handler(req, res) {
     } else {
       matches = await db.query(
         `
-          SELECT m.*, s.league_id
+          SELECT m.*, s.league_id,
+                 rt.name AS radiant_team_name, rt.logo_url AS radiant_team_logo,
+                 dt.name AS dire_team_name, dt.logo_url AS dire_team_logo
           FROM matches m
           LEFT JOIN series s ON m.series_id = s.series_id
+          LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
+          LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
           ORDER BY m.start_time DESC
           LIMIT $1
         `,
@@ -121,29 +108,24 @@ export default async function handler(req, res) {
       );
     }
 
-    const formatted = matches.map((m) => {
-      const radiantTeam = m.radiant_team_id ? teamMap.get(m.radiant_team_id) : null;
-      const direTeam = m.dire_team_id ? teamMap.get(m.dire_team_id) : null;
-
-      return {
-        match_id: String(m.match_id),
-        series_id: m.series_id ? String(m.series_id) : null,
-        radiant_team_id: m.radiant_team_id,
-        dire_team_id: m.dire_team_id,
-        radiant_team_name: radiantTeam?.name || null,
-        dire_team_name: direTeam?.name || null,
-        radiant_team_logo: normalizeLogo(radiantTeam?.logo_url, req),
-        dire_team_logo: normalizeLogo(direTeam?.logo_url, req),
-        radiant_score: m.radiant_score,
-        dire_score: m.dire_score,
-        radiant_win: m.radiant_win ? 1 : 0,
-        start_time: m.start_time,
-        duration: m.duration,
-        league_id: m.league_id,
-        series_type: convertSeriesType(m.series_type),
-        status: m.status
-      };
-    });
+    const formatted = matches.map((m) => ({
+      match_id: String(m.match_id),
+      series_id: m.series_id ? String(m.series_id) : null,
+      radiant_team_id: m.radiant_team_id,
+      dire_team_id: m.dire_team_id,
+      radiant_team_name: m.radiant_team_name || null,
+      dire_team_name: m.dire_team_name || null,
+      radiant_team_logo: normalizeLogo(m.radiant_team_logo, req),
+      dire_team_logo: normalizeLogo(m.dire_team_logo, req),
+      radiant_score: m.radiant_score,
+      dire_score: m.dire_score,
+      radiant_win: m.radiant_win ? 1 : 0,
+      start_time: m.start_time,
+      duration: m.duration,
+      league_id: m.league_id,
+      series_type: convertSeriesType(m.series_type),
+      status: m.status,
+    }));
 
     return res.status(200).json(formatted);
   } catch (e) {

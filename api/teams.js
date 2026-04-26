@@ -3,24 +3,8 @@
  * Data: Neon PostgreSQL
  */
 
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../lib/db.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
-
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-let sql = null;
-
-function getDb() {
-  if (!sql && DATABASE_URL) {
-    try {
-      sql = neon(DATABASE_URL);
-    } catch (e) {
-      console.error('[Teams API] Failed to create client:', e.message);
-      return null;
-    }
-  }
-  return sql;
-}
 
 function normalizeLogo(url, req) {
   return getMirroredAssetUrl(url, req);
