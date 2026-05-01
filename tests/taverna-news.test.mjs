@@ -36,6 +36,25 @@ test('taverna sitemap parser keeps only recent dota2 news URLs', () => {
   assert.equal(items[0].title, 'BLACKARXANGEL test');
 });
 
+test('taverna sitemap parser accepts /dota2/articles/ URLs', () => {
+  const recentIso = new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString();
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+    <url>
+      <loc>https://taverna.gg/dota2/articles/some-article/</loc>
+      <news:news>
+        <news:publication_date>${recentIso}</news:publication_date>
+        <news:title>Some Article Title</news:title>
+      </news:news>
+    </url>
+  </urlset>`;
+
+  const items = newsTest.parseTavernaNewsSitemap(xml, 7);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].url, 'https://taverna.gg/dota2/articles/some-article/');
+  assert.equal(items[0].title, 'Some Article Title');
+});
+
 test('taverna body extractor keeps article content and strips trailing noise', () => {
   const html = `
     <div class="entry-content post__container wp-block-post-content is-layout-flow wp-block-post-content-is-layout-flow">
