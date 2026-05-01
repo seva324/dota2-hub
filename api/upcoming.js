@@ -66,9 +66,9 @@ export default async function handler(req, res) {
 
     const upcoming = await db`
       SELECT s.*,
-             rt.name AS radiant_team_name, rt.name_cn AS radiant_team_name_cn,
+             rt.name AS radiant_team_row_name, rt.name_cn AS radiant_team_row_name_cn,
              rt.logo_url AS radiant_team_logo, rt.region AS radiant_region,
-             dt.name AS dire_team_name, dt.name_cn AS dire_team_name_cn,
+             dt.name AS dire_team_row_name, dt.name_cn AS dire_team_row_name_cn,
              dt.logo_url AS dire_team_logo, dt.region AS dire_region
       FROM upcoming_series s
       LEFT JOIN teams rt ON rt.team_id = s.radiant_team_id
@@ -90,8 +90,10 @@ export default async function handler(req, res) {
       : [];
 
     const result = upcoming.map(s => {
-      const radiantTeamName = s.radiant_team_name || null;
-      const direTeamName = s.dire_team_name || null;
+      const radiantTeamName = s.radiant_team_row_name || s.radiant_team_name || null;
+      const direTeamName = s.dire_team_row_name || s.dire_team_name || null;
+      const radiantTeamNameCn = s.radiant_team_row_name_cn || s.radiant_team_name_cn || null;
+      const direTeamNameCn = s.dire_team_row_name_cn || s.dire_team_name_cn || null;
 
       return {
         id: s.id,
@@ -100,8 +102,8 @@ export default async function handler(req, res) {
         dire_team_id: s.dire_team_id,
         radiant_team_name: radiantTeamName,
         dire_team_name: direTeamName,
-        radiant_team_name_cn: s.radiant_team_name_cn || null,
-        dire_team_name_cn: s.dire_team_name_cn || null,
+        radiant_team_name_cn: radiantTeamNameCn,
+        dire_team_name_cn: direTeamNameCn,
         radiant_team_logo: resolvePreferredTeamLogo({ name: radiantTeamName, logo_url: s.radiant_team_logo }, {
           teamId: s.radiant_team_id,
           name: radiantTeamName,

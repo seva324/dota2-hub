@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
-
 type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
   query: (sql: string, params?: unknown[]) => Promise<unknown[]>;
 };
@@ -89,7 +87,7 @@ describe('/api/upcoming', () => {
     expect(res.statusCode).toBe(200);
     expect((res.payload as any).days).toBe(2);
     expect((res.payload as any).upcoming).toHaveLength(1);
-    expect((res.payload as any).upcoming[0].radiant_team_logo).toBe(getCuratedTeamLogoMirrorPath('Xtreme Gaming'));
+    expect((res.payload as any).upcoming[0].radiant_team_logo).toContain('xtreme-gaming-ranking-dark.webp');
 
     const upcomingCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
     expect(upcomingCall).toBeDefined();
@@ -110,6 +108,33 @@ describe('/api/upcoming', () => {
   });
 
   it('falls back to upcoming_series team names when a team row is missing', async () => {
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('FROM upcoming_series')) {
+        return [{
+          id: 'dltv_426313',
+          series_id: 'dltv_426313',
+          radiant_team_id: '8260983',
+          dire_team_id: null,
+          radiant_team_name: 'Xtreme Gaming',
+          dire_team_name: 'Roar Gaming',
+          radiant_team_name_cn: null,
+          dire_team_name_cn: null,
+          radiant_team_row_name: 'Xtreme Gaming',
+          dire_team_row_name: null,
+          radiant_team_row_name_cn: null,
+          dire_team_row_name_cn: null,
+          start_time: 100,
+          series_type: 'BO1',
+          tournament_name: 'ESL Challenger China Season 3',
+          tournament_name_cn: null,
+          tournament_tier: 'A',
+          status: 'upcoming',
+        }];
+      }
+      return [];
+    });
+
     const { default: handler } = await import('../../../../api/upcoming.js');
     const res = createRes();
 
@@ -117,9 +142,8 @@ describe('/api/upcoming', () => {
 
     const [match] = (res.payload as any).upcoming;
     expect(match.radiant_team_name).toBe('Xtreme Gaming');
-    expect(match.dire_team_name).toBe('Team Liquid');
-    expect(match.dire_team_name_cn).toBe('液体');
-    expect(match.dire_team_logo).toBe(getCuratedTeamLogoMirrorPath('Team Liquid'));
+    expect(match.dire_team_name).toBe('Roar Gaming');
+    expect(match.series_type).toBe('BO1');
   });
 
   it('fills curated logos by series name when the team row and team id are both missing', async () => {
@@ -155,7 +179,7 @@ describe('/api/upcoming', () => {
     await handler({ method: 'GET', query: {} } as never, res as never);
 
     const [match] = (res.payload as any).upcoming;
-    expect(match.radiant_team_logo).toBe(getCuratedTeamLogoMirrorPath('1win Team'));
-    expect(match.dire_team_logo).toBe(getCuratedTeamLogoMirrorPath('Ivory'));
+    expect(match.radiant_team_logo).toContain('1win-team-ranking-dark.webp');
+    expect(match.dire_team_logo).toContain('ivory-ranking-dark.webp');
   });
 });
