@@ -946,6 +946,97 @@ describe('TournamentSection', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=pgl-wallachia-s8&featured=1');
   });
 
+  it('routes ESL Challenger China Season 3 to a bracket-only featured view', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=19130&limit=10&offset=0') {
+        return createJsonResponse({
+          series: buildSeries(40, 1),
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      if (url === '/api/tournaments?tournamentId=esl-challenger-china-season-3&featured=1') {
+        return createJsonResponse({
+          tournamentId: 'esl-challenger-china-season-3',
+          title: 'Main Event',
+          sourceLabel: 'DLTV',
+          sourceUrl: 'https://dltv.org/events/esl-challenger-china-season-3',
+          fetchedAt: '2026-05-01T05:00:00.000Z',
+          groupStage: {
+            title: 'No Group Stage',
+            format: 'double-elimination',
+            rounds: [],
+            groups: [],
+            standings: [],
+          },
+          playoffs: {
+            title: 'Playoffs',
+            rounds: [
+              {
+                roundName: 'Upper Bracket R1 (bo1)',
+                roundKey: 'upper-r1',
+                matches: [
+                  {
+                    href: 'https://dltv.org/matches/426313/xtreme-gaming-vs-roar-gaming-esl-challenger-china-season-3',
+                    startTime: '2026-05-01 05:00:00',
+                    teams: [
+                      { name: 'Xtreme Gaming', logoUrl: null, score: '0' },
+                      { name: 'Roar Gaming', logoUrl: null, score: '0' },
+                    ],
+                  },
+                ],
+              },
+            ],
+            placementPrizes: [],
+          },
+          matches: {
+            title: 'Matches & Scores',
+            upcoming: [],
+            finished: [],
+          },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: '19130',
+            league_id: 19130,
+            name: 'ESL Challenger China Season 3',
+            dltv_event_slug: 'esl-challenger-china-season-3',
+            status: 'ongoing',
+            tier: 'B',
+            location: 'China',
+            start_time: 1_777_593_600,
+            end_time: 1_777_766_400,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '小型比赛' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'ESL Challenger China Season 3' })[1]);
+
+    expect(await screen.findByText('无小组赛 · 直接双败淘汰')).toBeInTheDocument();
+    expect(screen.getByText('Double Elimination')).toBeInTheDocument();
+    expect(screen.getByText('Bracket rounds and pairings')).toBeInTheDocument();
+    expect(screen.getAllByText('Xtreme Gaming').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Roar Gaming').length).toBeGreaterThan(0);
+    expect(screen.queryByText('小组排名和轮次对阵')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=esl-challenger-china-season-3&featured=1');
+  });
+
   it('does not render tournaments whose tier is empty', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

@@ -82,6 +82,59 @@ const fixture = `
 `;
 
 describe('parseDltvFeaturedTournamentPage round-robin', () => {
+  it('treats ESL Challenger China Season 3 as bracket-only double elimination without group standings', () => {
+    const eslChinaDefinition = {
+      id: 'esl-challenger-china-season-3',
+      sourceLabel: 'DLTV',
+      sourceUrl: 'https://dltv.org/events/esl-challenger-china-season-3',
+      format: 'double-elimination',
+    };
+    const bracketOnlyFixture = `
+      <section class="playoffs">
+        <div class="playoffs__box-row__col">
+          <div class="col__head">Upper Bracket R1 (bo1)</div>
+          <div class="col__serie ">
+            <a href="https://dltv.org/matches/426313/xtreme-gaming-vs-roar-gaming-esl-challenger-china-season-3">
+              <div class="col__serie-date"><div class="col__serie-date__item"><div>2026-05-01 05:00:00</div><div>2026-05-01 05:00:00</div></div></div>
+              <div class="col__serie-teams">
+                <div class="col__serie-teams__item"><div class="logo" data-theme-light="https://cdn.example/xg.png"></div><div class="name overflow-text-2">Xtreme Gaming</div><div class="score">0</div></div>
+                <div class="col__serie-teams__item"><div class="logo" data-theme-light="https://cdn.example/roar.png"></div><div class="name overflow-text-2">Roar Gaming</div><div class="score">0</div></div>
+              </div>
+            </a>
+          </div>
+        </div>
+        <div class="playoffs__box-row__col">
+          <div class="col__head">Lower Bracket R1 (bo1)</div>
+        </div>
+        <div class="playoffs__box-row__col final">
+          <div class="col__head">Grand Final (bo3)</div>
+        </div>
+      </section>
+      <section class="matches__scores"></section>
+    `;
+
+    const payload = parseDltvFeaturedTournamentPage(bracketOnlyFixture, eslChinaDefinition as never);
+
+    expect(payload.groupStage).toEqual(expect.objectContaining({
+      title: 'No Group Stage',
+      format: 'double-elimination',
+      standings: [],
+      rounds: [],
+    }));
+    expect(payload.playoffs.rounds.map((round) => round.roundName)).toEqual([
+      'Upper Bracket R1 (bo1)',
+      'Lower Bracket R1 (bo1)',
+      'Grand Final (bo3)',
+    ]);
+    expect(payload.playoffs.rounds[0]?.matches[0]).toEqual(expect.objectContaining({
+      bracketLane: 'upper',
+      teams: [
+        expect.objectContaining({ name: 'Xtreme Gaming' }),
+        expect.objectContaining({ name: 'Roar Gaming' }),
+      ],
+    }));
+  });
+
   it('extracts two group standings and bracket lanes for ESL-style events', () => {
     const payload = parseDltvFeaturedTournamentPage(fixture, definition as never);
 

@@ -249,6 +249,9 @@ const FEATURED_TOURNAMENT_KEYS = new Set([
   'dreamleague-division-2-season-4',
   '19532',
   'dreamleague division 2 season 4',
+  'esl-challenger-china-season-3',
+  '19130',
+  'esl challenger china season 3',
 ]);
 
 // Team data type for team abbreviations
@@ -265,6 +268,7 @@ const FALLBACK_TEAM_ABBR: Record<string, string> = {
   'Team Nemesis': 'Nemesis', '1w Team': '1w',
   'Nigma Galaxy': 'Nigma', 'Virtus.pro': 'VP',
   'Gaimin Gladiators': 'GG', 'HEROIC': 'HEROIC',
+  'Roar Gaming': 'Roar',
 };
 
 const FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW: Record<string, boolean> = {
@@ -272,6 +276,7 @@ const FEATURED_TOURNAMENT_DEFAULT_COMPACT_VIEW: Record<string, boolean> = {
   'pgl-wallachia-s8': false,
   'esl-one-birmingham-2026': false,
   'dreamleague-division-2-season-4': false,
+  'esl-challenger-china-season-3': false,
 };
 
 const EMPTY_TOURNAMENTS: Tournament[] = [];
@@ -569,6 +574,14 @@ function getFeaturedTournamentRequestId(tournament: Tournament | null): string |
     || normalizedEventSlug === 'dreamleague-division-2-season-4'
   ) {
     return 'dreamleague-division-2-season-4';
+  }
+
+  if (
+    normalizedLeagueId === '19130'
+    || normalizedName === 'esl challenger china season 3'
+    || normalizedEventSlug === 'esl-challenger-china-season-3'
+  ) {
+    return 'esl-challenger-china-season-3';
   }
 
   if (
@@ -1837,6 +1850,13 @@ function FeaturedTournamentPanel({
 
   if (!payload) return null;
 
+  const hasGroupStage = Boolean(
+    payload.groupStage.standings.length > 0
+    || (payload.groupStage.groups || []).some((group) => group.standings.length > 0)
+    || payload.groupStage.rounds.length > 0
+  );
+  const isDoubleEliminationOnly = payload.groupStage.format === 'double-elimination' && !hasGroupStage;
+
   return (
     <div className="mb-5 rounded-xl border border-white/10 bg-slate-950/88 p-3 shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:p-4 md:mb-6 md:rounded-2xl md:border-amber-500/20 md:bg-gradient-to-br md:from-amber-500/10 md:via-slate-900/80 md:to-slate-950/90 md:p-5 md:shadow-none">
       <div className="mb-4 flex flex-col gap-2 border-b border-white/10 pb-3 md:mb-5 md:flex-row md:items-end md:justify-between md:gap-3 md:pb-4">
@@ -1858,9 +1878,38 @@ function FeaturedTournamentPanel({
       </div>
 
       <div className="space-y-4 md:space-y-5">
-        <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
-          {payload.groupStage.format === 'round-robin' ? (
-            <>
+        {isDoubleEliminationOnly ? (
+          <section className="overflow-hidden rounded-[26px] border border-red-400/15 bg-[radial-gradient(circle_at_top_left,rgba(248,113,113,0.18),transparent_34%),linear-gradient(135deg,rgba(30,41,59,0.86),rgba(2,6,23,0.94))] p-4 md:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-red-100">
+                  Bracket-only event
+                </div>
+                <h5 className="mt-3 text-lg font-semibold text-white">无小组赛 · 直接双败淘汰</h5>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                  DLTV 赛事页未提供 Group Stage 区块；本站按源站结构展示为 8 队双败淘汰赛，重点跟踪胜者组、败者组和总决赛路径。
+                </p>
+              </div>
+              <div className="grid gap-2 text-xs sm:grid-cols-3 lg:w-[430px]">
+                <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3">
+                  <div className="text-slate-500">Format</div>
+                  <div className="mt-1 font-semibold text-white">Double Elimination</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3">
+                  <div className="text-slate-500">Teams</div>
+                  <div className="mt-1 font-semibold text-white">8 teams</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3">
+                  <div className="text-slate-500">Group Stage</div>
+                  <div className="mt-1 font-semibold text-red-100">None</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
+            {payload.groupStage.format === 'round-robin' ? (
+              <>
               <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h5 className="text-sm font-semibold text-white md:text-base">{payload.groupStage.title}</h5>
@@ -1873,9 +1922,9 @@ function FeaturedTournamentPanel({
                 </div>
               </div>
               <FeaturedGroupCards groups={payload.groupStage.groups || []} aliasToTag={aliasToTag} teams={teams} />
-            </>
-          ) : (
-            <>
+              </>
+            ) : (
+              <>
               <FeaturedMobileStageTable
                 payload={payload}
                 onOpenMatch={onOpenMatch}
@@ -2004,9 +2053,10 @@ function FeaturedTournamentPanel({
                   </div>
                 </div>
               </div>
-            </>
-          )}
-        </section>
+              </>
+            )}
+          </section>
+        )}
 
         <section className="rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
           <div className="mb-3 md:mb-4">
