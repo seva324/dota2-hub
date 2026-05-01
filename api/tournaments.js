@@ -99,6 +99,13 @@ const FEATURED_TEAM_ALIAS_OVERRIDES = {
     'zero tenacity': 'zerotenacity',
   },
 };
+const FEATURED_TEAM_NAME_PASSTHROUGH_ALIASES = {
+  'esl-challenger-china-season-3': new Set([
+    'team resilience',
+    'teamresilience',
+    'resilience',
+  ]),
+};
 const TOURNAMENT_SERIES_LEAGUE_ALIASES = {
   'blast-slam-vii-china-closed-qualifier': [19520],
 };
@@ -485,9 +492,12 @@ function buildFeaturedTeamResolver(teams, featuredTournamentId) {
   }
 
   const overrides = FEATURED_TEAM_ALIAS_OVERRIDES[featuredTournamentId] || {};
+  const passthroughAliases = FEATURED_TEAM_NAME_PASSTHROUGH_ALIASES[featuredTournamentId] || new Set();
 
   return (teamName) => {
     for (const key of getLookupKeys(teamName)) {
+      if (passthroughAliases.has(key)) return null;
+
       const direct = directLookup.get(key);
       if (direct) return direct;
 
