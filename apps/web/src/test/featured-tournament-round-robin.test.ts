@@ -102,12 +102,25 @@ describe('parseDltvFeaturedTournamentPage round-robin', () => {
               </div>
             </a>
           </div>
+          <div class="col__serie ">
+            <a href="https://dltv.org/matches/426316/team-refuser-vs-team-resilience-esl-challenger-china-season-3">
+              <div class="col__serie-date"><div class="col__serie-date__item"><div>2026-05-01 06:30:00</div><div>2026-05-01 06:30:00</div></div></div>
+              <div class="col__serie-teams">
+                <div class="col__serie-teams__item"><div class="logo" data-theme-light="https://cdn.example/refuser.png"></div><div class="name overflow-text-2">Team Refuser</div><div class="score">0</div></div>
+                <div class="col__serie-teams__item"><div class="logo" data-theme-light="https://cdn.example/resilience.png"></div><div class="name overflow-text-2">Team Resilience</div><div class="score">0</div></div>
+              </div>
+            </a>
+          </div>
         </div>
         <div class="playoffs__box-row__col">
-          <div class="col__head">Lower Bracket R1 (bo1)</div>
+          <div class="col__head">Upper Bracket Semifinal (bo3)</div>
+        </div>
+        <div class="playoffs__box-row__col">
+          <div class="col__head">Lower Bracket R1 (bo3)</div>
         </div>
         <div class="playoffs__box-row__col final">
-          <div class="col__head">Grand Final (bo3)</div>
+          <div class="col__head">Grand Final (bo5)</div>
+          <div class="col__prize gold"><span>1st Place</span><strong>$90,000</strong></div>
         </div>
       </section>
       <section class="matches__scores"></section>
@@ -123,8 +136,9 @@ describe('parseDltvFeaturedTournamentPage round-robin', () => {
     }));
     expect(payload.playoffs.rounds.map((round) => round.roundName)).toEqual([
       'Upper Bracket R1 (bo1)',
-      'Lower Bracket R1 (bo1)',
-      'Grand Final (bo3)',
+      'Upper Bracket Semifinal (bo3)',
+      'Lower Bracket R1 (bo3)',
+      'Grand Final (bo5)',
     ]);
     expect(payload.playoffs.rounds[0]?.matches[0]).toEqual(expect.objectContaining({
       bracketLane: 'upper',
@@ -133,6 +147,14 @@ describe('parseDltvFeaturedTournamentPage round-robin', () => {
         expect.objectContaining({ name: 'Roar Gaming' }),
       ],
     }));
+    expect(payload.playoffs.rounds[0]?.matches[1]?.teams).toEqual([
+      expect.objectContaining({ name: 'Team Refuser' }),
+      expect.objectContaining({ name: 'Team Resilience' }),
+    ]);
+    expect(payload.playoffs.placementPrizes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ placement: '1st Place', prize: '$90,000' }),
+      expect.objectContaining({ placement: '5th - 6th Place', prize: '$6,000' }),
+    ]));
   });
 
   it('extracts two group standings and bracket lanes for ESL-style events', () => {

@@ -987,10 +987,31 @@ describe('TournamentSection', () => {
                       { name: 'Roar Gaming', logoUrl: null, score: '0' },
                     ],
                   },
+                  {
+                    href: 'https://dltv.org/matches/426316/team-refuser-vs-team-resilience-esl-challenger-china-season-3',
+                    startTime: '2026-05-01 06:30:00',
+                    teams: [
+                      { name: 'Team Refuser', logoUrl: null, score: '0' },
+                      { name: 'Team Resilience', logoUrl: null, score: '0' },
+                    ],
+                  },
                 ],
               },
+              { roundName: 'Upper Bracket Semifinal (bo3)', roundKey: 'upper-semis', matches: [] },
+              { roundName: 'Upper Bracket Final (bo3)', roundKey: 'upper-finals', matches: [] },
+              { roundName: 'Lower Bracket R1 (bo3)', roundKey: 'lower-r1', matches: [] },
+              { roundName: 'Lower Bracket R2 (bo3)', roundKey: 'lower-r2', matches: [] },
+              { roundName: 'Lower Bracket R3 (bo3)', roundKey: 'lower-r3', matches: [] },
+              { roundName: 'Lower Bracket Final (bo3)', roundKey: 'lower-finals', matches: [] },
+              { roundName: 'Grand Final (bo5)', roundKey: 'grand-finals', matches: [] },
             ],
-            placementPrizes: [],
+            placementPrizes: [
+              { placement: '1st Place', prize: '$90,000' },
+              { placement: '2nd Place', prize: '$40,000' },
+              { placement: '3rd Place', prize: '$20,000' },
+              { placement: '4th Place', prize: '$10,000' },
+              { placement: '5th - 6th Place', prize: '$6,000' },
+            ],
           },
           matches: {
             title: 'Matches & Scores',
@@ -1030,9 +1051,18 @@ describe('TournamentSection', () => {
 
     expect(await screen.findByText('无小组赛 · 直接双败淘汰')).toBeInTheDocument();
     expect(screen.getByText('Double Elimination')).toBeInTheDocument();
+    expect(screen.getByText('ESL China playoffs')).toBeInTheDocument();
+    expect(screen.getByText(/Upper Bracket R1 starts as Bo1/)).toBeInTheDocument();
     expect(screen.getByText('Bracket rounds and pairings')).toBeInTheDocument();
     expect(screen.getAllByText('Xtreme Gaming').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Roar Gaming').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Team Refuser').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Team Resilience').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Upper Bracket Semifinal (bo3)').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Grand Final (bo5)').length).toBeGreaterThan(0);
+    expect(screen.getByText('$90,000')).toBeInTheDocument();
+    expect(screen.getByText('$6,000')).toBeInTheDocument();
+    expect(screen.queryByText('EHOME.immortal')).not.toBeInTheDocument();
     expect(screen.queryByText('小组排名和轮次对阵')).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=esl-challenger-china-season-3&featured=1');
   });

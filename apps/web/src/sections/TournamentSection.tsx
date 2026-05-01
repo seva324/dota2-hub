@@ -1355,6 +1355,66 @@ const ESL_BIRMINGHAM_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
   ],
 };
 
+const ESL_CHINA_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  minWidth: 990,
+  columns: 5,
+  columnWidth: 170,
+  columnGap: 30,
+  headerWidth: 170,
+  headerHeight: 54,
+  matchWidth: 170,
+  matchHeight: 102,
+  rowUnit: 28,
+  lanes: [
+    { roundKey: 'upper-r1', fallbackTitle: 'Upper Bracket R1 (bo1)', column: 0, headerRow: 0, slotRows: [2.2, 7.1, 12.0, 16.9], section: 'upper' },
+    { roundKey: 'upper-semis', fallbackTitle: 'Upper Bracket Semifinal (bo3)', column: 1, headerRow: 0, slotRows: [4.65, 14.45], section: 'upper' },
+    { roundKey: 'upper-finals', fallbackTitle: 'Upper Bracket Final (bo3)', column: 3, headerRow: 0, slotRows: [9.55], section: 'upper' },
+    { roundKey: 'grand-finals', fallbackTitle: 'Grand Final (bo5)', column: 4, headerRow: 0, slotRows: [18.7], section: 'upper' },
+    { roundKey: 'lower-r1', fallbackTitle: 'Lower Bracket R1 (bo3)', column: 0, headerRow: 23.0, slotRows: [25.3, 30.2], section: 'lower' },
+    { roundKey: 'lower-r2', fallbackTitle: 'Lower Bracket R2 (bo3)', column: 1, headerRow: 23.0, slotRows: [24.1, 29.0], section: 'lower' },
+    { roundKey: 'lower-r3', fallbackTitle: 'Lower Bracket R3 (bo3)', column: 2, headerRow: 23.0, slotRows: [26.55], section: 'lower' },
+    { roundKey: 'lower-finals', fallbackTitle: 'Lower Bracket Final (bo3)', column: 3, headerRow: 23.0, slotRows: [24.1], section: 'lower' },
+  ],
+  connections: [
+    { fromLane: 'upper-r1', fromSlot: 0, toLane: 'upper-semis', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 1, toLane: 'upper-semis', toSlot: 0 },
+    { fromLane: 'upper-r1', fromSlot: 2, toLane: 'upper-semis', toSlot: 1 },
+    { fromLane: 'upper-r1', fromSlot: 3, toLane: 'upper-semis', toSlot: 1 },
+    { fromLane: 'upper-semis', fromSlot: 0, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-semis', fromSlot: 1, toLane: 'upper-finals', toSlot: 0 },
+    { fromLane: 'upper-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 0, toLane: 'lower-r2', toSlot: 0 },
+    { fromLane: 'lower-r1', fromSlot: 1, toLane: 'lower-r2', toSlot: 1 },
+    { fromLane: 'lower-r2', fromSlot: 0, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r2', fromSlot: 1, toLane: 'lower-r3', toSlot: 0 },
+    { fromLane: 'lower-r3', fromSlot: 0, toLane: 'lower-finals', toSlot: 0 },
+    { fromLane: 'lower-finals', fromSlot: 0, toLane: 'grand-finals', toSlot: 0 },
+  ],
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$90,000', laneKey: 'grand-finals', slot: 0, dx: 16, dy: 110 },
+    { placement: '2nd Place', fallbackPrize: '$40,000', laneKey: 'grand-finals', slot: 0, dx: 16, dy: 154 },
+    { placement: '3rd Place', fallbackPrize: '$20,000', laneKey: 'lower-finals', slot: 0, dx: -8, dy: 130 },
+    { placement: '4th Place', fallbackPrize: '$10,000', laneKey: 'lower-r3', slot: 0, dx: -8, dy: 130 },
+    { placement: '5th - 6th Place', fallbackPrize: '$6,000', laneKey: 'lower-r2', slot: 1, dx: -8, dy: 154 },
+  ],
+};
+
+const ESL_CHINA_COMPACT_BRACKET_SCHEMA: FeaturedBracketSchema = {
+  ...ESL_CHINA_STANDARD_BRACKET_SCHEMA,
+  minWidth: 620,
+  columnWidth: 96,
+  columnGap: 30,
+  headerWidth: 96,
+  matchWidth: 96,
+  placements: [
+    { placement: '1st Place', fallbackPrize: '$90,000', laneKey: 'grand-finals', slot: 0, dx: 12, dy: 102 },
+    { placement: '2nd Place', fallbackPrize: '$40,000', laneKey: 'grand-finals', slot: 0, dx: 12, dy: 146 },
+    { placement: '3rd Place', fallbackPrize: '$20,000', laneKey: 'lower-finals', slot: 0, dx: -2, dy: 122 },
+    { placement: '4th Place', fallbackPrize: '$10,000', laneKey: 'lower-r3', slot: 0, dx: -2, dy: 122 },
+    { placement: '5th - 6th Place', fallbackPrize: '$6,000', laneKey: 'lower-r2', slot: 1, dx: -2, dy: 146 },
+  ],
+};
+
 const DREAMLEAGUE_DIV2_STANDARD_BRACKET_SCHEMA: FeaturedBracketSchema = {
   minWidth: 1248,
   columns: 6,
@@ -1573,6 +1633,42 @@ function FeaturedPlayoffBracket({
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
           <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
+        </div>
+        <div className="grid gap-3 md:hidden">
+          {rounds.map((round) => (
+            <FeaturedCompactPlayoffRound
+              key={round.roundName}
+              round={round}
+              aliasToTag={aliasToTag}
+              teams={teams}
+              onOpenMatch={onOpenMatch}
+              compactView={compactView}
+            />
+          ))}
+        </div>
+        <FeaturedDesktopCompactBracket
+          payload={payload}
+          schema={schema}
+          onOpenMatch={onOpenMatch}
+          aliasToTag={aliasToTag}
+          teams={teams}
+          compactView={compactView}
+        />
+      </div>
+    );
+  }
+
+  if (payload.tournamentId === 'esl-challenger-china-season-3') {
+    const rounds = getFeaturedSortedRounds(payload);
+    const schema = compactView ? ESL_CHINA_COMPACT_BRACKET_SCHEMA : ESL_CHINA_STANDARD_BRACKET_SCHEMA;
+    return (
+      <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
+        <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">ESL China playoffs</div>
+          <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
+        </div>
+        <div className="mb-3 rounded-xl border border-amber-300/15 bg-amber-400/5 px-3 py-2 text-[11px] leading-relaxed text-amber-50/85 md:text-xs">
+          Upper Bracket R1 starts as Bo1. Winners stay upper; losers drop to Lower Bracket R1. Upper Semifinal/Final and all lower rounds are Bo3, then Grand Final is one Bo5.
         </div>
         <div className="grid gap-3 md:hidden">
           {rounds.map((round) => (

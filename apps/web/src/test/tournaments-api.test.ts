@@ -827,4 +827,76 @@ describe('/api/tournaments lazy loading', () => {
       matchId: '9001',
     }));
   });
+
+  it('keeps ESL China Team Resilience from being overwritten by stale EHOME rows', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => `
+        <section class="playoffs">
+          <div class="playoffs__box-row__col">
+            <div class="col__head">Upper Bracket R1 (bo1)</div>
+            <div class="col__serie ">
+              <a href="https://dltv.org/matches/426316/team-refuser-vs-team-resilience-esl-challenger-china-season-3">
+                <div data-moment="MMM">2026-05-01 06:30:00</div>
+                <div class="col__serie-teams">
+                  <div class="col__serie-teams__item">
+                    <div class="logo" data-theme-light="https://cdn.example/refuser.png"></div>
+                    <div class="name overflow-text-1">Team Refuser</div>
+                    <div class="score">0</div>
+                  </div>
+                  <div class="col__serie-teams__item">
+                    <div class="logo" data-theme-light="https://cdn.example/resilience.png"></div>
+                    <div class="name overflow-text-1">Team Resilience</div>
+                    <div class="score">0</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </section>
+        <section class="matches__scores"></section>
+      `,
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql === 'SELECT * FROM teams') {
+        return [
+          { team_id: 10007878, name: 'Team Refuser', tag: 'Refuser', logo_url: 'https://steamcdn-a.akamaihd.net/refuser.png', region: 'CN', is_cn_team: 1 },
+          { team_id: 5017210, name: 'EHOME.immortal', tag: 'Resilience', logo_url: 'https://steamcdn-a.akamaihd.net/ehome-immortal.png', region: 'CN', is_cn_team: 1 },
+        ];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string, values?: unknown[]) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM series s LEFT JOIN matches m ON m.series_id = s.series_id')) {
+        expect(values).toEqual([19130]);
+        return [];
+      }
+      throw new Error(`Unexpected query SQL: ${normalized}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: { tournamentId: 'esl-challenger-china-season-3', featured: '1' } };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).playoffs.rounds[0].matches[0].teams).toEqual([
+      expect.objectContaining({
+        teamId: '10007878',
+        name: 'Team Refuser',
+      }),
+      expect.objectContaining({
+        teamId: null,
+        name: 'Team Resilience',
+        logoUrl: 'https://cdn.example/resilience.png',
+      }),
+    ]);
+    expect(JSON.stringify(res.payload)).not.toContain('EHOME.immortal');
+  });
 });
