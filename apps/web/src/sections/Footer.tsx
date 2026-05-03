@@ -1,132 +1,99 @@
-import { Trophy, Github, Twitter, MessageCircle, ExternalLink } from 'lucide-react';
-
-const footerLinks = {
-  tournaments: [
-    { label: 'BLAST Slam', href: '#' },
-    { label: 'DreamLeague', href: '#' },
-    { label: 'PGL Wallachia', href: '#' },
-    { label: 'The International', href: '#' },
-  ],
-  resources: [
-    { label: 'Liquidpedia', href: 'https://liquipedia.net/dota2' },
-    { label: 'Dotabuff', href: 'https://www.dotabuff.com' },
-    { label: 'OpenDota', href: 'https://www.opendota.com' },
-    { label: 'GosuGamers', href: 'https://www.gosugamers.net/dota2' },
-  ],
-  community: [
-    { label: 'Reddit r/DotA2', href: 'https://reddit.com/r/DotA2' },
-    { label: 'NGA论坛', href: 'https://nga.cn' },
-    { label: 'Twitter/X', href: '#' },
-  ],
-};
+function DotaHubMark() {
+  return (
+    <div className="relative size-8 shrink-0 rounded-xl bg-gradient-to-br from-red-500 to-red-700">
+      <div className="absolute inset-1.5 rounded-md border-4 border-slate-950/80" />
+      <div className="absolute left-1/2 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-950" />
+    </div>
+  );
+}
 
 export function Footer({ lastUpdated }: { lastUpdated?: string }) {
+  const updatedDate = lastUpdated ? new Date(lastUpdated).toLocaleDateString('zh-CN') : null;
+
   return (
-    <footer className="bg-slate-950 border-t border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="hidden border-t border-white/8 bg-[#030508] lg:block">
+      <div className="mx-auto max-w-[1480px] px-6 py-12">
+        <div className="grid grid-cols-[220px_1fr_1fr_1fr_200px] gap-10">
           {/* Brand */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">DOTA2 Pro Hub</h3>
-              </div>
+          <div>
+            <div className="mb-4 flex items-center gap-2.5">
+              <DotaHubMark />
+              <span className="text-lg font-black tracking-tight text-white">DotaHub</span>
             </div>
-            <p className="text-sm text-slate-400 mb-4">
-              专业的DOTA2战报与赛事预测平台，为每一位刀友提供最新最全的电竞资讯。
-            </p>
-            <div className="flex items-center gap-3">
-              <a
-                href="#"
-                className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-              >
-                <Github className="w-4 h-4" />
-              </a>
+            <p className="mb-1 text-sm font-medium text-slate-300">专业的 Dota 2 赛事数据平台</p>
+            <p className="text-xs leading-5 text-slate-500">覆盖全球赛事、战队、选手与深度数据分析</p>
+          </div>
+
+          {/* 产品 */}
+          <div>
+            <h4 className="mb-4 text-sm font-semibold text-white">产品</h4>
+            <ul className="space-y-2.5">
+              {['比赛数据', '战队排行', '选手排行', '数据统计'].map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors">{item}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 关于我们 */}
+          <div>
+            <h4 className="mb-4 text-sm font-semibold text-white">关于我们</h4>
+            <ul className="space-y-2.5">
+              {['关于 DotaHub', '加入我们', '联系我们', '免责声明'].map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors">{item}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 关注我们 */}
+          <div>
+            <h4 className="mb-4 text-sm font-semibold text-white">关注我们</h4>
+            <div className="flex gap-2">
+              {[
+                { label: '微博', color: 'bg-red-600', text: 'W' },
+                { label: 'bilibili', color: 'bg-sky-500', text: 'B' },
+                { label: 'Discord', color: 'bg-indigo-600', text: 'D' },
+                { label: 'Twitter', color: 'bg-slate-700', text: 'X' },
+              ].map((social) => (
+                <a
+                  key={social.label}
+                  href="#"
+                  title={social.label}
+                  className={`size-9 ${social.color} rounded-xl flex items-center justify-center text-[11px] font-bold text-white hover:opacity-80 transition-opacity`}
+                >
+                  {social.text}
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Tournaments */}
+          {/* 下载 App */}
           <div>
-            <h4 className="text-white font-semibold mb-4">T1赛事</h4>
-            <ul className="space-y-2">
-              {footerLinks.tournaments.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="text-white font-semibold mb-4">数据来源</h4>
-            <ul className="space-y-2">
-              {footerLinks.resources.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1"
-                  >
-                    {link.label}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Community */}
-          <div>
-            <h4 className="text-white font-semibold mb-4">社区</h4>
-            <ul className="space-y-2">
-              {footerLinks.community.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1"
-                  >
-                    {link.label}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <h4 className="mb-4 text-sm font-semibold text-white">下载 App</h4>
+            <div className="space-y-2">
+              <a href="#" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors">
+                <span className="text-base">🍎</span>
+                <span className="text-sm font-medium">App Store</span>
+              </a>
+              <a href="#" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors">
+                <span className="text-base">🤖</span>
+                <span className="text-sm font-medium">Android</span>
+              </a>
+            </div>
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500">
-            © 2026 DOTA2 Pro Hub. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4 text-sm text-slate-500">
-            {lastUpdated && <span>最后更新: {lastUpdated}</span>}
-            <span>|</span>
-            <span>数据来源：OpenDota API, Liquidpedia</span>
+        <div className="mt-10 flex items-center justify-between border-t border-white/8 pt-6 text-xs text-slate-500">
+          <span>
+            © 2024 DotaHub.cn · 闽ICP备2022031312号-1
+            {updatedDate ? ` · 更新 ${updatedDate}` : ''}
+          </span>
+          <div className="flex items-center gap-4">
+            <a href="#" className="hover:text-white transition-colors">隐私政策</a>
+            <a href="#" className="hover:text-white transition-colors">用户协议</a>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface Player {
   player_slot: number;
@@ -39,11 +39,7 @@ export function AIReportSection({ match }: AIReportSectionProps) {
   const [error, setError] = useState<string>('');
   const [manualHint, setManualHint] = useState<string>('');
 
-  useEffect(() => {
-    generateReport();
-  }, [match]);
-
-  const generateReport = async () => {
+  const generateReport = useCallback(async () => {
     setLoading(true);
     setError('');
     setManualHint('');
@@ -78,7 +74,11 @@ export function AIReportSection({ match }: AIReportSectionProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [match.match_id]);
+
+  useEffect(() => {
+    void generateReport();
+  }, [generateReport]);
 
   if (loading) {
     return (

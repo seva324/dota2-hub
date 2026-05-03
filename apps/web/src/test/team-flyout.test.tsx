@@ -37,6 +37,7 @@ describe('TeamFlyout', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(Date, 'now').mockReturnValue(NOW * 1000);
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
   });
 
   it('fetches team flyout data only after the flyout opens', async () => {
@@ -79,6 +80,99 @@ describe('TeamFlyout', () => {
 
     expect(await screen.findByText('Opp 1')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/team-flyout?limit=5&offset=0&teamId=1&name=Team+Alpha');
+  }, 15000);
+
+  it('uses a bottom sheet on mobile viewports', async () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') return createJsonResponse({});
+      if (url === '/api/team-flyout?limit=5&offset=0&teamId=1&name=Team+Alpha') {
+        return createJsonResponse({
+          team: { team_id: '1', name: 'Team Alpha', tag: 'ALP' },
+          recentMatches: [],
+          nextMatch: null,
+          activeSquad: [],
+          topHeroes: [],
+          stats: { wins: 0, losses: 0, winRate: 0 },
+          pagination: { hasMore: false, nextCursor: null },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TeamFlyout
+        open
+        onOpenChange={() => {}}
+        selectedTeam={{ team_id: '1', name: 'Team Alpha' }}
+      />
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: /Team Alpha/ });
+
+    await waitFor(() => {
+      expect(dialog.className).toContain('slide-in-from-bottom');
+    });
+  }, 15000);
+
+  it('falls back to local XG profile data when the flyout API returns an empty payload', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') return createJsonResponse({});
+      if (url === '/api/team-flyout?limit=5&offset=0&teamId=1&name=XG') {
+        return createJsonResponse({
+          team: { team_id: '1', name: 'XG', tag: 'XG', region: 'China' },
+          recentMatches: [],
+          nextMatch: null,
+          activeSquad: [],
+          topHeroes: [],
+          stats: { wins: 0, losses: 0, winRate: 0 },
+          pagination: { hasMore: false, nextCursor: null },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TeamFlyout
+        open
+        onOpenChange={() => {}}
+        selectedTeam={{ team_id: '1', name: 'XG' }}
+        teams={[{ team_id: '1', name: 'XG', tag: 'XG', region: 'China' }]}
+        upcoming={[{
+          match_id: '9101',
+          start_time: NOW + 3600,
+          series_type: 'BO3',
+          radiant_team_id: '1',
+          dire_team_id: '2',
+          radiant_team_name: 'XG',
+          dire_team_name: 'Tundra',
+          tournament_name: 'DreamLeague S23',
+        }]}
+        matches={[{
+          match_id: '9001',
+          start_time: NOW - 3600,
+          series_type: 'BO3',
+          radiant_team_id: '1',
+          dire_team_id: '3',
+          radiant_team_name: 'XG',
+          dire_team_name: 'Yakult Brothers',
+          radiant_score: 2,
+          dire_score: 0,
+          radiant_win: 1,
+          tournament_name: 'DreamLeague S23',
+          team_hero_ids: [1, 2, 3, 4, 5],
+        }]}
+      />
+    );
+
+    expect(await screen.findByText('Ame')).toBeInTheDocument();
+    expect(await screen.findByText(/Tundra/)).toBeInTheDocument();
+    expect(await screen.findByText(/Yakult Brothers/)).toBeInTheDocument();
+    expect(screen.queryByText('暂无最近一场比赛阵容')).not.toBeInTheDocument();
   }, 15000);
 
   it('shows five recent matches by default and loads more lazily', async () => {

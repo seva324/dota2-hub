@@ -84,6 +84,9 @@ export interface PlayerFlyoutRecentMatch {
   teamPicks: number[];
   playerHeroId?: number | null;
   won?: boolean | null;
+  kda?: string | null;
+  gpm?: number | null;
+  xpm?: number | null;
 }
 
 export interface PlayerFlyoutModel {
@@ -106,6 +109,16 @@ export interface PlayerFlyoutModel {
   mostPlayedHeroes?: PlayerFlyoutMostPlayedHero[];
   nextMatch?: PlayerFlyoutNextMatch | null;
   recentMatches?: PlayerFlyoutRecentMatch[];
+  hotRank?: number | null;
+  hotScore?: string | null;
+  avgKda?: number | null;
+  avgGpm?: number | null;
+  avgKills?: number | null;
+  avgDeaths?: number | null;
+  avgXpm?: number | null;
+  leagueKdaRank?: string | null;
+  leagueGpmRank?: string | null;
+  leagueWinRateRank?: string | null;
 }
 
 function resolvePlayerTeamLogo(

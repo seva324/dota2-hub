@@ -107,6 +107,14 @@ interface Game {
   picks_bans?: HeroPick[];
 }
 
+interface SeriesMapRef {
+  label: string;
+  matchId: string;
+  radiantScore?: number;
+  direScore?: number;
+  duration?: number;
+}
+
 interface TournamentSeriesResponse {
   tournament?: Tournament;
   series?: Series[];
@@ -283,6 +291,125 @@ const EMPTY_TOURNAMENTS: Tournament[] = [];
 const EMPTY_TOURNAMENT_ALL_MATCHES: NonNullable<TournamentSectionProps['allMatches']> = [];
 const EMPTY_TOURNAMENT_UPCOMING: NonNullable<TournamentSectionProps['upcoming']> = [];
 const EMPTY_TOURNAMENT_TEAMS: NonNullable<TournamentSectionProps['teams']> = [];
+const PROTOTYPE_UPCOMING_SCHEDULE = [
+  { time: '19:00', event: 'DreamLeague S23', left: 'XG', right: 'Aurora', bo: 'BO3' },
+  { time: '22:00', event: 'ESL One 伯明翰', left: 'Liquid', right: 'Tundra', bo: 'BO3' },
+  { time: '01:00 明天', event: 'PGL Wallachia S4', left: 'Team Spirit', right: 'Falcons', bo: 'BO3' },
+  { time: '04:00 明天', event: 'DreamLeague S23', left: 'GG', right: 'BetBoom', bo: 'BO3' },
+  { time: '19:00 明天', event: 'ESL One 伯明翰', left: 'Nouns', right: '9Pandas', bo: 'BO2' },
+];
+const PROTOTYPE_FINISHED_ROWS = [
+  { time: '05-18 21:15', event: 'DreamLeague S23', left: 'XG', right: 'YB', score: '2 - 0', result: '胜利', duration: '28:36', draft: 'Ban 12  Pick 24' },
+  { time: '05-18 18:45', event: 'ESL One 伯明翰', left: 'Team Spirit', right: '9Pandas', score: '2 - 1', result: '胜利', duration: '41:12', draft: 'Ban 18  Pick 30' },
+  { time: '05-18 16:10', event: 'PGL Wallachia S4', left: 'Falcons', right: 'Nigma Galaxy', score: '2 - 0', result: '胜利', duration: '33:21', draft: 'Ban 10  Pick 22' },
+  { time: '05-18 13:30', event: 'DreamLeague S23', left: 'Aurora', right: 'BetBoom', score: '0 - 2', result: '失败', duration: '29:05', draft: 'Ban 11  Pick 24' },
+];
+
+const PROTO_TEAM_COLORS: Record<string, string> = {
+  XG: 'bg-red-600', Aurora: 'bg-sky-600', Liquid: 'bg-blue-600', Tundra: 'bg-green-700',
+  'Team Spirit': 'bg-purple-700', Falcons: 'bg-yellow-600', GG: 'bg-emerald-600',
+  BetBoom: 'bg-orange-600', Nouns: 'bg-pink-700', '9Pandas': 'bg-teal-700',
+  YB: 'bg-indigo-600', 'Nigma Galaxy': 'bg-rose-700',
+};
+
+function PrototypeTournamentFallback({ showT1Only }: { showT1Only: boolean }) {
+  return (
+    <div className="space-y-4">
+      <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.2)]">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-white">即将开始</h3>
+            <p className="text-xs text-slate-400">未来 48 小时</p>
+          </div>
+          <button type="button" className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-white">
+            全部赛程 <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="grid auto-cols-[70%] grid-flow-col gap-3 overflow-x-auto pb-1 lg:auto-cols-auto lg:grid-flow-row lg:grid-cols-5">
+          {PROTOTYPE_UPCOMING_SCHEDULE.map((match) => (
+            <article key={`${match.time}-${match.left}`} className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+              <div className="flex items-start justify-between text-sm">
+                <div>
+                  <div className="font-semibold text-white">{match.time}</div>
+                  <div className="mt-1 text-xs text-slate-400">{match.event}</div>
+                </div>
+                <span className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-slate-300">{match.bo}</span>
+              </div>
+              <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`size-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${PROTO_TEAM_COLORS[match.left] || 'bg-slate-600'}`}>{match.left.substring(0,2).toUpperCase()}</div>
+                  <span className="truncate text-xs font-medium text-slate-100">{match.left}</span>
+                </div>
+                <span className="text-xs text-slate-500">VS</span>
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`size-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${PROTO_TEAM_COLORS[match.right] || 'bg-slate-600'}`}>{match.right.substring(0,2).toUpperCase()}</div>
+                  <span className="truncate text-xs font-medium text-slate-100">{match.right}</span>
+                </div>
+              </div>
+              <button type="button" className="mt-4 w-full rounded-lg border border-white/10 bg-white/[0.035] py-2 text-sm text-slate-300">
+                提醒
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.2)]">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-white">已结束的比赛</h3>
+            <p className="text-xs text-slate-400">优先展示 S 级赛事与中国战队</p>
+          </div>
+          <div className="flex gap-2">
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">S级赛事</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">中国战队</span>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-white/10">
+          {PROTOTYPE_FINISHED_ROWS.map((row) => (
+            <div key={`${row.time}-${row.left}`} className="flex flex-col gap-2 border-b border-white/8 bg-slate-950/35 px-3 py-3 text-sm last:border-b-0 md:grid md:grid-cols-[5rem_minmax(0,1.2fr)_minmax(0,1fr)_5rem_5rem_minmax(0,1fr)] md:items-center md:gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 md:contents">
+                <div className="text-xs text-slate-400">{row.time}</div>
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className={`size-6 shrink-0 rounded-full flex items-center justify-center text-[8px] font-bold text-white ${
+                    row.event.includes('DreamLeague') ? 'bg-red-600' :
+                    row.event.includes('ESL') ? 'bg-amber-600' :
+                    row.event.includes('PGL') ? 'bg-emerald-700' :
+                    'bg-slate-600'
+                  }`}>
+                    {row.event.includes('DreamLeague') ? 'DL' : row.event.includes('ESL') ? 'ESL' : row.event.includes('PGL') ? 'PGL' : '?'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-slate-100">{row.event}</div>
+                    <div className="text-xs text-slate-500">{showT1Only ? '小组赛' : '积分赛'}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 md:contents">
+                <div className="flex items-center gap-1.5 min-w-0 text-slate-200">
+                  <div className={`size-5 shrink-0 rounded-full flex items-center justify-center text-[7px] font-bold text-white ${PROTO_TEAM_COLORS[row.left] || 'bg-slate-600'}`}>{row.left.substring(0,2).toUpperCase()}</div>
+                  <span className="truncate text-xs">{row.left}</span>
+                  <span className="text-slate-500 text-xs shrink-0">vs</span>
+                  <div className={`size-5 shrink-0 rounded-full flex items-center justify-center text-[7px] font-bold text-white ${PROTO_TEAM_COLORS[row.right] || 'bg-slate-600'}`}>{row.right.substring(0,2).toUpperCase()}</div>
+                  <span className="truncate text-xs">{row.right}</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-white">{row.score}</div>
+                  <div className={row.result === '胜利' ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>{row.result}</div>
+                </div>
+                <div className="text-slate-300">{row.duration}</div>
+                <div className="truncate text-xs text-slate-400">{row.draft}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button type="button" className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.035] py-3 text-sm text-slate-300 hover:bg-white/[0.06]">
+          查看全部已结束 <ChevronRight className="ml-1 inline h-4 w-4" />
+        </button>
+      </section>
+    </div>
+  );
+}
 
 function normalizeTeamAlias(name?: string | null): string {
   return String(name || '').trim().toLowerCase();
@@ -345,6 +472,7 @@ interface TournamentSectionProps {
     region?: string | null;
     is_cn_team?: number | boolean;
   }>;
+  prototypeMode?: boolean;
 }
 
 const statusMap: Record<string, { label: string; color: string; gradient: string }> = {
@@ -2279,18 +2407,30 @@ function getSeriesStartTime(series: Series): number {
   return series.games?.[0]?.start_time || 0;
 }
 
+function buildSeriesMapRefs(series: Series): SeriesMapRef[] {
+  return series.games.map((game, index) => ({
+    label: `地图 ${index + 1}`,
+    matchId: String(game.match_id),
+    radiantScore: game.radiant_score,
+    direScore: game.dire_score,
+    duration: game.duration,
+  }));
+}
+
 export function TournamentSection({
   tournaments = EMPTY_TOURNAMENTS,
   seriesByTournament,
   allMatches = EMPTY_TOURNAMENT_ALL_MATCHES,
   upcoming = EMPTY_TOURNAMENT_UPCOMING,
-  teams = EMPTY_TOURNAMENT_TEAMS
+  teams = EMPTY_TOURNAMENT_TEAMS,
+  prototypeMode = false,
 }: TournamentSectionProps) {
   const [showT1Only, setShowT1Only] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [expandedFeaturedTournamentId, setExpandedFeaturedTournamentId] = useState<string | null>(null);
   const [expandedSeries, setExpandedSeries] = useState<Set<string>>(new Set());
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+  const [selectedSeriesMaps, setSelectedSeriesMaps] = useState<SeriesMapRef[]>([]);
   const [heroesLoaded, setHeroesLoaded] = useState(false);
   const [stageFilter, setStageFilter] = useState<StageFilterKey>('all');
   const [flyoutOpen, setFlyoutOpen] = useState(false);
@@ -2415,7 +2555,7 @@ export function TournamentSection({
   const selectedTournamentVisual = getTournamentVisualUrl(selectedTournament);
 
   useEffect(() => {
-    if (!isInView || hasBootstrapped || tournaments.length > 0 || teams.length > 0) return;
+    if (prototypeMode || !isInView || hasBootstrapped || tournaments.length > 0 || teams.length > 0) return;
 
     let cancelled = false;
 
@@ -2656,15 +2796,16 @@ export function TournamentSection({
   }, [seriesByTournament]);
 
   useEffect(() => {
-    if (!isInView || !selectedTournament?.id) return;
+    if (prototypeMode || !isInView || !selectedTournament?.id) return;
     const currentState = seriesStateByTournament[selectedTournament.id];
     if (currentState?.items?.length || currentState?.loading || currentState?.loaded) return;
     void fetchTournamentSeries(selectedTournament, 0);
-  }, [fetchTournamentSeries, isInView, selectedTournament?.id, seriesStateByTournament]);
+  }, [fetchTournamentSeries, isInView, prototypeMode, selectedTournament?.id, seriesStateByTournament]);
 
   useEffect(() => {
     if (
-      !isInView
+      prototypeMode
+      || !isInView
       || !selectedTournament
       || !isFeaturedTournament(selectedTournament)
       || expandedFeaturedTournamentId !== selectedTournament.id
@@ -2672,11 +2813,12 @@ export function TournamentSection({
     const currentFeaturedState = featuredStateByTournament[selectedTournament.id];
     if (currentFeaturedState?.data || currentFeaturedState?.loading || currentFeaturedState?.error) return;
     void fetchFeaturedTournament(selectedTournament);
-  }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
+  }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, prototypeMode, selectedTournament]);
 
   useEffect(() => {
     if (
-      !isInView
+      prototypeMode
+      || !isInView
       || !selectedTournament
       || !isFeaturedTournament(selectedTournament)
       || expandedFeaturedTournamentId !== selectedTournament.id
@@ -2691,14 +2833,15 @@ export function TournamentSection({
     }, FEATURED_AUTO_REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, selectedTournament]);
+  }, [expandedFeaturedTournamentId, fetchFeaturedTournament, featuredStateByTournament, isInView, prototypeMode, selectedTournament]);
 
   // Load heroes data on mount
   useEffect(() => {
+    if (prototypeMode) return;
     loadHeroesData().then(() => {
       setHeroesLoaded(true);
     });
-  }, []);
+  }, [prototypeMode]);
 
   const toggleSeries = (seriesId: string) => {
     const newExpanded = new Set(expandedSeries);
@@ -2708,6 +2851,20 @@ export function TournamentSection({
       newExpanded.add(seriesId);
     }
     setExpandedSeries(newExpanded);
+  };
+
+  const openStandaloneMatch = (matchId: string | number | null | undefined) => {
+    const parsedMatchId = Number(matchId);
+    if (!Number.isFinite(parsedMatchId)) return;
+    setSelectedSeriesMaps([]);
+    setSelectedMatchId(parsedMatchId);
+  };
+
+  const openSeriesMatch = (series: Series, game: Game) => {
+    const parsedMatchId = Number(game.match_id);
+    if (!Number.isFinite(parsedMatchId)) return;
+    setSelectedSeriesMaps(buildSeriesMapRefs(series));
+    setSelectedMatchId(parsedMatchId);
   };
 
   const openTeamFlyout = (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => {
@@ -2816,12 +2973,9 @@ export function TournamentSection({
 
   if (!sortedTournaments.length) {
     return (
-      <section ref={sectionRef} id="tournaments" className="py-12 sm:py-20 bg-slate-950 relative overflow-hidden">
-        {/* 背景光效 */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl"></div>
-
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10">
-          <div className="mb-4 inline-flex items-center rounded-xl border border-white/10 bg-slate-900/70 p-1">
+      <section ref={sectionRef} id="tournaments" className="relative">
+        <div className="relative z-10">
+          <div className="mb-4 hidden lg:inline-flex items-center rounded-xl border border-white/10 bg-slate-900/70 p-1">
             <button
               type="button"
               onClick={() => setShowT1Only(true)}
@@ -2841,21 +2995,15 @@ export function TournamentSection({
               小型比赛
             </button>
           </div>
-          <div className="flex items-center gap-4 mb-8">
+          <div className="hidden lg:flex items-center gap-4 mb-8">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)]">
               <Trophy className="w-7 h-7 text-white" />
             </div>
             <div>
               <h2 className="text-3xl font-bold text-white">赛事战报</h2>
-              <p className="text-slate-400 text-sm">Tournament Reports</p>
             </div>
           </div>
-          <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-800/50 mb-4">
-              <Trophy className="w-10 h-10 text-slate-600" />
-            </div>
-            <p className="text-slate-500 text-lg">{showT1Only ? '暂无 T1 赛事数据' : '暂无小型赛事数据'}</p>
-          </div>
+          <PrototypeTournamentFallback showT1Only={showT1Only} />
         </div>
       </section>
     );
@@ -2889,7 +3037,6 @@ export function TournamentSection({
             </div>
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-white">赛事战报</h2>
-              <p className="text-slate-400 text-sm">Tournament Reports</p>
             </div>
           </div>
           
@@ -3117,7 +3264,7 @@ export function TournamentSection({
                   loading={currentFeaturedLoading}
                   error={currentFeaturedError}
                   onRetry={() => void fetchFeaturedTournament(selectedTournament, { forceRefresh: true })}
-                  onOpenMatch={(matchId) => setSelectedMatchId(Number(matchId))}
+                  onOpenMatch={openStandaloneMatch}
                   aliasToTag={teamAliasToTag}
                   teams={effectiveTeams}
                   compactView={currentFeaturedCompactView}
@@ -3187,6 +3334,7 @@ export function TournamentSection({
                     const teamBIsCN = isChineseTeam({ teamId: series.dire_team_id, name: series.dire_team_name });
                     const hasCN = teamAIsCN || teamBIsCN;
                     const isExpanded = expandedSeries.has(series.series_id);
+                    const seriesMaps = buildSeriesMapRefs(series);
                     const radiantTeamLogo = resolveTeamLogo(
                       { teamId: series.radiant_team_id, name: series.radiant_team_name },
                       teams,
@@ -3373,6 +3521,31 @@ export function TournamentSection({
                               </button>
                             </div>
                           </div>
+
+                          {seriesMaps.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2 pl-0 sm:pl-11">
+                              {seriesMaps.map((seriesMap, index) => {
+                                const game = series.games[index];
+                                return (
+                                  <button
+                                    key={seriesMap.matchId}
+                                    type="button"
+                                    aria-label={seriesMap.label}
+                                    className="group/map inline-flex min-h-9 items-center gap-2 rounded-full border border-white/10 bg-slate-950/55 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-red-400/45 hover:bg-red-500/10 hover:text-red-100"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openSeriesMatch(series, game);
+                                    }}
+                                  >
+                                    <span>{seriesMap.label}</span>
+                                    <span className="rounded-full bg-slate-800/80 px-1.5 py-0.5 font-semibold text-slate-300 group-hover/map:bg-red-500/15 group-hover/map:text-red-100">
+                                      {seriesMap.radiantScore ?? 0}:{seriesMap.direScore ?? 0}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
 
                         {/* Expanded Games */}
@@ -3393,7 +3566,7 @@ export function TournamentSection({
                                   return (
                                     <div 
                                       key={game.match_id} 
-                                      onClick={() => setSelectedMatchId(Number(game.match_id))}
+                                      onClick={() => openSeriesMatch(series, game)}
                                       className={`
                                         relative group/game
                                         rounded-xl p-3 text-center cursor-pointer
@@ -3405,7 +3578,7 @@ export function TournamentSection({
                                       `}
                                     >
                                       {/* 游戏编号 */}
-                                      <div className="text-[10px] text-slate-500 mb-2">Game {idx + 1}</div>
+                                      <div className="text-[10px] text-slate-500 mb-2">地图 {idx + 1}</div>
                                       
                                       {/* 比分 */}
                                       <div className="flex items-center justify-center gap-2 mb-2">
@@ -3523,9 +3696,13 @@ export function TournamentSection({
 
       <MatchDetailModal 
         matchId={selectedMatchId} 
+        seriesMaps={selectedSeriesMaps}
         open={selectedMatchId !== null} 
         onOpenChange={(open) => {
-          if (!open) setSelectedMatchId(null);
+          if (!open) {
+            setSelectedMatchId(null);
+            setSelectedSeriesMaps([]);
+          }
         }}
         onTeamClick={(team) => {
           openTeamFlyout(team);

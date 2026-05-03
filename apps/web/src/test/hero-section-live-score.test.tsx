@@ -31,8 +31,8 @@ const HERO_LIVE_MATCHES = [
     seriesScore: '0 - 0',
     startedAt: '2026-03-08T14:00:00.000000Z',
     teams: [
-      { side: 'team1', name: 'PARIVISION', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png' },
-      { side: 'team2', name: 'Natus Vincere', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png' },
+      { side: 'team1', name: 'PARI', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png' },
+      { side: 'team2', name: 'NAVI', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png' },
     ],
     maps: [
       { label: 'Map 1', score: '12 - 9', status: 'live', gameTime: 620, team1NetWorthLead: 32640, team2NetWorthLead: null },
@@ -101,26 +101,26 @@ describe('HeroSection live spotlight', () => {
   it('renders the live spotlight card and the CN upcoming preview together', async () => {
     render(<HeroSection upcoming={[]} teams={[]} />);
 
-    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+    expect(await screen.findByText('正在进行')).toBeInTheDocument();
     expect(screen.getAllByText('PGL Wallachia Season 7: Group Stage')).toHaveLength(2);
     expect(screen.getByText('Aurora')).toBeInTheDocument();
     expect(screen.getByText('Heroic')).toBeInTheDocument();
     expect(screen.queryByText('22 - 30')).not.toBeInTheDocument();
     expect(screen.queryByText('28 - 17')).not.toBeInTheDocument();
-    expect(screen.getByText('PARIVISION')).toBeInTheDocument();
-    expect(screen.getByText('Natus Vincere')).toBeInTheDocument();
-    expect(screen.getByText('+32.6k')).toBeInTheDocument();
-    expect(screen.getByText('+8.4k')).toBeInTheDocument();
+    expect(screen.getByText('PARI')).toBeInTheDocument();
+    expect(screen.getByText('NAVI')).toBeInTheDocument();
+    expect(screen.getByText('▲ 32.6k')).toBeInTheDocument();
+    expect(screen.getByText('▲ 8.4k')).toBeInTheDocument();
     expect(screen.getByTestId('hero-live-grid')).toHaveTextContent('Map 1');
     expect(screen.getByText('中国战队预告')).toBeInTheDocument();
     expect(screen.getByText('DreamLeague')).toBeInTheDocument();
 
     const cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
-    expect(within(cards[0]).getByText('Natus Vincere')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('NAVI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Heroic')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('时长 28:58')).toBeInTheDocument();
+    expect(within(cards[1]).getByText(/地图 3.*28:58/)).toBeInTheDocument();
     expect(Array.from(cards[1].querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
       expect.arrayContaining([
         getCuratedTeamLogoMirrorPath('Aurora'),
@@ -133,10 +133,7 @@ describe('HeroSection live spotlight', () => {
       expect(within(cards[1]).getByText('22')).toBeInTheDocument();
       expect(within(cards[1]).getByText('30')).toBeInTheDocument();
     });
-    expect(within(cards[1]).getByText('胜利方 · 终盘+12.4k')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('失利方')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('时长 35:00')).toBeInTheDocument();
-    expect(within(cards[1]).queryByText('Map 1 已结束')).not.toBeInTheDocument();
+    expect(within(cards[1]).getByText(/地图 1/)).toBeInTheDocument();
   }, 15000);
 
   it('does not refetch live or upcoming data in a render loop when props are omitted', async () => {
@@ -144,7 +141,7 @@ describe('HeroSection live spotlight', () => {
 
     render(<HeroSection />);
 
-    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+    expect(await screen.findByText('正在进行')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -166,7 +163,7 @@ describe('HeroSection live spotlight', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText('直播对局')).toBeInTheDocument();
+    expect(screen.getByText('正在进行')).toBeInTheDocument();
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
       '/api/live-hero',
       '/api/upcoming?days=1',
@@ -223,7 +220,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     let cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
 
     await act(async () => {
@@ -233,7 +230,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
   });
 
@@ -281,7 +278,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     let cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
 
     await act(async () => {
@@ -291,7 +288,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('15')).toBeInTheDocument();
   });
@@ -334,7 +331,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     let cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
 
     await act(async () => {
@@ -344,7 +341,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
   });
 
@@ -383,8 +380,79 @@ describe('HeroSection live spotlight', () => {
     await waitFor(() => {
       expect(screen.getByText('中国战队预告')).toBeInTheDocument();
     });
-    expect(screen.queryByText('直播对局')).not.toBeInTheDocument();
+    expect(screen.queryByText('正在进行')).not.toBeInTheDocument();
     expect(screen.getByText('DreamLeague')).toBeInTheDocument();
+  });
+
+  it('aggregates upcoming maps from the same Series into one preview card', async () => {
+    const startTime = Math.floor(Date.now() / 1000) + 3600;
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/upcoming')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            upcoming: [
+              {
+                id: 101,
+                match_id: 9101,
+                series_id: 'series-xg-spirit',
+                map_number: 1,
+                radiant_team_id: '1',
+                dire_team_id: '2',
+                radiant_team_name: 'Xtreme Gaming',
+                dire_team_name: 'Team Spirit',
+                start_time: startTime,
+                series_type: 'BO3',
+                tournament_name: 'DreamLeague S23',
+              },
+              {
+                id: 102,
+                match_id: 9102,
+                series_id: 'series-xg-spirit',
+                map_number: 2,
+                radiant_team_id: '1',
+                dire_team_id: '2',
+                radiant_team_name: 'Xtreme Gaming',
+                dire_team_name: 'Team Spirit',
+                start_time: startTime + 2400,
+                series_type: 'BO3',
+                tournament_name: 'DreamLeague S23',
+              },
+              {
+                id: 103,
+                match_id: 9103,
+                series_id: 'series-xg-spirit',
+                map_number: 3,
+                radiant_team_id: '1',
+                dire_team_id: '2',
+                radiant_team_name: 'Xtreme Gaming',
+                dire_team_name: 'Team Spirit',
+                start_time: startTime + 4800,
+                series_type: 'BO3',
+                tournament_name: 'DreamLeague S23',
+              },
+            ],
+            teams: [
+              { team_id: '1', name: 'Xtreme Gaming', region: 'China', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png' },
+              { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/7119388.png' },
+            ],
+          }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ live: null }) } as Response);
+    }));
+
+    render(<HeroSection upcoming={[]} teams={[]} />);
+
+    expect(await screen.findByText('中国战队预告')).toBeInTheDocument();
+    const cards = screen.getAllByTestId('hero-upcoming-series-card');
+    expect(cards).toHaveLength(1);
+    expect(within(cards[0]).getByText('DreamLeague S23')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('BO3')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('地图 1')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('地图 2')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('地图 3')).toBeInTheDocument();
   });
 
   it('renders live content before upcoming content when live resolves first', async () => {
@@ -444,7 +512,7 @@ describe('HeroSection live spotlight', () => {
       });
     });
 
-    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+    expect(await screen.findByText('正在进行')).toBeInTheDocument();
     expect(screen.queryByText('中国战队预告')).not.toBeInTheDocument();
 
     await act(async () => {
