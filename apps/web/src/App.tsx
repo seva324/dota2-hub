@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import { Footer } from '@/sections/Footer';
 
-const desktopNavItems = ['首页', '赛程', '比赛', '战队', '选手', '赛事', '资讯'];
+const desktopNavItems = ['首页', '赛事', '比赛', '战队', '选手'];
 
 const mobileNavItems = [
   { label: '首页', icon: Home },

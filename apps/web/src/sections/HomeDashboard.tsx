@@ -639,33 +639,41 @@ interface PrototypeDashboardContentProps {
     duration?: number;
   }>) => void;
   onOpenTeam: (teamName: string) => void;
+  onOpenPlayer: (player: HotPlayer) => void;
 }
 
-function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboardContentProps) {
-  const [activeFilter, setActiveFilter] = useState('全部');
+function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: PrototypeDashboardContentProps) {
+  const [activeTab, setActiveTab] = useState('全部比赛');
+  const liveCount = mockLiveHeroes.length;
+  const upcomingCount = prototypeUpcoming.length;
+  const tabs = [
+    { label: '全部比赛', count: liveCount + upcomingCount },
+    { label: '即将开始', count: upcomingCount },
+    { label: '已结束', count: 0 },
+  ];
 
   return (
     <div className="flex gap-4">
       {/* Left column */}
       <div className="w-2/3 flex flex-col gap-4 min-w-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">全部比赛 <span className="inline-flex items-center justify-center rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-300">{mockLiveHeroes.length + prototypeUpcoming.length}</span></h2>
-          <div className="flex gap-1 rounded-lg bg-slate-800 p-1">
-            {['全部', 'S级赛事', '中国战队', 'DreamLeague', 'ESL One'].map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  activeFilter === f
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-950/40'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-                onClick={() => setActiveFilter(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+        <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.045] p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.label}
+              type="button"
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.label
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-950/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              onClick={() => setActiveTab(tab.label)}
+            >
+              {tab.label}
+              <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                activeTab === tab.label ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
+              }`}>{tab.count}</span>
+            </button>
+          ))}
         </div>
 
         {mockLiveHeroes.map((hero) => (
@@ -736,55 +744,29 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
         <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Trophy className="size-4 text-red-300" />
-              <h2 className="text-sm font-bold text-white">近期赛事</h2>
-            </div>
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-red-300 hover:text-red-200">查看全部</Button>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {recentEvents.map((event) => {
-              const isOnline = event.format.startsWith('线上');
-              const Icon = isOnline ? Monitor : MapPin;
-              const location = event.format.replace(/^(线上赛|线下赛)( · )?/, '');
-              return (
-                <div key={event.name} className="rounded-lg border border-white/6 bg-black/15 px-3 py-2 hover:border-white/10 transition-colors">
-                  <div className="flex items-center gap-1.5">
-                    <Icon className="size-3 shrink-0 text-slate-500" />
-                    <span className="text-[13px] font-semibold text-slate-100">{event.name}</span>
-                    <Badge variant="secondary" className={`ml-auto border-0 text-[10px] ${isOnline ? 'bg-emerald-500/15 text-emerald-300' : 'bg-blue-500/15 text-blue-300'}`}>
-                      {isOnline ? '线上' : '线下'}
-                    </Badge>
-                  </div>
-                  <div className="text-[11px] text-slate-500 ml-4.5 flex items-center gap-1 mt-0.5">
-                    <CalendarDays className="size-2.5" />
-                    {event.dates}{location ? ` · ${location}` : ''}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Flame className="size-4 text-red-300" />
-              <h2 className="text-sm font-bold text-white">版本动态</h2>
+              <UserRound className="size-4 text-red-300" />
+              <h2 className="text-sm font-bold text-white">热门选手</h2>
             </div>
             <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-red-300 hover:text-red-200">查看全部</Button>
           </div>
           <div className="flex flex-col gap-2">
-            {patchNotes.map((note) => (
-              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
-                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold border ${
-                  note.category === '英雄' ? 'bg-red-600/30 text-red-100 border-red-400/40 shadow-[0_0_8px_rgba(239,68,68,0.2)]' :
-                  note.category === '物品' ? 'bg-amber-600/30 text-amber-100 border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]' :
-                  'bg-emerald-600/30 text-emerald-100 border-emerald-400/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
-                }`}>
-                  {note.category}
+            {hotPlayers.map((player, index) => (
+              <button
+                key={player.accountId}
+                type="button"
+                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-all hover:border-slate-600 hover:bg-white/[0.08]"
+                onClick={() => onOpenPlayer(player)}
+              >
+                <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
+                <div className="size-7 shrink-0 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-300 border border-white/10">
+                  {player.name.slice(0, 2)}
                 </div>
-                <span className="text-sm text-slate-300">{note.text}</span>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-slate-100 group-hover:text-white transition-colors">{player.name}</span>
+                  <span className="block text-[10px] text-slate-500">{player.teamName}</span>
+                </div>
+                <span className="text-xs tabular-nums text-slate-400">{player.score}</span>
+              </button>
             ))}
           </div>
         </section>
@@ -911,6 +893,7 @@ export function HomeDashboard() {
           <PrototypeDashboardContent
             onOpenMatch={handleOpenMatch}
             onOpenTeam={handleOpenTeam}
+            onOpenPlayer={handleOpenPlayer}
           />
         ) : (
           <>
