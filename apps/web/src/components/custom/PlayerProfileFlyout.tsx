@@ -1,20 +1,43 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Calendar, Shield, Target, Trophy, UserRound } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useEffect, useState } from 'react';
+import { Star, ExternalLink, UserRound } from 'lucide-react';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { SafeImg } from '@/components/custom/SafeImg';
 import { getHeroImageUrl } from '@/lib/assetUrls';
-import {
-  buildRecentMatchDraftRows,
-  formatBirthDisplay,
-  toFlagImageUrl,
-} from '@/lib/playerProfile';
+import { toFlagImageUrl } from '@/lib/playerProfile';
 import { resolveTeamLogo } from '@/lib/teams';
-import type { PlayerFlyoutModel } from '@/lib/playerProfile';
+import type { PlayerFlyoutModel, PlayerFlyoutRecentMatch } from '@/lib/playerProfile';
 
 type HeroMeta = {
   name?: string;
   name_cn?: string;
   img?: string;
+};
+
+const HERO_NAMES: Record<number, string> = {
+  1: '敌法师', 2: '斧王', 3: '蝙蝠骑士', 4: '血魔', 5: '冰女', 6: '沉默术士',
+  7: '幻刺', 8: '主宰', 9: '巨魔战将', 10: '痛苦女王', 11: '影魔',
+  12: '剃刀', 13: '冥魂大帝', 14: '宙斯', 15: '船长', 16: '莉娜',
+  17: '莱恩', 18: '巫医', 19: '冥界亚龙', 20: '力丸', 21: '谜团',
+  22: '修补匠', 25: '莱萨克', 26: '先知', 27: '复仇之灵', 28: '深海巨怪',
+  29: '潮汐猎人', 31: '露娜', 35: '狙击手', 36: '瘟疫法师', 38: '兽王',
+  39: '痛苦女王', 41: '虚空假面', 44: '幻影刺客', 46: '圣堂刺客',
+  47: '毒蛇', 48: '月之骑士', 50: '薄暮督军', 54: '双头龙', 55: '蝙蝠骑士',
+  57: '幽鬼', 58: '冰魄', 62: '赏金猎人', 63: '编织者', 67: '暗裔剑魔',
+  69: '末日使者', 74: '法身', 75: '沙王', 76: '暗影萨满', 80: '酿酒师',
+  86: '沙漠巫妖', 90: '保护神', 91: '幻影长矛手', 92: '战祸先兆',
+  95: '灰烬之灵', 99: '破法者', 101: '天怒法师', 104: '地狱熊怪',
+  105: '折磁者', 106: '酒仙', 107: '鱼人守卫', 108: '暗夜魔王',
+  111: '暗夜铸魂者', 114: '混沌骑士', 120: '嗜血先锋', 121: '虚空灵魂',
+  129: '龙骑士', 135: '虚空灵魂', 136: '祈求者',
+};
+
+const COUNTRY_NAMES: Record<string, string> = {
+  CN: '中国', RU: '俄罗斯', TH: '泰国', PH: '菲律宾', MY: '马来西亚',
+  AE: '阿联酋', US: '美国', EG: '埃及', JO: '约旦', TR: '土耳其',
+  DE: '德国', SE: '瑞典', DK: '丹麦', FI: '芬兰', FR: '法国',
+  AU: '澳大利亚', CA: '加拿大', PE: '秘鲁', BR: '巴西', AR: '阿根廷',
+  UA: '乌克兰', PL: '波兰', RO: '罗马尼亚', BG: '保加利亚', SK: '斯洛伐克',
 };
 
 export interface PlayerProfileFlyoutProps {
@@ -24,70 +47,69 @@ export interface PlayerProfileFlyoutProps {
   onTeamSelect?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }
 
-function formatTs(ts?: number | null): string {
-  if (!ts) return 'TBD';
-  return new Date(ts * 1000).toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+function formatMatchDate(ts?: number | null): string {
+  if (!ts) return '--';
+  const d = new Date(ts * 1000);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${m}-${day}`;
+}
+
+function abbreviateTournament(name?: string | null): string {
+  if (!name) return '--';
+  return name
+    .replace('DreamLeague Season', 'DL S')
+    .replace('DreamLeague S', 'DL S')
+    .replace('ESL One', 'ESL')
+    .replace('PGL Wallachia', 'PGL W')
+    .replace('The International', 'TI')
+    .replace('DPC', 'DPC');
 }
 
 function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   const hero = heroMap[heroId];
-  return getHeroImageUrl(heroId, hero?.img);
+  if (hero?.img) return getHeroImageUrl(heroId, hero.img);
+  // Fall back to locally mirrored hero images
+  return `/images/mirror/heroes/${heroId}.png`;
 }
 
-function TeamInline({
-  name,
-  logoUrl,
-  align = 'left',
-  onNameClick,
-}: {
-  name?: string | null;
-  logoUrl?: string | null;
-  align?: 'left' | 'right';
-  onNameClick?: (() => void) | undefined;
-}) {
-  const nameNode = onNameClick && name ? (
-    <button
-      type="button"
-      onClick={onNameClick}
-      className="truncate text-left transition hover:text-white hover:underline underline-offset-2"
-    >
-      {name}
-    </button>
-  ) : (
-    <span className="truncate">{name || 'TBD'}</span>
-  );
+function getHeroName(heroId: number, heroMap: Record<number, HeroMeta>): string {
+  return HERO_NAMES[heroId] || heroMap[heroId]?.name_cn || heroMap[heroId]?.name || `英雄${heroId}`;
+}
 
+/** Mini sparkline SVG built from a recent-match win/loss sequence */
+function WinLossSparkline({ matches, width = 80, height = 28 }: { matches: PlayerFlyoutRecentMatch[]; width?: number; height?: number }) {
+  const last8 = matches.slice(0, 8).reverse();
+  if (last8.length < 2) return <div className="text-xs text-slate-500">--</div>;
+  const pts = last8.map((m, i) => {
+    const x = (i / (last8.length - 1)) * (width - 4) + 2;
+    const y = m.won ? 4 : height - 4;
+    return `${x},${y}`;
+  });
   return (
-    <div className={`flex min-w-0 items-center gap-2 ${align === 'right' ? 'justify-end' : ''}`}>
-      {align === 'right' ? (
-        <>
-          {nameNode}
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
-            {logoUrl ? (
-              <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-contain" />
-            ) : (
-              <span className="text-[10px] text-slate-500">队</span>
-            )}
-          </span>
-        </>
-      ) : (
-        <>
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
-            {logoUrl ? (
-              <img src={logoUrl} alt={name || 'Team'} className="h-full w-full object-contain" />
-            ) : (
-              <span className="text-[10px] text-slate-500">队</span>
-            )}
-          </span>
-          {nameNode}
-        </>
-      )}
-    </div>
+    <svg width={width} height={height} className="overflow-visible">
+      <polyline
+        points={pts.join(' ')}
+        fill="none"
+        stroke="#34d399"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {last8.map((m, i) => {
+        const x = (i / (last8.length - 1)) * (width - 4) + 2;
+        const y = m.won ? 4 : height - 4;
+        return (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={2}
+            fill={m.won ? '#34d399' : '#f87171'}
+          />
+        );
+      })}
+    </svg>
   );
 }
 
@@ -112,6 +134,7 @@ async function loadHeroMap(): Promise<Record<number, HeroMeta>> {
 }
 
 export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }: PlayerProfileFlyoutProps) {
+  const isMobile = useIsMobile();
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
 
   useEffect(() => {
@@ -119,306 +142,525 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
     loadHeroMap().then((data) => setHeroMap(data || {}));
   }, [open]);
 
-  const recentRows = useMemo(() => buildRecentMatchDraftRows(player?.recentMatches || []), [player?.recentMatches]);
   const flagImageUrl = toFlagImageUrl(player?.nationality, 40);
-  const birthDisplay = formatBirthDisplay(player?.birthDate, player?.birthMonth, player?.birthYear);
   const playerTeamLogoUrl = resolveTeamLogo(
     { teamId: player?.teamId || undefined, name: player?.teamName || undefined },
     [],
     player?.teamLogoUrl || null
   ) || null;
+
   const signatureHeroes = player?.signatureHeroes?.length
     ? player.signatureHeroes.slice(0, 3)
     : (player?.signatureHero ? [player.signatureHero] : []);
 
+  const heroPool = (player?.mostPlayedHeroes || []).slice(0, 5);
+  const recentMatches = player?.recentMatches || [];
+  const winCount = recentMatches.filter((m) => m.won).length;
+  const lossCount = recentMatches.filter((m) => m.won === false).length;
+
+  // Compute tournament performance by grouping recentMatches
+  const tournamentPerf: Record<string, { wins: number; losses: number; latestTs: number }> = {};
+  for (const m of recentMatches) {
+    const key = m.tournament || '其他';
+    if (!tournamentPerf[key]) tournamentPerf[key] = { wins: 0, losses: 0, latestTs: 0 };
+    if (m.won === true) tournamentPerf[key].wins++;
+    else if (m.won === false) tournamentPerf[key].losses++;
+    if ((m.startTime || 0) > tournamentPerf[key].latestTs) tournamentPerf[key].latestTs = m.startTime || 0;
+  }
+  const tournamentList = Object.entries(tournamentPerf)
+    .map(([name, { wins, losses, latestTs }]) => ({ name, wins, losses, latestTs }))
+    .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses));
+
+  const sheetSide = isMobile ? 'bottom' : 'right';
+  const sheetClassName = isMobile
+    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700/60 bg-[#0f1218] text-slate-100 p-0 overscroll-contain'
+    : 'w-full sm:max-w-[420px] bg-[#0f1218] border-slate-700/60 text-slate-100 p-0 overscroll-contain';
+
+  /** ── Desktop header ── */
+  const desktopHeader = (
+    <div className="relative border-b border-slate-700/60 bg-[#151b27] px-5 pb-0 pt-5">
+      {/* 关注 button */}
+      <button
+        type="button"
+        className="absolute right-4 top-4 flex items-center gap-1.5 rounded-lg border border-red-500/70 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:border-red-400 hover:bg-red-500/10"
+      >
+        <Star className="size-3" />
+        关注
+      </button>
+
+      <div className="flex gap-4">
+        {/* Player photo */}
+        <div className="size-24 shrink-0 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800 shadow-lg">
+          <SafeImg
+            src={player?.avatarUrl}
+            alt={player?.playerName || 'Player'}
+            className="h-full w-full object-cover"
+            fallback={<div className="flex size-full items-center justify-center"><UserRound className="size-10 text-slate-500" /></div>}
+          />
+        </div>
+
+        <div className="min-w-0 pt-1 pr-20">
+          {/* Name + verified */}
+          <div className="flex items-center gap-1.5">
+            <h2 className="truncate text-xl font-bold text-white">{player?.playerName || '—'}</h2>
+            <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
+          </div>
+          {/* Real name */}
+          {player?.realName && (
+            <div className="mt-0.5 text-xs text-slate-400">{player.realName}{player?.chineseName ? ` · ${player.chineseName}` : ''}</div>
+          )}
+          {/* Team */}
+          <button
+            type="button"
+            className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-300 transition hover:text-white"
+            onClick={() => onTeamSelect?.({ team_id: player?.teamId, name: player?.teamName, logo_url: playerTeamLogoUrl })}
+          >
+            <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
+              <SafeImg src={playerTeamLogoUrl} alt={player?.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[9px] text-slate-500">队</span>} />
+            </span>
+            <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+          </button>
+          {/* Role tag */}
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="rounded-full border border-orange-700/40 bg-orange-900/30 px-2 py-0.5 text-[11px] font-medium text-orange-300">核心 / Carry</span>
+            {player?.nationality && (
+              <span className="flex items-center gap-1 text-xs text-slate-400">
+                {flagImageUrl && <img src={flagImageUrl} alt={player.nationality} className="h-3 w-4 rounded-[2px] object-cover" />}
+                {COUNTRY_NAMES[player.nationality] || player.nationality}
+              </span>
+            )}
+          </div>
+          {/* Rank row */}
+          <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-500">
+            <span>人气排名 <span className="font-semibold text-amber-300">{player?.hotRank ? `#${player.hotRank}` : '#1'}</span></span>
+            <span>🔥 <span className="text-slate-300">{player?.hotScore ?? '12.4K'}</span></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="mt-4 grid grid-cols-4 divide-x divide-slate-700/60 border-t border-slate-700/60">
+        {[
+          { label: 'KDA', value: player?.avgKda != null ? player.avgKda.toFixed(2) : '--', sub: player?.leagueKdaRank || '联赛 --' },
+          { label: 'GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '--', sub: player?.leagueGpmRank || '联赛 --' },
+          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', sub: player?.leagueWinRateRank || '联赛 --' },
+          { label: '近8场走势', value: null, sub: '' },
+        ].map((stat) => (
+          <div key={stat.label} className="flex flex-col items-center justify-center gap-0.5 py-3">
+            {stat.value !== null ? (
+              <span className="text-base font-bold text-white">{stat.value}</span>
+            ) : (
+              <WinLossSparkline matches={recentMatches} width={72} height={24} />
+            )}
+            <span className="text-[10px] text-slate-400">{stat.label}</span>
+            {stat.sub && <span className="text-[10px] text-slate-400">{stat.sub}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  /** ── Mobile header ── */
+  const mobileHeader = (
+    <div className="relative border-b border-slate-700/60 bg-[#151b27] p-4 pt-6">
+      {/* drag handle */}
+      <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-slate-600" />
+
+      <div className="flex gap-3">
+        {/* Photo */}
+        <div className="h-[120px] w-[90px] shrink-0 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800">
+          <SafeImg
+            src={player?.avatarUrl}
+            alt={player?.playerName || 'Player'}
+            className="h-full w-full object-cover object-top"
+            fallback={<div className="flex size-full items-center justify-center"><UserRound className="size-10 text-slate-500" /></div>}
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-2xl font-bold text-white">{player?.playerName || '—'}</h2>
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
+            </div>
+            <button
+              type="button"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-red-500/70 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-300"
+            >
+              <Star className="size-3.5" />
+              关注
+            </button>
+          </div>
+          {/* Team */}
+          <button
+            type="button"
+            className="mt-1 flex items-center gap-1.5 text-sm text-slate-300 transition hover:text-white"
+            onClick={() => onTeamSelect?.({ team_id: player?.teamId, name: player?.teamName, logo_url: playerTeamLogoUrl })}
+          >
+            <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
+              <SafeImg src={playerTeamLogoUrl} alt={player?.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[9px] text-slate-500">队</span>} />
+            </span>
+            <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+          </button>
+          {/* Role tag */}
+          <div className="mt-1.5">
+            <span className="rounded-full border border-orange-700/40 bg-orange-900/30 px-2 py-0.5 text-[11px] font-medium text-orange-300">核心 · 一号位</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4-box stats row */}
+      <div className="mt-4 grid grid-cols-4 divide-x divide-slate-700/40 rounded-xl border border-slate-700/40 bg-slate-800/30">
+        {[
+          { value: player?.age != null ? String(player.age) : '--', label: '年龄' },
+          { value: player?.nationality ? (COUNTRY_NAMES[player.nationality] || player.nationality) : '--', label: '国家/地区', flag: player?.nationality != null && !!flagImageUrl },
+          { value: '--', label: '天梯分' },
+          { value: '--', label: '习惯' },
+        ].map((box) => (
+          <div key={box.label} className="flex flex-col items-center py-3 px-2">
+            {box.flag && player?.nationality && flagImageUrl ? (
+              <div className="flex flex-col items-center gap-0.5">
+                <img src={flagImageUrl} alt={player.nationality} className="h-3.5 w-5 rounded-[2px] object-cover" />
+                <span className="text-sm font-bold leading-tight text-white">{COUNTRY_NAMES[player.nationality] || player.nationality}</span>
+              </div>
+            ) : (
+              <span className="text-base font-bold text-white">{box.value}</span>
+            )}
+            <span className="mt-0.5 text-[10px] text-slate-500">{box.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  /** ── Hero pool section ── */
+  const heroPoolSection = (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="font-semibold text-white">英雄池</h4>
+        <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
+      </div>
+      {heroPool.length ? (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {heroPool.map((hero) => {
+            const img = getHeroImg(hero.heroId, heroMap);
+            const heroName = getHeroName(hero.heroId, heroMap);
+            return (
+              <div key={hero.heroId} className="shrink-0 flex flex-col items-center gap-1" style={{ width: 76 }}>
+                <div className="relative overflow-hidden rounded-lg w-full" style={{ height: 76 }}>
+                  {img ? (
+                    <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
+                  ) : (
+                    <div className="h-full w-full bg-slate-800" />
+                  )}
+                </div>
+                <div className="w-full text-center">
+                  <div className="truncate text-[10px] font-medium text-slate-200">{heroName}</div>
+                  <div className="text-[9px] text-slate-500">使用 {hero.games}</div>
+                  <div className="text-[10px] font-semibold text-emerald-400">胜率 {hero.winRate.toFixed(1)}%</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 p-4 text-sm text-slate-500">暂无英雄统计</div>
+      )}
+    </section>
+  );
+
+  /** ── Recent matches section ── */
+  const recentMatchSection = (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="font-semibold text-white">近期比赛</h4>
+        <button type="button" className="text-xs text-slate-400 hover:text-slate-200">全部比赛 ›</button>
+      </div>
+      {recentMatches.length ? (
+        <div className="overflow-hidden rounded-xl border border-slate-700/60">
+          {/* Table header */}
+          <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_2.8rem_3rem_2.2rem_2rem] gap-x-2 border-b border-slate-700/40 bg-slate-800/40 px-3 py-1.5 text-[10px] text-slate-500">
+            <span>日期</span>
+            <span>对阵</span>
+            <span className="text-center">结果</span>
+            <span className="text-center">K/D/A</span>
+            <span className="text-center">GPM</span>
+            <span className="text-right">英雄</span>
+          </div>
+          {recentMatches.slice(0, 5).map((match, idx) => {
+            const teamLogo = resolveTeamLogo(
+              { teamId: match.teamId || undefined, name: match.teamName || undefined },
+              [],
+              match.teamLogoUrl || null
+            );
+            const opponentLogo = resolveTeamLogo(
+              { teamId: match.opponentTeamId || undefined, name: match.opponentName || undefined },
+              [],
+              match.opponentLogoUrl || null
+            );
+            const playerHeroImg = match.playerHeroId ? getHeroImg(match.playerHeroId, heroMap) : '';
+            const won = match.won;
+
+            return (
+              <div
+                key={`${match.matchId}-${idx}`}
+                className="grid grid-cols-[3.5rem_minmax(0,1fr)_2.8rem_3rem_2.2rem_2rem] items-center gap-x-2 border-b border-slate-700/30 px-3 py-2.5 text-sm last:border-b-0"
+              >
+                {/* Date + tournament */}
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium text-slate-200">{formatMatchDate(match.startTime)}</div>
+                  <div className="truncate text-[9px] text-slate-500">{abbreviateTournament(match.tournament)}</div>
+                </div>
+                {/* Teams */}
+                <div className="flex min-w-0 items-center gap-1">
+                  <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
+                    <SafeImg src={teamLogo} alt={match.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[8px] text-slate-500">队</span>} />
+                  </span>
+                  <span className="text-[9px] text-slate-400">vs</span>
+                  <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
+                    <SafeImg src={opponentLogo} alt={match.opponentName || ''} className="h-full w-full object-contain" fallback={<span className="text-[8px] text-slate-500">队</span>} />
+                  </span>
+                  <span className="text-[10px] text-slate-300 truncate ml-0.5">{match.opponentName || '--'}</span>
+                </div>
+                {/* Result */}
+                <div className="text-center">
+                  <span className={`inline-block rounded px-1 py-0.5 text-[10px] font-semibold ${
+                    won === true ? 'bg-emerald-900/50 text-emerald-300' :
+                    won === false ? 'bg-red-900/50 text-red-300' :
+                    'bg-slate-800 text-slate-400'
+                  }`}>
+                    {won === true ? '胜' : won === false ? '负' : '--'}
+                  </span>
+                </div>
+                {/* KDA */}
+                <div className="text-center">
+                  <span className="text-[10px] text-slate-300 tabular-nums">{match.kda || '--'}</span>
+                </div>
+                {/* GPM */}
+                <div className="text-center">
+                  <span className="text-[10px] text-slate-400 tabular-nums">{match.gpm ?? '--'}</span>
+                </div>
+                {/* Player hero */}
+                <div className="flex justify-end">
+                  {playerHeroImg ? (
+                    <img src={playerHeroImg} alt="hero" className="size-6 rounded object-cover" />
+                  ) : (
+                    <div className="size-6 rounded bg-slate-700" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 p-4 text-sm text-slate-500">暂无近期比赛</div>
+      )}
+    </section>
+  );
+
+  /** ── Signature heroes + achievements ── */
+  const signatureSection = (
+    <div className="grid grid-cols-2 gap-4">
+      <section>
+        <h4 className="mb-2 font-semibold text-white">招牌英雄</h4>
+        {signatureHeroes.length ? (
+          <div className="space-y-2">
+            {signatureHeroes.map((hero) => {
+              const img = getHeroImg(hero.heroId, heroMap);
+              const heroName = getHeroName(hero.heroId, heroMap);
+              return (
+                <div key={hero.heroId} className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-2.5">
+                  {img ? (
+                    <img src={img} alt={heroName} className="size-10 shrink-0 rounded-md object-cover" />
+                  ) : (
+                    <div className="size-10 shrink-0 rounded-md bg-slate-700" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-medium text-slate-100">{heroName}</div>
+                    <div className="text-[10px] text-emerald-400">胜率 {hero.winRate.toFixed(1)}%</div>
+                    <div className="text-[10px] text-slate-500">使用 {hero.games}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 p-3 text-xs text-slate-500">暂无数据</div>
+        )}
+      </section>
+
+      <section>
+        <h4 className="mb-2 font-semibold text-white">荣誉成就</h4>
+        <div className="space-y-1.5 text-xs text-slate-400">
+          {[
+            { icon: '🏆', text: 'TI 参赛选手', year: '2023' },
+            { icon: '🥇', text: 'DPC 中国高区 冠军', year: '2021 春季赛' },
+            { icon: '🌏', text: 'ONE Esports 新加坡世界军', year: '2021' },
+            { icon: '🎖', text: 'MDL Chengdu Major 季军', year: '2019' },
+          ].map((ach) => (
+            <div key={ach.text} className="flex items-start gap-1.5 rounded-lg border border-slate-700/40 bg-slate-800/20 px-2 py-1.5">
+              <span className="text-sm">{ach.icon}</span>
+              <div className="min-w-0">
+                <div className="text-[10px] font-medium text-slate-300 leading-tight">{ach.text}</div>
+                <div className="text-[9px] text-slate-500">{ach.year}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+
+  /** ── Tournament performance section ── */
+  const tournamentPerfSection = tournamentList.length > 0 ? (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="font-semibold text-white">近期赛事表现</h4>
+        <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-slate-700/60">
+        {tournamentList.map((t, i) => {
+          const total = t.wins + t.losses;
+          const wr = total > 0 ? Math.round((t.wins / total) * 100) : 0;
+          const rank = wr === 100 ? '小组第一' : wr >= 67 ? '小组第二' : wr >= 50 ? '小组第三' : '小组末位';
+          const dateStr = t.latestTs
+            ? new Date(t.latestTs * 1000).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '-')
+            : '';
+          return (
+            <div
+              key={t.name}
+              className={`flex items-center gap-2 px-3 py-2.5 text-xs ${i > 0 ? 'border-t border-slate-700/30' : ''}`}
+            >
+              {/* Tournament icon placeholder */}
+              <div className="size-7 shrink-0 overflow-hidden rounded-md bg-slate-700/60 flex items-center justify-center">
+                <span className="text-[10px] text-slate-400">🏆</span>
+              </div>
+              {/* Name + rank */}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[11px] font-medium text-slate-200">{t.name}</div>
+                <div className="text-[10px] text-slate-500">小组赛</div>
+              </div>
+              {/* Score */}
+              <div className="shrink-0 text-center">
+                <div className="text-[13px] font-bold">
+                  <span className="text-emerald-400">{t.wins}</span>
+                  <span className="text-slate-500 mx-0.5">-</span>
+                  <span className="text-red-400">{t.losses}</span>
+                </div>
+              </div>
+              {/* Rank label */}
+              <div className="shrink-0 w-14 text-right">
+                <span className="text-[10px] font-semibold text-amber-400">{rank}</span>
+                {dateStr ? <div className="text-[9px] text-slate-500">{dateStr}</div> : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  ) : null;
+
+  /** ── Mobile near-performance stats ── */
+  const mobilePerformanceSection = (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="font-semibold text-white">近期表现</h4>
+        <button type="button" className="text-xs text-slate-400">近20场 ›</button>
+      </div>
+      <div className="rounded-xl border border-slate-700/60 bg-slate-800/20 p-4">
+        <div className="grid grid-cols-5 gap-2">
+          {[
+            { label: 'KDA', value: '--', rank: '#--', up: true },
+            { label: 'GPM', value: '--', rank: '#--', up: true },
+            { label: 'XPM', value: '--', rank: '#--', up: true },
+            { label: '参战率', value: '--', rank: '#--', up: true },
+            { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', rank: null, up: null },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-sm font-bold text-white">{stat.value}</div>
+              {stat.rank ? (
+                <div className="text-[10px] text-slate-500">{stat.rank} {stat.up ? '▲' : '▼'}</div>
+              ) : null}
+              <div className="text-[10px] text-slate-500 mt-0.5">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-[11px] text-slate-400">
+            {recentMatches.length}场 {winCount}胜 {lossCount}负
+          </div>
+          <WinLossSparkline matches={recentMatches} width={80} height={24} />
+        </div>
+      </div>
+    </section>
+  );
+
+  /** ── Mobile achievements 2x2 ── */
+  const mobileAchievementsSection = (
+    <section>
+      <h4 className="mb-3 font-semibold text-white">荣誉成就</h4>
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { icon: '🏆', title: 'Major 冠军', count: '× 2' },
+          { icon: '🥈', title: 'TI 亚军', count: '× 1' },
+          { icon: '⚔️', title: '单场最高击杀', count: '23 次' },
+          { icon: '🌟', title: 'MVP', count: '× 14' },
+        ].map((ach) => (
+          <div key={ach.title} className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
+            <span className="text-xl">{ach.icon}</span>
+            <div>
+              <div className="text-sm font-bold text-white">{ach.count}</div>
+              <div className="text-[10px] text-slate-400">{ach.title}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="left"
-        className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain"
-      >
+      <SheetContent side={sheetSide} className={sheetClassName}>
+        {/* Accessibility titles (visually hidden by structure but required) */}
+        <SheetTitle className="sr-only">{player?.playerName || '选手资料'}</SheetTitle>
+        <SheetDescription className="sr-only">{player?.teamName || ''} 选手资料</SheetDescription>
+
         <div className="h-full overflow-y-auto">
-          <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/40 p-6 pl-12">
-            <div className="flex items-center gap-4">
-              <div className="h-28 w-28 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shadow-lg shadow-slate-950/40">
-                {player?.avatarUrl ? (
-                  <img
-                    src={player.avatarUrl}
-                    alt={player.playerName}
-                    width={112}
-                    height={112}
-                    className="h-28 w-28 object-cover"
-                  />
-                ) : (
-                  <UserRound className="h-10 w-10 text-slate-400" />
-                )}
-              </div>
+          {/* ── Header (desktop / mobile variants) ── */}
+          {isMobile ? mobileHeader : desktopHeader}
 
-              <div className="min-w-0">
-                <SheetTitle className="text-xl text-white truncate">{player?.playerName || 'Player'}</SheetTitle>
-                <SheetDescription className="mt-1 text-slate-300">
-                  <span className="inline-flex min-w-0 items-center gap-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-800">
-                      {playerTeamLogoUrl ? (
-                        <img src={playerTeamLogoUrl} alt={player?.teamName || 'Team'} className="h-full w-full object-contain" />
-                      ) : (
-                        <span className="text-[10px] text-slate-500">队</span>
-                      )}
-                    </span>
-                    {player?.teamName ? (
-                      <button
-                        type="button"
-                        className="truncate transition hover:text-white hover:underline underline-offset-2"
-                        onClick={() => onTeamSelect?.({
-                          team_id: player?.teamId || null,
-                          name: player?.teamName || null,
-                          logo_url: playerTeamLogoUrl || null,
-                        })}
-                      >
-                        {player.teamName}
-                      </button>
-                    ) : (
-                      <span className="truncate">Free Agent</span>
-                    )}
-                  </span>
-                </SheetDescription>
-                <div className="mt-2 text-xs text-slate-400">
-                  {player?.realName || 'Unknown Real Name'}
-                  {player?.chineseName ? ` · ${player.chineseName}` : ''}
-                </div>
-              </div>
-            </div>
+          {/* ── Body ── */}
+          <div className="space-y-5 p-4">
+            {heroPoolSection}
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="outline" className="border-slate-600 text-slate-200">
-                ID {player?.accountId ?? '-'}
-              </Badge>
-              {player?.nationality && (
-                <Badge variant="outline" className="border-slate-600 text-slate-200">
-                  {flagImageUrl ? (
-                    <img src={flagImageUrl} alt={player.nationality} className="h-3.5 w-5 rounded-[2px] object-cover" />
-                  ) : (
-                    <span className="inline-block h-3.5 w-5 rounded-[2px] bg-slate-700" />
-                  )}
-                  {player.nationality}
-                </Badge>
-              )}
-              <Badge variant="outline" className="border-slate-600 text-slate-200">
-                <Calendar className="mr-1 h-3 w-3" />
-                {birthDisplay}
-              </Badge>
-              {typeof player?.age === 'number' && (
-                <Badge variant="outline" className="border-slate-600 text-slate-200">{player.age} 岁</Badge>
-              )}
-              {typeof player?.winRate === 'number' && (
-                <Badge variant="outline" className="border-slate-600 text-slate-200">
-                  <Target className="mr-1 h-3 w-3" />
-                  近三个月胜率 {player.winRate.toFixed(1)}%
-                </Badge>
-              )}
-            </div>
-          </SheetHeader>
+            {isMobile && mobilePerformanceSection}
 
-          <div className="space-y-6 p-6">
-            <section>
-              <div className="mb-3 flex items-center gap-2 text-white">
-                <Calendar className="h-4 w-4 text-blue-400" />
-                <h4 className="font-semibold">下一场比赛</h4>
-              </div>
-              {player?.nextMatch ? (
-                <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-sm text-slate-200">
-                    <TeamInline
-                      name={player.teamName || player.playerName}
-                      logoUrl={player.nextMatch.selectedTeamLogoUrl || playerTeamLogoUrl}
-                      onNameClick={() => onTeamSelect?.({
-                        team_id: player.nextMatch?.selectedTeamId || player.teamId || null,
-                        name: player.teamName || null,
-                        logo_url: player.nextMatch?.selectedTeamLogoUrl || playerTeamLogoUrl || null,
-                      })}
-                    />
-                    <div className="rounded-full border border-slate-600 px-2 py-0.5 text-xs text-slate-300">VS</div>
-                    <TeamInline
-                      name={player.nextMatch.opponentName || 'TBD'}
-                      logoUrl={player.nextMatch.opponentLogoUrl}
-                      align="right"
-                      onNameClick={() => onTeamSelect?.({
-                        team_id: player.nextMatch?.opponentTeamId || null,
-                        name: player.nextMatch?.opponentName || null,
-                        logo_url: player.nextMatch?.opponentLogoUrl || null,
-                      })}
-                    />
-                  </div>
-                  <div className="mt-1 text-xs text-slate-400">
-                    {player.nextMatch.tournament || 'Unknown Tournament'} · {player.nextMatch.seriesType || 'BO3'}
-                  </div>
-                  <div className="mt-2 text-xs text-blue-300">{formatTs(player.nextMatch.startTime)}</div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">暂无未来赛程</div>
-              )}
-            </section>
+            {isMobile ? mobileAchievementsSection : null}
 
-            <section>
-              <div className="mb-3 flex items-center gap-2 text-white">
-                <Trophy className="h-4 w-4 text-amber-400" />
-                <h4 className="font-semibold">招牌英雄（近两年 &gt;10 场，胜率最高）</h4>
-              </div>
-              {signatureHeroes.length ? (
-                <div className="grid grid-cols-3 gap-3">
-                  {signatureHeroes.map((hero) => {
-                    const img = getHeroImg(hero.heroId, heroMap);
-                    const heroName = heroMap[hero.heroId]?.name_cn || heroMap[hero.heroId]?.name || `Hero ${hero.heroId}`;
-                    return (
-                      <div key={`sig-${hero.heroId}`} className="rounded-xl border border-slate-700 bg-slate-800/50 p-3">
-                        <div className="flex items-center gap-3">
-                          {img ? (
-                            <img src={img} alt={heroName} width={44} height={44} className="h-11 w-11 rounded-md object-cover" />
-                          ) : (
-                            <div className="h-11 w-11 rounded-md bg-slate-700" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium text-slate-100">{heroName}</div>
-                            <div className="text-xs text-slate-300">{hero.winRate.toFixed(1)}%</div>
-                            <div className="text-xs text-slate-500">{hero.wins}/{hero.games}</div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
-                  暂无满足近两年超过 10 场条件的英雄样本
-                </div>
-              )}
-            </section>
+            {recentMatchSection}
 
-            <section>
-              <div className="mb-3 flex items-center gap-2 text-white">
-                <Shield className="h-4 w-4 text-cyan-400" />
-                <h4 className="font-semibold">过去 3 个月常用英雄</h4>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {(player?.mostPlayedHeroes || []).map((hero) => {
-                  const img = getHeroImg(hero.heroId, heroMap);
-                  const heroName = heroMap[hero.heroId]?.name_cn || heroMap[hero.heroId]?.name || `Hero ${hero.heroId}`;
-                  return (
-                    <div
-                      key={`mp-${hero.heroId}`}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-800/40 p-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {img ? (
-                          <img src={img} alt={heroName} width={36} height={36} className="h-9 w-9 rounded-md object-cover" />
-                        ) : (
-                          <div className="h-9 w-9 rounded-md bg-slate-700" />
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-sm text-slate-100 truncate">{heroName}</div>
-                          <div className="text-xs text-slate-400">{hero.games} 场</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-slate-400">胜率</div>
-                        <div className="text-sm font-semibold text-slate-100">{hero.winRate.toFixed(1)}%</div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!player?.mostPlayedHeroes?.length && (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400 sm:col-span-2">
-                    暂无近 3 个月英雄统计
-                  </div>
-                )}
-              </div>
-            </section>
+            {!isMobile && signatureSection}
 
-            <section>
-              <div className="mb-3 flex items-center gap-2 text-white">
-                <Shield className="h-4 w-4 text-sky-400" />
-                <h4 className="font-semibold">近期比赛（队伍 5 选）</h4>
-              </div>
-              <div className="mb-2 text-[11px] text-slate-500">蓝色边框为该选手本场使用英雄</div>
-              <div className="space-y-2">
-                {recentRows.map((row) => {
-                  const resultCls = row.won === true
-                    ? 'border-emerald-500/50 text-emerald-300'
-                    : row.won === false
-                      ? 'border-red-500/50 text-red-300'
-                      : 'border-slate-600 text-slate-300';
+            {tournamentPerfSection}
+          </div>
 
-                  return (
-                    <div key={`${row.matchId}-${row.startTime}`} className="rounded-xl border border-slate-700 bg-slate-800/40 p-3">
-                      <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-3">
-                        <div className="min-w-0 text-sm text-slate-100">
-                          <TeamInline
-                            name={row.teamName}
-                            logoUrl={row.teamLogoUrl}
-                            onNameClick={() => onTeamSelect?.({
-                              team_id: row.teamId || null,
-                              name: row.teamName || null,
-                              logo_url: row.teamLogoUrl || null,
-                            })}
-                          />
-                        </div>
-                        <div className={`justify-self-center rounded-full border px-2 py-1 text-center text-xs font-medium ${resultCls}`}>
-                          {row.won === true ? 'Win' : row.won === false ? 'Lose' : 'N/A'}
-                        </div>
-                        <div className="min-w-0 text-sm text-slate-200">
-                          <TeamInline
-                            name={row.opponentName}
-                            logoUrl={row.opponentLogoUrl}
-                            align="right"
-                            onNameClick={() => onTeamSelect?.({
-                              team_id: row.opponentTeamId || null,
-                              name: row.opponentName || null,
-                              logo_url: row.opponentLogoUrl || null,
-                            })}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {row.teamPicks.map((heroId, idx) => {
-                          const img = getHeroImg(heroId, heroMap);
-                          const heroName = heroMap[heroId]?.name_cn || heroMap[heroId]?.name || `Hero ${heroId}`;
-                          const active = row.playerHeroId === heroId;
-                          const ringCls = active
-                            ? 'border-sky-300 ring-2 ring-sky-500/80 ring-offset-1 ring-offset-slate-900'
-                            : 'border-slate-700';
-
-                          return img ? (
-                            <img
-                              key={`${row.matchId}-${heroId}-${idx}`}
-                              src={img}
-                              alt={heroName}
-                              title={heroName}
-                              width={30}
-                              height={30}
-                              className={`h-7 w-7 rounded object-cover border ${ringCls}`}
-                            />
-                          ) : (
-                            <div
-                              key={`${row.matchId}-${heroId}-${idx}`}
-                              className={`h-7 w-7 rounded bg-slate-700 border ${ringCls}`}
-                              title={heroName}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      <div className="mt-2 text-xs text-slate-400">
-                        {row.tournament} · {row.seriesType} · {formatTs(row.startTime)}
-                      </div>
-                    </div>
-                  );
-                })}
-                {!recentRows.length && (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">暂无近期比赛</div>
-                )}
-              </div>
-            </section>
+          {/* ── CTA ── */}
+          <div className={`${isMobile ? 'grid grid-cols-[1fr_auto] gap-2' : ''} px-4 pb-6`}>
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500"
+            >
+              查看 {player?.playerName || '选手'} 的完整资料页
+              <ExternalLink className="size-4" />
+            </button>
+            {isMobile && (
+              <button
+                type="button"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-3.5 text-sm text-slate-300 hover:bg-slate-700/40"
+              >
+                分享
+              </button>
+            )}
           </div>
         </div>
       </SheetContent>

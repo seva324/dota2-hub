@@ -39,6 +39,38 @@
     "ops:post-news-xhs": "node --env-file=.env.vercel scripts/post-news-to-xhs.mjs",
     "ops:post-reddit-xhs": "node --env-file=.env.vercel scripts/post-reddit-to-xhs.mjs"
   },
+  "overrides": {
+    "swiper": "12.1.4",
+    "axios": "1.15.2",
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1",
+    "node-forge": "1.4.0",
+    "flatted": "3.4.2",
+    "picomatch": "2.3.2",
+    "esbuild": "0.25.12",
+    "postcss": "8.5.13",
+    "serialize-javascript": "7.0.5",
+    "glob": "10.5.0",
+    "got": "15.0.3",
+    "http-cache-semantics": "4.2.0",
+    "html-minifier": "npm:html-minifier-terser@7.2.0",
+    "webpack-dev-server": "5.2.3",
+    "git-clone": "npm:git-clone-safe@1.2.0",
+    "@types/react": "$@types/react",
+    "@types/react-dom": "$@types/react-dom",
+    "express": {
+      "path-to-regexp": "0.1.13"
+    },
+    "postcss-url": {
+      "minimatch": "3.1.5"
+    },
+    "miniprogram-simulate": {
+      "postcss": "8.5.13"
+    },
+    "sockjs": {
+      "uuid": "14.0.0"
+    }
+  },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/client": "^7.7.0",
@@ -47,5 +79,11 @@
     "redis": "^4.6.0",
     "sql.js": "^1.14.0",
     "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

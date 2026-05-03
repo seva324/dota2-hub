@@ -121,7 +121,7 @@ describe('TournamentSection bootstrap lazy loading', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/heroes');
     });
 
-    expect(screen.getByText('暂无 T1 赛事数据')).toBeInTheDocument();
+    expect(screen.getByText('即将开始')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/tournaments');
 
     await act(async () => {

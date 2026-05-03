@@ -53,6 +53,25 @@ describe('TournamentSection', () => {
     matchDetailModalSpy.mockReset();
   });
 
+  it('renders prototype schedule fallbacks instead of an empty tournament report state', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') return createJsonResponse({});
+      if (url === '/api/tournaments') return createJsonResponse({ tournaments: [] });
+      if (url === '/api/teams') return createJsonResponse([]);
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<TournamentSection tournaments={[]} teams={[]} allMatches={[]} upcoming={[]} />);
+
+    expect(await screen.findByText('即将开始')).toBeInTheDocument();
+    expect(screen.getByText('已结束的比赛')).toBeInTheDocument();
+    expect(screen.getAllByText('DreamLeague S23').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('XG').length).toBeGreaterThan(0);
+    expect(screen.queryByText('暂无 T1 赛事数据')).not.toBeInTheDocument();
+  });
+
   it('loads 10 series by default and fetches the next page on load more', async () => {
     const firstPage = buildSeries(1, 10);
     const secondPage = buildSeries(11, 2);
@@ -117,6 +136,80 @@ describe('TournamentSection', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=10');
     });
   }, 30000);
+
+  it('renders map tabs on a Series card and passes all Series maps to match detail', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/tournaments?tournamentId=dreamleague-s28&limit=10&offset=0') {
+        return createJsonResponse({
+          series: [
+            {
+              series_id: 'series-xg-spirit',
+              series_type: 'BO3',
+              radiant_team_id: '1',
+              dire_team_id: '2',
+              radiant_team_name: 'XG',
+              dire_team_name: 'Team Spirit',
+              radiant_score: 1,
+              dire_score: 1,
+              games: [
+                { match_id: '9101', radiant_score: 18, dire_score: 9, radiant_win: 1, duration: 1427 },
+                { match_id: '9102', radiant_score: 7, dire_score: 16, radiant_win: 0, duration: 1022 },
+                { match_id: '9103', radiant_score: 0, dire_score: 0, radiant_win: 0, duration: 0 },
+              ],
+              stage: 'Group Stage',
+              stage_kind: 'group',
+            },
+          ],
+          pagination: { total: 1, hasMore: false, limit: 10, offset: 0 },
+        });
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TournamentSection
+        tournaments={[
+          {
+            id: 'dreamleague-s28',
+            league_id: 42,
+            name: 'DreamLeague Season 28',
+            status: 'ongoing',
+            tier: 'S',
+            location: 'EU',
+            start_time: 1_700_000_000,
+            end_time: 1_700_100_000,
+          },
+        ]}
+        seriesByTournament={{}}
+        teams={[]}
+        allMatches={[]}
+        upcoming={[]}
+      />
+    );
+
+    expect((await screen.findAllByText('XG')).length).toBeGreaterThan(0);
+    expect(screen.getByText('地图 1')).toBeInTheDocument();
+    expect(screen.getByText('地图 2')).toBeInTheDocument();
+    expect(screen.getByText('地图 3')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /地图 2/ }));
+
+    await waitFor(() => {
+      expect(matchDetailModalSpy).toHaveBeenLastCalledWith(expect.objectContaining({
+        matchId: 9102,
+        seriesMaps: [
+          expect.objectContaining({ label: '地图 1', matchId: '9101' }),
+          expect.objectContaining({ label: '地图 2', matchId: '9102' }),
+          expect.objectContaining({ label: '地图 3', matchId: '9103' }),
+        ],
+      }));
+    });
+  });
 
   it('uses uploaded SVG overrides in the series list for the four custom teams', async () => {
     const rawLiquidLogo = 'https://dotahub.cn/api/asset-image?url=https%3A%2F%2Fs3.dltv.org%2Fuploads%2Fteams%2FjzS2BJn2w338twINzzRUUElFEDvdcQgp.png.webp';

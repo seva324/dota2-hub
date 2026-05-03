@@ -1,23 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/components/custom/Navbar', () => ({
-  Navbar: () => <div>navbar</div>,
-}));
-vi.mock('@/sections/HeroSection', () => ({
-  HeroSection: () => <div>hero</div>,
-}));
-vi.mock('@/sections/TournamentSection', () => ({
-  TournamentSection: () => <div>tournaments</div>,
-}));
-vi.mock('@/sections/UpcomingSection', () => ({
-  UpcomingSection: () => <div>upcoming</div>,
-}));
-vi.mock('@/sections/NewsSection', () => ({
-  NewsSection: () => <div>news</div>,
-}));
-vi.mock('@/sections/CommunitySection', () => ({
-  CommunitySection: () => <div>community</div>,
+vi.mock('@/sections/HomeDashboard', () => ({
+  HomeDashboard: () => <div>home dashboard</div>,
 }));
 vi.mock('@/sections/Footer', () => ({
   Footer: () => <div>footer</div>,
@@ -26,16 +11,18 @@ vi.mock('@/sections/Footer', () => ({
 import App from '@/App';
 
 describe('App shell', () => {
-  it('renders sections without issuing top-level data fetches', () => {
+  it('renders shell with prototype chrome: nav, mobile nav, login button, no top-level fetches', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
     render(<App />);
 
-    expect(screen.getByText('hero')).toBeInTheDocument();
-    expect(screen.getByText('tournaments')).toBeInTheDocument();
-    expect(screen.getByText('upcoming')).toBeInTheDocument();
-    expect(screen.getByText('news')).toBeInTheDocument();
+    expect(screen.getByText('DotaHub')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '移动端主导航' })).toBeInTheDocument();
+    expect(screen.getByText('home dashboard')).toBeInTheDocument();
+    expect(screen.getByText('我的')).toBeInTheDocument();
+    expect(screen.getByText('登录 / 注册')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

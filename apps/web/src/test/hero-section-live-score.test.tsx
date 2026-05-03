@@ -101,7 +101,7 @@ describe('HeroSection live spotlight', () => {
   it('renders the live spotlight card and the CN upcoming preview together', async () => {
     render(<HeroSection upcoming={[]} teams={[]} />);
 
-    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+    expect(await screen.findByText('正在进行')).toBeInTheDocument();
     expect(screen.getAllByText('PGL Wallachia Season 7: Group Stage')).toHaveLength(2);
     expect(screen.getByText('Aurora')).toBeInTheDocument();
     expect(screen.getByText('Heroic')).toBeInTheDocument();
@@ -144,7 +144,7 @@ describe('HeroSection live spotlight', () => {
 
     render(<HeroSection />);
 
-    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+    expect(await screen.findByText('正在进行')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -166,7 +166,7 @@ describe('HeroSection live spotlight', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText('直播对局')).toBeInTheDocument();
+    expect(screen.getByText('正在进行')).toBeInTheDocument();
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
       '/api/live-hero',
       '/api/upcoming?days=1',
@@ -383,8 +383,79 @@ describe('HeroSection live spotlight', () => {
     await waitFor(() => {
       expect(screen.getByText('中国战队预告')).toBeInTheDocument();
     });
-    expect(screen.queryByText('直播对局')).not.toBeInTheDocument();
+    expect(screen.queryByText('正在进行')).not.toBeInTheDocument();
     expect(screen.getByText('DreamLeague')).toBeInTheDocument();
+  });
+
+  it('aggregates upcoming maps from the same Series into one preview card', async () => {
+    const startTime = Math.floor(Date.now() / 1000) + 3600;
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/upcoming')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            upcoming: [
+              {
+                id: 101,
+                match_id: 9101,
+                series_id: 'series-xg-spirit',
+                map_number: 1,
+                radiant_team_id: '1',
+                dire_team_id: '2',
+                radiant_team_name: 'Xtreme Gaming',
+                dire_team_name: 'Team Spirit',
+                start_time: startTime,
+                series_type: 'BO3',
+                tournament_name: 'DreamLeague S23',
+              },
+              {
+                id: 102,
+                match_id: 9102,
+                series_id: 'series-xg-spirit',
+                map_number: 2,
+                radiant_team_id: '1',
+                dire_team_id: '2',
+                radiant_team_name: 'Xtreme Gaming',
+                dire_team_name: 'Team Spirit',
+                start_time: startTime + 2400,
+                series_type: 'BO3',
+                tournament_name: 'DreamLeague S23',
+              },
+              {
+                id: 103,
+                match_id: 9103,
+                series_id: 'series-xg-spirit',
+                map_number: 3,
+                radiant_team_id: '1',
+                dire_team_id: '2',
+                radiant_team_name: 'Xtreme Gaming',
+                dire_team_name: 'Team Spirit',
+                start_time: startTime + 4800,
+                series_type: 'BO3',
+                tournament_name: 'DreamLeague S23',
+              },
+            ],
+            teams: [
+              { team_id: '1', name: 'Xtreme Gaming', region: 'China', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/8261500.png' },
+              { team_id: '2', name: 'Team Spirit', region: 'Eastern Europe', logo_url: 'https://dota2-hub.vercel.app/images/mirror/teams/7119388.png' },
+            ],
+          }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ live: null }) } as Response);
+    }));
+
+    render(<HeroSection upcoming={[]} teams={[]} />);
+
+    expect(await screen.findByText('中国战队预告')).toBeInTheDocument();
+    const cards = screen.getAllByTestId('hero-upcoming-series-card');
+    expect(cards).toHaveLength(1);
+    expect(within(cards[0]).getByText('DreamLeague S23')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('BO3')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('地图 1')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('地图 2')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('地图 3')).toBeInTheDocument();
   });
 
   it('renders live content before upcoming content when live resolves first', async () => {
@@ -444,7 +515,7 @@ describe('HeroSection live spotlight', () => {
       });
     });
 
-    expect(await screen.findByText('直播对局')).toBeInTheDocument();
+    expect(await screen.findByText('正在进行')).toBeInTheDocument();
     expect(screen.queryByText('中国战队预告')).not.toBeInTheDocument();
 
     await act(async () => {

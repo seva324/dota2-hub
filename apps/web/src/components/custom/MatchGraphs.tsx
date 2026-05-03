@@ -78,6 +78,7 @@ interface MatchGraphsProps {
   radiantTeamName: string;
   direTeamName: string;
   heroesData: Record<number, { name: string; img: string; name_cn?: string }>;
+  hideKeyEvents?: boolean;
 }
 
 function formatDuration(seconds: number): string {
@@ -143,7 +144,7 @@ function getPlayerSide(player: MatchPlayer): 'radiant' | 'dire' {
   return player.player_slot < 128 ? 'radiant' : 'dire';
 }
 
-export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }: MatchGraphsProps) {
+export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData, hideKeyEvents = false }: MatchGraphsProps) {
   const { radiant_gold_adv = [], radiant_xp_adv = [], duration, players = [], objectives = [], teamfights = [] } = match;
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [isLandscapeMode, setIsLandscapeMode] = useState(false);
@@ -494,6 +495,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
 
   return (
     <div className="space-y-4">
+      {!hideKeyEvents && (
       <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
         <header className="mb-2 flex items-center justify-between">
           <h4 className="text-sm font-semibold text-slate-100">关键时间轴</h4>
@@ -756,6 +758,7 @@ export function MatchGraphs({ match, radiantTeamName, direTeamName, heroesData }
           </>
         )}
       </section>
+      )}
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/35 p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
