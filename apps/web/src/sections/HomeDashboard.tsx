@@ -1,5 +1,5 @@
 import { useState, useEffect, type ComponentType, type ReactNode } from 'react';
-import { CalendarDays, Flame, MapPin, Monitor, Newspaper, Play, Radio, Search, Shield, Trophy, UserRound } from 'lucide-react';
+import { CalendarDays, Flame, Newspaper, Play, Radio, Search, Shield, Trophy, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,12 +53,6 @@ const patchNotes = [
   { category: '英雄', text: '维萨吉基础攻击力提升' },
   { category: '物品', text: '赤红甲护甲降低 3 → 2' },
   { category: '地图', text: '肉山巢穴位置微调' },
-];
-
-const recentEvents = [
-  { name: 'DreamLeague S23', format: '线上赛', dates: '5月15日 - 5月28日' },
-  { name: 'ESL One 伯明翰', format: '线下赛 · 伯明翰', dates: '5月20日 - 5月25日' },
-  { name: 'PGL Wallachia S4', format: '线上赛', dates: '5月22日 - 5月30日' },
 ];
 
 const filters = ['全部', 'S 级赛事', '中国战队', 'DreamLeague', 'ESL One', 'PGL'];
