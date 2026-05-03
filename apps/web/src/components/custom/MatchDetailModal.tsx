@@ -124,8 +124,7 @@ function getHeroImg(id: number): string {
 
 function getHeroPortraitUrl(heroId: number): string {
   const hero = heroesData[heroId];
-  const name = hero?.img || String(heroId);
-  return toCnAssetUrl(`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${name}.png`);
+  return getHeroImageUrl(heroId, hero?.img);
 }
 
 function getLaneName(lane: number | undefined, isRadiant: boolean): string {
@@ -1288,18 +1287,14 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
     return (
       <div className="flex shrink-0 flex-col items-center gap-1" style={{ width: 80 }}>
         <div className={`h-[72px] w-[72px] overflow-hidden rounded-full border-2 border-slate-700/60 bg-slate-800 ${glowRing}`}>
-          {portraitUrl ? (
-            <img
-              src={portraitUrl}
-              alt={getHeroName(pb.hero_id)}
-              className="h-full w-full object-cover object-top"
-              loading="lazy"
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(pb.hero_id)}>
+          <SafeImg
+            src={portraitUrl}
+            alt={getHeroName(pb.hero_id)}
+            className="h-full w-full object-cover object-top"
+            fallback={<div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(pb.hero_id)}>
               <span className="text-[9px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
-            </div>
-          )}
+            </div>}
+          />
         </div>
         <span className="truncate text-[10px] text-slate-400 leading-tight max-w-[80px] text-center">{getHeroName(pb.hero_id)}</span>
         <span className="text-[9px] text-slate-500 leading-tight">{winRate}%</span>

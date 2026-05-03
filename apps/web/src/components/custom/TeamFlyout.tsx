@@ -147,6 +147,19 @@ function formatTs(ts: number): string {
   });
 }
 
+function formatCountdown(ts: number): string {
+  if (!ts) return '';
+  const now = Math.floor(Date.now() / 1000);
+  const diff = ts - now;
+  if (diff <= 0) return 'LIVE';
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor((diff % 86400) / 3600);
+  const mins = Math.floor((diff % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
 function getTournamentLabel(match: MatchLike): string {
   if (match.tournament_name) return match.tournament_name;
   if (match.league_id !== null && match.league_id !== undefined) {
@@ -170,8 +183,7 @@ function inferWin(match: MatchLike, isRadiant: boolean): boolean | null {
 
 function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   const hero = heroMap[heroId];
-  if (!hero?.img) return '';
-  return getHeroImageUrl(heroId, hero.img);
+  return getHeroImageUrl(heroId, hero?.img || null);
 }
 
 function buildTeamFlyoutApiUrl(selectedTeam: { team_id?: string | null; name: string }): string {
@@ -537,8 +549,8 @@ export function TeamFlyout({
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700 bg-slate-900 text-slate-100 p-0 overscroll-contain shadow-[0_0_40px_rgba(56,189,248,0.08)]'
-    : 'w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain shadow-[0_0_40px_rgba(56,189,248,0.08)]';
+    ? 'h-[92vh] w-full rounded-t-3xl bg-slate-900 text-slate-100 p-0 overscroll-contain border border-sky-400/20 shadow-[0_-8px_60px_rgba(56,189,248,0.12),0_0_120px_rgba(56,189,248,0.06)]'
+    : 'w-full sm:max-w-2xl bg-slate-900 text-slate-100 p-0 overscroll-contain border-l border-sky-400/20 shadow-[-8px_0_60px_rgba(56,189,248,0.12),0_0_120px_rgba(56,189,248,0.06)]';
 
   const teamHue = stringToHue(selectedTeam?.name || '');
 
@@ -548,12 +560,15 @@ export function TeamFlyout({
         <SheetContent side={sheetSide} className={sheetClassName}>
           <div className="h-full overflow-y-auto">
             <SheetHeader
-              className="border-b border-slate-700 p-6 pr-12"
+              className="relative border-b border-slate-700 p-6 pr-12 overflow-hidden"
               style={{
                 background: `linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42) 40%, hsl(${teamHue} 60% 25% / 0.35) 100%)`,
               }}
             >
-              <div className="flex flex-col items-center gap-3">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.03]">
+                <span className="text-[8rem] font-black tracking-[0.5em] text-white" style={{ fontFamily: 'system-ui' }}>DOTA2</span>
+              </div>
+              <div className="relative z-10 flex flex-col items-center gap-3">
                 <div className="w-20 h-20 rounded-2xl bg-slate-800/80 border border-slate-600/50 flex items-center justify-center overflow-hidden shadow-lg"
                   style={{ boxShadow: `0 0 24px hsl(${teamHue} 60% 40% / 0.15)` }}
                 >
@@ -625,9 +640,14 @@ export function TeamFlyout({
                   const direLogo = nm.dire_team_logo || null;
                   const radName = nm.radiant_team_name || 'TBD';
                   const direName = nm.dire_team_name || 'TBD';
+                  const countdown = formatCountdown(nm.start_time);
                   return (
                     <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-amber-950/10 p-5 shadow-[0_0_24px_rgba(245,158,11,0.08)]">
-                      <div className="text-[10px] font-semibold text-amber-400/80 uppercase tracking-widest text-center mb-3">即将开始</div>
+                      <div className="flex justify-center mb-3">
+                        <Badge className="animate-pulse-glow border-amber-400/50 bg-amber-500/15 text-amber-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full">
+                          {countdown === 'LIVE' ? 'LIVE NOW' : '即将开始'}
+                        </Badge>
+                      </div>
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
                           <div className="w-14 h-14 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
@@ -638,6 +658,12 @@ export function TeamFlyout({
                         <div className="flex flex-col items-center flex-shrink-0">
                           <span className="text-lg font-extrabold text-amber-400 tracking-wider">VS</span>
                           <span className="text-xs text-amber-300/80 mt-1.5 font-mono tabular-nums">{formatTs(nm.start_time)}</span>
+                          {countdown && countdown !== 'LIVE' && (
+                            <span className="text-[10px] text-amber-400/60 mt-0.5 font-mono tabular-nums">in {countdown}</span>
+                          )}
+                          {countdown === 'LIVE' && (
+                            <span className="text-[10px] text-red-400/80 mt-0.5 font-bold uppercase animate-pulse">LIVE</span>
+                          )}
                         </div>
                         <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
                           <div className="w-14 h-14 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
@@ -668,7 +694,7 @@ export function TeamFlyout({
                   {activeSquad.map((player, idx) => {
                     const flagUrl = toFlagImageUrl(player.countryCode, 32);
                     const body = (
-                      <div className="flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-800/40 p-3 transition-all duration-200 hover:border-slate-500/80 hover:bg-slate-700/60 hover:shadow-[0_0_16px_rgba(56,189,248,0.12)] hover:scale-[1.02]">
+                      <div className="flex items-center gap-3 rounded-xl border border-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-800/20 p-3 transition-all duration-200 hover:border-sky-400/40 hover:bg-gradient-to-br hover:from-slate-700/60 hover:to-sky-950/20 hover:shadow-[0_0_20px_rgba(56,189,248,0.18)] hover:scale-[1.03]">
                         <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {player.avatarUrl ? (
                             <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
