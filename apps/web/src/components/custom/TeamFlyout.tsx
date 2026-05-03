@@ -503,6 +503,25 @@ export function TeamFlyout({
       .slice(0, 5);
   }, [model, serverTopHeroes]);
 
+  const heroWinRates = useMemo(() => {
+    const stats = new Map<number, { wins: number; total: number }>();
+    for (const row of model?.recentRows || []) {
+      const picks = row.teamHeroIds || [];
+      if (!picks.length) continue;
+      const won = row.won === true;
+      for (const heroId of picks) {
+        const entry = stats.get(heroId);
+        if (entry) {
+          entry.total++;
+          if (won) entry.wins++;
+        } else {
+          stats.set(heroId, { wins: won ? 1 : 0, total: 1 });
+        }
+      }
+    }
+    return stats;
+  }, [model]);
+
   const wins = serverStats?.wins ?? model?.wins ?? 0;
   const losses = serverStats?.losses ?? model?.losses ?? 0;
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
@@ -517,74 +536,134 @@ export function TeamFlyout({
         <SheetContent side={sheetSide} className={sheetClassName}>
           <div className="h-full overflow-y-auto">
             <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30 p-6 pr-12">
-              <div className="flex flex-col items-center justify-center gap-4 text-center">
-                <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
                   <SafeImg
                     src={selectedTeamLogoUrl}
                     alt={selectedTeam?.name || 'Team'}
-                    className="w-18 h-18 object-contain"
-                    fallback={<Shield className="w-9 h-9 text-slate-400" />}
+                    className="w-14 h-14 object-contain"
+                    fallback={<Shield className="w-8 h-8 text-slate-400" />}
                   />
                 </div>
                 <div className="min-w-0">
-                  <SheetTitle className="text-2xl text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
-                  <SheetDescription className="sr-only">
-                    Team details
-                  </SheetDescription>
+                  <SheetTitle className="text-xl font-bold text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
+                  <SheetDescription className="sr-only">Team details</SheetDescription>
                 </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {isFlyoutLoading && <Badge variant="outline" className="border-blue-500/30 text-blue-300">加载中...</Badge>}
-              {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
-                {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, resolvedTeams) ? (
-                  <Badge variant="outline" className="border-red-500/40 text-red-300">
-                    <Flag className="w-3 h-3 mr-1" />
-                    {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown')
-                      ? model.meta.region
-                      : 'China'}
-                  </Badge>
-                ) : null}
-                <Badge variant="outline" className="border-slate-600 text-slate-300">
-                  <Target className="w-3 h-3 mr-1" />
-                  近3个月 {wins}-{losses}
-                </Badge>
-                <Badge variant="outline" className="border-slate-600 text-slate-300">
-                  胜率 {winRate}%
-                </Badge>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {isFlyoutLoading && <Badge variant="outline" className="border-blue-500/30 text-blue-300">加载中...</Badge>}
+                  {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
+                  {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, resolvedTeams) ? (
+                    <Badge variant="outline" className="border-red-500/40 text-red-300">
+                      <Flag className="w-3 h-3 mr-1" />
+                      {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') ? model.meta.region : 'China'}
+                    </Badge>
+                  ) : null}
+                </div>
               </div>
             </SheetHeader>
 
-            <div className="p-6 space-y-6">
-              <section>
-                <div className="flex items-center gap-2 mb-3 text-white">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                  <h4 className="font-semibold">当前阵容</h4>
+            <div className="p-6 space-y-5">
+              {/* Stats Bar */}
+              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-center flex-1">
+                    <div className="text-2xl font-bold text-emerald-400 tabular-nums">{wins}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">胜</div>
+                  </div>
+                  <div className="w-px h-10 bg-slate-700" />
+                  <div className="text-center flex-1">
+                    <div className="text-2xl font-bold text-red-400 tabular-nums">{losses}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">负</div>
+                  </div>
+                  <div className="w-px h-10 bg-slate-700" />
+                  <div className="text-center flex-1">
+                    <div className="text-2xl font-bold text-sky-400 tabular-nums">{winRate}%</div>
+                    <div className="text-xs text-slate-400 mt-0.5">胜率</div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                <div className="mt-3 h-1.5 rounded-full bg-slate-700/70 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(0, winRate))}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Upcoming Match */}
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-4 h-4 text-blue-400" />
+                  <h4 className="text-sm font-semibold text-slate-200">下一场</h4>
+                </div>
+                {model?.nextMatch ? (() => {
+                  const nm = model.nextMatch;
+                  const radLogo = nm.radiant_team_logo || null;
+                  const direLogo = nm.dire_team_logo || null;
+                  const radName = nm.radiant_team_name || 'TBD';
+                  const direName = nm.dire_team_name || 'TBD';
+                  return (
+                    <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
+                          <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
+                            <SafeImg src={radLogo} alt={radName} className="w-10 h-10 object-contain" fallback={<Shield className="w-5 h-5 text-slate-500" />} />
+                          </div>
+                          <span className="text-xs text-slate-200 text-center truncate w-full">{radName}</span>
+                        </div>
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <span className="text-sm font-bold text-slate-400">VS</span>
+                          <span className="text-xs text-blue-300 mt-1">{formatTs(nm.start_time)}</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
+                          <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
+                            <SafeImg src={direLogo} alt={direName} className="w-10 h-10 object-contain" fallback={<Shield className="w-5 h-5 text-slate-500" />} />
+                          </div>
+                          <span className="text-xs text-slate-200 text-center truncate w-full">{direName}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-slate-700/50 text-xs text-slate-400 text-center">
+                        {getTournamentLabel(nm)} · {nm.series_type || 'BO3'}
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
+                    暂无未来赛程
+                  </div>
+                )}
+              </section>
+
+              {/* Roster */}
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <UserRound className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-sm font-semibold text-slate-200">当前阵容</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   {activeSquad.map((player, idx) => {
-                    const flagUrl = toFlagImageUrl(player.countryCode, 40);
+                    const flagUrl = toFlagImageUrl(player.countryCode, 32);
                     const body = (
-                      <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-center">
-                        <div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900/60">
+                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-700 bg-slate-800/50 p-2.5">
+                        <div className="w-10 h-10 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {player.avatarUrl ? (
                             <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
                           ) : (
-                            <UserRound className="h-10 w-10 text-slate-500" />
+                            <UserRound className="h-5 w-5 text-slate-500" />
                           )}
                         </div>
-                        <div className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-100">
-                          {flagUrl ? (
-                            <img src={flagUrl} alt={player.countryCode || ''} className="h-3.5 w-5 rounded-[2px] object-cover" />
-                          ) : (
-                            <span className="inline-block h-3.5 w-5 rounded-[2px] bg-slate-700" />
-                          )}
-                          <span className="truncate">{player.name}</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            {flagUrl ? (
+                              <img src={flagUrl} alt={player.countryCode || ''} className="h-3 w-[18px] rounded-[2px] object-cover flex-shrink-0" />
+                            ) : (
+                              <span className="inline-block h-3 w-[18px] rounded-[2px] bg-slate-700 flex-shrink-0" />
+                            )}
+                            <span className="text-sm font-semibold text-slate-100 truncate">{player.name}</span>
+                          </div>
+                          <div className="text-xs text-slate-400 truncate mt-0.5">{player.realname || '—'}</div>
                         </div>
-                        <div className="mt-1 text-xs text-slate-400 truncate">{player.realname || '—'}</div>
                       </div>
                     );
-
                     return player.accountId ? (
                       <button
                         key={`squad-${player.accountId}-${idx}`}
@@ -606,52 +685,51 @@ export function TeamFlyout({
                 </div>
               </section>
 
+              {/* Hero Picks */}
               <section>
-                <div className="flex items-center gap-2 mb-3 text-white">
-                  <Calendar className="w-4 h-4 text-blue-400" />
-                  <h4 className="font-semibold">下一场比赛</h4>
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="w-4 h-4 text-purple-400" />
+                  <h4 className="text-sm font-semibold text-slate-200">常用英雄</h4>
                 </div>
-                {model?.nextMatch ? (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                    <div className="text-sm text-slate-300">
-                      {model.nextMatch.radiant_team_name} vs {model.nextMatch.dire_team_name}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      {getTournamentLabel(model.nextMatch)} · {model.nextMatch.series_type || 'BO3'}
-                    </div>
-                    <div className="text-xs text-blue-300 mt-2">{formatTs(model.nextMatch.start_time)}</div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 text-sm text-slate-400">
-                    暂无未来赛程
-                  </div>
-                )}
-              </section>
-
-              <section>
-                <div className="flex items-center gap-2 mb-3 text-white">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                  <h4 className="font-semibold">最近最常选 5 英雄</h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {topFiveHeroes.map(([heroId, cnt]) => (
-                    <div key={heroId} className="flex items-center gap-2 rounded-lg bg-slate-800/50 border border-slate-700 px-2 py-1.5">
-                      {getHeroImg(heroId, heroMap) ? (
-                        <img src={getHeroImg(heroId, heroMap)} alt={String(heroMap[heroId]?.name_cn || heroMap[heroId]?.name || heroId)} width={28} height={28} className="w-7 h-7 rounded object-cover" />
-                      ) : (
-                        <div className="w-7 h-7 rounded bg-slate-700" />
-                      )}
-                      <span className="text-xs text-slate-200">
-                        {heroMap[heroId]?.name_cn || heroMap[heroId]?.name || `Hero ${heroId}`} × {cnt}
-                      </span>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  {topFiveHeroes.map(([heroId, cnt]) => {
+                    const maxCnt = topFiveHeroes[0]?.[1] || 1;
+                    const pct = Math.round((cnt / maxCnt) * 100);
+                    const heroWinStats = heroWinRates.get(heroId);
+                    const heroWr = heroWinStats && heroWinStats.total > 0
+                      ? Math.round((heroWinStats.wins / heroWinStats.total) * 100)
+                      : null;
+                    const img = getHeroImg(heroId, heroMap);
+                    const heroName = heroMap[heroId]?.name_cn || heroMap[heroId]?.name || `Hero ${heroId}`;
+                    return (
+                      <div key={heroId} className="flex items-center gap-3 rounded-lg bg-slate-800/50 border border-slate-700 p-2">
+                        {img ? (
+                          <img src={img} alt={heroName} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-slate-700 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-200 truncate">{heroName}</span>
+                            <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{cnt} 场{heroWr !== null ? ` · ${heroWr}%` : ''}</span>
+                          </div>
+                          <div className="mt-1.5 h-1 rounded-full bg-slate-700 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                   {!topFiveHeroes.length && (
-                    <div className="text-xs text-slate-400">暂无英雄统计（点击比分后会逐步补全）</div>
+                    <div className="text-xs text-slate-400">暂无英雄统计</div>
                   )}
                 </div>
               </section>
 
+              {/* Recent Matches */}
               <section>
                 <div className="flex items-center gap-2 mb-3 text-white">
                   <Trophy className="w-4 h-4 text-amber-400" />

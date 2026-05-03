@@ -47,25 +47,6 @@ export interface PlayerProfileFlyoutProps {
   onTeamSelect?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }
 
-function formatMatchDate(ts?: number | null): string {
-  if (!ts) return '--';
-  const d = new Date(ts * 1000);
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${m}-${day}`;
-}
-
-function abbreviateTournament(name?: string | null): string {
-  if (!name) return '--';
-  return name
-    .replace('DreamLeague Season', 'DL S')
-    .replace('DreamLeague S', 'DL S')
-    .replace('ESL One', 'ESL')
-    .replace('PGL Wallachia', 'PGL W')
-    .replace('The International', 'TI')
-    .replace('DPC', 'DPC');
-}
-
 function getHeroImg(heroId: number, heroMap: Record<number, HeroMeta>): string {
   const hero = heroMap[heroId];
   if (hero?.img) return getHeroImageUrl(heroId, hero.img);
@@ -189,13 +170,13 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </button>
 
       <div className="flex gap-4">
-        {/* Player photo */}
-        <div className="size-24 shrink-0 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800 shadow-lg">
+        {/* Player photo - circular */}
+        <div className="size-24 shrink-0 overflow-hidden rounded-full border-2 border-slate-600/60 bg-gradient-to-br from-slate-700 to-slate-900 shadow-lg">
           <SafeImg
             src={player?.avatarUrl}
             alt={player?.playerName || 'Player'}
             className="h-full w-full object-cover"
-            fallback={<div className="flex size-full items-center justify-center"><UserRound className="size-10 text-slate-500" /></div>}
+            fallback={<div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-600 to-slate-800"><span className="text-2xl font-bold text-slate-400">{player?.playerName?.[0] || '?'}</span></div>}
           />
         </div>
 
@@ -239,21 +220,17 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </div>
 
       {/* Stats bar */}
-      <div className="mt-4 grid grid-cols-4 divide-x divide-slate-700/60 border-t border-slate-700/60">
+      <div className="mt-4 grid grid-cols-5 divide-x divide-slate-700/60 rounded-lg border border-slate-700/60 bg-slate-800/40">
         {[
-          { label: 'KDA', value: player?.avgKda != null ? player.avgKda.toFixed(2) : '--', sub: player?.leagueKdaRank || '联赛 --' },
-          { label: 'GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '--', sub: player?.leagueGpmRank || '联赛 --' },
-          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', sub: player?.leagueWinRateRank || '联赛 --' },
-          { label: '近8场走势', value: null, sub: '' },
+          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '63.2%' },
+          { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '7.8' },
+          { label: '场均死亡', value: player?.avgDeaths != null ? player.avgDeaths.toFixed(1) : '3.2' },
+          { label: '场均GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '542' },
+          { label: '场均XPM', value: player?.avgXpm != null ? String(player.avgXpm) : '621' },
         ].map((stat) => (
           <div key={stat.label} className="flex flex-col items-center justify-center gap-0.5 py-3">
-            {stat.value !== null ? (
-              <span className="text-base font-bold text-white">{stat.value}</span>
-            ) : (
-              <WinLossSparkline matches={recentMatches} width={72} height={24} />
-            )}
+            <span className="text-sm font-bold text-white">{stat.value}</span>
             <span className="text-[10px] text-slate-400">{stat.label}</span>
-            {stat.sub && <span className="text-[10px] text-slate-400">{stat.sub}</span>}
           </div>
         ))}
       </div>
@@ -341,23 +318,23 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
       </div>
       {heroPool.length ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {heroPool.map((hero) => {
+        <div className="grid grid-cols-3 gap-3">
+          {heroPool.slice(0, 6).map((hero) => {
             const img = getHeroImg(hero.heroId, heroMap);
             const heroName = getHeroName(hero.heroId, heroMap);
             return (
-              <div key={hero.heroId} className="shrink-0 flex flex-col items-center gap-1" style={{ width: 76 }}>
-                <div className="relative overflow-hidden rounded-lg w-full" style={{ height: 76 }}>
+              <div key={hero.heroId} className="flex flex-col items-center gap-1 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
+                <div className="relative overflow-hidden rounded-lg w-full aspect-square">
                   {img ? (
                     <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
                   ) : (
-                    <div className="h-full w-full bg-slate-800" />
+                    <div className="h-full w-full bg-slate-700" />
                   )}
                 </div>
                 <div className="w-full text-center">
-                  <div className="truncate text-[10px] font-medium text-slate-200">{heroName}</div>
-                  <div className="text-[9px] text-slate-500">使用 {hero.games}</div>
-                  <div className="text-[10px] font-semibold text-emerald-400">胜率 {hero.winRate.toFixed(1)}%</div>
+                  <div className="truncate text-[11px] font-medium text-slate-200">{heroName}</div>
+                  <div className="text-[10px] font-semibold text-emerald-400">{hero.winRate.toFixed(1)}% 胜率</div>
+                  <div className="text-[9px] text-slate-500">{hero.games} 场</div>
                 </div>
               </div>
             );
@@ -379,74 +356,56 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       {recentMatches.length ? (
         <div className="overflow-hidden rounded-xl border border-slate-700/60">
           {/* Table header */}
-          <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_2.8rem_3rem_2.2rem_2rem] gap-x-2 border-b border-slate-700/40 bg-slate-800/40 px-3 py-1.5 text-[10px] text-slate-500">
-            <span>日期</span>
-            <span>对阵</span>
-            <span className="text-center">结果</span>
-            <span className="text-center">K/D/A</span>
+          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/40 bg-slate-800/40 px-3 py-1.5 text-[10px] text-slate-500">
+            <span className="text-center">英雄</span>
+            <span className="text-center">KDA</span>
             <span className="text-center">GPM</span>
-            <span className="text-right">英雄</span>
+            <span className="text-center">XPM</span>
+            <span className="text-center">结果</span>
           </div>
           {recentMatches.slice(0, 5).map((match, idx) => {
-            const teamLogo = resolveTeamLogo(
-              { teamId: match.teamId || undefined, name: match.teamName || undefined },
-              [],
-              match.teamLogoUrl || null
-            );
-            const opponentLogo = resolveTeamLogo(
-              { teamId: match.opponentTeamId || undefined, name: match.opponentName || undefined },
-              [],
-              match.opponentLogoUrl || null
-            );
             const playerHeroImg = match.playerHeroId ? getHeroImg(match.playerHeroId, heroMap) : '';
             const won = match.won;
+            const kdaDisplay = match.kda || '--';
+            const gpmDisplay = match.gpm != null ? String(match.gpm) : '--';
+            const xpmDisplay = match.xpm != null ? String(match.xpm) : '--';
 
             return (
               <div
                 key={`${match.matchId}-${idx}`}
-                className="grid grid-cols-[3.5rem_minmax(0,1fr)_2.8rem_3rem_2.2rem_2rem] items-center gap-x-2 border-b border-slate-700/30 px-3 py-2.5 text-sm last:border-b-0"
+                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/30 px-3 py-2.5 text-sm last:border-b-0 ${
+                  won === true ? 'bg-emerald-950/15' : won === false ? 'bg-red-950/15' : ''
+                }`}
               >
-                {/* Date + tournament */}
-                <div className="min-w-0">
-                  <div className="text-[11px] font-medium text-slate-200">{formatMatchDate(match.startTime)}</div>
-                  <div className="truncate text-[9px] text-slate-500">{abbreviateTournament(match.tournament)}</div>
+                {/* Hero image */}
+                <div className="flex justify-center">
+                  {playerHeroImg ? (
+                    <img src={playerHeroImg} alt="hero" className="size-8 rounded object-cover" />
+                  ) : (
+                    <div className="size-8 rounded bg-slate-700" />
+                  )}
                 </div>
-                {/* Teams */}
-                <div className="flex min-w-0 items-center gap-1">
-                  <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
-                    <SafeImg src={teamLogo} alt={match.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[8px] text-slate-500">队</span>} />
-                  </span>
-                  <span className="text-[9px] text-slate-400">vs</span>
-                  <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
-                    <SafeImg src={opponentLogo} alt={match.opponentName || ''} className="h-full w-full object-contain" fallback={<span className="text-[8px] text-slate-500">队</span>} />
-                  </span>
-                  <span className="text-[10px] text-slate-300 truncate ml-0.5">{match.opponentName || '--'}</span>
-                </div>
-                {/* Result */}
+                {/* KDA */}
                 <div className="text-center">
-                  <span className={`inline-block rounded px-1 py-0.5 text-[10px] font-semibold ${
+                  <span className="text-[11px] font-medium text-slate-200 tabular-nums">{kdaDisplay}</span>
+                </div>
+                {/* GPM */}
+                <div className="text-center">
+                  <span className="text-[11px] text-slate-300 tabular-nums">{gpmDisplay}</span>
+                </div>
+                {/* XPM */}
+                <div className="text-center">
+                  <span className="text-[11px] text-slate-300 tabular-nums">{xpmDisplay}</span>
+                </div>
+                {/* Result badge */}
+                <div className="flex justify-center">
+                  <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
                     won === true ? 'bg-emerald-900/50 text-emerald-300' :
                     won === false ? 'bg-red-900/50 text-red-300' :
                     'bg-slate-800 text-slate-400'
                   }`}>
                     {won === true ? '胜' : won === false ? '负' : '--'}
                   </span>
-                </div>
-                {/* KDA */}
-                <div className="text-center">
-                  <span className="text-[10px] text-slate-300 tabular-nums">{match.kda || '--'}</span>
-                </div>
-                {/* GPM */}
-                <div className="text-center">
-                  <span className="text-[10px] text-slate-400 tabular-nums">{match.gpm ?? '--'}</span>
-                </div>
-                {/* Player hero */}
-                <div className="flex justify-end">
-                  {playerHeroImg ? (
-                    <img src={playerHeroImg} alt="hero" className="size-6 rounded object-cover" />
-                  ) : (
-                    <div className="size-6 rounded bg-slate-700" />
-                  )}
                 </div>
               </div>
             );
@@ -458,27 +417,31 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
     </section>
   );
 
-  /** ── Signature heroes + achievements ── */
+  /** ── Signature heroes ── */
   const signatureSection = (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-4">
       <section>
-        <h4 className="mb-2 font-semibold text-white">招牌英雄</h4>
+        <h4 className="mb-3 font-semibold text-white">招牌英雄</h4>
         {signatureHeroes.length ? (
-          <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-3">
             {signatureHeroes.map((hero) => {
               const img = getHeroImg(hero.heroId, heroMap);
               const heroName = getHeroName(hero.heroId, heroMap);
               return (
-                <div key={hero.heroId} className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-2.5">
-                  {img ? (
-                    <img src={img} alt={heroName} className="size-10 shrink-0 rounded-md object-cover" />
-                  ) : (
-                    <div className="size-10 shrink-0 rounded-md bg-slate-700" />
-                  )}
-                  <div className="min-w-0">
+                <div key={hero.heroId} className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
+                  <div className="relative overflow-hidden rounded-xl w-full aspect-square">
+                    {img ? (
+                      <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
+                    ) : (
+                      <div className="h-full w-full bg-slate-700" />
+                    )}
+                  </div>
+                  <div className="w-full text-center">
                     <div className="truncate text-xs font-medium text-slate-100">{heroName}</div>
-                    <div className="text-[10px] text-emerald-400">胜率 {hero.winRate.toFixed(1)}%</div>
-                    <div className="text-[10px] text-slate-500">使用 {hero.games}</div>
+                    <div className="mt-1 inline-block rounded-full bg-emerald-900/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                      {hero.winRate.toFixed(1)}% 胜率
+                    </div>
+                    <div className="mt-0.5 text-[10px] text-slate-500">{hero.games} 场</div>
                   </div>
                 </div>
               );

@@ -36,6 +36,9 @@ const teamLogoMap: Record<string, string> = {
   'Yakult Brothers': '/images/mirror/teams/yakult-brothers.svg',
   GG: '/images/mirror/teams/gaimin-gladiators.svg',
   Spirit: '/images/mirror/teams/team-spirit-white.svg',
+  'Xtreme Gaming': '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
+  'Team Falcons': '/images/mirror/teams/team-falcons.svg',
+  'Tundra Esports': '/images/mirror/teams/tundra-esports.svg',
 };
 
 const hotTeams = [
@@ -49,6 +52,12 @@ const patchNotes = [
   { category: '英雄', text: '维萨吉基础攻击力提升' },
   { category: '物品', text: '赤红甲护甲降低 3 → 2' },
   { category: '地图', text: '肉山巢穴位置微调' },
+];
+
+const recentEvents = [
+  { name: 'DreamLeague S23', format: '线上赛', dates: '5月15日 - 5月28日' },
+  { name: 'ESL One 伯明翰', format: '线下赛 · 伯明翰', dates: '5月20日 - 5月25日' },
+  { name: 'PGL Wallachia S4', format: '线上赛', dates: '5月22日 - 5月30日' },
 ];
 
 const filters = ['全部', 'S 级赛事', '中国战队', 'DreamLeague', 'ESL One', 'PGL'];
@@ -447,6 +456,239 @@ function RailPanel({ title, icon: Icon, children }: {
       </div>
       {children}
     </section>
+  );
+}
+
+function formatGameTime(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function LiveMatchCard({ data }: { data: LiveHeroPayload }) {
+  const liveMap = data.liveMap;
+  const team1 = data.teams[0];
+  const team2 = data.teams[1];
+
+  return (
+    <div className="rounded-xl border border-red-500/30 bg-slate-800 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
+          <span className="size-1.5 rounded-full bg-white animate-pulse" />
+          LIVE
+        </span>
+        <span className="text-sm text-slate-400">{data.leagueName} · {data.stage}</span>
+        <span className="ml-auto text-xs text-slate-500">{data.seriesScore}</span>
+      </div>
+
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div className="flex items-center gap-3 justify-end">
+          <span className="text-sm font-semibold text-white">{team1.name}</span>
+          <SafeImg
+            src={teamLogoMap[team1.name]}
+            alt={team1.name}
+            className="size-10 object-contain"
+            fallback={<div className="size-10 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team1.name.substring(0, 2).toUpperCase()}</div>}
+          />
+        </div>
+        <div className="text-center">
+          {liveMap?.score ? (
+            <>
+              <div className="text-2xl font-bold tabular-nums text-white">{liveMap.score}</div>
+              <div className="text-xs tabular-nums text-slate-400">{formatGameTime(liveMap.gameTime)}</div>
+            </>
+          ) : (
+            <div className="text-sm text-slate-400">暂无数据</div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <SafeImg
+            src={teamLogoMap[team2.name]}
+            alt={team2.name}
+            className="size-10 object-contain"
+            fallback={<div className="size-10 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team2.name.substring(0, 2).toUpperCase()}</div>}
+          />
+          <span className="text-sm font-semibold text-white">{team2.name}</span>
+        </div>
+      </div>
+
+      {data.maps.length > 0 && (
+        <div className="mt-4 flex gap-1.5">
+          {data.maps.map((map) => (
+            <div
+              key={map.matchId}
+              className={`flex-1 rounded-md px-2 py-1.5 text-center ${
+                map.status === 'live'
+                  ? 'border border-red-500/50 bg-red-500/10'
+                  : map.status === 'completed'
+                  ? 'border border-white/5 bg-slate-700/50'
+                  : 'border border-white/5 opacity-40'
+              }`}
+            >
+              <div className={`text-[10px] font-medium ${
+                map.status === 'live' ? 'text-red-300' : 'text-slate-400'
+              }`}>
+                {map.label}
+              </div>
+              {map.score && (
+                <div className={`text-[10px] font-semibold tabular-nums mt-0.5 ${
+                  map.status === 'live' ? 'text-white' : 'text-slate-500'
+                }`}>
+                  {map.score}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UpcomingMatchCard({ data }: { data: typeof prototypeUpcoming[number] }) {
+  const diff = data.start_time - nowTs();
+  const hoursLeft = Math.floor(diff / 3600);
+  const minsLeft = Math.floor((diff % 3600) / 60);
+  const timeStr = diff <= 0
+    ? '即将开始'
+    : hoursLeft > 0
+    ? `${hoursLeft}小时${minsLeft}分钟后`
+    : `${minsLeft}分钟后`;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-slate-800 p-4 hover:border-white/20 transition-colors cursor-pointer">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-white">{timeStr}</span>
+        <span className="text-xs rounded bg-slate-700 px-2 py-0.5 text-slate-300">{data.series_type}</span>
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex items-center gap-2 justify-end">
+          <span className="text-sm font-semibold text-white truncate">{data.radiant_team_name}</span>
+          <SafeImg
+            src={teamLogoMap[data.radiant_team_name]}
+            alt={data.radiant_team_name}
+            className="size-8 object-contain"
+            fallback={<div className="size-8 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{data.radiant_team_name.substring(0, 2).toUpperCase()}</div>}
+          />
+        </div>
+        <span className="text-xs text-slate-500">VS</span>
+        <div className="flex items-center gap-2">
+          <SafeImg
+            src={teamLogoMap[data.dire_team_name]}
+            alt={data.dire_team_name}
+            className="size-8 object-contain"
+            fallback={<div className="size-8 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{data.dire_team_name.substring(0, 2).toUpperCase()}</div>}
+          />
+          <span className="text-sm font-semibold text-white truncate">{data.dire_team_name}</span>
+        </div>
+      </div>
+      <div className="mt-3 text-xs text-slate-500">{data.tournament_name}</div>
+    </div>
+  );
+}
+
+function PrototypeDashboardContent() {
+  const [activeFilter, setActiveFilter] = useState('全部');
+
+  return (
+    <div className="flex gap-4">
+      {/* Left column */}
+      <div className="w-2/3 flex flex-col gap-4 min-w-0">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white">全部比赛</h2>
+          <div className="flex gap-1 rounded-lg bg-slate-800 p-1">
+            {['全部', 'S级赛事', '中国战队', 'DreamLeague', 'ESL One'].map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  activeFilter === f
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-950/40'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                onClick={() => setActiveFilter(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {mockLiveHeroes.map((hero) => (
+          <LiveMatchCard key={hero.leagueName} data={hero} />
+        ))}
+
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-300">
+          <CalendarDays className="size-4 text-slate-400" />
+          即将开始
+        </div>
+
+        {prototypeUpcoming.map((match) => (
+          <UpcomingMatchCard key={match.match_id} data={match} />
+        ))}
+      </div>
+
+      {/* Right column */}
+      <aside className="w-1/3 flex flex-col gap-4 min-w-0">
+        <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Shield className="size-4 text-red-300" />
+            <h2 className="text-sm font-bold text-white">热门战队</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {hotTeams.map((team, index) => (
+              <div
+                key={team.name}
+                className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2"
+              >
+                <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
+                <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-5 shrink-0 object-contain" fallback={<div className="size-5 shrink-0 rounded-full bg-slate-700" />} />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">{team.name}</span>
+                <span className="text-xs tabular-nums text-slate-400">{team.rating}</span>
+                <span className={team.trend === 'up' ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
+                  {team.trend === 'up' ? '↑' : '↓'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Trophy className="size-4 text-red-300" />
+            <h2 className="text-sm font-bold text-white">近期赛事</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {recentEvents.map((event) => (
+              <div key={event.name} className="rounded-xl border border-white/8 bg-black/15 px-3 py-2.5">
+                <div className="text-sm font-semibold text-slate-100">{event.name}</div>
+                <div className="mt-1 text-xs text-slate-400">{event.format}</div>
+                <div className="mt-0.5 text-xs text-slate-500">{event.dates}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Flame className="size-4 text-red-300" />
+            <h2 className="text-sm font-bold text-white">版本动态</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {patchNotes.map((note) => (
+              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2">
+                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold ${
+                  note.category === '英雄' ? 'bg-red-900/60 text-red-300 border border-red-700/30' :
+                  note.category === '物品' ? 'bg-amber-900/60 text-amber-300 border border-amber-700/30' :
+                  'bg-emerald-900/60 text-emerald-300 border border-emerald-700/30'
+                }`}>
+                  {note.category}
+                </div>
+                <span className="text-sm text-slate-300">{note.text}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </aside>
+    </div>
   );
 }
 

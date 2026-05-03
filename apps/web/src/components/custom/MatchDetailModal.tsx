@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Users, TrendingUp, FileText, Backpack, ChevronDown, X, Swords, Shield, Landmark, Skull, Trophy } from 'lucide-react';
+import { Users, TrendingUp, FileText, Backpack, ChevronDown, X, Swords, Shield, Landmark, Skull, Trophy, BarChart3, Target } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -120,6 +120,12 @@ function getHeroImg(id: number): string {
   const hero = heroesData[id];
   if (!hero?.img) return '';
   return getHeroImageUrl(id, hero.img);
+}
+
+function getHeroPortraitUrl(heroId: number): string {
+  const hero = heroesData[heroId];
+  if (!hero?.img) return '';
+  return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${hero.img}.png`;
 }
 
 function getLaneName(lane: number | undefined, isRadiant: boolean): string {
@@ -555,7 +561,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       {radiantTeamRef?.logo_url ? (
                         <img src={radiantTeamRef.logo_url} alt={radiantTeamName} className="h-full w-full object-contain" />
                       ) : (
-                        <div className="h-full w-full rounded-full bg-slate-700" />
+                        <div className="h-full w-full rounded-full bg-blue-600/40 ring-2 ring-blue-500/30" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -614,7 +620,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       {direTeamRef?.logo_url ? (
                         <img src={direTeamRef.logo_url} alt={direTeamName} className="h-full w-full object-contain" />
                       ) : (
-                        <div className="h-full w-full rounded-full bg-slate-700" />
+                        <div className="h-full w-full rounded-full bg-red-600/40 ring-2 ring-red-500/30" />
                       )}
                     </div>
                   </div>
@@ -672,11 +678,11 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                   }>
                     {isPrototypeMode ? (
                       <>
-                        <TabsTrigger value="overview" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none">概览</TabsTrigger>
-                        <TabsTrigger value="draft" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none">阵容选择</TabsTrigger>
-                        <TabsTrigger value="players" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none">比赛数据</TabsTrigger>
-                        <TabsTrigger value="economy" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none">比赛进程</TabsTrigger>
-                        <TabsTrigger value="history" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none">历史交锋</TabsTrigger>
+                        <TabsTrigger value="overview" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><BarChart3 className="w-3.5 h-3.5 mr-1.5" />概览</TabsTrigger>
+                        <TabsTrigger value="draft" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><Swords className="w-3.5 h-3.5 mr-1.5" />阵容选择</TabsTrigger>
+                        <TabsTrigger value="players" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><Target className="w-3.5 h-3.5 mr-1.5" />比赛数据</TabsTrigger>
+                        <TabsTrigger value="economy" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><TrendingUp className="w-3.5 h-3.5 mr-1.5" />比赛进程</TabsTrigger>
+                        <TabsTrigger value="history" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><Trophy className="w-3.5 h-3.5 mr-1.5" />历史交锋</TabsTrigger>
                       </>
                     ) : (
                       <>
@@ -743,6 +749,37 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       {/* Draft section */}
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">阵容选择</div>
                       <PrototypeOverview match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
+                      {/* Gold / XP advantage bars */}
+                      {(() => {
+                        const goldAdv = match.radiant_gold_adv?.length ? match.radiant_gold_adv[match.radiant_gold_adv.length - 1] : 0;
+                        const xpAdv = match.radiant_xp_adv?.length ? match.radiant_xp_adv[match.radiant_xp_adv.length - 1] : 0;
+                        const goldLabel = goldAdv >= 0 ? `${radiantTeamName} +${formatCompact(Math.abs(goldAdv))} 经济` : `${direTeamName} +${formatCompact(Math.abs(goldAdv))} 经济`;
+                        const xpLabel = xpAdv >= 0 ? `${radiantTeamName} +${formatCompact(Math.abs(xpAdv))} 经验` : `${direTeamName} +${formatCompact(Math.abs(xpAdv))} 经验`;
+                        const goldPct = Math.min(Math.abs(goldAdv) / 30000 * 100, 100);
+                        const xpPct = Math.min(Math.abs(xpAdv) / 30000 * 100, 100);
+                        return (
+                          <div className="flex gap-3">
+                            <div className="flex-1 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                              <div className="mb-1 flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">经济优势</span>
+                                <span className={goldAdv >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>{goldLabel}</span>
+                              </div>
+                              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                                <div className={`h-full rounded-full transition-all ${goldAdv >= 0 ? 'bg-green-500/60' : 'bg-red-500/60'}`} style={{ width: `${goldPct}%`, marginLeft: goldAdv >= 0 ? '0' : `${100 - goldPct}%` }} />
+                              </div>
+                            </div>
+                            <div className="flex-1 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
+                              <div className="mb-1 flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">经验优势</span>
+                                <span className={xpAdv >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>{xpLabel}</span>
+                              </div>
+                              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                                <div className={`h-full rounded-full transition-all ${xpAdv >= 0 ? 'bg-cyan-500/60' : 'bg-orange-500/60'}`} style={{ width: `${xpPct}%`, marginLeft: xpAdv >= 0 ? '0' : `${100 - xpPct}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {/* Economy chart + key events side by side */}
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">比赛数据</div>
                       <div className="flex gap-4 items-stretch">
@@ -1119,29 +1156,28 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
   const radiantBans = picksBans.filter((pb) => pb.team === 0 && !pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
   const direBans = picksBans.filter((pb) => pb.team === 1 && !pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
 
-  const HeroChip = ({ pb }: { pb: typeof radiantPicks[0] }) => (
-    <div
-      className="flex shrink-0 flex-col overflow-hidden rounded-md border border-slate-700/50 bg-slate-800"
-      style={{ width: 90, height: 72 }}
-      title={getHeroName(pb.hero_id)}
-    >
-      <div style={{ height: 54 }} className="overflow-hidden">
-        <SafeImg
-          src={getHeroImg(pb.hero_id) || undefined}
-          alt={getHeroName(pb.hero_id)}
-          className="h-full w-full object-cover object-top"
-          fallback={
+  const HeroChip = ({ pb }: { pb: typeof radiantPicks[0] }) => {
+    const portraitUrl = getHeroPortraitUrl(pb.hero_id);
+    return (
+      <div className="flex shrink-0 flex-col items-center gap-1" style={{ width: 64 }} title={getHeroName(pb.hero_id)}>
+        <div className="h-[60px] w-[60px] overflow-hidden rounded-full border-2 border-slate-700/60 bg-slate-800">
+          {portraitUrl ? (
+            <img
+              src={portraitUrl}
+              alt={getHeroName(pb.hero_id)}
+              className="h-full w-full object-cover object-top"
+              loading="lazy"
+            />
+          ) : (
             <div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(pb.hero_id)}>
-              <span className="text-[7px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
+              <span className="text-[8px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
             </div>
-          }
-        />
+          )}
+        </div>
+        <span className="truncate text-[10px] text-slate-400 leading-tight max-w-[60px] text-center">{getHeroName(pb.hero_id)}</span>
       </div>
-      <div className="bg-slate-900/80 px-0.5 py-0.5 text-center">
-        <span className="truncate text-[9px] text-slate-400 leading-none">{getHeroName(pb.hero_id)}</span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const BanChip = ({ pb }: { pb: typeof radiantBans[0] }) => (
     <div
@@ -1185,7 +1221,7 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
           <div className="flex flex-nowrap gap-1.5 divide-x divide-slate-700/30 overflow-x-auto">
             {radiantPicks.length > 0
               ? radiantPicks.map((pb) => <HeroChip key={`rp-${pb.order}-${pb.hero_id}`} pb={pb} />)
-              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-md bg-slate-800 border border-slate-700/30" style={{ width: 90, height: 72 }} />)
+              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-full bg-slate-800 border border-slate-700/30" style={{ width: 60, height: 60 }} />)
             }
           </div>
           {/* Bans */}
@@ -1197,10 +1233,11 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
           )}
         </div>
 
-        {/* Center divider */}
+        {/* Center VS divider */}
         <div className="flex flex-col items-center justify-center px-3 gap-1.5 shrink-0">
-          <span className="text-[10px] text-slate-500 whitespace-nowrap">先选天辉</span>
-          <span className="text-slate-500 text-base">⚔</span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-600 bg-slate-800/80">
+            <span className="text-sm font-extrabold text-slate-300">VS</span>
+          </div>
           <span className="text-[10px] text-slate-500 whitespace-nowrap">{getSeriesTypeLabel(match.series_type)}</span>
         </div>
 
@@ -1223,7 +1260,7 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
           <div className="flex flex-nowrap gap-1.5 divide-x divide-slate-700/30 justify-end overflow-x-auto">
             {direPicks.length > 0
               ? direPicks.map((pb) => <HeroChip key={`dp-${pb.order}-${pb.hero_id}`} pb={pb} />)
-              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-md bg-slate-800 border border-slate-700/30" style={{ width: 90, height: 72 }} />)
+              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-full bg-slate-800 border border-slate-700/30" style={{ width: 60, height: 60 }} />)
             }
           </div>
           {/* Bans */}
@@ -1270,7 +1307,7 @@ function TeamSummaryTable({
   const sortedPlayers = [...players].sort((a, b) => getNetWorth(b) - getNetWorth(a));
 
   return (
-    <div className="rounded-lg border border-slate-800 overflow-hidden">
+    <div className={`rounded-lg border overflow-hidden ${isWinner ? 'border-green-500/30 bg-green-500/5' : 'border-slate-800'}`}>
       <div className={`flex items-center justify-between px-3 py-2 bg-slate-800/40 border-b border-slate-800 border-l-2 ${isWinner ? 'border-l-green-500/60' : 'border-l-slate-700/40'}`}>
         <button
           type="button"
