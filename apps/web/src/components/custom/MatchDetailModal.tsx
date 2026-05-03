@@ -356,6 +356,23 @@ function hasAghanimShard(player: Player): boolean {
   return hasUpgrade(player.aghanims_shard) || hasUpgrade(player.has_shard) || hasPermanentBuff(player, 12);
 }
 
+const teamLogoMap: Record<string, string> = {
+  XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
+  'Team Spirit': '/images/mirror/teams/team-spirit-white.svg',
+  Falcons: '/images/mirror/teams/team-falcons.svg',
+  Tundra: '/images/mirror/teams/tundra-esports.svg',
+  Liquid: '/images/mirror/teams/team-liquid-white.svg',
+  Gaimin: '/images/mirror/teams/gaimin-gladiators.svg',
+  BetBoom: '/images/mirror/teams/betboom-team.svg',
+  Aurora: '/images/mirror/teams/aurora.svg',
+  'Yakult Brothers': '/images/mirror/teams/yakult-brothers.svg',
+};
+
+function getTeamLogoSrc(teamName: string, logoUrl?: string | null): string | undefined {
+  if (logoUrl) return logoUrl;
+  return teamLogoMap[teamName];
+}
+
 interface MatchDetailModalProps {
   matchId: number | string | null;
   seriesMaps?: Array<{
@@ -557,13 +574,18 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                 <div className="flex items-center justify-between gap-4 px-5 py-4">
                   {/* Left team */}
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800 p-1.5">
-                      {radiantTeamRef?.logo_url ? (
-                        <img src={radiantTeamRef.logo_url} alt={radiantTeamName} className="h-full w-full object-contain" />
-                      ) : (
-                        <div className="h-full w-full rounded-full bg-blue-600/40 ring-2 ring-blue-500/30" />
-                      )}
-                    </div>
+                    {(() => {
+                      const logoSrc = getTeamLogoSrc(radiantTeamName, radiantTeamRef?.logo_url);
+                      return (
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-slate-800 p-1">
+                          {logoSrc ? (
+                            <img src={logoSrc} alt={radiantTeamName} className="h-full w-full object-contain" />
+                          ) : (
+                            <div className="h-full w-full rounded-full bg-blue-600/40 ring-2 ring-blue-500/30" />
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="min-w-0">
                       <button
                         type="button"
@@ -616,13 +638,18 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       </button>
                       <div className="text-xs text-slate-500">世界排名 #2</div>
                     </div>
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800 p-1.5">
-                      {direTeamRef?.logo_url ? (
-                        <img src={direTeamRef.logo_url} alt={direTeamName} className="h-full w-full object-contain" />
-                      ) : (
-                        <div className="h-full w-full rounded-full bg-red-600/40 ring-2 ring-red-500/30" />
-                      )}
-                    </div>
+                    {(() => {
+                      const logoSrc = getTeamLogoSrc(direTeamName, direTeamRef?.logo_url);
+                      return (
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-slate-800 p-1">
+                          {logoSrc ? (
+                            <img src={logoSrc} alt={direTeamName} className="h-full w-full object-contain" />
+                          ) : (
+                            <div className="h-full w-full rounded-full bg-red-600/40 ring-2 ring-red-500/30" />
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -704,7 +731,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* Overview tab (prototype mode) */}
                   <TabsContent value="overview">
-                    <div className="space-y-3">
+                    <div className="space-y-6">
                       {/* Map tabs row — between nav tabs and content */}
                       {seriesMaps.length > 0 && (
                         <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
@@ -747,40 +774,126 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         </div>
                       )}
                       {/* Draft section */}
+                      <div className="border-t border-slate-800/60 pt-5" />
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">阵容选择</div>
                       <PrototypeOverview match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
-                      {/* Gold / XP advantage bars */}
+                      <div className="border-t border-slate-800/60 pt-5" />
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">经济优势</div>
                       {(() => {
+                        const radiantNw = match.players.filter(p => p.player_slot < 128).reduce((s, p) => s + getNetWorth(p), 0);
+                        const direNw = match.players.filter(p => p.player_slot >= 128).reduce((s, p) => s + getNetWorth(p), 0);
+                        const totalNw = radiantNw + direNw || 1;
+                        const radiantPct = Math.round((radiantNw / totalNw) * 100);
+                        const direPct = 100 - radiantPct;
                         const goldAdv = match.radiant_gold_adv?.length ? match.radiant_gold_adv[match.radiant_gold_adv.length - 1] : 0;
-                        const xpAdv = match.radiant_xp_adv?.length ? match.radiant_xp_adv[match.radiant_xp_adv.length - 1] : 0;
-                        const goldLabel = goldAdv >= 0 ? `${radiantTeamName} +${formatCompact(Math.abs(goldAdv))} 经济` : `${direTeamName} +${formatCompact(Math.abs(goldAdv))} 经济`;
-                        const xpLabel = xpAdv >= 0 ? `${radiantTeamName} +${formatCompact(Math.abs(xpAdv))} 经验` : `${direTeamName} +${formatCompact(Math.abs(xpAdv))} 经验`;
-                        const goldPct = Math.min(Math.abs(goldAdv) / 30000 * 100, 100);
-                        const xpPct = Math.min(Math.abs(xpAdv) / 30000 * 100, 100);
+                        const advTeam = goldAdv >= 0 ? radiantTeamName : direTeamName;
+                        const advAmount = formatCompact(Math.abs(goldAdv));
+                        const advLabel = `${advTeam} +${advAmount}`;
+
+                        // Sample gold advantage at 5-min intervals (0, 5, 10, 15, 20, 25, 30, 35)
+                        const goldSamples = (match.radiant_gold_adv || []).filter((_, i) => i % 5 === 0);
+                        const xpSamples = (match.radiant_xp_adv || []).filter((_, i) => i % 5 === 0);
+                        const maxAbsGold = Math.max(...goldSamples.map(Math.abs), 10000);
+                        const maxAbsXp = Math.max(...xpSamples.map(Math.abs), 8000);
+
                         return (
-                          <div className="flex gap-3">
-                            <div className="flex-1 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-                              <div className="mb-1 flex items-center justify-between text-[11px]">
-                                <span className="text-slate-400">经济优势</span>
-                                <span className={goldAdv >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>{goldLabel}</span>
+                          <div className="space-y-4">
+                            {/* Net worth comparison bars */}
+                            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                              <div className="mb-3 flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-300">团队净值对比</span>
+                                <span className={`text-xs font-bold ${goldAdv >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{advLabel}</span>
                               </div>
-                              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                                <div className={`h-full rounded-full transition-all ${goldAdv >= 0 ? 'bg-green-500/60' : 'bg-red-500/60'}`} style={{ width: `${goldPct}%`, marginLeft: goldAdv >= 0 ? '0' : `${100 - goldPct}%` }} />
+                              <div className="flex gap-3 items-end">
+                                <div className="flex-1">
+                                  <div className="mb-1 flex items-center justify-between text-[10px]">
+                                    <span className="text-slate-400">{radiantTeamName}</span>
+                                    <span className="text-slate-300 font-semibold">{formatCompact(radiantNw)}</span>
+                                  </div>
+                                  <div className="h-6 overflow-hidden rounded bg-slate-800">
+                                    <div className="h-full rounded bg-gradient-to-r from-blue-600/80 to-blue-500/60 transition-all" style={{ width: `${radiantPct}%` }} />
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-slate-500 shrink-0">VS</span>
+                                <div className="flex-1">
+                                  <div className="mb-1 flex items-center justify-between text-[10px]">
+                                    <span className="text-slate-400">{direTeamName}</span>
+                                    <span className="text-slate-300 font-semibold">{formatCompact(direNw)}</span>
+                                  </div>
+                                  <div className="h-6 overflow-hidden rounded bg-slate-800">
+                                    <div className="h-full rounded bg-gradient-to-r from-red-600/80 to-red-500/60 transition-all ml-auto" style={{ width: `${direPct}%` }} />
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <div className="flex-1 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
-                              <div className="mb-1 flex items-center justify-between text-[11px]">
-                                <span className="text-slate-400">经验优势</span>
-                                <span className={xpAdv >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>{xpLabel}</span>
+
+                            {/* Gold / XP advantage mini timeline */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {/* Gold timeline */}
+                              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+                                <div className="mb-2 flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold text-slate-300">经济优势</span>
+                                  <span className="text-[10px] text-slate-500">每5分钟</span>
+                                </div>
+                                <div className="relative h-8 mb-1.5">
+                                  {/* Center line */}
+                                  <div className="absolute inset-x-0 top-1/2 h-px bg-slate-700" />
+                                  {/* Markers */}
+                                  <div className="relative flex justify-between h-full items-center px-0.5">
+                                    {goldSamples.map((val, i) => {
+                                      const pct = Math.min(Math.abs(val) / maxAbsGold * 100, 100);
+                                      const isRadiant = val >= 0;
+                                      return (
+                                        <div key={i} className="relative flex flex-col items-center" style={{ width: `${100 / goldSamples.length}%` }}>
+                                          <div
+                                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRadiant ? 'bg-blue-400' : 'bg-red-400'}`}
+                                            title={`${i * 5}min: ${val >= 0 ? '+' : ''}${formatCompact(val)}`}
+                                          />
+                                          <div className="absolute top-full mt-0.5 text-[8px] text-slate-500">{i * 5}'</div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[9px] text-slate-500">
+                                  <span className="text-blue-400/60">← {radiantTeamName.slice(0,4)}优势</span>
+                                  <span className="text-red-400/60">{direTeamName.slice(0,4)}优势 →</span>
+                                </div>
                               </div>
-                              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                                <div className={`h-full rounded-full transition-all ${xpAdv >= 0 ? 'bg-cyan-500/60' : 'bg-orange-500/60'}`} style={{ width: `${xpPct}%`, marginLeft: xpAdv >= 0 ? '0' : `${100 - xpPct}%` }} />
+
+                              {/* XP timeline */}
+                              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+                                <div className="mb-2 flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold text-slate-300">经验优势</span>
+                                  <span className="text-[10px] text-slate-500">每5分钟</span>
+                                </div>
+                                <div className="relative h-8 mb-1.5">
+                                  <div className="absolute inset-x-0 top-1/2 h-px bg-slate-700" />
+                                  <div className="relative flex justify-between h-full items-center px-0.5">
+                                    {xpSamples.map((val, i) => {
+                                      const isRadiant = val >= 0;
+                                      return (
+                                        <div key={i} className="relative flex flex-col items-center" style={{ width: `${100 / xpSamples.length}%` }}>
+                                          <div
+                                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRadiant ? 'bg-cyan-400' : 'bg-orange-400'}`}
+                                            title={`${i * 5}min: ${val >= 0 ? '+' : ''}${formatCompact(val)}`}
+                                          />
+                                          <div className="absolute top-full mt-0.5 text-[8px] text-slate-500">{i * 5}'</div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[9px] text-slate-500">
+                                  <span className="text-cyan-400/60">← {radiantTeamName.slice(0,4)}优势</span>
+                                  <span className="text-orange-400/60">{direTeamName.slice(0,4)}优势 →</span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         );
                       })()}
-                      {/* Economy chart + key events side by side */}
+                      <div className="border-t border-slate-800/60 pt-5" />
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">比赛数据</div>
                       <div className="flex gap-4 items-stretch">
                         <div className="flex-1 min-w-0 overflow-hidden min-h-[320px] rounded-xl bg-slate-900/30 p-3">
@@ -904,30 +1017,41 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                   </TabsContent>
 
                   <TabsContent value="players">
-                    <div className="space-y-6">
-                      <TeamSummaryTable
-                        teamName={radiantTeamName}
-                        teamRef={radiantTeamRef}
-                        players={radiantPlayers}
-                        isRadiant={true}
-                        isWinner={match.radiant_win}
-                        picksBans={match.picks_bans || []}
-                        itemsMap={itemsMap}
-                        onTeamClick={onTeamClick}
+                    {isPrototypeMode ? (
+                      <MatchDataTable
+                        radiantTeamName={radiantTeamName}
+                        direTeamName={direTeamName}
+                        radiantPlayers={radiantPlayers}
+                        direPlayers={direPlayers}
+                        radiantWin={match.radiant_win}
                         onPlayerClick={onPlayerClick}
                       />
-                      <TeamSummaryTable
-                        teamName={direTeamName}
-                        teamRef={direTeamRef}
-                        players={direPlayers}
-                        isRadiant={false}
-                        isWinner={!match.radiant_win}
-                        picksBans={match.picks_bans || []}
-                        itemsMap={itemsMap}
-                        onTeamClick={onTeamClick}
-                        onPlayerClick={onPlayerClick}
-                      />
-                    </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <TeamSummaryTable
+                          teamName={radiantTeamName}
+                          teamRef={radiantTeamRef}
+                          players={radiantPlayers}
+                          isRadiant={true}
+                          isWinner={match.radiant_win}
+                          picksBans={match.picks_bans || []}
+                          itemsMap={itemsMap}
+                          onTeamClick={onTeamClick}
+                          onPlayerClick={onPlayerClick}
+                        />
+                        <TeamSummaryTable
+                          teamName={direTeamName}
+                          teamRef={direTeamRef}
+                          players={direPlayers}
+                          isRadiant={false}
+                          isWinner={!match.radiant_win}
+                          picksBans={match.picks_bans || []}
+                          itemsMap={itemsMap}
+                          onTeamClick={onTeamClick}
+                          onPlayerClick={onPlayerClick}
+                        />
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="economy">
@@ -949,7 +1073,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                   </TabsContent>
 
                   <TabsContent value="history">
-                    <div className="space-y-3">
+                    <div className="space-y-6">
                       {[
                         { league: 'ESL One 伯明翰', date: '2024-05-15', rScore: 2, dScore: 1 },
                         { league: 'PGL Wallachia S4', date: '2024-04-27', rScore: 0, dScore: 2 },
@@ -1156,11 +1280,13 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
   const radiantBans = picksBans.filter((pb) => pb.team === 0 && !pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
   const direBans = picksBans.filter((pb) => pb.team === 1 && !pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
 
-  const HeroChip = ({ pb }: { pb: typeof radiantPicks[0] }) => {
+  const HeroChip = ({ pb, team }: { pb: typeof radiantPicks[0]; team: number }) => {
     const portraitUrl = getHeroPortraitUrl(pb.hero_id);
+    const glowRing = team === 0 ? 'ring-2 ring-blue-500/30' : 'ring-2 ring-red-500/30';
+    const winRate = 45 + Math.round((pb.hero_id * 17) % 25); // sample 45-69%
     return (
-      <div className="flex shrink-0 flex-col items-center gap-1" style={{ width: 64 }} title={getHeroName(pb.hero_id)}>
-        <div className="h-[60px] w-[60px] overflow-hidden rounded-full border-2 border-slate-700/60 bg-slate-800">
+      <div className="flex shrink-0 flex-col items-center gap-1" style={{ width: 80 }}>
+        <div className={`h-[72px] w-[72px] overflow-hidden rounded-full border-2 border-slate-700/60 bg-slate-800 ${glowRing}`}>
           {portraitUrl ? (
             <img
               src={portraitUrl}
@@ -1170,11 +1296,12 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(pb.hero_id)}>
-              <span className="text-[8px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
+              <span className="text-[9px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
             </div>
           )}
         </div>
-        <span className="truncate text-[10px] text-slate-400 leading-tight max-w-[60px] text-center">{getHeroName(pb.hero_id)}</span>
+        <span className="truncate text-[10px] text-slate-400 leading-tight max-w-[80px] text-center">{getHeroName(pb.hero_id)}</span>
+        <span className="text-[9px] text-slate-500 leading-tight">{winRate}%</span>
       </div>
     );
   };
@@ -1205,12 +1332,15 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
         {/* Radiant (left) */}
         <div className="flex flex-1 flex-col gap-2 p-3 min-w-0">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full bg-slate-700 p-0.5">
-              {match.radiant_team?.logo_url ? (
-                <img src={match.radiant_team.logo_url} alt={match.radiant_team_name || ''} className="h-full w-full object-contain" />
-              ) : (
-                <div className="h-full w-full rounded-full bg-slate-600" />
-              )}
+            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-700 p-0.5">
+              {(() => {
+                const logoSrc = getTeamLogoSrc(radiantTeamName, match.radiant_team?.logo_url);
+                return logoSrc ? (
+                  <img src={logoSrc} alt={radiantTeamName} className="h-full w-full object-contain" />
+                ) : (
+                  <div className="h-full w-full rounded-full bg-blue-600/40" />
+                );
+              })()}
             </div>
             <span className="text-sm font-bold text-white truncate">{radiantTeamName || '天辉'}</span>
             <span className={`ml-auto text-xs font-semibold shrink-0 ${match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
@@ -1220,8 +1350,8 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
           {/* Picks */}
           <div className="flex flex-nowrap gap-1.5 divide-x divide-slate-700/30 overflow-x-auto">
             {radiantPicks.length > 0
-              ? radiantPicks.map((pb) => <HeroChip key={`rp-${pb.order}-${pb.hero_id}`} pb={pb} />)
-              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-full bg-slate-800 border border-slate-700/30" style={{ width: 60, height: 60 }} />)
+              ? radiantPicks.map((pb) => <HeroChip key={`rp-${pb.order}-${pb.hero_id}`} pb={pb} team={0} />)
+              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-full bg-slate-800 border border-slate-700/30" style={{ width: 72, height: 72 }} />)
             }
           </div>
           {/* Bans */}
@@ -1248,19 +1378,22 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
               {!match.radiant_win ? '胜利' : '失败'}
             </span>
             <span className="text-sm font-bold text-white truncate">{direTeamName || '夜魇'}</span>
-            <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full bg-slate-700 p-0.5">
-              {match.dire_team?.logo_url ? (
-                <img src={match.dire_team.logo_url} alt={match.dire_team_name || ''} className="h-full w-full object-contain" />
-              ) : (
-                <div className="h-full w-full rounded-full bg-slate-600" />
-              )}
+            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-700 p-0.5">
+              {(() => {
+                const logoSrc = getTeamLogoSrc(direTeamName, match.dire_team?.logo_url);
+                return logoSrc ? (
+                  <img src={logoSrc} alt={direTeamName} className="h-full w-full object-contain" />
+                ) : (
+                  <div className="h-full w-full rounded-full bg-red-600/40" />
+                );
+              })()}
             </div>
           </div>
           {/* Picks */}
           <div className="flex flex-nowrap gap-1.5 divide-x divide-slate-700/30 justify-end overflow-x-auto">
             {direPicks.length > 0
-              ? direPicks.map((pb) => <HeroChip key={`dp-${pb.order}-${pb.hero_id}`} pb={pb} />)
-              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-full bg-slate-800 border border-slate-700/30" style={{ width: 60, height: 60 }} />)
+              ? direPicks.map((pb) => <HeroChip key={`dp-${pb.order}-${pb.hero_id}`} pb={pb} team={1} />)
+              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-full bg-slate-800 border border-slate-700/30" style={{ width: 72, height: 72 }} />)
             }
           </div>
           {/* Bans */}
@@ -1272,6 +1405,166 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function MatchDataTable({
+  radiantTeamName,
+  direTeamName,
+  radiantPlayers,
+  direPlayers,
+  radiantWin,
+  onPlayerClick,
+}: {
+  radiantTeamName: string;
+  direTeamName: string;
+  radiantPlayers: Player[];
+  direPlayers: Player[];
+  radiantWin: boolean;
+  onPlayerClick?: (accountId: number) => void;
+}) {
+  const teamData = [
+    { name: radiantTeamName, players: radiantPlayers.slice(0, 5), isRadiant: true, isWinner: radiantWin, borderClass: 'border-l-blue-500/60' },
+    { name: direTeamName, players: direPlayers.slice(0, 5), isRadiant: false, isWinner: !radiantWin, borderClass: 'border-l-red-500/60' },
+  ];
+
+  const headerCols = 'grid-cols-[minmax(140px,1.5fr)_72px_90px_70px_58px_58px_80px_72px]';
+
+  return (
+    <div className="space-y-6">
+      {teamData.map(({ name, players, isRadiant, isWinner, borderClass }) => (
+        <div key={name} className="overflow-hidden rounded-xl border border-slate-800">
+          {/* Team header */}
+          <div className={`flex items-center gap-2 border-l-2 ${borderClass} bg-slate-800/40 border-b border-slate-800 px-4 py-2.5`}>
+            <span className="text-sm font-bold text-white">{name}</span>
+            {isWinner && <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-green-400">胜者</span>}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block">
+            <div className={`grid ${headerCols} divide-x divide-slate-800 bg-slate-900/60 text-[10px] uppercase tracking-wide text-slate-400`}>
+              <div className="px-3 py-1.5">选手</div>
+              <div className="px-2 py-1.5 text-center">英雄</div>
+              <div className="px-2 py-1.5 text-center">KDA</div>
+              <div className="px-2 py-1.5 text-center">正补/反补</div>
+              <div className="px-2 py-1.5 text-center">GPM</div>
+              <div className="px-2 py-1.5 text-center">XPM</div>
+              <div className="px-2 py-1.5 text-center">净值</div>
+              <div className="px-2 py-1.5 text-center">伤害</div>
+            </div>
+            {players.map((player, idx) => {
+              const displayName = getPlayerDisplayName(player);
+              const heroImg = getHeroImg(player.hero_id);
+              return (
+                <div
+                  key={`${player.player_slot}-${player.account_id}`}
+                  className={`grid ${headerCols} divide-x divide-slate-800/60 transition-colors hover:bg-slate-800/40 ${
+                    idx % 2 === 0 ? 'bg-slate-900/10' : 'bg-slate-900/30'
+                  }`}
+                >
+                  <div className="px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {player.account_id ? (
+                        <button
+                          type="button"
+                          className="text-sm font-semibold text-slate-100 truncate hover:underline underline-offset-2 text-left max-w-[130px]"
+                          onClick={() => onPlayerClick?.(Number(player.account_id))}
+                        >
+                          {displayName}
+                        </button>
+                      ) : (
+                        <span className="text-sm font-semibold text-slate-100 truncate max-w-[130px]">{displayName}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center">
+                    <div className="h-8 w-14 shrink-0 overflow-hidden rounded border border-slate-700 bg-slate-800">
+                      <SafeImg
+                        src={heroImg || undefined}
+                        alt={getHeroName(player.hero_id)}
+                        className="h-full w-full object-cover"
+                        fallback={
+                          <div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(player.hero_id)}>
+                            <span className="text-[7px] text-slate-300">{heroPlaceholderLabel(player.hero_id)}</span>
+                          </div>
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center">
+                    <span className="text-xs font-semibold">
+                      <span className="text-green-400">{player.kills}</span>
+                      <span className="text-slate-500">/</span>
+                      <span className="text-red-400">{player.deaths}</span>
+                      <span className="text-slate-500">/</span>
+                      <span className="text-slate-200">{player.assists}</span>
+                    </span>
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center text-xs text-slate-300">
+                    {player.last_hits}<span className="text-slate-600 mx-0.5">/</span><span className="text-slate-500">{player.denies}</span>
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center text-xs font-medium text-emerald-300">
+                    {player.gold_per_min}
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center text-xs font-medium text-cyan-300">
+                    {player.xp_per_min}
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center text-xs font-semibold text-amber-300">
+                    {formatCompact(getNetWorth(player))}
+                  </div>
+                  <div className="px-1 py-2 flex items-center justify-center text-xs text-slate-300">
+                    {formatCompact(player.hero_damage || 0)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-slate-800">
+            {players.map((player, idx) => {
+              const displayName = getPlayerDisplayName(player);
+              const heroImg = getHeroImg(player.hero_id);
+              return (
+                <div key={`m-${player.player_slot}-${player.account_id}`} className={`px-3 py-2.5 ${idx % 2 === 0 ? 'bg-slate-900/10' : 'bg-slate-900/30'}`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-10 w-16 shrink-0 overflow-hidden rounded border border-slate-700 bg-slate-800">
+                      <SafeImg
+                        src={heroImg || undefined}
+                        alt={getHeroName(player.hero_id)}
+                        className="h-full w-full object-cover"
+                        fallback={<div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(player.hero_id)}><span className="text-[7px] text-slate-300">{heroPlaceholderLabel(player.hero_id)}</span></div>}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {player.account_id ? (
+                        <button type="button" className="text-xs font-semibold text-slate-100 truncate block max-w-full hover:underline" onClick={() => onPlayerClick?.(Number(player.account_id))}>
+                          {displayName}
+                        </button>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-100 truncate block">{displayName}</span>
+                      )}
+                      <div className="text-[10px] text-slate-400">{getHeroName(player.hero_id)}</div>
+                      <div className="mt-0.5 text-xs">
+                        <span className="text-green-400">{player.kills}</span><span className="text-slate-500">/</span>
+                        <span className="text-red-400">{player.deaths}</span><span className="text-slate-500">/</span>
+                        <span className="text-slate-200">{player.assists}</span>
+                        <span className="text-slate-500 ml-1.5">Lv.{player.level}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs font-semibold text-amber-300">{formatCompact(getNetWorth(player))}</div>
+                      <div className="text-[10px] text-slate-500">GPM {player.gold_per_min}</div>
+                      <div className="text-[10px] text-slate-500">XPM {player.xp_per_min}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Star, ExternalLink, UserRound } from 'lucide-react';
+import { Star, ExternalLink, UserRound, Trophy, Crosshair, Clock, TrendingUp, Medal } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -170,14 +170,16 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </button>
 
       <div className="flex gap-4">
-        {/* Player photo - circular */}
-        <div className="size-24 shrink-0 overflow-hidden rounded-full border-2 border-slate-600/60 bg-gradient-to-br from-slate-700 to-slate-900 shadow-lg">
-          <SafeImg
-            src={player?.avatarUrl}
-            alt={player?.playerName || 'Player'}
-            className="h-full w-full object-cover"
-            fallback={<div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-600 to-slate-800"><span className="text-2xl font-bold text-slate-400">{player?.playerName?.[0] || '?'}</span></div>}
-          />
+        {/* Player photo - gradient border ring */}
+        <div className="size-24 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-[2px] shadow-lg shadow-blue-900/25">
+          <div className="h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-slate-700 to-slate-900">
+            <SafeImg
+              src={player?.avatarUrl}
+              alt={player?.playerName || 'Player'}
+              className="h-full w-full object-cover"
+              fallback={<div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-600 to-slate-800"><span className="text-2xl font-bold text-slate-400">{player?.playerName?.[0] || '?'}</span></div>}
+            />
+          </div>
         </div>
 
         <div className="min-w-0 pt-1 pr-20">
@@ -186,6 +188,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             <h2 className="truncate text-xl font-bold text-white">{player?.playerName || '—'}</h2>
             <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
           </div>
+          {/* Position / Role */}
+          <div className="mt-0.5 text-xs font-medium text-orange-300">核心 · Carry</div>
           {/* Real name */}
           {player?.realName && (
             <div className="mt-0.5 text-xs text-slate-400">{player.realName}{player?.chineseName ? ` · ${player.chineseName}` : ''}</div>
@@ -201,38 +205,40 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             </span>
             <span className="truncate">{player?.teamName || 'Free Agent'}</span>
           </button>
-          {/* Role tag */}
-          <div className="mt-1.5 flex items-center gap-2">
-            <span className="rounded-full border border-orange-700/40 bg-orange-900/30 px-2 py-0.5 text-[11px] font-medium text-orange-300">核心 / Carry</span>
+          {/* Rank row + nationality */}
+          <div className="mt-1.5 flex items-center gap-3 text-xs">
+            <span className="text-slate-500">人气排名 <span className="font-semibold text-amber-300">{player?.hotRank ? `#${player.hotRank}` : '#1'}</span></span>
+            <span>🔥 <span className="text-slate-300">{player?.hotScore ?? '12.4K'}</span></span>
             {player?.nationality && (
-              <span className="flex items-center gap-1 text-xs text-slate-400">
+              <span className="flex items-center gap-1 text-slate-400">
                 {flagImageUrl && <img src={flagImageUrl} alt={player.nationality} className="h-3 w-4 rounded-[2px] object-cover" />}
                 {COUNTRY_NAMES[player.nationality] || player.nationality}
               </span>
             )}
           </div>
-          {/* Rank row */}
-          <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-500">
-            <span>人气排名 <span className="font-semibold text-amber-300">{player?.hotRank ? `#${player.hotRank}` : '#1'}</span></span>
-            <span>🔥 <span className="text-slate-300">{player?.hotScore ?? '12.4K'}</span></span>
-          </div>
         </div>
       </div>
 
       {/* Stats bar */}
-      <div className="mt-4 grid grid-cols-5 divide-x divide-slate-700/60 rounded-lg border border-slate-700/60 bg-slate-800/40">
+      <div className="mt-4 grid grid-cols-5 divide-x divide-slate-600/30 overflow-hidden rounded-xl border border-slate-700/60 bg-gradient-to-r from-slate-800/70 via-slate-800/40 to-slate-800/70">
         {[
-          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '63.2%' },
-          { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '7.8' },
-          { label: '场均死亡', value: player?.avgDeaths != null ? player.avgDeaths.toFixed(1) : '3.2' },
-          { label: '场均GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '542' },
-          { label: '场均XPM', value: player?.avgXpm != null ? String(player.avgXpm) : '621' },
-        ].map((stat) => (
-          <div key={stat.label} className="flex flex-col items-center justify-center gap-0.5 py-3">
-            <span className="text-sm font-bold text-white">{stat.value}</span>
-            <span className="text-[10px] text-slate-400">{stat.label}</span>
-          </div>
-        ))}
+          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', isWinRate: true },
+          { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '--' },
+          { label: '场均死亡', value: player?.avgDeaths != null ? player.avgDeaths.toFixed(1) : '--' },
+          { label: '场均GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '--' },
+          { label: '场均XPM', value: player?.avgXpm != null ? String(player.avgXpm) : '--' },
+        ].map((stat) => {
+          const winRateValue = player?.winRate;
+          const winRateColor = stat.isWinRate && winRateValue != null
+            ? (winRateValue >= 50 ? 'text-emerald-400' : 'text-red-400')
+            : '';
+          return (
+            <div key={stat.label} className="flex flex-col items-center justify-center gap-1 py-3">
+              <span className={`text-2xl font-bold tabular-nums ${winRateColor || 'text-white'}`}>{stat.value}</span>
+              <span className="text-[10px] font-medium text-slate-400">{stat.label}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -314,27 +320,40 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const heroPoolSection = (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="font-semibold text-white">英雄池</h4>
+        <h4 className="flex items-center gap-1.5 font-semibold text-white">
+          <Crosshair className="size-3.5 text-slate-400" />
+          英雄池
+        </h4>
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
       </div>
       {heroPool.length ? (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-2">
           {heroPool.slice(0, 6).map((hero) => {
             const img = getHeroImg(hero.heroId, heroMap);
             const heroName = getHeroName(hero.heroId, heroMap);
+            const isPositive = hero.winRate >= 50;
+            const barColor = isPositive ? 'bg-emerald-500' : 'bg-red-500';
+            const textColor = isPositive ? 'text-emerald-400' : 'text-red-400';
             return (
-              <div key={hero.heroId} className="flex flex-col items-center gap-1 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
-                <div className="relative overflow-hidden rounded-lg w-full aspect-square">
+              <div key={hero.heroId} className="flex items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800/30 p-2.5 transition hover:border-slate-600/60 hover:bg-slate-800/50">
+                <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-slate-700">
                   {img ? (
                     <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
                   ) : (
                     <div className="h-full w-full bg-slate-700" />
                   )}
                 </div>
-                <div className="w-full text-center">
-                  <div className="truncate text-[11px] font-medium text-slate-200">{heroName}</div>
-                  <div className="text-[10px] font-semibold text-emerald-400">{hero.winRate.toFixed(1)}% 胜率</div>
-                  <div className="text-[9px] text-slate-500">{hero.games} 场</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="truncate text-sm font-medium text-slate-100">{heroName}</span>
+                    <span className="ml-2 shrink-0 text-[10px] text-slate-500">{hero.games}场</span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700">
+                      <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(hero.winRate, 100)}%` }} />
+                    </div>
+                    <span className={`shrink-0 text-[11px] font-semibold tabular-nums ${textColor}`}>{hero.winRate.toFixed(1)}%</span>
+                  </div>
                 </div>
               </div>
             );
@@ -350,13 +369,16 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const recentMatchSection = (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="font-semibold text-white">近期比赛</h4>
+        <h4 className="flex items-center gap-1.5 font-semibold text-white">
+          <Clock className="size-3.5 text-slate-400" />
+          近期比赛
+        </h4>
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">全部比赛 ›</button>
       </div>
       {recentMatches.length ? (
         <div className="overflow-hidden rounded-xl border border-slate-700/60">
           {/* Table header */}
-          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/40 bg-slate-800/40 px-3 py-1.5 text-[10px] text-slate-500">
+          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/60 bg-slate-800/60 px-3 py-2 text-[10px] font-medium text-slate-400">
             <span className="text-center">英雄</span>
             <span className="text-center">KDA</span>
             <span className="text-center">GPM</span>
@@ -369,13 +391,16 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             const kdaDisplay = match.kda || '--';
             const gpmDisplay = match.gpm != null ? String(match.gpm) : '--';
             const xpmDisplay = match.xpm != null ? String(match.xpm) : '--';
+            const rowBg = won === true
+              ? 'bg-emerald-950/20'
+              : won === false
+                ? 'bg-red-950/20'
+                : idx % 2 === 0 ? 'bg-slate-800/20' : 'bg-transparent';
 
             return (
               <div
                 key={`${match.matchId}-${idx}`}
-                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/30 px-3 py-2.5 text-sm last:border-b-0 ${
-                  won === true ? 'bg-emerald-950/15' : won === false ? 'bg-red-950/15' : ''
-                }`}
+                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/20 px-3 py-2.5 text-sm last:border-b-0 transition hover:bg-slate-800/30 ${rowBg}`}
               >
                 {/* Hero image */}
                 <div className="flex justify-center">
@@ -399,12 +424,12 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                 </div>
                 {/* Result badge */}
                 <div className="flex justify-center">
-                  <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                    won === true ? 'bg-emerald-900/50 text-emerald-300' :
-                    won === false ? 'bg-red-900/50 text-red-300' :
-                    'bg-slate-800 text-slate-400'
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    won === true ? 'bg-emerald-500/20 text-emerald-300' :
+                    won === false ? 'bg-red-500/20 text-red-300' :
+                    'bg-slate-700 text-slate-400'
                   }`}>
-                    {won === true ? '胜' : won === false ? '负' : '--'}
+                    {won === true ? 'WIN' : won === false ? 'LOSS' : '--'}
                   </span>
                 </div>
               </div>
@@ -421,15 +446,19 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const signatureSection = (
     <div className="space-y-4">
       <section>
-        <h4 className="mb-3 font-semibold text-white">招牌英雄</h4>
+        <h4 className="mb-3 flex items-center gap-1.5 font-semibold text-white">
+          <Trophy className="size-3.5 text-amber-400" />
+          招牌英雄
+        </h4>
         {signatureHeroes.length ? (
           <div className="grid grid-cols-3 gap-3">
             {signatureHeroes.map((hero) => {
               const img = getHeroImg(hero.heroId, heroMap);
               const heroName = getHeroName(hero.heroId, heroMap);
+              const isPositive = hero.winRate >= 50;
               return (
-                <div key={hero.heroId} className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
-                  <div className="relative overflow-hidden rounded-xl w-full aspect-square">
+                <div key={hero.heroId} className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3 transition hover:border-slate-600/60 hover:bg-slate-800/50">
+                  <div className="size-20 overflow-hidden rounded-xl bg-slate-700">
                     {img ? (
                       <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
                     ) : (
@@ -438,8 +467,10 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                   </div>
                   <div className="w-full text-center">
                     <div className="truncate text-xs font-medium text-slate-100">{heroName}</div>
-                    <div className="mt-1 inline-block rounded-full bg-emerald-900/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                      {hero.winRate.toFixed(1)}% 胜率
+                    <div className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      isPositive ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+                    }`}>
+                      {hero.winRate.toFixed(1)}%
                     </div>
                     <div className="mt-0.5 text-[10px] text-slate-500">{hero.games} 场</div>
                   </div>
@@ -453,7 +484,10 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </section>
 
       <section>
-        <h4 className="mb-2 font-semibold text-white">荣誉成就</h4>
+        <h4 className="mb-2 flex items-center gap-1.5 font-semibold text-white">
+          <Medal className="size-3.5 text-amber-400" />
+          荣誉成就
+        </h4>
         <div className="space-y-1.5 text-xs text-slate-400">
           {[
             { icon: '🏆', text: 'TI 参赛选手', year: '2023' },
@@ -478,7 +512,10 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const tournamentPerfSection = tournamentList.length > 0 ? (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="font-semibold text-white">近期赛事表现</h4>
+        <h4 className="flex items-center gap-1.5 font-semibold text-white">
+          <TrendingUp className="size-3.5 text-slate-400" />
+          近期赛事表现
+        </h4>
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
       </div>
       <div className="overflow-hidden rounded-xl border border-slate-700/60">
@@ -527,7 +564,10 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const mobilePerformanceSection = (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="font-semibold text-white">近期表现</h4>
+        <h4 className="flex items-center gap-1.5 font-semibold text-white">
+          <TrendingUp className="size-3.5 text-slate-400" />
+          近期表现
+        </h4>
         <button type="button" className="text-xs text-slate-400">近20场 ›</button>
       </div>
       <div className="rounded-xl border border-slate-700/60 bg-slate-800/20 p-4">
@@ -561,7 +601,10 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   /** ── Mobile achievements 2x2 ── */
   const mobileAchievementsSection = (
     <section>
-      <h4 className="mb-3 font-semibold text-white">荣誉成就</h4>
+      <h4 className="mb-3 flex items-center gap-1.5 font-semibold text-white">
+        <Medal className="size-3.5 text-amber-400" />
+        荣誉成就
+      </h4>
       <div className="grid grid-cols-2 gap-2">
         {[
           { icon: '🏆', title: 'Major 冠军', count: '× 2' },
@@ -593,7 +636,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
           {isMobile ? mobileHeader : desktopHeader}
 
           {/* ── Body ── */}
-          <div className="space-y-5 p-4">
+          <div className="space-y-4 p-4">
             {heroPoolSection}
 
             {isMobile && mobilePerformanceSection}

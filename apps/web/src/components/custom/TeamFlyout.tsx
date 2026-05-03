@@ -127,6 +127,15 @@ function getFallbackTeamStats(name?: string | null): { wins: number; losses: num
   return FALLBACK_TEAM_STATS[getFallbackTeamKey(name)] || null;
 }
 
+function stringToHue(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash;
+  }
+  return Math.abs(hash) % 360;
+}
+
 function formatTs(ts: number): string {
   if (!ts) return 'TBD';
   return new Date(ts * 1000).toLocaleString('zh-CN', {
@@ -530,12 +539,19 @@ export function TeamFlyout({
     ? 'h-[92vh] w-full rounded-t-3xl border-slate-700 bg-slate-900 text-slate-100 p-0 overscroll-contain'
     : 'w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain';
 
+  const teamHue = stringToHue(selectedTeam?.name || '');
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side={sheetSide} className={sheetClassName}>
           <div className="h-full overflow-y-auto">
-            <SheetHeader className="border-b border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/30 p-6 pr-12">
+            <SheetHeader
+              className="border-b border-slate-700 p-6 pr-12"
+              style={{
+                background: `linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42) 50%, hsl(${teamHue} 50% 30% / 0.3) 100%)`,
+              }}
+            >
               <div className="flex flex-col items-center gap-3">
                 <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
                   <SafeImg
@@ -564,7 +580,7 @@ export function TeamFlyout({
 
             <div className="p-6 space-y-5">
               {/* Stats Bar */}
-              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+              <div className="rounded-xl border border-sky-500/20 bg-slate-800/60 p-4 shadow-[0_0_20px_rgba(56,189,248,0.08)]">
                 <div className="flex items-center justify-between">
                   <div className="text-center flex-1">
                     <div className="text-2xl font-bold text-emerald-400 tabular-nums">{wins}</div>
@@ -602,26 +618,26 @@ export function TeamFlyout({
                   const radName = nm.radiant_team_name || 'TBD';
                   const direName = nm.dire_team_name || 'TBD';
                   return (
-                    <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
-                          <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
-                            <SafeImg src={radLogo} alt={radName} className="w-10 h-10 object-contain" fallback={<Shield className="w-5 h-5 text-slate-500" />} />
+                    <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-slate-800/80 to-slate-800/40 p-5 shadow-[0_0_20px_rgba(59,130,246,0.06)]">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-14 h-14 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
+                            <SafeImg src={radLogo} alt={radName} className="w-12 h-12 object-contain" fallback={<Shield className="w-6 h-6 text-slate-500" />} />
                           </div>
-                          <span className="text-xs text-slate-200 text-center truncate w-full">{radName}</span>
+                          <span className="text-sm font-medium text-slate-100 text-center truncate w-full">{radName}</span>
                         </div>
                         <div className="flex flex-col items-center flex-shrink-0">
-                          <span className="text-sm font-bold text-slate-400">VS</span>
-                          <span className="text-xs text-blue-300 mt-1">{formatTs(nm.start_time)}</span>
+                          <span className="text-lg font-extrabold text-sky-400 tracking-wider">VS</span>
+                          <span className="text-xs text-blue-300 mt-1.5">{formatTs(nm.start_time)}</span>
                         </div>
-                        <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
-                          <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
-                            <SafeImg src={direLogo} alt={direName} className="w-10 h-10 object-contain" fallback={<Shield className="w-5 h-5 text-slate-500" />} />
+                        <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-14 h-14 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
+                            <SafeImg src={direLogo} alt={direName} className="w-12 h-12 object-contain" fallback={<Shield className="w-6 h-6 text-slate-500" />} />
                           </div>
-                          <span className="text-xs text-slate-200 text-center truncate w-full">{direName}</span>
+                          <span className="text-sm font-medium text-slate-100 text-center truncate w-full">{direName}</span>
                         </div>
                       </div>
-                      <div className="mt-3 pt-3 border-t border-slate-700/50 text-xs text-slate-400 text-center">
+                      <div className="mt-4 pt-3 border-t border-slate-700/50 text-xs text-slate-400 text-center">
                         {getTournamentLabel(nm)} · {nm.series_type || 'BO3'}
                       </div>
                     </div>
@@ -643,7 +659,7 @@ export function TeamFlyout({
                   {activeSquad.map((player, idx) => {
                     const flagUrl = toFlagImageUrl(player.countryCode, 32);
                     const body = (
-                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-700 bg-slate-800/50 p-2.5">
+                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-700 bg-slate-800/50 p-2.5 transition-all duration-200 hover:border-slate-500 hover:bg-slate-700/50 hover:shadow-[0_0_12px_rgba(56,189,248,0.06)]">
                         <div className="w-10 h-10 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {player.avatarUrl ? (
                             <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />

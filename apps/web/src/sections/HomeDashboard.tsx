@@ -463,13 +463,17 @@ function formatGameTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function LiveMatchCard({ data }: { data: LiveHeroPayload }) {
+function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () => void }) {
   const liveMap = data.liveMap;
   const team1 = data.teams[0];
   const team2 = data.teams[1];
 
   return (
-    <div className="rounded-xl border border-red-500/30 bg-slate-800 p-4">
+    <button
+      type="button"
+      className="w-full text-left rounded-xl border border-red-500/30 bg-slate-800 p-4 hover:border-red-400/40 transition-colors"
+      onClick={onClick}
+    >
       <div className="mb-3 flex items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
           <span className="size-1.5 rounded-full bg-white animate-pulse" />
@@ -539,11 +543,11 @@ function LiveMatchCard({ data }: { data: LiveHeroPayload }) {
           ))}
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
-function UpcomingMatchCard({ data }: { data: typeof prototypeUpcoming[number] }) {
+function UpcomingMatchCard({ data, onClick }: { data: typeof prototypeUpcoming[number]; onClick?: () => void }) {
   const diff = data.start_time - nowTs();
   const hoursLeft = Math.floor(diff / 3600);
   const minsLeft = Math.floor((diff % 3600) / 60);
@@ -554,7 +558,11 @@ function UpcomingMatchCard({ data }: { data: typeof prototypeUpcoming[number] })
     : `${minsLeft}分钟后`;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-slate-800 p-4 hover:border-white/20 transition-colors cursor-pointer">
+    <button
+      type="button"
+      className="w-full text-left rounded-xl border border-white/10 bg-slate-800 p-4 hover:border-white/20 transition-colors"
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-semibold text-white">{timeStr}</span>
         <span className="text-xs rounded bg-slate-700 px-2 py-0.5 text-slate-300">{data.series_type}</span>
@@ -581,11 +589,22 @@ function UpcomingMatchCard({ data }: { data: typeof prototypeUpcoming[number] })
         </div>
       </div>
       <div className="mt-3 text-xs text-slate-500">{data.tournament_name}</div>
-    </div>
+    </button>
   );
 }
 
-function PrototypeDashboardContent() {
+interface PrototypeDashboardContentProps {
+  onOpenMatch: (matchId: string, seriesMaps?: Array<{
+    label: string;
+    matchId: string;
+    radiantScore?: number;
+    direScore?: number;
+    duration?: number;
+  }>) => void;
+  onOpenTeam: (teamName: string) => void;
+}
+
+function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboardContentProps) {
   const [activeFilter, setActiveFilter] = useState('全部');
 
   return (
@@ -613,7 +632,20 @@ function PrototypeDashboardContent() {
         </div>
 
         {mockLiveHeroes.map((hero) => (
-          <LiveMatchCard key={hero.leagueName} data={hero} />
+          <LiveMatchCard
+            key={hero.leagueName}
+            data={hero}
+            onClick={() => {
+              const seriesMaps = hero.maps.map((m) => ({
+                label: m.label,
+                matchId: m.matchId,
+                radiantScore: m.team1Score,
+                direScore: m.team2Score,
+                duration: m.gameTime,
+              }));
+              onOpenMatch(hero.liveMap?.matchId ?? hero.maps[0]?.matchId ?? '', seriesMaps);
+            }}
+          />
         ))}
 
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-300">
@@ -622,7 +654,11 @@ function PrototypeDashboardContent() {
         </div>
 
         {prototypeUpcoming.map((match) => (
-          <UpcomingMatchCard key={match.match_id} data={match} />
+          <UpcomingMatchCard
+            key={match.match_id}
+            data={match}
+            onClick={() => onOpenMatch(match.match_id)}
+          />
         ))}
       </div>
 
@@ -635,9 +671,11 @@ function PrototypeDashboardContent() {
           </div>
           <div className="flex flex-col gap-2">
             {hotTeams.map((team, index) => (
-              <div
+              <button
                 key={team.name}
-                className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2"
+                type="button"
+                className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:border-red-400/30 hover:bg-red-500/10"
+                onClick={() => onOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
                 <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-5 shrink-0 object-contain" fallback={<div className="size-5 shrink-0 rounded-full bg-slate-700" />} />
@@ -646,7 +684,7 @@ function PrototypeDashboardContent() {
                 <span className={team.trend === 'up' ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
                   {team.trend === 'up' ? '↑' : '↓'}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -696,6 +734,7 @@ export function HomeDashboard() {
   const prototypeMode = usePrototypeMode();
   const devPlayer = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('devPlayer');
   const devMatch = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('devMatch');
+  const devTeam = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('devTeam');
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(devMatch ? 7777 : null);
   const [selectedSeriesMaps, setSelectedSeriesMaps] = useState<Array<{
     label: string;
@@ -708,7 +747,7 @@ export function HomeDashboard() {
     { label: '地图 2', matchId: '7778', radiantScore: 15, direScore: 29 },
     { label: '地图 3', matchId: '7779', radiantScore: 20, direScore: 15 },
   ] : []);
-  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(devTeam ? 'XG' : null);
   const [selectedPlayer, setSelectedPlayer] = useState<HotPlayer | null>(devPlayer ? hotPlayers[0] : null);
   const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(devPlayer ? createHotPlayerModel(hotPlayers[0]) : null);
 
@@ -777,13 +816,21 @@ export function HomeDashboard() {
       <div className="flex min-w-0 flex-col gap-4">
         <MobileMatchToolbar />
         <FeaturedEventBanner />
-        <HeroSection
-          onOpenMatch={handleOpenMatch}
-          onOpenTeam={handleOpenTeam}
-          initialLiveHeroes={prototypeMode ? mockLiveHeroes : undefined}
-          prototypeMode={prototypeMode}
-        />
-        <TournamentSection prototypeMode={prototypeMode} />
+        {prototypeMode ? (
+          <PrototypeDashboardContent
+            onOpenMatch={handleOpenMatch}
+            onOpenTeam={handleOpenTeam}
+          />
+        ) : (
+          <>
+            <HeroSection
+              onOpenMatch={handleOpenMatch}
+              onOpenTeam={handleOpenTeam}
+              prototypeMode={prototypeMode}
+            />
+            <TournamentSection prototypeMode={prototypeMode} />
+          </>
+        )}
       </div>
 
       <aside className="hidden min-w-0 flex-col gap-4 lg:flex">
