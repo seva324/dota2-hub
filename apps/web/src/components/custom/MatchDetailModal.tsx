@@ -21,12 +21,23 @@ fetch('/api/pro-players')
   })
   .catch(() => {});
 
-fetch('/api/heroes')
-  .then((res) => res.json())
-  .then((data) => {
-    heroesData = data;
-  })
-  .catch(() => {});
+function useHeroesData() {
+  const [data, setData] = useState<Record<number, HeroInfo>>(heroesData);
+  useEffect(() => {
+    if (Object.keys(heroesData).length > 0) {
+      setData(heroesData);
+      return;
+    }
+    fetch('/api/heroes')
+      .then((res) => res.json())
+      .then((d) => {
+        heroesData = d;
+        setData(d);
+      })
+      .catch(() => {});
+  }, []);
+  return data;
+}
 
 interface HeroInfo {
   id: number;
@@ -1274,6 +1285,20 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 }
 
 function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: MatchDetail; radiantTeamName: string; direTeamName: string }) {
+  const heroes = useHeroesData();
+  const getHeroPortraitUrl = (heroId: number): string => {
+    const hero = heroes[heroId];
+    return getHeroImageUrl(heroId, hero?.img);
+  };
+  const getHeroName = (heroId: number): string => {
+    const hero = heroes[heroId];
+    return hero?.name_cn || hero?.name || `Hero ${heroId}`;
+  };
+  const getHeroImg = (heroId: number): string => {
+    const hero = heroes[heroId];
+    if (!hero?.img) return '';
+    return getHeroImageUrl(heroId, hero.img);
+  };
   const picksBans = match.picks_bans || [];
   const radiantPicks = picksBans.filter((pb) => pb.team === 0 && pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
   const direPicks = picksBans.filter((pb) => pb.team === 1 && pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
