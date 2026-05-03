@@ -1289,9 +1289,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: MatchDetail; radiantTeamName: string; direTeamName: string }) {
   const heroes = useHeroesData();
   const getHeroPortraitUrl = (heroId: number): string => {
-    const hero = heroes[heroId];
-    if (hero?.img_url) return hero.img_url;
-    return getHeroImageUrl(heroId, hero?.img);
+    return `/images/mirror/heroes/${heroId}.png`;
   };
   const getHeroName = (heroId: number): string => {
     const hero = heroes[heroId];
