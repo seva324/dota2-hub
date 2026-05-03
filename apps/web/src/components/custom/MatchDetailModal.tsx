@@ -1316,7 +1316,7 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
           <img
             src={portraitUrl}
             alt={getHeroName(pb.hero_id)}
-            className="h-full w-full object-cover object-top"
+            className="h-full w-full object-cover object-center"
             loading="lazy"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
