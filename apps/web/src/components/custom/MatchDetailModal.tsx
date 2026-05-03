@@ -1289,6 +1289,10 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: MatchDetail; radiantTeamName: string; direTeamName: string }) {
   const heroes = useHeroesData();
   const getHeroPortraitUrl = (heroId: number): string => {
+    const hero = heroes[heroId];
+    if (hero?.img) {
+      return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/heroes/${hero.img}_sb.png`;
+    }
     return `/images/mirror/heroes/${heroId}.png`;
   };
   const getHeroName = (heroId: number): string => {
