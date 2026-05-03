@@ -44,6 +44,7 @@ interface HeroInfo {
   name: string;
   img: string;
   name_cn: string;
+  img_url?: string;
   nicknames?: string[];
 }
 
@@ -135,6 +136,7 @@ function getHeroImg(id: number): string {
 
 function getHeroPortraitUrl(heroId: number): string {
   const hero = heroesData[heroId];
+  if (hero?.img_url) return hero.img_url;
   return getHeroImageUrl(heroId, hero?.img);
 }
 
@@ -1288,6 +1290,7 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
   const heroes = useHeroesData();
   const getHeroPortraitUrl = (heroId: number): string => {
     const hero = heroes[heroId];
+    if (hero?.img_url) return hero.img_url;
     return getHeroImageUrl(heroId, hero?.img);
   };
   const getHeroName = (heroId: number): string => {
@@ -1312,13 +1315,23 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
     return (
       <div className="flex shrink-0 flex-col items-center gap-1" style={{ width: 80 }}>
         <div className={`h-[72px] w-[72px] overflow-hidden rounded-full border-2 border-slate-700/60 bg-slate-800 ${glowRing}`}>
-          <SafeImg
+          <img
             src={portraitUrl}
             alt={getHeroName(pb.hero_id)}
             className="h-full w-full object-cover object-top"
-            fallback={<div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(pb.hero_id)}>
-              <span className="text-[9px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
-            </div>}
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.hero-fallback')) {
+                const fallback = document.createElement('div');
+                fallback.className = 'hero-fallback h-full w-full flex items-center justify-center';
+                fallback.style.background = `hsl(${(pb.hero_id * 67) % 360}, 35%, 18%)`;
+                fallback.innerHTML = `<span style="font-size:9px;color:#cbd5e1;font-weight:600;padding:0 2px;text-align:center;line-height:1.25">${heroPlaceholderLabel(pb.hero_id)}</span>`;
+                parent.appendChild(fallback);
+              }
+            }}
           />
         </div>
         <span className="truncate text-[10px] text-slate-400 leading-tight max-w-[80px] text-center">{getHeroName(pb.hero_id)}</span>
