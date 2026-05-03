@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Users, TrendingUp, FileText, Backpack, ChevronDown, X } from 'lucide-react';
+import { Users, TrendingUp, FileText, Backpack, ChevronDown, X, Swords, Shield, Landmark, Skull, Trophy } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -532,7 +532,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
             {/* ── Prototype-style hero header ── */}
             {isPrototypeMode ? (
-              <div className="mb-4 overflow-hidden rounded-xl border border-slate-800 bg-[#0e1420]">
+              <div className="mb-4 overflow-hidden rounded-xl border border-slate-800 bg-[#0e1420] border-b border-slate-800/60">
                 {/* Top row: teams + series score */}
                 <div className="flex items-center justify-between gap-4 px-5 py-4">
                   {/* Left team */}
@@ -727,8 +727,8 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       {/* Draft section */}
                       <PrototypeOverview match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
                       {/* Economy chart + key events side by side */}
-                      <div className="flex gap-4 items-start">
-                        <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex gap-4 items-stretch">
+                        <div className="flex-1 min-w-0 overflow-hidden min-h-[320px]">
                           <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} hideKeyEvents={isPrototypeMode} />
                         </div>
                         <div className="w-[280px] shrink-0 rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
@@ -741,25 +741,38 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                             </div>
                           </div>
                           <div className="overflow-y-auto max-h-[380px] divide-y divide-slate-800/60">
-                            {[
-                              { time: '06:32', icon: '⚔️', text: '夜魇击杀肉山', side: 'dire' },
-                              { time: '06:33', icon: '🏆', text: `Yatoro 获取不朽之盾`, side: 'dire' },
-                              { time: '12:14', icon: '🗼', text: '一路 下路 T1被摧毁', side: 'radiant' },
-                              { time: '17:28', icon: '⚔️', text: '肉山被击杀', side: 'radiant' },
-                              { time: '17:30', icon: '🏆', text: `Ame 获取不朽之盾`, side: 'radiant' },
-                              { time: '22:41', icon: '🗼', text: '二路 中路 T2被摧毁', side: 'radiant' },
-                              { time: '27:18', icon: '⚔️', text: 'Roshan 再次被击杀', side: 'dire' },
-                              { time: '27:19', icon: '🏆', text: `Collapse 获取不朽之盾`, side: 'dire' },
-                              { time: '31:52', icon: '🗼', text: '三路 上路 T3被摧毁', side: 'radiant' },
-                              { time: '36:05', icon: '💀', text: '实淌团灭 4人阵亡', side: 'radiant' },
-                              { time: '38:36', icon: '🏯', text: '敌方基地被摧毁', side: 'radiant' },
-                            ].map((ev, i) => (
-                              <div key={i} className="flex items-start gap-2 px-3 py-2 hover:bg-slate-800/40 cursor-pointer">
-                                <span className="text-[11px] text-slate-500 shrink-0 w-10 pt-0.5">{ev.time}</span>
-                                <span className="text-sm shrink-0">{ev.icon}</span>
-                                <span className="text-[11px] text-slate-300">{ev.text}</span>
-                              </div>
-                            ))}
+                            {(() => {
+                              const EVENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+                                kill: Swords,
+                                roshan: Shield,
+                                tower: Landmark,
+                                wipe: Skull,
+                                ancient: Trophy,
+                              };
+                              const events: Array<{ time: string; type: string; text: string; side: 'radiant' | 'dire' }> = [
+                                { time: '06:32', type: 'kill', text: '夜魇击杀肉山', side: 'dire' },
+                                { time: '06:33', type: 'roshan', text: `Yatoro 获取不朽之盾`, side: 'dire' },
+                                { time: '12:14', type: 'tower', text: '一路 下路 T1被摧毁', side: 'radiant' },
+                                { time: '17:28', type: 'kill', text: '肉山被击杀', side: 'radiant' },
+                                { time: '17:30', type: 'roshan', text: `Ame 获取不朽之盾`, side: 'radiant' },
+                                { time: '22:41', type: 'tower', text: '二路 中路 T2被摧毁', side: 'radiant' },
+                                { time: '27:18', type: 'kill', text: 'Roshan 再次被击杀', side: 'dire' },
+                                { time: '27:19', type: 'roshan', text: `Collapse 获取不朽之盾`, side: 'dire' },
+                                { time: '31:52', type: 'tower', text: '三路 上路 T3被摧毁', side: 'radiant' },
+                                { time: '36:05', type: 'wipe', text: '实淌团灭 4人阵亡', side: 'radiant' },
+                                { time: '38:36', type: 'ancient', text: '敌方基地被摧毁', side: 'radiant' },
+                              ];
+                              return events.map((ev, i) => {
+                                const Icon = EVENT_ICONS[ev.type];
+                                return (
+                                  <div key={i} className="flex items-start gap-2 px-3 py-2 hover:bg-slate-800/40 cursor-pointer">
+                                    <span className="text-[11px] text-slate-500 shrink-0 w-10 pt-0.5">{ev.time}</span>
+                                    {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${ev.side === 'radiant' ? 'text-green-400/70' : 'text-red-400/70'}`} />}
+                                    <span className="text-[11px] text-slate-300">{ev.text}</span>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -1080,7 +1093,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
       <DialogContent
         showCloseButton={false}
         aria-describedby={undefined}
-        className={`overflow-x-hidden overflow-y-auto bg-slate-900 border-slate-800 p-2 sm:p-5 ${
+        className={`overflow-y-auto bg-[#0b1220] border-slate-800 p-3 sm:p-6 ${
           isPrototypeMode ? 'w-[96vw] sm:max-w-[1360px] max-h-[94vh]' : 'w-[82vw] sm:max-w-6xl max-h-[90vh]'
         }`}
       >
