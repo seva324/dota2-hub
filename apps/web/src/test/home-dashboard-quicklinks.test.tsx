@@ -99,11 +99,10 @@ describe('HomeDashboard quick links', () => {
     expect(screen.queryByText('选手详情 898754153')).not.toBeInTheDocument();
   });
 
-  it('only passes prototype live fixtures when prototype mode is enabled', () => {
+  it('does not render HeroSection when prototype mode is enabled', () => {
     render(<HomeDashboard />);
 
     expect(heroSectionSpy).toHaveBeenLastCalledWith(expect.objectContaining({
-      initialLiveHeroes: undefined,
       prototypeMode: false,
     }));
 
@@ -113,9 +112,6 @@ describe('HomeDashboard quick links', () => {
 
     render(<HomeDashboard />);
 
-    expect(heroSectionSpy).toHaveBeenLastCalledWith(expect.objectContaining({
-      prototypeMode: true,
-    }));
-    expect(heroSectionSpy.mock.calls.at(-1)?.[0].initialLiveHeroes).toHaveLength(3);
+    expect(heroSectionSpy).not.toHaveBeenCalled();
   });
 });

@@ -86,8 +86,8 @@ describe('MatchDetailModal prototype mode', () => {
       />
     );
 
-    expect(await screen.findByText('Draft')).toBeInTheDocument();
-    expect(screen.getByText('概述')).toBeInTheDocument();
+    expect((await screen.findAllByText('阵容选择')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('概览')).toBeInTheDocument();
   });
 
   it('does not render PrototypeOverview when prototype mode is off', async () => {
@@ -119,11 +119,11 @@ describe('MatchDetailModal prototype mode', () => {
     const ameEntries = await screen.findAllByText('Ame');
     expect(ameEntries.length).toBeGreaterThanOrEqual(1);
 
-    expect(screen.queryByText('Draft')).not.toBeInTheDocument();
-    expect(screen.queryByText('概述')).not.toBeInTheDocument();
+    expect(screen.queryByText('阵容选择')).not.toBeInTheDocument();
+    expect(screen.queryByText('概览')).not.toBeInTheDocument();
   });
 
-  it('shows economy tab as default when prototype mode is on', async () => {
+  it('shows overview tab as default when prototype mode is on', async () => {
     mockUsePrototypeMode.mockReturnValue(true);
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -152,8 +152,8 @@ describe('MatchDetailModal prototype mode', () => {
     );
 
     await waitFor(() => {
-      const economyTab = screen.getByText('经济').closest('button');
-      expect(economyTab?.dataset.state).toBe('active');
+      const overviewTab = screen.getByText('概览').closest('button');
+      expect(overviewTab?.dataset.state).toBe('active');
     });
   });
 
@@ -217,10 +217,10 @@ describe('MatchDetailModal prototype mode', () => {
       />
     );
 
-    expect(await screen.findByText('Draft')).toBeInTheDocument();
-    expect(screen.getByText('概述')).toBeInTheDocument();
+    expect((await screen.findAllByText('阵容选择')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('概览')).toBeInTheDocument();
 
-    const economyTab = screen.getByText('经济').closest('button');
-    expect(economyTab?.dataset.state).toBe('active');
+    const overviewTab = screen.getByText('概览').closest('button');
+    expect(overviewTab?.dataset.state).toBe('active');
   });
 });

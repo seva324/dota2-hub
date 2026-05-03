@@ -47,6 +47,7 @@ describe('PlayerProfileFlyout', () => {
   });
 
   it('uses visual placeholders instead of broken hero images when hero metadata is unavailable', async () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       if (String(input) === '/api/heroes') return createJsonResponse({});
       throw new Error(`Unhandled fetch: ${String(input)}`);
@@ -77,7 +78,8 @@ describe('PlayerProfileFlyout', () => {
       />
     );
 
-    expect(await screen.findByText('Ame')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: /Ame/ });
+    expect(dialog).toBeInTheDocument();
     expect(screen.queryByAltText('Hero 11')).not.toBeInTheDocument();
     expect(screen.queryByAltText('Hero 69')).not.toBeInTheDocument();
   });

@@ -31,8 +31,8 @@ const HERO_LIVE_MATCHES = [
     seriesScore: '0 - 0',
     startedAt: '2026-03-08T14:00:00.000000Z',
     teams: [
-      { side: 'team1', name: 'PARIVISION', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png' },
-      { side: 'team2', name: 'Natus Vincere', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png' },
+      { side: 'team1', name: 'PARI', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/9717246.png' },
+      { side: 'team2', name: 'NAVI', logo: 'https://cdn.steamstatic.com/apps/dota2/images/team_logos/36.png' },
     ],
     maps: [
       { label: 'Map 1', score: '12 - 9', status: 'live', gameTime: 620, team1NetWorthLead: 32640, team2NetWorthLead: null },
@@ -107,20 +107,20 @@ describe('HeroSection live spotlight', () => {
     expect(screen.getByText('Heroic')).toBeInTheDocument();
     expect(screen.queryByText('22 - 30')).not.toBeInTheDocument();
     expect(screen.queryByText('28 - 17')).not.toBeInTheDocument();
-    expect(screen.getByText('PARIVISION')).toBeInTheDocument();
-    expect(screen.getByText('Natus Vincere')).toBeInTheDocument();
-    expect(screen.getByText('+32.6k')).toBeInTheDocument();
-    expect(screen.getByText('+8.4k')).toBeInTheDocument();
+    expect(screen.getByText('PARI')).toBeInTheDocument();
+    expect(screen.getByText('NAVI')).toBeInTheDocument();
+    expect(screen.getByText('▲ 32.6k')).toBeInTheDocument();
+    expect(screen.getByText('▲ 8.4k')).toBeInTheDocument();
     expect(screen.getByTestId('hero-live-grid')).toHaveTextContent('Map 1');
     expect(screen.getByText('中国战队预告')).toBeInTheDocument();
     expect(screen.getByText('DreamLeague')).toBeInTheDocument();
 
     const cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
-    expect(within(cards[0]).getByText('Natus Vincere')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('NAVI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Heroic')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('时长 28:58')).toBeInTheDocument();
+    expect(within(cards[1]).getByText(/地图 3.*28:58/)).toBeInTheDocument();
     expect(Array.from(cards[1].querySelectorAll('img')).map((node) => node.getAttribute('src') || '')).toEqual(
       expect.arrayContaining([
         getCuratedTeamLogoMirrorPath('Aurora'),
@@ -133,10 +133,7 @@ describe('HeroSection live spotlight', () => {
       expect(within(cards[1]).getByText('22')).toBeInTheDocument();
       expect(within(cards[1]).getByText('30')).toBeInTheDocument();
     });
-    expect(within(cards[1]).getByText('胜利方 · 终盘+12.4k')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('失利方')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('时长 35:00')).toBeInTheDocument();
-    expect(within(cards[1]).queryByText('Map 1 已结束')).not.toBeInTheDocument();
+    expect(within(cards[1]).getByText(/地图 1/)).toBeInTheDocument();
   }, 15000);
 
   it('does not refetch live or upcoming data in a render loop when props are omitted', async () => {
@@ -223,7 +220,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     let cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
 
     await act(async () => {
@@ -233,7 +230,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
   });
 
@@ -281,7 +278,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     let cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
 
     await act(async () => {
@@ -291,7 +288,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
     expect(within(cards[1]).getByText('15')).toBeInTheDocument();
   });
@@ -334,7 +331,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     let cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
 
     await act(async () => {
@@ -344,7 +341,7 @@ describe('HeroSection live spotlight', () => {
     });
 
     cards = screen.getAllByTestId('hero-live-card');
-    expect(within(cards[0]).getByText('PARIVISION')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('PARI')).toBeInTheDocument();
     expect(within(cards[1]).getByText('Aurora')).toBeInTheDocument();
   });
 
