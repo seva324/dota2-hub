@@ -154,8 +154,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700/60 bg-[#0f1218] text-slate-100 p-0 overscroll-contain'
-    : 'w-full sm:max-w-[420px] bg-[#0f1218] border-slate-700/60 text-slate-100 p-0 overscroll-contain';
+    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700/60 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 p-0 overscroll-contain'
+    : 'w-full sm:max-w-[420px] bg-gradient-to-b from-slate-900 to-slate-950 border-slate-700/60 text-slate-100 p-0 overscroll-contain';
 
   /** ── Desktop header ── */
   const desktopHeader = (
@@ -222,23 +222,17 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       {/* Stats bar */}
       <div className="mt-4 grid grid-cols-5 divide-x divide-slate-600/30 overflow-hidden rounded-xl border border-slate-700/60 bg-gradient-to-r from-slate-800/70 via-slate-800/40 to-slate-800/70">
         {[
-          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', isWinRate: true },
-          { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '--' },
-          { label: '场均死亡', value: player?.avgDeaths != null ? player.avgDeaths.toFixed(1) : '--' },
-          { label: '场均GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '--' },
-          { label: '场均XPM', value: player?.avgXpm != null ? String(player.avgXpm) : '--' },
-        ].map((stat) => {
-          const winRateValue = player?.winRate;
-          const winRateColor = stat.isWinRate && winRateValue != null
-            ? (winRateValue >= 50 ? 'text-emerald-400' : 'text-red-400')
-            : '';
-          return (
+          { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', color: player?.winRate != null ? (player.winRate >= 50 ? 'text-emerald-400' : 'text-red-400') : 'text-white' },
+          { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '--', color: 'text-white' },
+          { label: '场均死亡', value: player?.avgDeaths != null ? player.avgDeaths.toFixed(1) : '--', color: 'text-red-400' },
+          { label: '场均GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '--', color: 'text-amber-400' },
+          { label: '场均XPM', value: player?.avgXpm != null ? String(player.avgXpm) : '--', color: 'text-amber-400' },
+        ].map((stat) => (
             <div key={stat.label} className="flex flex-col items-center justify-center gap-1 py-3">
-              <span className={`text-2xl font-bold tabular-nums ${winRateColor || 'text-white'}`}>{stat.value}</span>
+              <span className={`text-3xl font-bold tabular-nums ${stat.color}`}>{stat.value}</span>
               <span className="text-[10px] font-medium text-slate-400">{stat.label}</span>
             </div>
-          );
-        })}
+          ))}
       </div>
     </div>
   );
@@ -348,11 +342,11 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                     <span className="truncate text-sm font-medium text-slate-100">{heroName}</span>
                     <span className="ml-2 shrink-0 text-[10px] text-slate-500">{hero.games}场</span>
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700">
-                      <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(hero.winRate, 100)}%` }} />
+                  <div className="mt-1.5 flex items-center gap-2.5">
+                    <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-700/80">
+                      <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(hero.winRate, 100)}%` }} />
                     </div>
-                    <span className={`shrink-0 text-[11px] font-semibold tabular-nums ${textColor}`}>{hero.winRate.toFixed(1)}%</span>
+                    <span className={`shrink-0 text-xs font-bold tabular-nums ${textColor}`}>{hero.winRate.toFixed(1)}%</span>
                   </div>
                 </div>
               </div>
@@ -387,6 +381,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
           </div>
           {recentMatches.slice(0, 5).map((match, idx) => {
             const playerHeroImg = match.playerHeroId ? getHeroImg(match.playerHeroId, heroMap) : '';
+            const playerHeroName = match.playerHeroId ? getHeroName(match.playerHeroId, heroMap) : '';
+            const heroInitial = playerHeroName?.[0] || '?';
             const won = match.won;
             const kdaDisplay = match.kda || '--';
             const gpmDisplay = match.gpm != null ? String(match.gpm) : '--';
@@ -405,9 +401,14 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                 {/* Hero image */}
                 <div className="flex justify-center">
                   {playerHeroImg ? (
-                    <img src={playerHeroImg} alt="hero" className="size-8 rounded object-cover" />
+                    <SafeImg
+                      src={playerHeroImg}
+                      alt={playerHeroName}
+                      className="size-8 rounded object-cover"
+                      fallback={<div className="flex size-8 items-center justify-center rounded bg-gradient-to-br from-slate-700 to-slate-800 text-xs font-bold text-slate-400">{heroInitial}</div>}
+                    />
                   ) : (
-                    <div className="size-8 rounded bg-slate-700" />
+                    <div className="flex size-8 items-center justify-center rounded bg-gradient-to-br from-slate-700 to-slate-800 text-xs font-bold text-slate-400">{heroInitial}</div>
                   )}
                 </div>
                 {/* KDA */}
@@ -446,8 +447,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const signatureSection = (
     <div className="space-y-4">
       <section>
-        <h4 className="mb-3 flex items-center gap-1.5 font-semibold text-white">
-          <Trophy className="size-3.5 text-amber-400" />
+        <h4 className="mb-3 flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-transparent px-2 py-1.5 font-semibold text-white">
+          <Trophy className="size-4 text-amber-400" />
           招牌英雄
         </h4>
         {signatureHeroes.length ? (
@@ -457,7 +458,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
               const heroName = getHeroName(hero.heroId, heroMap);
               const isPositive = hero.winRate >= 50;
               return (
-                <div key={hero.heroId} className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3 transition hover:border-slate-600/60 hover:bg-slate-800/50">
+                <div key={hero.heroId} className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-gradient-to-b from-slate-800/60 to-slate-800/20 p-3 transition hover:border-slate-600/60 hover:from-slate-700/60 hover:to-slate-700/30">
                   <div className="size-20 overflow-hidden rounded-xl bg-slate-700">
                     {img ? (
                       <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
@@ -634,6 +635,9 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
         <div className="h-full overflow-y-auto">
           {/* ── Header (desktop / mobile variants) ── */}
           {isMobile ? mobileHeader : desktopHeader}
+
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-600/40 to-transparent" />
 
           {/* ── Body ── */}
           <div className="space-y-4 p-4">

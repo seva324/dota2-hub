@@ -51,11 +51,11 @@ const EMPTY_TEAMS: TeamLike[] = [];
 const EMPTY_MATCHES: MatchLike[] = [];
 const FALLBACK_TEAM_SQUADS: Record<string, SquadPlayerCard[]> = {
   xg: [
-    { accountId: 898754153, name: 'Ame', realname: '王淳煜', countryCode: 'CN', avatarUrl: null },
-    { accountId: 94786276, name: 'Xm', realname: '郭鸿巍', countryCode: 'CN', avatarUrl: null },
-    { accountId: 129958758, name: 'Xxs', realname: '林靖', countryCode: 'CN', avatarUrl: null },
-    { accountId: 137193239, name: 'XinQ', realname: '赵子星', countryCode: 'CN', avatarUrl: null },
-    { accountId: 91629740, name: 'Dy', realname: '丁聪', countryCode: 'CN', avatarUrl: null },
+    { accountId: 898754153, name: 'Ame', realname: '王淳煜', countryCode: 'CN', avatarUrl: null, role: 'Carry' },
+    { accountId: 94786276, name: 'Xm', realname: '郭鸿巍', countryCode: 'CN', avatarUrl: null, role: 'Mid' },
+    { accountId: 129958758, name: 'Xxs', realname: '林靖', countryCode: 'CN', avatarUrl: null, role: 'Offlane' },
+    { accountId: 137193239, name: 'XinQ', realname: '赵子星', countryCode: 'CN', avatarUrl: null, role: 'Support' },
+    { accountId: 91629740, name: 'Dy', realname: '丁聪', countryCode: 'CN', avatarUrl: null, role: 'Support' },
   ],
 };
 const FALLBACK_TEAM_TOP_HEROES: Record<string, Array<{ heroId: number; matches: number }>> = {
@@ -77,6 +77,7 @@ type SquadPlayerCard = {
   realname: string | null;
   countryCode: string | null;
   avatarUrl: string | null;
+  role?: string | null;
 };
 
 type RecentRow = {
@@ -536,8 +537,8 @@ export function TeamFlyout({
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700 bg-slate-900 text-slate-100 p-0 overscroll-contain'
-    : 'w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain';
+    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700 bg-slate-900 text-slate-100 p-0 overscroll-contain shadow-[0_0_40px_rgba(56,189,248,0.08)]'
+    : 'w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain shadow-[0_0_40px_rgba(56,189,248,0.08)]';
 
   const teamHue = stringToHue(selectedTeam?.name || '');
 
@@ -549,24 +550,27 @@ export function TeamFlyout({
             <SheetHeader
               className="border-b border-slate-700 p-6 pr-12"
               style={{
-                background: `linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42) 50%, hsl(${teamHue} 50% 30% / 0.3) 100%)`,
+                background: `linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42) 40%, hsl(${teamHue} 60% 25% / 0.35) 100%)`,
               }}
             >
               <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+                <div className="w-20 h-20 rounded-2xl bg-slate-800/80 border border-slate-600/50 flex items-center justify-center overflow-hidden shadow-lg"
+                  style={{ boxShadow: `0 0 24px hsl(${teamHue} 60% 40% / 0.15)` }}
+                >
                   <SafeImg
                     src={selectedTeamLogoUrl}
                     alt={selectedTeam?.name || 'Team'}
-                    className="w-14 h-14 object-contain"
+                    className="w-16 h-16 object-contain"
                     fallback={<Shield className="w-8 h-8 text-slate-400" />}
                   />
                 </div>
                 <div className="min-w-0">
-                  <SheetTitle className="text-xl font-bold text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
+                  <SheetTitle className="text-2xl font-bold text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
                   <SheetDescription className="sr-only">Team details</SheetDescription>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
                   {isFlyoutLoading && <Badge variant="outline" className="border-blue-500/30 text-blue-300">加载中...</Badge>}
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-300 text-[10px] font-semibold tracking-wider uppercase">DOTA 2</Badge>
                   {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
                   {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, resolvedTeams) ? (
                     <Badge variant="outline" className="border-red-500/40 text-red-300">
@@ -578,9 +582,10 @@ export function TeamFlyout({
               </div>
             </SheetHeader>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-4">
               {/* Stats Bar */}
-              <div className="rounded-xl border border-sky-500/20 bg-slate-800/60 p-4 shadow-[0_0_20px_rgba(56,189,248,0.08)]">
+              <div className="rounded-xl border border-sky-500/20 bg-slate-800/60 p-4 shadow-[0_0_24px_rgba(56,189,248,0.1)]">
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest text-center mb-3">近 10 场</div>
                 <div className="flex items-center justify-between">
                   <div className="text-center flex-1">
                     <div className="text-2xl font-bold text-emerald-400 tabular-nums">{wins}</div>
@@ -593,14 +598,17 @@ export function TeamFlyout({
                   </div>
                   <div className="w-px h-10 bg-slate-700" />
                   <div className="text-center flex-1">
-                    <div className="text-2xl font-bold text-sky-400 tabular-nums">{winRate}%</div>
+                    <div className="text-3xl font-bold text-sky-400 tabular-nums">{winRate}%</div>
                     <div className="text-xs text-slate-400 mt-0.5">胜率</div>
                   </div>
                 </div>
-                <div className="mt-3 h-1.5 rounded-full bg-slate-700/70 overflow-hidden">
+                <div className="mt-3 h-2 rounded-full bg-slate-700/70 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(0, winRate))}%` }}
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, winRate))}%`,
+                      boxShadow: `0 0 12px rgba(52,211,153,0.4)`,
+                    }}
                   />
                 </div>
               </div>
@@ -608,7 +616,7 @@ export function TeamFlyout({
               {/* Upcoming Match */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-blue-400" />
+                  <Calendar className="w-4 h-4 text-amber-400" />
                   <h4 className="text-sm font-semibold text-slate-200">下一场</h4>
                 </div>
                 {model?.nextMatch ? (() => {
@@ -618,21 +626,22 @@ export function TeamFlyout({
                   const radName = nm.radiant_team_name || 'TBD';
                   const direName = nm.dire_team_name || 'TBD';
                   return (
-                    <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-slate-800/80 to-slate-800/40 p-5 shadow-[0_0_20px_rgba(59,130,246,0.06)]">
+                    <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-amber-950/10 p-5 shadow-[0_0_24px_rgba(245,158,11,0.08)]">
+                      <div className="text-[10px] font-semibold text-amber-400/80 uppercase tracking-widest text-center mb-3">即将开始</div>
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
                           <div className="w-14 h-14 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
-                            <SafeImg src={radLogo} alt={radName} className="w-12 h-12 object-contain" fallback={<Shield className="w-6 h-6 text-slate-500" />} />
+                            <SafeImg src={radLogo} alt={radName} className="w-[52px] h-[52px] object-contain" fallback={<Shield className="w-7 h-7 text-slate-500" />} />
                           </div>
                           <span className="text-sm font-medium text-slate-100 text-center truncate w-full">{radName}</span>
                         </div>
                         <div className="flex flex-col items-center flex-shrink-0">
-                          <span className="text-lg font-extrabold text-sky-400 tracking-wider">VS</span>
-                          <span className="text-xs text-blue-300 mt-1.5">{formatTs(nm.start_time)}</span>
+                          <span className="text-lg font-extrabold text-amber-400 tracking-wider">VS</span>
+                          <span className="text-xs text-amber-300/80 mt-1.5 font-mono tabular-nums">{formatTs(nm.start_time)}</span>
                         </div>
                         <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
                           <div className="w-14 h-14 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden">
-                            <SafeImg src={direLogo} alt={direName} className="w-12 h-12 object-contain" fallback={<Shield className="w-6 h-6 text-slate-500" />} />
+                            <SafeImg src={direLogo} alt={direName} className="w-[52px] h-[52px] object-contain" fallback={<Shield className="w-7 h-7 text-slate-500" />} />
                           </div>
                           <span className="text-sm font-medium text-slate-100 text-center truncate w-full">{direName}</span>
                         </div>
@@ -659,12 +668,12 @@ export function TeamFlyout({
                   {activeSquad.map((player, idx) => {
                     const flagUrl = toFlagImageUrl(player.countryCode, 32);
                     const body = (
-                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-700 bg-slate-800/50 p-2.5 transition-all duration-200 hover:border-slate-500 hover:bg-slate-700/50 hover:shadow-[0_0_12px_rgba(56,189,248,0.06)]">
-                        <div className="w-10 h-10 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <div className="flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-800/40 p-3 transition-all duration-200 hover:border-slate-500/80 hover:bg-slate-700/60 hover:shadow-[0_0_16px_rgba(56,189,248,0.12)] hover:scale-[1.02]">
+                        <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {player.avatarUrl ? (
                             <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
                           ) : (
-                            <UserRound className="h-5 w-5 text-slate-500" />
+                            <UserRound className="h-6 w-6 text-slate-500" />
                           )}
                         </div>
                         <div className="min-w-0">
@@ -677,6 +686,9 @@ export function TeamFlyout({
                             <span className="text-sm font-semibold text-slate-100 truncate">{player.name}</span>
                           </div>
                           <div className="text-xs text-slate-400 truncate mt-0.5">{player.realname || '—'}</div>
+                          {player.role && (
+                            <div className="text-[10px] font-medium text-amber-400/70 truncate mt-0.5 uppercase tracking-wide">{player.role}</div>
+                          )}
                         </div>
                       </div>
                     );
@@ -715,24 +727,46 @@ export function TeamFlyout({
                     const heroWr = heroWinStats && heroWinStats.total > 0
                       ? Math.round((heroWinStats.wins / heroWinStats.total) * 100)
                       : null;
+                    const wins = heroWinStats?.wins ?? 0;
+                    const losses = heroWinStats ? heroWinStats.total - heroWinStats.wins : 0;
                     const img = getHeroImg(heroId, heroMap);
                     const heroName = heroMap[heroId]?.name_cn || heroMap[heroId]?.name || `Hero ${heroId}`;
                     return (
-                      <div key={heroId} className="flex items-center gap-3 rounded-lg bg-slate-800/50 border border-slate-700 p-2">
+                      <div key={heroId} className="flex items-center gap-3 rounded-lg bg-slate-800/50 border border-slate-700/80 p-2.5 hover:border-slate-600/80 transition-colors duration-200">
                         {img ? (
-                          <img src={img} alt={heroName} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                          <img src={img} alt={heroName} className="w-12 h-12 rounded object-cover flex-shrink-0 border border-slate-700/50" />
                         ) : (
-                          <div className="w-10 h-10 rounded bg-slate-700 flex-shrink-0" />
+                          <div className="w-12 h-12 rounded bg-slate-700 flex-shrink-0 border border-slate-700/50" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-slate-200 truncate">{heroName}</span>
-                            <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{cnt} 场{heroWr !== null ? ` · ${heroWr}%` : ''}</span>
+                            <span className="text-sm font-semibold text-slate-200 truncate">{heroName}</span>
+                            <span className="text-xs font-medium text-slate-400 flex-shrink-0 ml-2 tabular-nums">{cnt} 场</span>
                           </div>
-                          <div className="mt-1.5 h-1 rounded-full bg-slate-700 overflow-hidden">
+                          <div className="flex items-center gap-2 mt-1 text-[11px] tabular-nums">
+                            {heroWinStats ? (
+                              <>
+                                <span className="text-emerald-400">{wins} 胜</span>
+                                <span className="text-slate-600">·</span>
+                                <span className="text-red-400">{losses} 负</span>
+                                {heroWr !== null && (
+                                  <>
+                                    <span className="text-slate-600">·</span>
+                                    <span className="text-sky-400 font-medium">{heroWr}%</span>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-slate-500">—</span>
+                            )}
+                          </div>
+                          <div className="mt-2 h-1.5 rounded-full bg-slate-700/70 overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all"
-                              style={{ width: `${pct}%` }}
+                              className="h-full rounded-full bg-gradient-to-r from-purple-500 via-purple-400 to-fuchsia-400 transition-all duration-500"
+                              style={{
+                                width: `${Math.max(4, pct)}%`,
+                                boxShadow: `0 0 8px rgba(168,85,247,0.3)`,
+                              }}
                             />
                           </div>
                         </div>

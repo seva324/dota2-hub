@@ -1,5 +1,5 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
-import { CalendarDays, Flame, Newspaper, Play, Radio, Shield, Trophy, UserRound } from 'lucide-react';
+import { CalendarDays, Flame, MapPin, Monitor, Newspaper, Play, Radio, Shield, Trophy, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
@@ -460,7 +460,9 @@ function RailPanel({ title, icon: Icon, children }: {
 }
 
 function formatGameTime(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () => void }) {
@@ -471,12 +473,12 @@ function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () 
   return (
     <button
       type="button"
-      className="w-full text-left rounded-xl border border-red-500/30 bg-slate-800 p-4 hover:border-red-400/40 transition-colors"
+      className="w-full text-left rounded-xl border border-slate-700 bg-slate-800/80 p-4 hover:border-slate-600 transition-colors"
       onClick={onClick}
     >
       <div className="mb-3 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
-          <span className="size-1.5 rounded-full bg-white animate-pulse" />
+        <span className="inline-flex items-center gap-1 rounded bg-red-600/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+          <span className="size-1 rounded-full bg-white animate-pulse" />
           LIVE
         </span>
         <span className="text-sm text-slate-400">{data.leagueName} · {data.stage}</span>
@@ -489,8 +491,8 @@ function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () 
           <SafeImg
             src={teamLogoMap[team1.name]}
             alt={team1.name}
-            className="size-10 object-contain"
-            fallback={<div className="size-10 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team1.name.substring(0, 2).toUpperCase()}</div>}
+            className="size-12 object-contain"
+            fallback={<div className="size-12 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team1.name.substring(0, 2).toUpperCase()}</div>}
           />
         </div>
         <div className="text-center">
@@ -507,8 +509,8 @@ function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () 
           <SafeImg
             src={teamLogoMap[team2.name]}
             alt={team2.name}
-            className="size-10 object-contain"
-            fallback={<div className="size-10 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team2.name.substring(0, 2).toUpperCase()}</div>}
+            className="size-12 object-contain"
+            fallback={<div className="size-12 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team2.name.substring(0, 2).toUpperCase()}</div>}
           />
           <span className="text-sm font-semibold text-white">{team2.name}</span>
         </div>
@@ -560,12 +562,18 @@ function UpcomingMatchCard({ data, onClick }: { data: typeof prototypeUpcoming[n
   return (
     <button
       type="button"
-      className="w-full text-left rounded-xl border border-white/10 bg-slate-800 p-4 hover:border-white/20 transition-colors"
+      className="w-full text-left rounded-xl border border-white/10 bg-slate-800 p-3.5 hover:border-white/20 transition-colors"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold text-white">{timeStr}</span>
-        <span className="text-xs rounded bg-slate-700 px-2 py-0.5 text-slate-300">{data.series_type}</span>
+      <div className="flex items-center justify-between mb-2">
+        <span className="inline-flex items-center gap-1 rounded bg-slate-700/60 px-1.5 py-0.5 text-[10px] text-slate-400">
+          <CalendarDays className="size-3" />
+          即将开始
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400">{timeStr}</span>
+          <span className="text-xs rounded bg-slate-700 px-2 py-0.5 text-slate-300">{data.series_type}</span>
+        </div>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex items-center gap-2 justify-end">
@@ -573,8 +581,8 @@ function UpcomingMatchCard({ data, onClick }: { data: typeof prototypeUpcoming[n
           <SafeImg
             src={teamLogoMap[data.radiant_team_name]}
             alt={data.radiant_team_name}
-            className="size-8 object-contain"
-            fallback={<div className="size-8 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{data.radiant_team_name.substring(0, 2).toUpperCase()}</div>}
+            className="size-12 object-contain"
+            fallback={<div className="size-12 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{data.radiant_team_name.substring(0, 2).toUpperCase()}</div>}
           />
         </div>
         <span className="text-xs text-slate-500">VS</span>
@@ -582,13 +590,15 @@ function UpcomingMatchCard({ data, onClick }: { data: typeof prototypeUpcoming[n
           <SafeImg
             src={teamLogoMap[data.dire_team_name]}
             alt={data.dire_team_name}
-            className="size-8 object-contain"
-            fallback={<div className="size-8 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{data.dire_team_name.substring(0, 2).toUpperCase()}</div>}
+            className="size-12 object-contain"
+            fallback={<div className="size-12 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{data.dire_team_name.substring(0, 2).toUpperCase()}</div>}
           />
           <span className="text-sm font-semibold text-white truncate">{data.dire_team_name}</span>
         </div>
       </div>
-      <div className="mt-3 text-xs text-slate-500">{data.tournament_name}</div>
+      <div className="mt-2.5">
+        <Badge variant="secondary" className="bg-slate-700/50 text-slate-300 border-0 text-[10px]">{data.tournament_name}</Badge>
+      </div>
     </button>
   );
 }
@@ -612,7 +622,7 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
       {/* Left column */}
       <div className="w-2/3 flex flex-col gap-4 min-w-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">全部比赛</h2>
+          <h2 className="text-lg font-bold text-white">全部比赛 <span className="inline-flex items-center justify-center rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-300">{mockLiveHeroes.length + prototypeUpcoming.length}</span></h2>
           <div className="flex gap-1 rounded-lg bg-slate-800 p-1">
             {['全部', 'S级赛事', '中国战队', 'DreamLeague', 'ESL One'].map((f) => (
               <button
@@ -648,9 +658,11 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
           />
         ))}
 
+        <div className="border-t border-white/[0.06] pt-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-300">
           <CalendarDays className="size-4 text-slate-400" />
           即将开始
+        </div>
         </div>
 
         {prototypeUpcoming.map((match) => (
@@ -668,17 +680,18 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
           <div className="mb-3 flex items-center gap-2">
             <Shield className="size-4 text-red-300" />
             <h2 className="text-sm font-bold text-white">热门战队</h2>
+            <Badge className="bg-amber-500/15 text-amber-300 border-0 text-[10px]">TOP 5</Badge>
           </div>
           <div className="flex flex-col gap-2">
             {hotTeams.map((team, index) => (
               <button
                 key={team.name}
                 type="button"
-                className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:border-red-400/30 hover:bg-red-500/10"
+                className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:border-slate-600 hover:bg-white/[0.06]"
                 onClick={() => onOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
-                <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-5 shrink-0 object-contain" fallback={<div className="size-5 shrink-0 rounded-full bg-slate-700" />} />
+                <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-6 shrink-0 object-contain" fallback={<div className="size-6 shrink-0 rounded-full bg-slate-700" />} />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">{team.name}</span>
                 <span className="text-xs tabular-nums text-slate-400">{team.rating}</span>
                 <span className={team.trend === 'up' ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
@@ -695,13 +708,27 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
             <h2 className="text-sm font-bold text-white">近期赛事</h2>
           </div>
           <div className="flex flex-col gap-2">
-            {recentEvents.map((event) => (
-              <div key={event.name} className="rounded-xl border border-white/8 bg-black/15 px-3 py-2.5">
-                <div className="text-sm font-semibold text-slate-100">{event.name}</div>
-                <div className="mt-1 text-xs text-slate-400">{event.format}</div>
-                <div className="mt-0.5 text-xs text-slate-500">{event.dates}</div>
-              </div>
-            ))}
+            {recentEvents.map((event) => {
+              const isOnline = event.format.startsWith('线上');
+              const Icon = isOnline ? Monitor : MapPin;
+              const location = event.format.replace(/^(线上赛|线下赛)( · )?/, '');
+              return (
+                <div key={event.name} className="rounded-xl border border-white/8 bg-black/15 px-3 py-2.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="size-3.5 shrink-0 text-slate-500" />
+                    <span className="text-sm font-semibold text-slate-100">{event.name}</span>
+                    <Badge variant="secondary" className={`ml-auto border-0 text-[10px] ${isOnline ? 'bg-emerald-500/15 text-emerald-300' : 'bg-blue-500/15 text-blue-300'}`}>
+                      {isOnline ? '线上' : '线下'}
+                    </Badge>
+                  </div>
+                  {location && <div className="text-xs text-slate-400 ml-5.5">{location}</div>}
+                  <div className="text-xs text-slate-500 ml-5.5 flex items-center gap-1">
+                    <CalendarDays className="size-3" />
+                    {event.dates}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -712,11 +739,11 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
           </div>
           <div className="flex flex-col gap-2">
             {patchNotes.map((note) => (
-              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2">
-                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-                  note.category === '英雄' ? 'bg-red-900/60 text-red-300 border border-red-700/30' :
-                  note.category === '物品' ? 'bg-amber-900/60 text-amber-300 border border-amber-700/30' :
-                  'bg-emerald-900/60 text-emerald-300 border border-emerald-700/30'
+              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold border ${
+                  note.category === '英雄' ? 'bg-red-900/70 text-red-200 border-red-600/40' :
+                  note.category === '物品' ? 'bg-amber-900/70 text-amber-200 border-amber-600/40' :
+                  'bg-emerald-900/70 text-emerald-200 border-emerald-600/40'
                 }`}>
                   {note.category}
                 </div>
@@ -812,7 +839,7 @@ export function HomeDashboard() {
   };
 
   return (
-    <div className="mx-auto grid max-w-[1480px] gap-4 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24">
+    <div className="mx-auto grid max-w-[1480px] gap-4 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-slate-900/40 via-slate-950 to-slate-950">
       <div className="flex min-w-0 flex-col gap-4">
         <MobileMatchToolbar />
         <FeaturedEventBanner />
@@ -835,16 +862,17 @@ export function HomeDashboard() {
 
       <aside className="hidden min-w-0 flex-col gap-4 lg:flex">
         <RailPanel title="热门战队" icon={Shield}>
+          <Badge className="mb-2 inline-flex bg-amber-500/15 text-amber-300 border-0 text-[10px]">TOP 5</Badge>
           <div className="flex flex-col gap-2">
             {hotTeams.map((team, index) => (
               <button
                 key={team.name}
                 type="button"
-                className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:border-red-400/30 hover:bg-red-500/10"
+                className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:border-slate-600 hover:bg-white/[0.06]"
                 onClick={() => handleOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
-                <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-5 shrink-0 object-contain" fallback={<div className="size-5 shrink-0 rounded-full bg-slate-700" />} />
+                <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-6 shrink-0 object-contain" fallback={<div className="size-6 shrink-0 rounded-full bg-slate-700" />} />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">{team.name}</span>
                 <span className="text-xs tabular-nums text-slate-400">{team.rating}</span>
                 <span className={team.trend === 'up' ? 'text-xs text-emerald-400' : 'text-xs text-red-400'}>
@@ -855,14 +883,16 @@ export function HomeDashboard() {
           </div>
         </RailPanel>
 
+        <div className="border-t border-white/[0.05] mx-2" />
+
         <RailPanel title="版本热点" icon={Flame}>
           <div className="flex flex-col gap-2">
             {patchNotes.map((note) => (
-              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2">
-                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-                  note.category === '英雄' ? 'bg-red-900/60 text-red-300 border border-red-700/30' :
-                  note.category === '物品' ? 'bg-amber-900/60 text-amber-300 border border-amber-700/30' :
-                  'bg-emerald-900/60 text-emerald-300 border border-emerald-700/30'
+              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold border ${
+                  note.category === '英雄' ? 'bg-red-900/70 text-red-200 border-red-600/40' :
+                  note.category === '物品' ? 'bg-amber-900/70 text-amber-200 border-amber-600/40' :
+                  'bg-emerald-900/70 text-emerald-200 border-emerald-600/40'
                 }`}>
                   {note.category}
                 </div>
@@ -871,6 +901,8 @@ export function HomeDashboard() {
             ))}
           </div>
         </RailPanel>
+
+        <div className="border-t border-white/[0.05] mx-2" />
 
         <RailPanel title="赛事筛选" icon={Trophy}>
           <div className="flex flex-wrap gap-2">
@@ -881,6 +913,8 @@ export function HomeDashboard() {
             ))}
           </div>
         </RailPanel>
+
+        <div className="border-t border-white/[0.05] mx-2" />
 
         <RailPanel title="人气选手" icon={UserRound}>
           <div className="flex flex-col gap-2">

@@ -124,8 +124,8 @@ function getHeroImg(id: number): string {
 
 function getHeroPortraitUrl(heroId: number): string {
   const hero = heroesData[heroId];
-  if (!hero?.img) return '';
-  return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${hero.img}.png`;
+  const name = hero?.img || String(heroId);
+  return toCnAssetUrl(`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${name}.png`);
 }
 
 function getLaneName(lane: number | undefined, isRadiant: boolean): string {
@@ -178,7 +178,8 @@ function itemPlaceholderColor(itemId: number): React.CSSProperties {
 }
 
 function heroPlaceholderLabel(heroId: number): string {
-  return getHeroName(heroId);
+  const name = getHeroName(heroId);
+  return name.charAt(0);
 }
 
 function itemAbbr(name: string): string {
