@@ -507,7 +507,7 @@ function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () 
           {liveMap?.score ? (
             <>
               <div className="text-2xl font-bold tabular-nums text-white">{liveMap.score}</div>
-              <div className="text-xs tabular-nums text-slate-400">{formatGameTime(liveMap.gameTime)}</div>
+              <div className="text-xs tabular-nums text-slate-400">{formatGameTime(liveMap.gameTime ?? 0)}</div>
             </>
           ) : (
             <div className="text-sm text-slate-400">暂无数据</div>
@@ -675,12 +675,12 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam }: PrototypeDashboa
             onClick={() => {
               const seriesMaps = hero.maps.map((m) => ({
                 label: m.label,
-                matchId: m.matchId,
-                radiantScore: m.team1Score,
-                direScore: m.team2Score,
-                duration: m.gameTime,
+                matchId: String(m.matchId ?? ''),
+                radiantScore: m.team1Score ?? undefined,
+                direScore: m.team2Score ?? undefined,
+                duration: m.gameTime ?? undefined,
               }));
-              onOpenMatch(hero.liveMap?.matchId ?? hero.maps[0]?.matchId ?? '', seriesMaps);
+              onOpenMatch(String(hero.liveMap?.matchId ?? hero.maps[0]?.matchId ?? ''), seriesMaps);
             }}
           />
         ))}

@@ -134,12 +134,6 @@ function getHeroImg(id: number): string {
   return getHeroImageUrl(id, hero.img);
 }
 
-function getHeroPortraitUrl(heroId: number): string {
-  const hero = heroesData[heroId];
-  if (hero?.img_url) return hero.img_url;
-  return getHeroImageUrl(heroId, hero?.img);
-}
-
 function getLaneName(lane: number | undefined, isRadiant: boolean): string {
   if (!lane) return '';
   if (lane === 1) return isRadiant ? '优势路' : '劣势路';
@@ -806,8 +800,6 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         // Sample gold advantage at 5-min intervals (0, 5, 10, 15, 20, 25, 30, 35)
                         const goldSamples = (match.radiant_gold_adv || []).filter((_, i) => i % 5 === 0);
                         const xpSamples = (match.radiant_xp_adv || []).filter((_, i) => i % 5 === 0);
-                        const maxAbsGold = Math.max(...goldSamples.map(Math.abs), 10000);
-                        const maxAbsXp = Math.max(...xpSamples.map(Math.abs), 8000);
 
                         return (
                           <div className="space-y-4">
@@ -854,7 +846,6 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                                   {/* Markers */}
                                   <div className="relative flex justify-between h-full items-center px-0.5">
                                     {goldSamples.map((val, i) => {
-                                      const pct = Math.min(Math.abs(val) / maxAbsGold * 100, 100);
                                       const isRadiant = val >= 0;
                                       return (
                                         <div key={i} className="relative flex flex-col items-center" style={{ width: `${100 / goldSamples.length}%` }}>
@@ -1288,13 +1279,6 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
 function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: MatchDetail; radiantTeamName: string; direTeamName: string }) {
   const heroes = useHeroesData();
-  const getHeroPortraitUrl = (heroId: number): string => {
-    const hero = heroes[heroId];
-    if (hero?.img) {
-      return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/heroes/${hero.img}_sb.png`;
-    }
-    return `/images/mirror/heroes/${heroId}.png`;
-  };
   const getHeroName = (heroId: number): string => {
     const hero = heroes[heroId];
     return hero?.name_cn || hero?.name || `Hero ${heroId}`;
@@ -1311,30 +1295,24 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
   const direBans = picksBans.filter((pb) => pb.team === 1 && !pb.is_pick).sort((a,b) => (a.order||0)-(b.order||0));
 
   const HeroChip = ({ pb, team }: { pb: typeof radiantPicks[0]; team: number }) => {
-    const portraitUrl = getHeroPortraitUrl(pb.hero_id);
+    const imgSrc = getHeroImg(pb.hero_id);
     const glowRing = team === 0 ? 'ring-2 ring-blue-500/30' : 'ring-2 ring-red-500/30';
     const winRate = 45 + Math.round((pb.hero_id * 17) % 25); // sample 45-69%
     return (
       <div className="flex shrink-0 flex-col items-center gap-1" style={{ width: 80 }}>
-        <div className={`h-[72px] w-[72px] overflow-hidden rounded-full border-2 border-slate-700/60 bg-slate-800 ${glowRing}`}>
-          <img
-            src={portraitUrl}
-            alt={getHeroName(pb.hero_id)}
-            className="h-full w-full object-cover object-center"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent && !parent.querySelector('.hero-fallback')) {
-                const fallback = document.createElement('div');
-                fallback.className = 'hero-fallback h-full w-full flex items-center justify-center';
-                fallback.style.background = `hsl(${(pb.hero_id * 67) % 360}, 35%, 18%)`;
-                fallback.innerHTML = `<span style="font-size:9px;color:#cbd5e1;font-weight:600;padding:0 2px;text-align:center;line-height:1.25">${heroPlaceholderLabel(pb.hero_id)}</span>`;
-                parent.appendChild(fallback);
-              }
-            }}
-          />
+        <div className={`h-[72px] w-[72px] overflow-hidden rounded-lg border-2 border-slate-700/60 bg-slate-800 ${glowRing}`}>
+          {imgSrc ? (
+            <img
+              src={imgSrc}
+              alt={getHeroName(pb.hero_id)}
+              className="h-full w-full object-cover object-top"
+              loading="lazy"
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center" style={heroPlaceholderColor(pb.hero_id)}>
+              <span className="text-[8px] text-slate-300 font-semibold px-0.5 text-center leading-tight">{heroPlaceholderLabel(pb.hero_id)}</span>
+            </div>
+          )}
         </div>
         <span className="truncate text-[10px] text-slate-400 leading-tight max-w-[80px] text-center">{getHeroName(pb.hero_id)}</span>
         <span className="text-[9px] text-slate-500 leading-tight">{winRate}%</span>
@@ -1469,7 +1447,7 @@ function MatchDataTable({
 
   return (
     <div className="space-y-6">
-      {teamData.map(({ name, players, isRadiant, isWinner, borderClass }) => (
+      {teamData.map(({ name, players, isRadiant: _isRadiant, isWinner, borderClass }) => (
         <div key={name} className="overflow-hidden rounded-xl border border-slate-800">
           {/* Team header */}
           <div className={`flex items-center gap-2 border-l-2 ${borderClass} bg-slate-800/40 border-b border-slate-800 px-4 py-2.5`}>
