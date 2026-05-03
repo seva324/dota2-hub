@@ -467,6 +467,20 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
     (m) => typeof m.radiantScore === 'number' && typeof m.direScore === 'number' && m.direScore > m.radiantScore
   ).length;
 
+  const events: Array<{ time: string; type: string; text: string; side: 'radiant' | 'dire' }> = [
+    { time: '06:32', type: 'kill', text: '夜魇击杀肉山', side: 'dire' },
+    { time: '06:33', type: 'roshan', text: 'Yatoro 获取不朽之盾', side: 'dire' },
+    { time: '12:14', type: 'tower', text: '一路 下路 T1被摧毁', side: 'radiant' },
+    { time: '17:28', type: 'kill', text: '肉山被击杀', side: 'radiant' },
+    { time: '17:30', type: 'roshan', text: 'Ame 获取不朽之盾', side: 'radiant' },
+    { time: '22:41', type: 'tower', text: '二路 中路 T2被摧毁', side: 'radiant' },
+    { time: '27:18', type: 'kill', text: 'Roshan 再次被击杀', side: 'dire' },
+    { time: '27:19', type: 'roshan', text: 'Collapse 获取不朽之盾', side: 'dire' },
+    { time: '31:52', type: 'tower', text: '三路 上路 T3被摧毁', side: 'radiant' },
+    { time: '36:05', type: 'wipe', text: '实淌团灭 4人阵亡', side: 'radiant' },
+    { time: '38:36', type: 'ancient', text: '敌方基地被摧毁', side: 'radiant' },
+  ];
+
   const detailBody = (
     <>
         {/* Map tabs: only show separately in non-prototype mode */}
@@ -481,7 +495,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                   aria-pressed={active}
                   className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                     active
-                      ? 'border-red-400/60 bg-red-500/15 text-red-100 shadow-[0_0_18px_rgba(239,68,68,0.18)]'
+                      ? 'border-red-400/60 bg-red-500/10 text-red-100 shadow-none'
                       : 'border-slate-700 bg-slate-900/75 text-slate-300 hover:border-red-400/40 hover:text-red-100'
                   }`}
                   onClick={() => setActiveMatchId(seriesMap.matchId)}
@@ -532,12 +546,12 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
             {/* ── Prototype-style hero header ── */}
             {isPrototypeMode ? (
-              <div className="mb-4 overflow-hidden rounded-xl border border-slate-800 bg-[#0e1420] border-b border-slate-800/60">
+              <div className="mb-4 overflow-hidden rounded-xl border border-slate-800 bg-gradient-to-b from-[#0e1420] to-[#0a0f1a] border-b border-slate-800/60">
                 {/* Top row: teams + series score */}
                 <div className="flex items-center justify-between gap-4 px-5 py-4">
                   {/* Left team */}
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800 p-1.5">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800 p-1.5">
                       {radiantTeamRef?.logo_url ? (
                         <img src={radiantTeamRef.logo_url} alt={radiantTeamName} className="h-full w-full object-contain" />
                       ) : (
@@ -547,7 +561,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <div className="min-w-0">
                       <button
                         type="button"
-                        className={`truncate text-lg font-bold ${match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
+                        className={`truncate text-lg font-bold tracking-wide ${match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
                         onClick={() => { if (radiantTeamRef?.name) onTeamClick?.(radiantTeamRef); }}
                       >
                         {radiantTeamName}
@@ -558,7 +572,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* Center score */}
                   <div className="shrink-0 text-center">
-                    <div className="mb-1.5 flex items-center justify-center gap-2">
+                    <div className="mb-1 flex items-center justify-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-[11px] font-bold text-white">
                         <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                         LIVE
@@ -568,16 +582,18 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       </span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <span className={`text-4xl font-black leading-none ${match.radiant_win ? 'text-white' : 'text-slate-500'}`}>
+                      <span className={`text-5xl font-black leading-none ${match.radiant_win ? 'text-white' : 'text-slate-500'}`}>
                         {seriesMaps.length > 0 ? radiantSeriesWins : match.radiant_score}
                       </span>
                       <span className="text-xl text-slate-400">:</span>
-                      <span className={`text-4xl font-black leading-none ${!match.radiant_win ? 'text-white' : 'text-slate-500'}`}>
+                      <span className={`text-5xl font-black leading-none ${!match.radiant_win ? 'text-white' : 'text-slate-500'}`}>
                         {seriesMaps.length > 0 ? direSeriesWins : match.dire_score}
                       </span>
                     </div>
-                    <div className={`mt-1 text-sm font-semibold ${match.radiant_win ? 'text-green-400' : 'text-red-400'}`}>
-                      {match.radiant_win ? radiantTeamName : direTeamName} 胜利
+                    <div className="mt-1">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${match.radiant_win ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                        {match.radiant_win ? radiantTeamName : direTeamName} 胜利
+                      </span>
                     </div>
                     <div className="mt-0.5 text-xs text-slate-500">比赛时长 {formatDuration(match.duration)}</div>
                   </div>
@@ -587,14 +603,14 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <div className="min-w-0 text-right">
                       <button
                         type="button"
-                        className={`truncate text-lg font-bold ${!match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
+                        className={`truncate text-lg font-bold tracking-wide ${!match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
                         onClick={() => { if (direTeamRef?.name) onTeamClick?.(direTeamRef); }}
                       >
                         {direTeamName}
                       </button>
                       <div className="text-xs text-slate-500">世界排名 #2</div>
                     </div>
-                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800 p-1.5">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800 p-1.5">
                       {direTeamRef?.logo_url ? (
                         <img src={direTeamRef.logo_url} alt={direTeamName} className="h-full w-full object-contain" />
                       ) : (
@@ -682,7 +698,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* Overview tab (prototype mode) */}
                   <TabsContent value="overview">
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {/* Map tabs row — between nav tabs and content */}
                       {seriesMaps.length > 0 && (
                         <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
@@ -696,7 +712,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                                   aria-pressed={active}
                                   className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                                     active
-                                      ? 'border-red-400/60 bg-red-500/15 text-red-100 shadow-[0_0_12px_rgba(239,68,68,0.15)]'
+                                      ? 'border-red-400/60 bg-red-500/10 text-red-100 shadow-none'
                                       : 'border-slate-700/60 bg-transparent text-slate-400 hover:border-red-400/30 hover:text-red-100'
                                   }`}
                                   onClick={() => setActiveMatchId(seriesMap.matchId)}
@@ -725,13 +741,15 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         </div>
                       )}
                       {/* Draft section */}
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">阵容选择</div>
                       <PrototypeOverview match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
                       {/* Economy chart + key events side by side */}
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">比赛数据</div>
                       <div className="flex gap-4 items-stretch">
-                        <div className="flex-1 min-w-0 overflow-hidden min-h-[320px]">
+                        <div className="flex-1 min-w-0 overflow-hidden min-h-[320px] rounded-xl bg-slate-900/30 p-3">
                           <MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} hideKeyEvents={isPrototypeMode} />
                         </div>
-                        <div className="w-[280px] shrink-0 rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+                        <div className="w-[280px] shrink-0 rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden flex flex-col">
                           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800">
                             <span className="text-xs font-semibold text-slate-200">关键事件</span>
                             <div className="flex gap-1">
@@ -740,7 +758,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                               ))}
                             </div>
                           </div>
-                          <div className="overflow-y-auto max-h-[380px] divide-y divide-slate-800/60">
+                          <div className="overflow-y-auto flex-1 min-h-0 divide-y divide-slate-800/60">
                             {(() => {
                               const EVENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
                                 kill: Swords,
@@ -749,19 +767,6 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                                 wipe: Skull,
                                 ancient: Trophy,
                               };
-                              const events: Array<{ time: string; type: string; text: string; side: 'radiant' | 'dire' }> = [
-                                { time: '06:32', type: 'kill', text: '夜魇击杀肉山', side: 'dire' },
-                                { time: '06:33', type: 'roshan', text: `Yatoro 获取不朽之盾`, side: 'dire' },
-                                { time: '12:14', type: 'tower', text: '一路 下路 T1被摧毁', side: 'radiant' },
-                                { time: '17:28', type: 'kill', text: '肉山被击杀', side: 'radiant' },
-                                { time: '17:30', type: 'roshan', text: `Ame 获取不朽之盾`, side: 'radiant' },
-                                { time: '22:41', type: 'tower', text: '二路 中路 T2被摧毁', side: 'radiant' },
-                                { time: '27:18', type: 'kill', text: 'Roshan 再次被击杀', side: 'dire' },
-                                { time: '27:19', type: 'roshan', text: `Collapse 获取不朽之盾`, side: 'dire' },
-                                { time: '31:52', type: 'tower', text: '三路 上路 T3被摧毁', side: 'radiant' },
-                                { time: '36:05', type: 'wipe', text: '实淌团灭 4人阵亡', side: 'radiant' },
-                                { time: '38:36', type: 'ancient', text: '敌方基地被摧毁', side: 'radiant' },
-                              ];
                               return events.map((ev, i) => {
                                 const Icon = EVENT_ICONS[ev.type];
                                 return (
@@ -773,6 +778,9 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                                 );
                               });
                             })()}
+                          </div>
+                          <div className="mt-auto border-t border-slate-800 px-3 py-2 text-center">
+                            <span className="text-[10px] text-slate-600">共 {events.length} 个事件</span>
                           </div>
                         </div>
                       </div>
@@ -933,7 +941,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                 <div className="w-[240px] shrink-0 space-y-4">
                   {/* 赛事信息 */}
                   <div className="overflow-hidden rounded-xl border border-slate-800">
-                    <div className="bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200">赛事信息</div>
+                    <div className="bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-200">赛事信息</div>
                     <div className="space-y-0 divide-y divide-slate-800">
                       <div className="overflow-hidden rounded-none bg-slate-900/60 px-3 py-3">
                         <div className="text-sm font-bold text-white">{match.league_name || 'DreamLeague S23'}</div>
@@ -959,7 +967,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* 直播与回放 */}
                   <div className="overflow-hidden rounded-xl border border-slate-800">
-                    <div className="bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200">直播与回放</div>
+                    <div className="bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-200">直播与回放</div>
                     <div className="divide-y divide-slate-800">
                       {[
                         { name: 'Twitch', color: '#9147ff', viewers: '12.4K' },
@@ -983,7 +991,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* 接下来比赛 */}
                   <div className="overflow-hidden rounded-xl border border-slate-800">
-                    <div className="flex items-center justify-between bg-slate-800 px-3 py-2">
+                    <div className="flex items-center justify-between bg-slate-800/80 px-3 py-2">
                       <span className="text-xs font-semibold text-slate-200">接下来比赛</span>
                       <button type="button" className="text-[10px] text-slate-500 hover:text-slate-300">全部赛程 ›</button>
                     </div>
@@ -1016,7 +1024,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* 相关比赛 */}
                   <div className="overflow-hidden rounded-xl border border-slate-800">
-                    <div className="bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200">相关比赛</div>
+                    <div className="bg-slate-800/80 px-3 py-2 text-xs font-semibold text-slate-200">相关比赛</div>
                     <div className="divide-y divide-slate-800">
                       {[
                         { league: 'ESL One 伯明翰', date: '2024-05-15', rS: 2, dS: 1, r: radiantTeamName, d: direTeamName },
@@ -1114,10 +1122,10 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
   const HeroChip = ({ pb }: { pb: typeof radiantPicks[0] }) => (
     <div
       className="flex shrink-0 flex-col overflow-hidden rounded-md border border-slate-700/50 bg-slate-800"
-      style={{ width: 76, height: 60 }}
+      style={{ width: 90, height: 72 }}
       title={getHeroName(pb.hero_id)}
     >
-      <div style={{ height: 44 }} className="overflow-hidden">
+      <div style={{ height: 54 }} className="overflow-hidden">
         <SafeImg
           src={getHeroImg(pb.hero_id) || undefined}
           alt={getHeroName(pb.hero_id)}
@@ -1174,10 +1182,10 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
             </span>
           </div>
           {/* Picks */}
-          <div className="flex flex-nowrap gap-1 overflow-x-auto">
+          <div className="flex flex-nowrap gap-1.5 divide-x divide-slate-700/30 overflow-x-auto">
             {radiantPicks.length > 0
               ? radiantPicks.map((pb) => <HeroChip key={`rp-${pb.order}-${pb.hero_id}`} pb={pb} />)
-              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-md bg-slate-800 border border-slate-700/30" style={{ width: 76, height: 60 }} />)
+              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-md bg-slate-800 border border-slate-700/30" style={{ width: 90, height: 72 }} />)
             }
           </div>
           {/* Bans */}
@@ -1212,10 +1220,10 @@ function PrototypeOverview({ match, radiantTeamName, direTeamName }: { match: Ma
             </div>
           </div>
           {/* Picks */}
-          <div className="flex flex-nowrap gap-1 justify-end overflow-x-auto">
+          <div className="flex flex-nowrap gap-1.5 divide-x divide-slate-700/30 justify-end overflow-x-auto">
             {direPicks.length > 0
               ? direPicks.map((pb) => <HeroChip key={`dp-${pb.order}-${pb.hero_id}`} pb={pb} />)
-              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-md bg-slate-800 border border-slate-700/30" style={{ width: 76, height: 60 }} />)
+              : [0,1,2,3,4].map(i => <div key={i} className="shrink-0 rounded-md bg-slate-800 border border-slate-700/30" style={{ width: 90, height: 72 }} />)
             }
           </div>
           {/* Bans */}
@@ -1263,7 +1271,7 @@ function TeamSummaryTable({
 
   return (
     <div className="rounded-lg border border-slate-800 overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-800/40 border-b border-slate-800">
+      <div className={`flex items-center justify-between px-3 py-2 bg-slate-800/40 border-b border-slate-800 border-l-2 ${isWinner ? 'border-l-green-500/60' : 'border-l-slate-700/40'}`}>
         <button
           type="button"
           className="text-sm font-semibold text-slate-100 hover:underline underline-offset-4"
