@@ -19,27 +19,27 @@ const nowTs = () => Math.floor(Date.now() / 1000);
 const prototypeTeams = [
   { team_id: '1', name: 'XG', tag: 'XG', logo_url: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp', region: 'China', is_cn_team: true },
   { team_id: '2', name: 'Team Spirit', tag: 'Spirit', logo_url: '/images/mirror/teams/team-spirit-white.svg', region: 'EU' },
-  { team_id: '3', name: 'Falcons', tag: 'Falcons', logo_url: '/images/mirror/teams/team-falcons.svg', region: 'MENA' },
-  { team_id: '4', name: 'Tundra', tag: 'Tundra', logo_url: '/images/mirror/teams/tundra-esports.svg', region: 'EU' },
+  { team_id: '3', name: 'Falcons', tag: 'Falcons', logo_url: '/images/mirror/teams/team-falcons-ranking-dark.webp', region: 'MENA' },
+  { team_id: '4', name: 'Tundra', tag: 'Tundra', logo_url: '/images/mirror/teams/tundra-esports-white.svg', region: 'EU' },
   { team_id: '5', name: 'Liquid', tag: 'Liquid', logo_url: '/images/mirror/teams/team-liquid-white.svg', region: 'EU' },
-  { team_id: '6', name: 'Aurora', tag: 'Aurora', logo_url: '/images/mirror/teams/aurora.svg', region: 'SEA' },
+  { team_id: '6', name: 'Aurora', tag: 'Aurora', logo_url: '/images/mirror/teams/aurora-ranking-dark.png', region: 'SEA' },
   { team_id: '7', name: 'Yakult Brothers', tag: 'YB', logo_url: '/images/mirror/teams/yakult-brothers.svg', region: 'China', is_cn_team: true },
 ];
 
 const teamLogoMap: Record<string, string> = {
   XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
   'Team Spirit': '/images/mirror/teams/team-spirit-white.svg',
-  Falcons: '/images/mirror/teams/team-falcons.svg',
-  Tundra: '/images/mirror/teams/tundra-esports.svg',
+  Falcons: '/images/mirror/teams/team-falcons-ranking-dark.webp',
+  Tundra: '/images/mirror/teams/tundra-esports-white.svg',
   Liquid: '/images/mirror/teams/team-liquid-white.svg',
-  Aurora: '/images/mirror/teams/aurora.svg',
+  Aurora: '/images/mirror/teams/aurora-ranking-dark.png',
   YB: '/images/mirror/teams/yakult-brothers.svg',
   'Yakult Brothers': '/images/mirror/teams/yakult-brothers.svg',
   GG: '/images/mirror/teams/gaimin-gladiators.svg',
   Spirit: '/images/mirror/teams/team-spirit-white.svg',
   'Xtreme Gaming': '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-  'Team Falcons': '/images/mirror/teams/team-falcons.svg',
-  'Tundra Esports': '/images/mirror/teams/tundra-esports.svg',
+  'Team Falcons': '/images/mirror/teams/team-falcons-ranking-dark.webp',
+  'Tundra Esports': '/images/mirror/teams/tundra-esports-white.svg',
 };
 
 const hotTeams = [
@@ -790,6 +790,36 @@ export function HomeDashboard() {
   const [selectedPlayer, setSelectedPlayer] = useState<HotPlayer | null>(devPlayer ? hotPlayers[0] : null);
   const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(devPlayer ? createHotPlayerModel(hotPlayers[0]) : null);
 
+  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (prototypeMode) return;
+
+    const fetchData = async () => {
+      try {
+        const [tournamentsRes, teamsRes] = await Promise.all([
+          fetch('/api/tournaments'),
+          fetch('/api/teams'),
+        ]);
+
+        if (tournamentsRes.ok) {
+          const tournamentsData = await tournamentsRes.json();
+          setTournaments(tournamentsData.tournaments || []);
+        }
+
+        if (teamsRes.ok) {
+          const teamsData = await teamsRes.json();
+          setTeams(teamsData || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tournament data:', error);
+      }
+    };
+
+    fetchData();
+  }, [prototypeMode]);
+
   const handleOpenMatch = (matchId: number | string, seriesMaps: Array<{
     label: string;
     matchId: string;
@@ -896,7 +926,11 @@ export function HomeDashboard() {
               onOpenTeam={handleOpenTeam}
               prototypeMode={prototypeMode}
             />
-            <TournamentSection prototypeMode={prototypeMode} />
+            <TournamentSection
+              prototypeMode={prototypeMode}
+              tournaments={tournaments}
+              teams={teams}
+            />
           </>
         )}
       </div>
