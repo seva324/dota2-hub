@@ -20,8 +20,8 @@ vi.mock('@/sections/HeroSection', () => ({
   },
 }));
 
-vi.mock('@/sections/TournamentSection', () => ({
-  TournamentSection: () => <div>赛事列表</div>,
+vi.mock('@/sections/MatchesDashboard', () => ({
+  MatchesDashboard: () => <div>赛事列表</div>,
 }));
 
 vi.mock('@/components/custom/MatchDetailModal', () => ({
@@ -43,6 +43,27 @@ vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
 }));
 
 vi.mock('@/lib/playerProfile', () => ({
+  createMinimalPlayerFlyoutModel: vi.fn((accountId: number) => ({
+    accountId,
+    playerName: String(accountId),
+    realName: null,
+    chineseName: null,
+    nationality: null,
+    teamId: null,
+    teamName: null,
+    teamLogoUrl: null,
+    avatarUrl: null,
+    birthDate: null,
+    birthMonth: null,
+    birthYear: null,
+    age: null,
+    winRate: null,
+    signatureHeroes: [],
+    signatureHero: null,
+    mostPlayedHeroes: [],
+    nextMatch: null,
+    recentMatches: [],
+  })),
   fetchPlayerProfileFlyoutModel: vi.fn(async (accountId: number) => ({
     accountId,
     playerName: 'Ame',
@@ -60,6 +81,46 @@ describe('HomeDashboard quick links', () => {
   beforeEach(() => {
     heroSectionSpy.mockClear();
     window.history.pushState({}, '', '/');
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/ept-ranking') {
+        return {
+          ok: true,
+          json: async () => ({ teams: [] }),
+        } as Response;
+      }
+      if (url === '/api/upcoming?limit=3') {
+        return {
+          ok: true,
+          json: async () => ({ upcoming: [] }),
+        } as Response;
+      }
+      if (url === '/api/live-hero') {
+        return {
+          ok: true,
+          json: async () => ({ liveMatches: [] }),
+        } as Response;
+      }
+      if (url === '/api/news') {
+        return {
+          ok: true,
+          json: async () => ([]),
+        } as Response;
+      }
+      if (url.startsWith('/api/pro-players?account_id=')) {
+        const accountId = Number(url.split('=').pop());
+        return {
+          ok: true,
+          json: async () => ({
+            name: accountId === 898754153 ? 'Ame' : `Player ${accountId}`,
+            team_name: 'XG',
+            country_code: 'CN',
+            avatar_url: null,
+          }),
+        } as Response;
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    }));
   });
 
   it('opens match, team, and player detail surfaces from visible dashboard controls', async () => {
