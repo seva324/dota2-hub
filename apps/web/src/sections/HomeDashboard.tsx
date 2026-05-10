@@ -9,7 +9,7 @@ import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { HeroSection } from '@/sections/HeroSection';
 import type { LiveHeroPayload } from '@/sections/HeroSection';
-import { TournamentSection } from '@/sections/TournamentSection';
+import { MatchesDashboard } from '@/sections/MatchesDashboard';
 import { usePrototypeMode } from '@/lib/prototypeMode';
 import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
@@ -19,27 +19,27 @@ const nowTs = () => Math.floor(Date.now() / 1000);
 const prototypeTeams = [
   { team_id: '1', name: 'XG', tag: 'XG', logo_url: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp', region: 'China', is_cn_team: true },
   { team_id: '2', name: 'Team Spirit', tag: 'Spirit', logo_url: '/images/mirror/teams/team-spirit-white.svg', region: 'EU' },
-  { team_id: '3', name: 'Falcons', tag: 'Falcons', logo_url: '/images/mirror/teams/team-falcons.svg', region: 'MENA' },
-  { team_id: '4', name: 'Tundra', tag: 'Tundra', logo_url: '/images/mirror/teams/tundra-esports.svg', region: 'EU' },
+  { team_id: '3', name: 'Falcons', tag: 'Falcons', logo_url: '/images/mirror/teams/team-falcons-ranking-dark.webp', region: 'MENA' },
+  { team_id: '4', name: 'Tundra', tag: 'Tundra', logo_url: '/images/mirror/teams/tundra-esports-white.svg', region: 'EU' },
   { team_id: '5', name: 'Liquid', tag: 'Liquid', logo_url: '/images/mirror/teams/team-liquid-white.svg', region: 'EU' },
-  { team_id: '6', name: 'Aurora', tag: 'Aurora', logo_url: '/images/mirror/teams/aurora.svg', region: 'SEA' },
+  { team_id: '6', name: 'Aurora', tag: 'Aurora', logo_url: '/images/mirror/teams/aurora-ranking-dark.png', region: 'SEA' },
   { team_id: '7', name: 'Yakult Brothers', tag: 'YB', logo_url: '/images/mirror/teams/yakult-brothers.svg', region: 'China', is_cn_team: true },
 ];
 
 const teamLogoMap: Record<string, string> = {
   XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
   'Team Spirit': '/images/mirror/teams/team-spirit-white.svg',
-  Falcons: '/images/mirror/teams/team-falcons.svg',
-  Tundra: '/images/mirror/teams/tundra-esports.svg',
+  Falcons: '/images/mirror/teams/team-falcons-ranking-dark.webp',
+  Tundra: '/images/mirror/teams/tundra-esports-white.svg',
   Liquid: '/images/mirror/teams/team-liquid-white.svg',
-  Aurora: '/images/mirror/teams/aurora.svg',
+  Aurora: '/images/mirror/teams/aurora-ranking-dark.png',
   YB: '/images/mirror/teams/yakult-brothers.svg',
   'Yakult Brothers': '/images/mirror/teams/yakult-brothers.svg',
   GG: '/images/mirror/teams/gaimin-gladiators.svg',
   Spirit: '/images/mirror/teams/team-spirit-white.svg',
   'Xtreme Gaming': '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-  'Team Falcons': '/images/mirror/teams/team-falcons.svg',
-  'Tundra Esports': '/images/mirror/teams/tundra-esports.svg',
+  'Team Falcons': '/images/mirror/teams/team-falcons-ranking-dark.webp',
+  'Tundra Esports': '/images/mirror/teams/tundra-esports-white.svg',
 };
 
 const hotTeams = [
@@ -366,7 +366,9 @@ function MobileMatchToolbar() {
   );
 }
 
-function FeaturedEventBanner() {
+type FeaturedCard = { time: string; event: string; left: string; right: string; bo: string; leftLogo?: string | null; rightLogo?: string | null };
+
+function FeaturedEventBanner({ upcomingCards = featuredUpcomingCards as FeaturedCard[] }: { upcomingCards?: FeaturedCard[] }) {
   return (
     <section className="hidden overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_20%_50%,rgba(185,28,28,0.28),rgba(15,23,42,0.86)_45%,rgba(2,6,23,0.92))] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28)] lg:block">
       <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -406,21 +408,21 @@ function FeaturedEventBanner() {
             <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-400">完整赛程</Button>
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
-            {featuredUpcomingCards.map((card) => (
+            {upcomingCards.map((card) => (
                 <div key={`${card.time}-${card.left}`} className="rounded-xl border border-white/8 bg-white/[0.045] p-4">
                   <div className="text-sm font-bold text-white">{card.time}</div>
                   <div className="text-xs text-slate-400">{card.event}</div>
                   <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center">
                     <div className="flex flex-col items-center gap-1.5">
                       <div className="size-8 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden bg-slate-700">
-                        <SafeImg src={teamLogoMap[card.left]} alt={card.left} className="size-full object-contain" fallback={<span>{card.left.substring(0, 2).toUpperCase()}</span>} />
+                        <SafeImg src={card.leftLogo || teamLogoMap[card.left]} alt={card.left} className="size-full object-contain" fallback={<span>{card.left.substring(0, 2).toUpperCase()}</span>} />
                       </div>
                       <span className="text-xs text-slate-200">{card.left}</span>
                     </div>
                     <span className="text-xs text-slate-500">VS</span>
                     <div className="flex flex-col items-center gap-1.5">
                       <div className="size-8 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden bg-slate-700">
-                        <SafeImg src={teamLogoMap[card.right]} alt={card.right} className="size-full object-contain" fallback={<span>{card.right.substring(0, 2).toUpperCase()}</span>} />
+                        <SafeImg src={card.rightLogo || teamLogoMap[card.right]} alt={card.right} className="size-full object-contain" fallback={<span>{card.right.substring(0, 2).toUpperCase()}</span>} />
                       </div>
                       <span className="text-xs text-slate-200">{card.right}</span>
                     </div>
@@ -790,6 +792,36 @@ export function HomeDashboard() {
   const [selectedPlayer, setSelectedPlayer] = useState<HotPlayer | null>(devPlayer ? hotPlayers[0] : null);
   const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(devPlayer ? createHotPlayerModel(hotPlayers[0]) : null);
 
+  const [eptTeams, setEptTeams] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
+  const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (prototypeMode) return;
+
+    const fetchData = async () => {
+      try {
+        const [eptRes, upcomingRes] = await Promise.all([
+          fetch('/api/ept-ranking'),
+          fetch('/api/upcoming?limit=3'),
+        ]);
+
+        if (eptRes.ok) {
+          const eptData = await eptRes.json();
+          setEptTeams(eptData.teams?.slice(0, 5) || []);
+        }
+
+        if (upcomingRes.ok) {
+          const upcomingData = await upcomingRes.json();
+          setUpcomingMatches(upcomingData.upcoming || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      }
+    };
+
+    fetchData();
+  }, [prototypeMode]);
+
   const handleOpenMatch = (matchId: number | string, seriesMaps: Array<{
     label: string;
     matchId: string;
@@ -850,6 +882,30 @@ export function HomeDashboard() {
     void handleOpenPlayer(player);
   };
 
+  const bannerCards: FeaturedCard[] = upcomingMatches.length > 0
+    ? upcomingMatches.slice(0, 3).map((m: any) => ({
+        time: (() => {
+          const d = new Date(m.start_time * 1000);
+          const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
+          const cst = new Date(utcMs + 8 * 3600000);
+          return `${(cst.getMonth() + 1).toString().padStart(2, '0')}/${cst.getDate().toString().padStart(2, '0')} ${cst.getHours().toString().padStart(2, '0')}:${cst.getMinutes().toString().padStart(2, '0')}`;
+        })(),
+        event: m.tournament_name || 'Unknown',
+        left: m.radiant_team_name || 'TBD',
+        right: m.dire_team_name || 'TBD',
+        bo: m.series_type || 'BO3',
+        leftLogo: m.radiant_team_logo || null,
+        rightLogo: m.dire_team_logo || null,
+      }))
+    : (featuredUpcomingCards as FeaturedCard[]);
+
+  const displayTeams = eptTeams.length > 0 ? eptTeams : hotTeams.map((t: any, i: number) => ({
+    rank: i + 1,
+    name: t.name,
+    logo: teamLogoMap[t.name] || null,
+    points: t.score || 0,
+  }));
+
   return (
     <div className="relative mx-auto grid max-w-[1480px] gap-4 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-slate-900/40 via-slate-950 to-slate-950">
       {/* DotaHub watermark */}
@@ -882,7 +938,7 @@ export function HomeDashboard() {
           </div>
         </div>
         <MobileMatchToolbar />
-        <FeaturedEventBanner />
+        <FeaturedEventBanner upcomingCards={bannerCards} />
         {prototypeMode ? (
           <PrototypeDashboardContent
             onOpenMatch={handleOpenMatch}
@@ -896,7 +952,7 @@ export function HomeDashboard() {
               onOpenTeam={handleOpenTeam}
               prototypeMode={prototypeMode}
             />
-            <TournamentSection prototypeMode={prototypeMode} />
+            <MatchesDashboard onOpenMatch={handleOpenMatch} />
           </>
         )}
       </div>
@@ -905,7 +961,7 @@ export function HomeDashboard() {
         <RailPanel title="热门战队" icon={Shield}>
           <Badge className="mb-2 inline-flex bg-amber-500/15 text-amber-300 border-0 text-[10px]">实时排名</Badge>
           <div className="flex flex-col gap-2">
-            {hotTeams.map((team, index) => (
+            {displayTeams.map((team, index) => (
               <button
                 key={team.name}
                 type="button"
@@ -913,16 +969,17 @@ export function HomeDashboard() {
                 onClick={() => handleOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
-                <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-7 shrink-0 object-contain group-hover:scale-110 transition-transform" fallback={<div className="size-7 shrink-0 rounded-full bg-slate-700" />} />
+                <SafeImg
+                  src={team.logo || ''}
+                  alt={team.name}
+                  className="size-7 shrink-0 object-contain group-hover:scale-110 transition-transform"
+                  fallback={<div className="size-7 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400">{team.name.substring(0, 2).toUpperCase()}</div>}
+                />
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-slate-100 group-hover:text-white transition-colors">{team.name}</span>
-                  <span className="block text-[10px] text-slate-500 group-hover:hidden">{team.rating} ELO</span>
+                  <span className="block text-[10px] text-slate-500 group-hover:hidden">{team.points ? `${team.points.toLocaleString()} pts` : 'EPT'}</span>
                   <span className="hidden text-[10px] text-red-300/80 group-hover:block">点击查看详情 →</span>
                 </div>
-                <span className="text-xs tabular-nums text-slate-400 group-hover:hidden">{team.rating}</span>
-                <span className={`text-base font-bold ${team.trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {team.trend === 'up' ? '↑' : '↓'}
-                </span>
               </button>
             ))}
           </div>
