@@ -262,12 +262,20 @@ export const heroLiveMapSchema = z.object({
 
 export type HeroLiveMap = z.infer<typeof heroLiveMapSchema>;
 
+export const heroLiveSeriesScoreBreakdownSchema = z.object({
+  team1: z.number().nullable().optional(),
+  team2: z.number().nullable().optional(),
+});
+
+export type HeroLiveSeriesScoreBreakdown = z.infer<typeof heroLiveSeriesScoreBreakdownSchema>;
+
 export const heroLiveSummarySchema = z.object({
   source: z.string().nullable().optional(),
   sourceUrl: z.string().nullable().optional(),
   leagueName: z.string().nullable().optional(),
   bestOf: z.union([z.string(), z.number()]).nullable().optional(),
   seriesScore: z.string().nullable().optional(),
+  seriesScoreBreakdown: heroLiveSeriesScoreBreakdownSchema.nullable().optional(),
   live: z.boolean().nullable().optional(),
   startedAt: z.union([z.string(), z.number()]).nullable().optional(),
   teams: z.array(heroLiveTeamSchema),

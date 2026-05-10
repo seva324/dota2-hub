@@ -78,10 +78,12 @@ export default async function handler(req, res) {
       matches = await db.query(
         `
           SELECT m.*, s.league_id,
+                 COALESCE(NULLIF(us.tournament_name_cn, ''), us.tournament_name) AS tournament_name,
                  rt.name AS radiant_team_name, rt.logo_url AS radiant_team_logo,
                  dt.name AS dire_team_name, dt.logo_url AS dire_team_logo
           FROM matches m
           LEFT JOIN series s ON m.series_id = s.series_id
+          LEFT JOIN upcoming_series us ON CAST(us.series_id AS TEXT) = CAST(m.series_id AS TEXT)
           LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
           LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
           WHERE CAST(m.radiant_team_id AS TEXT) = ANY($1::text[])
@@ -95,10 +97,12 @@ export default async function handler(req, res) {
       matches = await db.query(
         `
           SELECT m.*, s.league_id,
+                 COALESCE(NULLIF(us.tournament_name_cn, ''), us.tournament_name) AS tournament_name,
                  rt.name AS radiant_team_name, rt.logo_url AS radiant_team_logo,
                  dt.name AS dire_team_name, dt.logo_url AS dire_team_logo
           FROM matches m
           LEFT JOIN series s ON m.series_id = s.series_id
+          LEFT JOIN upcoming_series us ON CAST(us.series_id AS TEXT) = CAST(m.series_id AS TEXT)
           LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
           LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
           ORDER BY m.start_time DESC
@@ -123,6 +127,7 @@ export default async function handler(req, res) {
       start_time: m.start_time,
       duration: m.duration,
       league_id: m.league_id,
+      tournament_name: m.tournament_name || null,
       series_type: convertSeriesType(m.series_type),
       status: m.status,
     }));

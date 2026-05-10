@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CalendarDays, Trophy } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { aggregateMatchesBySeries } from '@/lib/seriesAggregation';
 
 interface UpcomingMatch {
   id: string | number;
@@ -16,15 +17,85 @@ interface UpcomingMatch {
 
 interface FinishedMatch {
   match_id: string | number;
+  series_id?: string | number | null;
+  radiant_team_id?: string | number | null;
+  dire_team_id?: string | number | null;
   radiant_team_name: string;
   dire_team_name: string;
   radiant_team_logo?: string | null;
   dire_team_logo?: string | null;
   radiant_score?: number | null;
   dire_score?: number | null;
-  radiant_win?: boolean | null;
+  radiant_win?: boolean | number | null;
   start_time: number;
   tournament_name?: string | null;
+  series_type?: string | null;
+}
+
+interface FinishedSeries {
+  match_id: string | number;
+  series_id?: string | number | null;
+  radiant_team_name: string;
+  dire_team_name: string;
+  radiant_team_logo?: string | null;
+  dire_team_logo?: string | null;
+  radiant_score: number;
+  dire_score: number;
+  start_time: number;
+  tournament_name?: string | null;
+}
+
+function resolveSeriesWins(series: readonly FinishedMatch[], team: 'radiant' | 'dire') {
+  const primaryMatch = series[0];
+  const targetId = String(team === 'radiant' ? primaryMatch?.radiant_team_id ?? '' : primaryMatch?.dire_team_id ?? '');
+  const targetName = team === 'radiant' ? primaryMatch?.radiant_team_name : primaryMatch?.dire_team_name;
+
+  return series.reduce((wins, match) => {
+    if (match.radiant_win === null || match.radiant_win === undefined) {
+      return wins;
+    }
+
+    const radiantWon = match.radiant_win === true || match.radiant_win === 1;
+    const winnerId = String((radiantWon ? match.radiant_team_id : match.dire_team_id) ?? '');
+    const winnerName = radiantWon ? match.radiant_team_name : match.dire_team_name;
+
+    if ((targetId && winnerId === targetId) || (!targetId && winnerName === targetName)) {
+      return wins + 1;
+    }
+
+    return wins;
+  }, 0);
+}
+
+function toFinishedSeries(matches: FinishedMatch[]): FinishedSeries[] {
+  return aggregateMatchesBySeries(matches)
+    .map((series) => {
+      const orderedMatches = series.maps.map((map) => map.match);
+      const primaryMatch = series.primaryMatch;
+      const latestMatch = orderedMatches[orderedMatches.length - 1] ?? primaryMatch;
+      const detailMatchId = [...series.maps]
+        .reverse()
+        .map((map) => map.matchId)
+        .find((matchId) => matchId !== null) || primaryMatch.match_id;
+      const radiantWins = resolveSeriesWins(orderedMatches, 'radiant');
+      const direWins = resolveSeriesWins(orderedMatches, 'dire');
+
+      return {
+        match_id: detailMatchId,
+        series_id: primaryMatch.series_id,
+        radiant_team_name: primaryMatch.radiant_team_name,
+        dire_team_name: primaryMatch.dire_team_name,
+        radiant_team_logo: primaryMatch.radiant_team_logo,
+        dire_team_logo: primaryMatch.dire_team_logo,
+        radiant_score: radiantWins,
+        dire_score: direWins,
+        start_time: latestMatch.start_time,
+        tournament_name: primaryMatch.tournament_name || null,
+      };
+    })
+    .filter((series) => series.radiant_score > 0 || series.dire_score > 0)
+    .sort((left, right) => right.start_time - left.start_time)
+    .slice(0, 6);
 }
 
 function formatCountdown(targetTime: number): string {
@@ -117,11 +188,11 @@ function FinishedMatchRow({
   match,
   onOpen,
 }: {
-  match: FinishedMatch;
+  match: FinishedSeries;
   onOpen?: (id: number) => void;
 }) {
-  const radiantWon = match.radiant_win === true;
-  const direWon = match.radiant_win === false;
+  const radiantWon = match.radiant_score > match.dire_score;
+  const direWon = match.dire_score > match.radiant_score;
 
   return (
     <button
@@ -167,7 +238,7 @@ function FinishedMatchRow({
       </div>
 
       <div className="shrink-0 text-right hidden sm:block min-w-[90px]">
-        <div className="text-[10px] text-slate-500 truncate">{match.tournament_name}</div>
+        <div className="text-[10px] text-slate-500 truncate">{match.tournament_name || '近期结束'}</div>
         <div className="text-[10px] text-slate-600">{formatMatchDate(match.start_time)}</div>
       </div>
     </button>
@@ -180,14 +251,14 @@ export function MatchesDashboard({
   onOpenMatch?: (id: number, maps?: any[]) => void;
 }) {
   const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
-  const [finished, setFinished] = useState<FinishedMatch[]>([]);
+  const [finished, setFinished] = useState<FinishedSeries[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
       const [upcomingRes, matchesRes] = await Promise.all([
         fetch('/api/upcoming?limit=8&days=7'),
-        fetch('/api/matches?limit=12'),
+        fetch('/api/matches?limit=24'),
       ]);
 
       if (upcomingRes.ok) {
@@ -198,11 +269,9 @@ export function MatchesDashboard({
       if (matchesRes.ok) {
         const data = await matchesRes.json();
         const matches: FinishedMatch[] = Array.isArray(data) ? data : (data.matches || []);
-        setFinished(
-          matches
-            .filter((m) => m.radiant_score != null || m.radiant_win != null)
-            .slice(0, 6),
-        );
+        setFinished(toFinishedSeries(
+          matches.filter((match) => match.radiant_team_name && match.dire_team_name)
+        ));
       }
     } catch (e) {
       console.error('[MatchesDashboard] Failed to load data:', e);
