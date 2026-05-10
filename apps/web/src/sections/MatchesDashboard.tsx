@@ -28,6 +28,7 @@ interface FinishedMatch {
   dire_score?: number | null;
   radiant_win?: boolean | number | null;
   start_time: number;
+  duration?: number | null;
   tournament_name?: string | null;
   series_type?: string | null;
 }
@@ -42,6 +43,7 @@ interface FinishedSeries {
   radiant_score: number;
   dire_score: number;
   start_time: number;
+  duration?: number | null;
   tournament_name?: string | null;
 }
 
@@ -90,6 +92,7 @@ function toFinishedSeries(matches: FinishedMatch[]): FinishedSeries[] {
         radiant_score: radiantWins,
         dire_score: direWins,
         start_time: latestMatch.start_time,
+        duration: latestMatch.duration ?? null,
         tournament_name: primaryMatch.tournament_name || null,
       };
     })
@@ -117,9 +120,16 @@ function formatMatchTime(ts: number): string {
   return `${cst.getHours().toString().padStart(2, '0')}:${cst.getMinutes().toString().padStart(2, '0')}`;
 }
 
-function formatMatchDate(ts: number): string {
+function formatMatchDateTime(ts: number): string {
   const date = new Date(ts * 1000);
-  return `${date.getMonth() + 1}月${date.getDate()}日`;
+  return `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+}
+
+function formatDuration(seconds?: number | null): string {
+  if (!seconds || seconds <= 0) return '--:--';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function UpcomingCard({ match }: { match: UpcomingMatch }) {
@@ -197,49 +207,63 @@ function FinishedMatchRow({
   return (
     <button
       type="button"
-      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left"
+      className="grid w-full grid-cols-[88px_1.4fr_2fr_88px_72px] items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors text-left"
       onClick={() => {
         const id = Number(match.match_id);
         if (Number.isFinite(id)) onOpen?.(id);
       }}
     >
-      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-        <span className={`text-sm font-semibold truncate ${radiantWon ? 'text-white' : 'text-slate-500'}`}>
-          {match.radiant_team_name}
-        </span>
-        <SafeImg
-          src={match.radiant_team_logo || ''}
-          alt={match.radiant_team_name}
-          className="size-7 object-contain shrink-0"
-          fallback={<div className="size-7 rounded-full bg-slate-700" />}
-        />
+      <div className="flex flex-col text-xs text-slate-400">
+        <span>{formatMatchDateTime(match.start_time)}</span>
+        <span>{formatMatchTime(match.start_time)}</span>
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className={`text-lg font-black tabular-nums w-5 text-center ${radiantWon ? 'text-white' : 'text-slate-500'}`}>
-          {match.radiant_score ?? '-'}
-        </span>
-        <span className="text-slate-600 text-sm">:</span>
-        <span className={`text-lg font-black tabular-nums w-5 text-center ${direWon ? 'text-white' : 'text-slate-500'}`}>
-          {match.dire_score ?? '-'}
-        </span>
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium text-slate-200">{match.tournament_name || '近期结束'}</div>
+        <div className="text-xs text-slate-500">系列赛战报</div>
       </div>
 
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <SafeImg
-          src={match.dire_team_logo || ''}
-          alt={match.dire_team_name}
-          className="size-7 object-contain shrink-0"
-          fallback={<div className="size-7 rounded-full bg-slate-700" />}
-        />
-        <span className={`text-sm font-semibold truncate ${direWon ? 'text-white' : 'text-slate-500'}`}>
-          {match.dire_team_name}
-        </span>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <span className={`truncate text-sm font-semibold ${radiantWon ? 'text-white' : 'text-slate-500'}`}>
+            {match.radiant_team_name}
+          </span>
+          <SafeImg
+            src={match.radiant_team_logo || ''}
+            alt={match.radiant_team_name}
+            className="size-7 shrink-0 object-contain"
+            fallback={<div className="size-7 rounded-full bg-slate-700" />}
+          />
+        </div>
+        <span className="text-xs text-slate-600">VS</span>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <SafeImg
+            src={match.dire_team_logo || ''}
+            alt={match.dire_team_name}
+            className="size-7 shrink-0 object-contain"
+            fallback={<div className="size-7 rounded-full bg-slate-700" />}
+          />
+          <span className={`truncate text-sm font-semibold ${direWon ? 'text-white' : 'text-slate-500'}`}>
+            {match.dire_team_name}
+          </span>
+        </div>
       </div>
 
-      <div className="shrink-0 text-right hidden sm:block min-w-[90px]">
-        <div className="text-[10px] text-slate-500 truncate">{match.tournament_name || '近期结束'}</div>
-        <div className="text-[10px] text-slate-600">{formatMatchDate(match.start_time)}</div>
+      <div className="text-center">
+        <span className={`text-lg font-black tabular-nums ${radiantWon ? 'text-white' : 'text-slate-500'}`}>
+          {match.radiant_score}
+        </span>
+        <span className="mx-1 text-slate-600">:</span>
+        <span className={`text-lg font-black tabular-nums ${direWon ? 'text-white' : 'text-slate-500'}`}>
+          {match.dire_score}
+        </span>
+        <div className={`text-xs font-medium ${radiantWon ? 'text-emerald-400' : direWon ? 'text-red-400' : 'text-slate-500'}`}>
+          {radiantWon ? '胜利' : direWon ? '失利' : '进行中'}
+        </div>
+      </div>
+
+      <div className="text-right text-sm text-slate-400">
+        {formatDuration(match.duration)}
       </div>
     </button>
   );
@@ -313,14 +337,23 @@ export function MatchesDashboard({
             <Trophy className="size-4 text-slate-400" />
             <h2 className="text-sm font-semibold text-slate-200">近期赛果</h2>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] divide-y divide-white/[0.04] overflow-hidden">
-            {finished.map((match) => (
-              <FinishedMatchRow
-                key={match.match_id}
-                match={match}
-                onOpen={(id) => onOpenMatch?.(id)}
-              />
-            ))}
+          <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
+            <div className="grid grid-cols-[88px_1.4fr_2fr_88px_72px] gap-3 border-b border-white/[0.04] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <span>时间</span>
+              <span>赛事</span>
+              <span>对阵</span>
+              <span className="text-center">结果</span>
+              <span className="text-right">时长</span>
+            </div>
+            <div className="divide-y divide-white/[0.04]">
+              {finished.map((match) => (
+                <FinishedMatchRow
+                  key={match.match_id}
+                  match={match}
+                  onOpen={(id) => onOpenMatch?.(id)}
+                />
+              ))}
+            </div>
           </div>
         </section>
       )}

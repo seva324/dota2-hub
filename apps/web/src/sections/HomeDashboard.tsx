@@ -1,8 +1,7 @@
 import { useState, useEffect, type ComponentType, type ReactNode } from 'react';
-import { CalendarDays, Flame, Newspaper, Play, Radio, Search, Shield, Trophy, UserRound } from 'lucide-react';
+import { CalendarDays, Flame, Play, Shield, Trophy, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -850,6 +849,7 @@ export function HomeDashboard() {
   const [eptTeams, setEptTeams] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
   const [featuredSpotlight, setFeaturedSpotlight] = useState<FeaturedSpotlight | null>(null);
+  const [liveMatchCount, setLiveMatchCount] = useState(0);
 
   useEffect(() => {
     if (prototypeMode) return;
@@ -880,6 +880,7 @@ export function HomeDashboard() {
               ? [liveData.live]
               : [];
           const spotlightMatch = liveMatches[0];
+          setLiveMatchCount(liveMatches.length);
 
           if (spotlightMatch) {
             setFeaturedSpotlight({
@@ -895,6 +896,7 @@ export function HomeDashboard() {
             setFeaturedSpotlight(null);
           }
         } else {
+          setLiveMatchCount(0);
           setFeaturedSpotlight(null);
         }
       } catch (error) {
@@ -1008,25 +1010,17 @@ export function HomeDashboard() {
       </div>
 
       <div className="relative z-10 flex min-w-0 flex-col gap-4">
-        {/* Page header with search */}
+        {/* Page header */}
         <div className="flex items-center gap-4 mb-1">
           <div>
             <h1 className="text-xl font-extrabold tracking-tight text-white lg:text-2xl">
               赛事中心
               <span className="ml-2 inline-flex items-center rounded-full bg-red-600/15 px-2 py-0.5 text-[11px] font-semibold text-red-300">
                 <span className="size-1.5 rounded-full bg-red-400 mr-1.5 animate-pulse" />
-                3 场进行中
+                {liveMatchCount} 场进行中
               </span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">Dota 2 职业赛事 · 实时数据</p>
-          </div>
-          <div className="ml-auto relative w-72 hidden lg:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
-            <Input
-              type="text"
-              placeholder="搜索战队、选手、赛事..."
-              className="pl-9 h-9 rounded-xl border-white/10 bg-white/[0.06] text-sm text-slate-200 placeholder:text-slate-500 focus-visible:ring-red-500/30"
-            />
           </div>
         </div>
         <MobileMatchToolbar />
@@ -1139,15 +1133,6 @@ export function HomeDashboard() {
           </div>
         </RailPanel>
 
-        <RailPanel title="直播入口" icon={Radio}>
-          <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-3 text-sm text-red-100">
-            正在聚合 live Series、赛程和赛果数据。
-          </div>
-        </RailPanel>
-
-        <RailPanel title="资讯" icon={Newspaper}>
-          <div className="text-sm leading-6 text-slate-300">赛事资讯保留在主内容流中，右栏只承载快速扫描入口。</div>
-        </RailPanel>
       </aside>
 
       {selectedMatchId !== null && (
