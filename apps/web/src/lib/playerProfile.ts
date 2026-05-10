@@ -296,7 +296,7 @@ export function mapPlayerProfileApiToFlyoutModel(data: any): PlayerFlyoutModel |
     chineseName,
     nationality,
     teamId: player.team_id ? String(player.team_id) : (next?.selected_team?.team_id ? String(next.selected_team.team_id) : null),
-    teamName: player.team_name || null,
+    teamName: player.team_name || next?.selected_team?.name || null,
     teamLogoUrl: resolvePlayerTeamLogo(
       player.team_id ? String(player.team_id) : (next?.selected_team?.team_id ? String(next.selected_team.team_id) : null),
       player.team_name || next?.selected_team?.name || null,

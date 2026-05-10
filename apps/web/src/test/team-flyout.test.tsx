@@ -117,7 +117,7 @@ describe('TeamFlyout', () => {
     });
   }, 15000);
 
-  it('falls back to local XG profile data when the flyout API returns an empty payload', async () => {
+  it('does not invent local XG fallback data when the flyout API returns an empty payload', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/heroes') return createJsonResponse({});
@@ -169,10 +169,11 @@ describe('TeamFlyout', () => {
       />
     );
 
-    expect(await screen.findByText('Ame')).toBeInTheDocument();
-    expect(await screen.findByText(/Tundra/)).toBeInTheDocument();
-    expect(await screen.findByText(/Yakult Brothers/)).toBeInTheDocument();
-    expect(screen.queryByText('暂无最近一场比赛阵容')).not.toBeInTheDocument();
+    expect(await screen.findByText('暂无最近一场比赛阵容')).toBeInTheDocument();
+    expect(screen.queryByText('Ame')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Yakult Brothers/)).not.toBeInTheDocument();
+    expect(screen.getByText('暂无未来赛程')).toBeInTheDocument();
+    expect(screen.getByText('暂无历史比赛')).toBeInTheDocument();
   }, 15000);
 
   it('shows five recent matches by default and loads more lazily', async () => {

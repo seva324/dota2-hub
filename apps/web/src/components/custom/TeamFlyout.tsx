@@ -49,27 +49,6 @@ type HeroMeta = {
 const RECENT_MATCHES_BATCH_SIZE = 5;
 const EMPTY_TEAMS: TeamLike[] = [];
 const EMPTY_MATCHES: MatchLike[] = [];
-const FALLBACK_TEAM_SQUADS: Record<string, SquadPlayerCard[]> = {
-  xg: [
-    { accountId: 898754153, name: 'Ame', realname: '王淳煜', countryCode: 'CN', avatarUrl: null, role: 'Carry' },
-    { accountId: 94786276, name: 'Xm', realname: '郭鸿巍', countryCode: 'CN', avatarUrl: null, role: 'Mid' },
-    { accountId: 129958758, name: 'Xxs', realname: '林靖', countryCode: 'CN', avatarUrl: null, role: 'Offlane' },
-    { accountId: 137193239, name: 'XinQ', realname: '赵子星', countryCode: 'CN', avatarUrl: null, role: 'Support' },
-    { accountId: 91629740, name: 'Dy', realname: '丁聪', countryCode: 'CN', avatarUrl: null, role: 'Support' },
-  ],
-};
-const FALLBACK_TEAM_TOP_HEROES: Record<string, Array<{ heroId: number; matches: number }>> = {
-  xg: [
-    { heroId: 69, matches: 18 },
-    { heroId: 11, matches: 15 },
-    { heroId: 1, matches: 14 },
-    { heroId: 8, matches: 13 },
-    { heroId: 5, matches: 11 },
-  ],
-};
-const FALLBACK_TEAM_STATS: Record<string, { wins: number; losses: number; winRate: number }> = {
-  xg: { wins: 25, losses: 6, winRate: 80.6 },
-};
 
 type SquadPlayerCard = {
   accountId: number | null;
@@ -108,24 +87,6 @@ const LEAGUE_NAME_MAP: Record<string, string> = {
 
 function normalize(value?: string | null): string {
   return String(value || '').trim().toLowerCase();
-}
-
-function getFallbackTeamKey(name?: string | null): string {
-  const normalized = normalize(name);
-  if (normalized === 'xtreme gaming') return 'xg';
-  return normalized;
-}
-
-function getFallbackTeamSquad(name?: string | null): SquadPlayerCard[] {
-  return FALLBACK_TEAM_SQUADS[getFallbackTeamKey(name)] || [];
-}
-
-function getFallbackTeamTopHeroes(name?: string | null): Array<{ heroId: number; matches: number }> {
-  return FALLBACK_TEAM_TOP_HEROES[getFallbackTeamKey(name)] || [];
-}
-
-function getFallbackTeamStats(name?: string | null): { wins: number; losses: number; winRate: number } | null {
-  return FALLBACK_TEAM_STATS[getFallbackTeamKey(name)] || null;
 }
 
 function stringToHue(str: string): number {
@@ -285,11 +246,11 @@ export function TeamFlyout({
 
     let cancelled = false;
     setIsFlyoutLoading(true);
-    setActiveSquad(getFallbackTeamSquad(selectedTeam.name));
-    setServerTopHeroes(getFallbackTeamTopHeroes(selectedTeam.name));
+    setActiveSquad([]);
+    setServerTopHeroes([]);
     setHasMoreHistory(false);
     setNextHistoryCursor(null);
-    setServerStats(getFallbackTeamStats(selectedTeam.name));
+    setServerStats(null);
 
     (async () => {
       try {
@@ -304,29 +265,24 @@ export function TeamFlyout({
         const payloadRecentMatches = Array.isArray(payload?.recentMatches) ? payload.recentMatches : [];
         const payloadActiveSquad = Array.isArray(payload?.activeSquad) ? payload.activeSquad : [];
         const payloadTopHeroes = Array.isArray(payload?.topHeroes) ? payload.topHeroes : [];
-        const hasMeaningfulServerData = Boolean(
-          payload?.nextMatch
-          || payloadRecentMatches.length
-          || payloadActiveSquad.length
-          || payloadTopHeroes.length
-        );
+        const hasServerPayload = Boolean(payload?.team);
 
-        setFlyoutTeams(hasMeaningfulServerData && payload?.team ? [payload.team] : (Array.isArray(teams) ? teams : []));
-        setFlyoutMatches(hasMeaningfulServerData ? payloadRecentMatches : (Array.isArray(matches) ? matches : []));
-        setFlyoutUpcoming(hasMeaningfulServerData && payload?.nextMatch ? [payload.nextMatch] : (Array.isArray(upcoming) ? upcoming : []));
+        setFlyoutTeams(hasServerPayload && payload?.team ? [payload.team] : []);
+        setFlyoutMatches(payloadRecentMatches);
+        setFlyoutUpcoming(payload?.nextMatch ? [payload.nextMatch] : []);
         setHasMoreHistory(Boolean(payload?.pagination?.hasMore));
         setNextHistoryCursor(
           typeof payload?.pagination?.nextCursor === 'number' ? payload.pagination.nextCursor : null
         );
-        setServerStats(hasMeaningfulServerData
+        setServerStats(hasServerPayload
           ? {
               wins: Number(payload?.stats?.wins || 0),
               losses: Number(payload?.stats?.losses || 0),
               winRate: Number(payload?.stats?.winRate || 0)
             }
-          : getFallbackTeamStats(selectedTeam.name));
+          : null);
         setActiveSquad(
-          hasMeaningfulServerData && payloadActiveSquad.length
+          payloadActiveSquad.length
             ? payloadActiveSquad.map((player) => ({
                 accountId: player?.account_id ? Number(player.account_id) : null,
                 name: player?.name || 'Unknown',
@@ -334,19 +290,19 @@ export function TeamFlyout({
                 countryCode: player?.country_code ? String(player.country_code).toUpperCase() : null,
                 avatarUrl: player?.avatar_url || null,
               }))
-            : getFallbackTeamSquad(selectedTeam.name)
+            : []
         );
         setServerTopHeroes(
-          hasMeaningfulServerData && payloadTopHeroes.length
+          payloadTopHeroes.length
             ? payloadTopHeroes
                 .map((hero) => ({
                   heroId: Number(hero?.hero_id || 0),
                   matches: Number(hero?.matches || 0),
                 }))
                 .filter((hero) => hero.heroId > 0 && hero.matches > 0)
-            : getFallbackTeamTopHeroes(selectedTeam.name)
+            : []
         );
-        setHasFetchedFlyoutData(hasMeaningfulServerData);
+        setHasFetchedFlyoutData(hasServerPayload);
       } catch {
         if (cancelled) return;
         setFlyoutTeams(Array.isArray(teams) ? teams : []);
@@ -354,9 +310,9 @@ export function TeamFlyout({
         setFlyoutUpcoming(Array.isArray(upcoming) ? upcoming : []);
         setHasMoreHistory(false);
         setNextHistoryCursor(null);
-        setServerStats(getFallbackTeamStats(selectedTeam.name));
-        setActiveSquad(getFallbackTeamSquad(selectedTeam.name));
-        setServerTopHeroes(getFallbackTeamTopHeroes(selectedTeam.name));
+        setServerStats(null);
+        setActiveSquad([]);
+        setServerTopHeroes([]);
         setHasFetchedFlyoutData(false);
       } finally {
         if (!cancelled) {

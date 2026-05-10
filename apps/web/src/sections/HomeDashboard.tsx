@@ -10,7 +10,7 @@ import { HeroSection } from '@/sections/HeroSection';
 import type { LiveHeroPayload } from '@/sections/HeroSection';
 import { MatchesDashboard } from '@/sections/MatchesDashboard';
 import { usePrototypeMode } from '@/lib/prototypeMode';
-import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
+import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 
 const nowTs = () => Math.floor(Date.now() / 1000);
@@ -47,11 +47,6 @@ const hotTeams = [
   { name: 'Falcons', rating: 1960, trend: 'down' as const },
   { name: 'Tundra', rating: 1899, trend: 'up' as const },
   { name: 'Liquid', rating: 1850, trend: 'down' as const },
-];
-const patchNotes = [
-  { category: '英雄', text: '维萨吉基础攻击力提升' },
-  { category: '物品', text: '赤红甲护甲降低 3 → 2' },
-  { category: '地图', text: '肉山巢穴位置微调' },
 ];
 
 const filters = ['全部', 'S 级赛事', '中国战队', 'DreamLeague', 'ESL One', 'PGL'];
@@ -185,8 +180,9 @@ type HotPlayer = {
   name: string;
   accountId: number;
   teamName: string;
-  nationality?: string;
-  score: string;
+  nationality?: string | null;
+  score?: string;
+  avatarUrl?: string | null;
 };
 
 const hotPlayers: HotPlayer[] = [
@@ -197,150 +193,60 @@ const hotPlayers: HotPlayer[] = [
   { name: 'dyrachyo', accountId: 116585378, teamName: 'Gaimin Gladiators', nationality: 'RU', score: '7.6k' },
 ];
 
-function createHotPlayerModel(player: HotPlayer): PlayerFlyoutModel {
-  const richAmeProfile: Partial<PlayerFlyoutModel> = player.accountId === 898754153 ? {
-    realName: '王淳煜',
-    chineseName: 'Ame',
-    nationality: 'CN',
-    teamId: '1',
-    teamName: 'Xtreme Gaming',
-    teamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-    winRate: 72.1,
-    hotRank: 1,
-    hotScore: '12.4K',
-    avgKda: 7.48,
-    avgGpm: 792,
-    leagueKdaRank: '联赛 #2',
-    leagueGpmRank: '联赛 #3',
-    leagueWinRateRank: '联赛 #1',
-    signatureHeroes: [
-      { heroId: 11, games: 28, wins: 21, winRate: 75.0 },
-      { heroId: 69, games: 24, wins: 17, winRate: 70.8 },
-      { heroId: 1, games: 21, wins: 14, winRate: 66.7 },
-    ],
-    signatureHero: { heroId: 11, games: 28, wins: 21, winRate: 75.0 },
-    mostPlayedHeroes: [
-      { heroId: 11, games: 28, wins: 21, winRate: 75.0 },
-      { heroId: 69, games: 24, wins: 17, winRate: 70.8 },
-      { heroId: 1, games: 21, wins: 14, winRate: 66.7 },
-      { heroId: 8, games: 19, wins: 12, winRate: 63.2 },
-      { heroId: 5, games: 17, wins: 11, winRate: 64.7 },
-    ],
-    nextMatch: {
-      opponentName: 'Aurora',
-      opponentTeamId: '6',
-      selectedTeamId: '1',
-      selectedTeamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-      seriesType: 'BO3',
-      tournament: 'DreamLeague S23',
-      startTime: nowTs() + 3600,
-    },
-    recentMatches: [
-      {
-        matchId: 9201,
-        startTime: nowTs() - 3600,
-        tournament: 'DreamLeague S23',
-        seriesType: 'BO3',
-        teamId: '1',
-        teamName: 'XG',
-        teamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-        opponentTeamId: '7',
-        opponentName: 'Yakult Brothers',
-        teamPicks: [11, 69, 1, 8, 5],
-        playerHeroId: 11,
-        won: true,
-        kda: '9/2/14',
-        gpm: 612,
-      },
-      {
-        matchId: 9202,
-        startTime: nowTs() - 26 * 3600,
-        tournament: 'ESL One 伯明翰',
-        seriesType: 'BO3',
-        teamId: '1',
-        teamName: 'XG',
-        teamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-        opponentTeamId: '4',
-        opponentName: 'Tundra',
-        teamPicks: [8, 75, 106, 129, 31],
-        playerHeroId: 8,
-        won: true,
-        kda: '11/1/8',
-        gpm: 724,
-      },
-      {
-        matchId: 9203,
-        startTime: nowTs() - 50 * 3600,
-        tournament: 'PGL Wallachia S4',
-        seriesType: 'BO3',
-        teamId: '1',
-        teamName: 'XG',
-        teamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-        opponentTeamId: '3',
-        opponentName: 'Falcons',
-        teamPicks: [69, 1, 8, 75, 106],
-        playerHeroId: 69,
-        won: true,
-        kda: '7/3/11',
-        gpm: 581,
-      },
-      {
-        matchId: 9204,
-        startTime: nowTs() - 75 * 3600,
-        tournament: 'DreamLeague S23',
-        seriesType: 'BO3',
-        teamId: '1',
-        teamName: 'XG',
-        teamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-        opponentTeamId: '6',
-        opponentName: 'Aurora',
-        teamPicks: [1, 5, 8, 11, 129],
-        playerHeroId: 1,
-        won: false,
-        kda: '4/6/7',
-        gpm: 498,
-      },
-      {
-        matchId: 9205,
-        startTime: nowTs() - 99 * 3600,
-        tournament: 'ESL One 伯明翰',
-        seriesType: 'BO3',
-        teamId: '1',
-        teamName: 'XG',
-        teamLogoUrl: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-        opponentTeamId: '4',
-        opponentName: 'Tundra',
-        teamPicks: [11, 5, 69, 8, 1],
-        playerHeroId: 5,
-        won: true,
-        kda: '6/2/16',
-        gpm: 543,
-      },
-    ],
-  } : {};
+type RailNewsItem = {
+  id: string;
+  title: string;
+  summary?: string;
+  url: string;
+  image_url?: string;
+  published_at: number;
+  source: string;
+  category?: string;
+};
 
+const railNewsCategoryLabels: Record<string, string> = {
+  patch: '版本',
+  gameplay: '版本',
+  esports: '赛事',
+  tournament: '赛事',
+  community: '社区',
+  news: '新闻',
+  takes: '观点',
+};
+
+function createSidebarPlayerModel(player: HotPlayer): PlayerFlyoutModel {
+  const minimal = createMinimalPlayerFlyoutModel(player.accountId);
   return {
-    accountId: player.accountId,
+    ...minimal,
     playerName: player.name,
-    realName: null,
-    chineseName: null,
+    teamName: player.teamName || null,
     nationality: player.nationality || null,
-    teamId: null,
-    teamName: player.teamName,
-    teamLogoUrl: null,
-    avatarUrl: null,
-    birthDate: null,
-    birthMonth: null,
-    birthYear: null,
-    age: null,
-    winRate: null,
-    signatureHeroes: [],
-    signatureHero: null,
-    mostPlayedHeroes: [],
-    nextMatch: null,
-    recentMatches: [],
-    ...richAmeProfile,
+    avatarUrl: player.avatarUrl || null,
   };
+}
+
+function mergePlayerModel(fallback: PlayerFlyoutModel, incoming: PlayerFlyoutModel | null): PlayerFlyoutModel {
+  if (!incoming) return fallback;
+  const apiNameIsOnlyAccountId = incoming.playerName === String(fallback.accountId);
+  return {
+    ...fallback,
+    ...incoming,
+    playerName: !incoming.playerName || apiNameIsOnlyAccountId ? fallback.playerName : incoming.playerName,
+    nationality: incoming.nationality || fallback.nationality,
+    teamName: incoming.teamName || fallback.teamName,
+    teamLogoUrl: incoming.teamLogoUrl || fallback.teamLogoUrl,
+    avatarUrl: incoming.avatarUrl || fallback.avatarUrl,
+  };
+}
+
+function formatRailDate(timestamp: number): string {
+  if (!timestamp) return '刚刚';
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '-');
+}
+
+function getNewsCategoryLabel(category?: string): string {
+  return railNewsCategoryLabels[String(category || '').toLowerCase()] || '新闻';
 }
 
 function MobileMatchToolbar() {
@@ -844,36 +750,73 @@ export function HomeDashboard() {
   ] : []);
   const [selectedTeamName, setSelectedTeamName] = useState<string | null>(devTeam ? 'XG' : null);
   const [selectedPlayer, setSelectedPlayer] = useState<HotPlayer | null>(devPlayer ? hotPlayers[0] : null);
-  const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(devPlayer ? createHotPlayerModel(hotPlayers[0]) : null);
+  const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(devPlayer ? createSidebarPlayerModel(hotPlayers[0]) : null);
 
   const [eptTeams, setEptTeams] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
   const [featuredSpotlight, setFeaturedSpotlight] = useState<FeaturedSpotlight | null>(null);
   const [liveMatchCount, setLiveMatchCount] = useState(0);
+  const [railNews, setRailNews] = useState<RailNewsItem[]>([]);
+  const [dashboardHotPlayers, setDashboardHotPlayers] = useState<HotPlayer[]>(
+    hotPlayers.map(({ name, accountId, teamName, nationality }) => ({
+      name,
+      accountId,
+      teamName,
+      nationality,
+    }))
+  );
 
   useEffect(() => {
     if (prototypeMode) return;
 
     const fetchData = async () => {
-      try {
-        const [eptRes, upcomingRes, liveRes] = await Promise.all([
-          fetch('/api/ept-ranking'),
-          fetch('/api/upcoming?limit=3'),
-          fetch('/api/live-hero'),
-        ]);
+      const hotPlayerRequests = hotPlayers.map(async (seed) => {
+        try {
+          const response = await fetch(`/api/pro-players?account_id=${seed.accountId}`);
+          if (!response.ok) return seed;
+          const payload = await response.json();
+          if (!payload || typeof payload !== 'object') return seed;
+          return {
+            name: payload.name || seed.name,
+            accountId: seed.accountId,
+            teamName: payload.team_name || seed.teamName,
+            nationality: payload.country_code ? String(payload.country_code).toUpperCase() : (seed.nationality || null),
+            avatarUrl: payload.avatar_url || null,
+          } satisfies HotPlayer;
+        } catch {
+          return seed;
+        }
+      });
 
-        if (eptRes.ok) {
-          const eptData = await eptRes.json();
+      const [eptResult, upcomingResult, liveResult, newsResult, hotPlayersResult] = await Promise.allSettled([
+        fetch('/api/ept-ranking'),
+        fetch('/api/upcoming?limit=3'),
+        fetch('/api/live-hero'),
+        fetch('/api/news'),
+        Promise.all(hotPlayerRequests),
+      ]);
+
+      if (eptResult.status === 'fulfilled' && eptResult.value.ok) {
+        try {
+          const eptData = await eptResult.value.json();
           setEptTeams(eptData.teams?.slice(0, 5) || []);
+        } catch {
+          setEptTeams([]);
         }
+      }
 
-        if (upcomingRes.ok) {
-          const upcomingData = await upcomingRes.json();
+      if (upcomingResult.status === 'fulfilled' && upcomingResult.value.ok) {
+        try {
+          const upcomingData = await upcomingResult.value.json();
           setUpcomingMatches(upcomingData.upcoming || []);
+        } catch {
+          setUpcomingMatches([]);
         }
+      }
 
-        if (liveRes.ok) {
-          const liveData = await liveRes.json();
+      if (liveResult.status === 'fulfilled' && liveResult.value.ok) {
+        try {
+          const liveData = await liveResult.value.json();
           const liveMatches = Array.isArray(liveData?.liveMatches)
             ? liveData.liveMatches
             : liveData?.live
@@ -895,16 +838,32 @@ export function HomeDashboard() {
           } else {
             setFeaturedSpotlight(null);
           }
-        } else {
+        } catch {
           setLiveMatchCount(0);
           setFeaturedSpotlight(null);
         }
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
+      } else {
+        setLiveMatchCount(0);
+        setFeaturedSpotlight(null);
+      }
+
+      if (newsResult.status === 'fulfilled' && newsResult.value.ok) {
+        try {
+          const newsData = await newsResult.value.json();
+          setRailNews(Array.isArray(newsData) ? newsData.slice(0, 4) : []);
+        } catch {
+          setRailNews([]);
+        }
+      }
+
+      if (hotPlayersResult.status === 'fulfilled') {
+        setDashboardHotPlayers(hotPlayersResult.value);
+      } else {
+        console.error('Failed to fetch dashboard data:', hotPlayersResult.reason);
       }
     };
 
-    fetchData();
+    void fetchData();
   }, [prototypeMode]);
 
   const handleOpenMatch = (matchId: number | string, seriesMaps: Array<{
@@ -926,31 +885,21 @@ export function HomeDashboard() {
   };
 
   const handleOpenPlayer = async (player: HotPlayer) => {
-    const fallback = createHotPlayerModel(player);
+    const fallback = createSidebarPlayerModel(player);
     setSelectedPlayer(player);
     setPlayerModel(fallback);
 
     try {
-      const model = await fetchPlayerProfileFlyoutModel(player.accountId);
+      const model = await fetchPlayerProfileFlyoutModel(player.accountId, {
+        onHydrated: (fullModel) => {
+          setPlayerModel((current) => (
+            current?.accountId === player.accountId ? mergePlayerModel(fallback, fullModel) : current
+          ));
+        },
+      });
       setPlayerModel((current) => {
         if (current?.accountId !== player.accountId) return current;
-        const apiNameIsOnlyAccountId = model?.playerName === String(player.accountId);
-        return model
-          ? {
-              ...fallback,
-              ...model,
-              playerName: !model.playerName || apiNameIsOnlyAccountId ? fallback.playerName : model.playerName,
-              nationality: model.nationality || fallback.nationality,
-              teamName: model.teamName || fallback.teamName,
-              teamLogoUrl: model.teamLogoUrl || fallback.teamLogoUrl,
-              winRate: typeof model.winRate === 'number' ? model.winRate : fallback.winRate,
-              signatureHeroes: model.signatureHeroes?.length ? model.signatureHeroes : fallback.signatureHeroes,
-              signatureHero: model.signatureHero || fallback.signatureHero,
-              mostPlayedHeroes: model.mostPlayedHeroes?.length ? model.mostPlayedHeroes : fallback.mostPlayedHeroes,
-              nextMatch: model.nextMatch || fallback.nextMatch,
-              recentMatches: model.recentMatches?.length ? model.recentMatches : fallback.recentMatches,
-            }
-          : fallback;
+        return mergePlayerModel(fallback, model);
       });
     } catch {
       setPlayerModel((current) => current?.accountId === player.accountId ? fallback : current);
@@ -958,11 +907,10 @@ export function HomeDashboard() {
   };
 
   const handleOpenPlayerByAccountId = (accountId: number) => {
-    const player = hotPlayers.find((candidate) => candidate.accountId === accountId) || {
+    const player = dashboardHotPlayers.find((candidate) => candidate.accountId === accountId) || {
       name: String(accountId),
       accountId,
       teamName: selectedTeamName || 'Free Agent',
-      score: '—',
     };
     void handleOpenPlayer(player);
   };
@@ -993,12 +941,15 @@ export function HomeDashboard() {
       }
     : DEFAULT_FEATURED_EVENT);
 
-  const displayTeams = eptTeams.length > 0 ? eptTeams : hotTeams.map((t: any, i: number) => ({
-    rank: i + 1,
-    name: t.name,
-    logo: teamLogoMap[t.name] || null,
-    points: t.score || 0,
-  }));
+  const hasRealtimeEpt = eptTeams.length > 0;
+  const displayTeams = hasRealtimeEpt
+    ? eptTeams
+    : hotTeams.map((team, index) => ({
+        rank: index + 1,
+        name: team.name,
+        logo: teamLogoMap[team.name] || null,
+        points: team.rating,
+      }));
 
   return (
     <div className="relative mx-auto grid max-w-[1480px] gap-4 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-slate-900/40 via-slate-950 to-slate-950">
@@ -1063,9 +1014,16 @@ export function HomeDashboard() {
                 />
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-slate-100 group-hover:text-white transition-colors">{team.name}</span>
-                  <span className="block text-[10px] text-slate-500 group-hover:hidden">{team.points ? `${team.points.toLocaleString()} pts` : 'EPT'}</span>
+                  <span className="block text-[10px] text-slate-500 group-hover:hidden">
+                    {hasRealtimeEpt ? `${team.points.toLocaleString()} EPT pts` : `${team.points.toLocaleString()} ELO`}
+                  </span>
                   <span className="hidden text-[10px] text-red-300/80 group-hover:block">点击查看详情 →</span>
                 </div>
+                {!hasRealtimeEpt && (
+                  <span className={`text-base font-bold ${(hotTeams[index]?.trend || 'up') === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {(hotTeams[index]?.trend || 'up') === 'up' ? '↑' : '↓'}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -1075,22 +1033,41 @@ export function HomeDashboard() {
 
         <RailPanel title="版本热点" icon={Flame}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] text-slate-500">7.38b 平衡性更新</span>
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-red-300 hover:text-red-200">查看全部</Button>
+            <span className="text-[11px] text-slate-500">实时新闻流</span>
+            <a href="#news" className="h-6 px-2 text-[11px] text-red-300 hover:text-red-200 inline-flex items-center">查看全部</a>
           </div>
           <div className="flex flex-col gap-2">
-            {patchNotes.map((note) => (
-              <div key={note.text} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
-                <div className={`size-9 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-bold border ${
-                  note.category === '英雄' ? 'bg-red-600/30 text-red-100 border-red-400/40 shadow-[0_0_8px_rgba(239,68,68,0.2)]' :
-                  note.category === '物品' ? 'bg-amber-600/30 text-amber-100 border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]' :
-                  'bg-emerald-600/30 text-emerald-100 border-emerald-400/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
-                }`}>
-                  {note.category}
+            {railNews.length ? railNews.map((item) => (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 rounded-xl border border-white/10 bg-black/15 px-3 py-2 transition-colors hover:border-red-400/30 hover:bg-white/[0.08]"
+              >
+                <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-slate-800">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-red-200">{getNewsCategoryLabel(item.category)}</span>
+                  )}
                 </div>
-                <span className="text-sm text-slate-300">{note.text}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span className="rounded-full border border-red-400/20 bg-red-500/10 px-1.5 py-0.5 text-red-300">
+                      {getNewsCategoryLabel(item.category)}
+                    </span>
+                    <span>{formatRailDate(item.published_at)}</span>
+                  </div>
+                  <span className="mt-1 block line-clamp-2 text-sm font-medium text-slate-200 group-hover:text-white">{item.title}</span>
+                </div>
+                <span className="shrink-0 text-xs text-red-300/80">↗</span>
+              </a>
+            )) : (
+              <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-4 text-sm text-slate-500">
+                暂无可用新闻，稍后会自动刷新。
               </div>
-            ))}
+            )}
           </div>
         </RailPanel>
 
@@ -1110,7 +1087,7 @@ export function HomeDashboard() {
 
         <RailPanel title="人气选手" icon={UserRound}>
           <div className="flex flex-col gap-2">
-            {hotPlayers.map((player, index) => (
+            {dashboardHotPlayers.map((player, index) => (
               <button
                 key={player.accountId}
                 type="button"
@@ -1119,15 +1096,20 @@ export function HomeDashboard() {
               >
                 <div className="flex items-center gap-2">
                   <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
-                  <div className="size-7 shrink-0 rounded-full bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center text-[11px] font-bold text-white">
-                    {player.name[0].toUpperCase()}
+                  <div className="size-7 shrink-0 overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-slate-500 to-slate-700">
+                    <SafeImg
+                      src={player.avatarUrl || ''}
+                      alt={player.name}
+                      className="h-full w-full object-cover"
+                      fallback={<div className="flex size-full items-center justify-center text-[11px] font-bold text-white">{player.name[0].toUpperCase()}</div>}
+                    />
                   </div>
                   <div className="flex min-w-0 flex-col">
                     <span className="text-sm font-semibold text-slate-100">{player.name}</span>
                     <span className="text-xs text-slate-400">{player.teamName}</span>
                   </div>
                 </div>
-                <span className="shrink-0 text-xs font-semibold text-red-300">{player.score}</span>
+                <span className="shrink-0 text-xs font-semibold text-red-300">{player.nationality || 'PRO'}</span>
               </button>
             ))}
           </div>
@@ -1149,9 +1131,9 @@ export function HomeDashboard() {
           open={selectedTeamName !== null}
           onOpenChange={(open) => { if (!open) setSelectedTeamName(null); }}
           selectedTeam={prototypeTeams.find((team) => team.name === selectedTeamName) || { name: selectedTeamName }}
-          teams={prototypeTeams}
-          matches={prototypeMatches}
-          upcoming={prototypeUpcoming}
+          teams={prototypeMode ? prototypeTeams : []}
+          matches={prototypeMode ? prototypeMatches : []}
+          upcoming={prototypeMode ? prototypeUpcoming : []}
           onPlayerClick={handleOpenPlayerByAccountId}
         />
       )}

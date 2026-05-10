@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { getHeroImageUrl } from '@/lib/assetUrls';
-import { toFlagImageUrl } from '@/lib/playerProfile';
+import { formatBirthDisplay, toFlagImageUrl } from '@/lib/playerProfile';
 import { resolveTeamLogo } from '@/lib/teams';
 import type { PlayerFlyoutModel, PlayerFlyoutRecentMatch } from '@/lib/playerProfile';
 
@@ -138,6 +138,20 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const recentMatches = player?.recentMatches || [];
   const winCount = recentMatches.filter((m) => m.won).length;
   const lossCount = recentMatches.filter((m) => m.won === false).length;
+  const birthDisplay = formatBirthDisplay(player?.birthDate, player?.birthMonth, player?.birthYear);
+  const nationalityLabel = player?.nationality ? (COUNTRY_NAMES[player.nationality] || player.nationality) : '--';
+  const mobileProfileFacts = [
+    { label: '年龄', value: player?.age != null ? String(player.age) : '--' },
+    { label: '国家/地区', value: nationalityLabel, flag: player?.nationality != null && !!flagImageUrl },
+    { label: '生日', value: birthDisplay !== '未知' ? birthDisplay : '--' },
+    { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--' },
+  ];
+  const profileFacts = [
+    { label: '真实姓名', value: player?.realName || '未公开' },
+    { label: '常用中文名', value: player?.chineseName || '未记录' },
+    { label: '国家/地区', value: nationalityLabel },
+    { label: '生日', value: birthDisplay !== '未知' ? birthDisplay : '未记录' },
+  ];
 
   // Compute tournament performance by grouping recentMatches
   const tournamentPerf: Record<string, { wins: number; losses: number; latestTs: number }> = {};
@@ -188,8 +202,6 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             <h2 className="truncate text-xl font-bold text-white">{player?.playerName || '—'}</h2>
             <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
           </div>
-          {/* Position / Role */}
-          <div className="mt-0.5 text-xs font-medium text-orange-300">核心 · Carry</div>
           {/* Real name */}
           {player?.realName && (
             <div className="mt-0.5 text-xs text-slate-400">{player.realName}{player?.chineseName ? ` · ${player.chineseName}` : ''}</div>
@@ -206,14 +218,21 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             <span className="truncate">{player?.teamName || 'Free Agent'}</span>
           </button>
           {/* Rank row + nationality */}
-          <div className="mt-1.5 flex items-center gap-3 text-xs">
-            <span className="text-slate-500">人气排名 <span className="font-semibold text-amber-300">{player?.hotRank ? `#${player.hotRank}` : '#1'}</span></span>
-            <span>🔥 <span className="text-slate-300">{player?.hotScore ?? '12.4K'}</span></span>
+          <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
+            {player?.hotRank != null && (
+              <span className="text-slate-500">人气排名 <span className="font-semibold text-amber-300">#{player.hotRank}</span></span>
+            )}
+            {player?.hotScore && (
+              <span className="text-slate-500">热度 <span className="text-slate-300">{player.hotScore}</span></span>
+            )}
             {player?.nationality && (
               <span className="flex items-center gap-1 text-slate-400">
                 {flagImageUrl && <img src={flagImageUrl} alt={player.nationality} className="h-3 w-4 rounded-[2px] object-cover" />}
-                {COUNTRY_NAMES[player.nationality] || player.nationality}
+                {nationalityLabel}
               </span>
+            )}
+            {birthDisplay !== '未知' && (
+              <span className="text-slate-500">生日 <span className="text-slate-300">{birthDisplay}</span></span>
             )}
           </div>
         </div>
@@ -279,26 +298,20 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             </span>
             <span className="truncate">{player?.teamName || 'Free Agent'}</span>
           </button>
-          {/* Role tag */}
-          <div className="mt-1.5">
-            <span className="rounded-full border border-orange-700/40 bg-orange-900/30 px-2 py-0.5 text-[11px] font-medium text-orange-300">核心 · 一号位</span>
-          </div>
+          {player?.realName && (
+            <div className="mt-1.5 text-xs text-slate-400">{player.realName}{player?.chineseName ? ` · ${player.chineseName}` : ''}</div>
+          )}
         </div>
       </div>
 
       {/* 4-box stats row */}
       <div className="mt-4 grid grid-cols-4 divide-x divide-slate-700/40 rounded-xl border border-slate-700/40 bg-slate-800/30">
-        {[
-          { value: player?.age != null ? String(player.age) : '--', label: '年龄' },
-          { value: player?.nationality ? (COUNTRY_NAMES[player.nationality] || player.nationality) : '--', label: '国家/地区', flag: player?.nationality != null && !!flagImageUrl },
-          { value: '--', label: '天梯分' },
-          { value: '--', label: '习惯' },
-        ].map((box) => (
+        {mobileProfileFacts.map((box) => (
           <div key={box.label} className="flex flex-col items-center py-3 px-2">
             {box.flag && player?.nationality && flagImageUrl ? (
               <div className="flex flex-col items-center gap-0.5">
                 <img src={flagImageUrl} alt={player.nationality} className="h-3.5 w-5 rounded-[2px] object-cover" />
-                <span className="text-sm font-bold leading-tight text-white">{COUNTRY_NAMES[player.nationality] || player.nationality}</span>
+                <span className="text-sm font-bold leading-tight text-white">{nationalityLabel}</span>
               </div>
             ) : (
               <span className="text-base font-bold text-white">{box.value}</span>
@@ -487,20 +500,15 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       <section>
         <h4 className="mb-2 flex items-center gap-1.5 font-semibold text-white">
           <Medal className="size-3.5 text-amber-400" />
-          荣誉成就
+          选手档案
         </h4>
         <div className="space-y-1.5 text-xs text-slate-400">
-          {[
-            { icon: '🏆', text: 'TI 参赛选手', year: '2023' },
-            { icon: '🥇', text: 'DPC 中国高区 冠军', year: '2021 春季赛' },
-            { icon: '🌏', text: 'ONE Esports 新加坡世界军', year: '2021' },
-            { icon: '🎖', text: 'MDL Chengdu Major 季军', year: '2019' },
-          ].map((ach) => (
-            <div key={ach.text} className="flex items-start gap-1.5 rounded-lg border border-slate-700/40 bg-slate-800/20 px-2 py-1.5">
-              <span className="text-sm">{ach.icon}</span>
+          {profileFacts.map((fact) => (
+            <div key={fact.label} className="flex items-start gap-1.5 rounded-lg border border-slate-700/40 bg-slate-800/20 px-2 py-1.5">
+              <span className="text-sm text-amber-300">•</span>
               <div className="min-w-0">
-                <div className="text-[10px] font-medium text-slate-300 leading-tight">{ach.text}</div>
-                <div className="text-[9px] text-slate-500">{ach.year}</div>
+                <div className="text-[10px] font-medium text-slate-300 leading-tight">{fact.label}</div>
+                <div className="text-[9px] text-slate-500">{fact.value}</div>
               </div>
             </div>
           ))}
@@ -604,20 +612,15 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
     <section>
       <h4 className="mb-3 flex items-center gap-1.5 font-semibold text-white">
         <Medal className="size-3.5 text-amber-400" />
-        荣誉成就
+        选手档案
       </h4>
       <div className="grid grid-cols-2 gap-2">
-        {[
-          { icon: '🏆', title: 'Major 冠军', count: '× 2' },
-          { icon: '🥈', title: 'TI 亚军', count: '× 1' },
-          { icon: '⚔️', title: '单场最高击杀', count: '23 次' },
-          { icon: '🌟', title: 'MVP', count: '× 14' },
-        ].map((ach) => (
-          <div key={ach.title} className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
-            <span className="text-xl">{ach.icon}</span>
+        {profileFacts.map((fact) => (
+          <div key={fact.label} className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
+            <span className="text-xl text-amber-300">•</span>
             <div>
-              <div className="text-sm font-bold text-white">{ach.count}</div>
-              <div className="text-[10px] text-slate-400">{ach.title}</div>
+              <div className="text-sm font-bold text-white">{fact.value}</div>
+              <div className="text-[10px] text-slate-400">{fact.label}</div>
             </div>
           </div>
         ))}
