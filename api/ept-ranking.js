@@ -16,39 +16,33 @@ const FALLBACK_TEAMS = [
   { rank: 9, name: 'MOUZ', logo: null, points: 2760 },
 ];
 
-/**
- * Parse DLTV HTML to extract team ranking rows.
- * Each row is an <a class="table__body-row"> containing:
- *   .cell__num, .cell__logo[data-theme-dark], .cell__name, .cell__text (points)
- */
 function parseEptHtml(html) {
   const teams = [];
-  const segments = html.split('table__body-row');
+  const rowMatches = html.match(/<a[^>]+class=["'][^"']*table__body-row[^"']*["'][^>]*>[\s\S]*?<\/a>/gi) || [];
 
-  for (let i = 1; i < segments.length && teams.length < 10; i++) {
-    const seg = segments[i];
+  for (const segment of rowMatches) {
+    if (teams.length >= 10) break;
 
-    const rankMatch = seg.match(/cell__num[^>]*>\s*0*(\d+)/);
+    const rankMatch = segment.match(/cell__num[^>]*>\s*0*(\d+)/);
     if (!rankMatch) continue;
-    const rank = parseInt(rankMatch[1], 10);
+    const rank = Number.parseInt(rankMatch[1], 10);
     if (!rank || rank < 1 || rank > 20) continue;
 
-    const logoMatch = seg.match(/data-theme-dark="([^"]+)"/);
+    const logoMatch = segment.match(/data-theme-dark="([^"]+)"/);
     const logo = logoMatch ? logoMatch[1].trim() : null;
 
-    const nameMatch = seg.match(/cell__name[^>]*>\s*([^<\n\r]+)/);
+    const nameMatch = segment.match(/cell__name[^>]*>\s*([^<\n\r]+)/);
     if (!nameMatch) continue;
     const name = nameMatch[1].trim();
     if (!name) continue;
 
-    // Points format: "14510 pts." or "14 510 pts."
-    const pointsMatch = seg.match(/cell__text[^>]*>\s*([\d\s]+)\s*pts/i);
-    const points = pointsMatch ? parseInt(pointsMatch[1].replace(/\s/g, ''), 10) : 0;
+    const pointsMatch = segment.match(/cell__text[^>]*>\s*([\d\s]+)\s*pts/i);
+    const points = pointsMatch ? Number.parseInt(pointsMatch[1].replace(/\s/g, ''), 10) : 0;
 
     teams.push({ rank, name, logo, points });
   }
 
-  return teams.sort((a, b) => a.rank - b.rank);
+  return teams.sort((left, right) => left.rank - right.rank);
 }
 
 export default async function handler(req, res) {
@@ -83,16 +77,16 @@ export default async function handler(req, res) {
 
     const html = await response.text();
     const teams = parseEptHtml(html);
-
     if (teams.length === 0) {
       throw new Error('No teams parsed from DLTV HTML');
     }
 
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
     return res.status(200).json({ teams: teams.slice(0, 10), source: 'dltv' });
-  } catch (err) {
-    console.error('[EPT Ranking] Scrape failed, using fallback:', err.message);
+  } catch (error) {
+    console.error('[EPT Ranking] Scrape failed, using fallback:', error instanceof Error ? error.message : error);
     res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
     return res.status(200).json({ teams: FALLBACK_TEAMS, source: 'fallback' });
   }
 }
+
