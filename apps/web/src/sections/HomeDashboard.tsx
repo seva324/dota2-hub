@@ -62,6 +62,13 @@ const featuredUpcomingCards = [
   { time: '01:00 明天', event: 'PGL Wallachia S4', left: 'Team Spirit', right: 'Falcons', bo: 'BO3' },
 ];
 
+const DEFAULT_FEATURED_EVENT = {
+  badge: 'LIVE',
+  title: 'DreamLeague S23',
+  subtitle: '小组赛 · Day 5',
+  ctaLabel: '观看直播',
+};
+
 const prototypeUpcoming = [
   {
     match_id: '9301',
@@ -368,7 +375,55 @@ function MobileMatchToolbar() {
 
 type FeaturedCard = { time: string; event: string; left: string; right: string; bo: string; leftLogo?: string | null; rightLogo?: string | null };
 
-function FeaturedEventBanner({ upcomingCards = featuredUpcomingCards as FeaturedCard[] }: { upcomingCards?: FeaturedCard[] }) {
+type FeaturedSpotlight = {
+  badge: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+};
+
+function buildFeaturedEventAccent(title: string) {
+  const seasonMatch = title.match(/\bS(?:EASON)?\s*(\d+)\b/i);
+  const monogram = title
+    .split(/[\s:/-]+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'DH';
+
+  return {
+    monogram,
+    season: seasonMatch ? `S${seasonMatch[1]}` : null,
+  };
+}
+
+function formatBannerTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
+  const cst = new Date(utcMs + 8 * 3600000);
+  return `${(cst.getMonth() + 1).toString().padStart(2, '0')}/${cst.getDate().toString().padStart(2, '0')} ${cst.getHours().toString().padStart(2, '0')}:${cst.getMinutes().toString().padStart(2, '0')} CST`;
+}
+
+function formatBannerBestOf(value?: string | number | null): string {
+  if (value === null || value === undefined || value === '') return 'BO3';
+  if (typeof value === 'number' && Number.isFinite(value)) return `BO${value}`;
+  const normalized = String(value).trim().toUpperCase();
+  if (!normalized) return 'BO3';
+  if (normalized.startsWith('BO')) return normalized;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? `BO${parsed}` : normalized;
+}
+
+function FeaturedEventBanner({
+  upcomingCards = featuredUpcomingCards as FeaturedCard[],
+  spotlight = DEFAULT_FEATURED_EVENT,
+}: {
+  upcomingCards?: FeaturedCard[];
+  spotlight?: FeaturedSpotlight;
+}) {
+  const accent = buildFeaturedEventAccent(spotlight.title);
+
   return (
     <section className="hidden overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_20%_50%,rgba(185,28,28,0.28),rgba(15,23,42,0.86)_45%,rgba(2,6,23,0.92))] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28)] lg:block">
       <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
@@ -378,8 +433,8 @@ function FeaturedEventBanner({ upcomingCards = featuredUpcomingCards as Featured
           <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse at 85% 20%, rgba(239,68,68,0.18) 0%, transparent 50%)'}} />
           {/* Large tournament emblem decoration */}
           <div className="absolute right-3 top-1/2 -translate-y-1/2 select-none pointer-events-none flex flex-col items-center opacity-[0.07]">
-            <div className="text-[88px] font-black leading-none tracking-tighter text-white">DL</div>
-            <div className="text-[22px] font-bold leading-none tracking-widest text-white -mt-1">S23</div>
+            <div className="text-[88px] font-black leading-none tracking-tighter text-white">{accent.monogram}</div>
+            {accent.season && <div className="text-[22px] font-bold leading-none tracking-widest text-white -mt-1">{accent.season}</div>}
           </div>
           {/* Subtle top-right corner shine */}
           <div className="absolute top-0 right-0 size-24 pointer-events-none" style={{background: 'radial-gradient(circle at 100% 0%, rgba(255,100,100,0.12), transparent 70%)'}} />
@@ -388,14 +443,14 @@ function FeaturedEventBanner({ upcomingCards = featuredUpcomingCards as Featured
             <div>
               <Badge className="mb-3 border border-red-300/40 bg-red-600/90 px-2 text-[11px] font-semibold text-white">
                 <span className="mr-1 inline-block size-1.5 rounded-full bg-white animate-pulse" />
-                LIVE
+                {spotlight.badge}
               </Badge>
-              <h2 className="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">DreamLeague S23</h2>
-              <p className="mt-1 text-sm text-red-200/70">小组赛 · Day 5</p>
+              <h2 className="text-2xl font-extrabold tracking-tight text-white drop-shadow-sm">{spotlight.title}</h2>
+              <p className="mt-1 text-sm text-red-200/70">{spotlight.subtitle}</p>
             </div>
             <Button size="sm" className="mt-6 w-fit border border-white/20 bg-white/10 text-white hover:bg-white/20">
               <Play className="mr-1.5 size-3.5 fill-white" />
-              观看直播
+              {spotlight.ctaLabel}
             </Button>
           </div>
         </div>
@@ -794,15 +849,17 @@ export function HomeDashboard() {
 
   const [eptTeams, setEptTeams] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
+  const [featuredSpotlight, setFeaturedSpotlight] = useState<FeaturedSpotlight | null>(null);
 
   useEffect(() => {
     if (prototypeMode) return;
 
     const fetchData = async () => {
       try {
-        const [eptRes, upcomingRes] = await Promise.all([
+        const [eptRes, upcomingRes, liveRes] = await Promise.all([
           fetch('/api/ept-ranking'),
           fetch('/api/upcoming?limit=3'),
+          fetch('/api/live-hero'),
         ]);
 
         if (eptRes.ok) {
@@ -813,6 +870,32 @@ export function HomeDashboard() {
         if (upcomingRes.ok) {
           const upcomingData = await upcomingRes.json();
           setUpcomingMatches(upcomingData.upcoming || []);
+        }
+
+        if (liveRes.ok) {
+          const liveData = await liveRes.json();
+          const liveMatches = Array.isArray(liveData?.liveMatches)
+            ? liveData.liveMatches
+            : liveData?.live
+              ? [liveData.live]
+              : [];
+          const spotlightMatch = liveMatches[0];
+
+          if (spotlightMatch) {
+            setFeaturedSpotlight({
+              badge: 'LIVE',
+              title: spotlightMatch.leagueName || DEFAULT_FEATURED_EVENT.title,
+              subtitle: [
+                spotlightMatch.stage,
+                formatBannerBestOf(spotlightMatch.bestOf),
+              ].filter(Boolean).join(' · ') || DEFAULT_FEATURED_EVENT.subtitle,
+              ctaLabel: '观看直播',
+            });
+          } else {
+            setFeaturedSpotlight(null);
+          }
+        } else {
+          setFeaturedSpotlight(null);
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
@@ -899,6 +982,15 @@ export function HomeDashboard() {
       }))
     : (featuredUpcomingCards as FeaturedCard[]);
 
+  const bannerSpotlight = featuredSpotlight || (upcomingMatches.length > 0
+    ? {
+        badge: '即将开始',
+        title: upcomingMatches[0].tournament_name || DEFAULT_FEATURED_EVENT.title,
+        subtitle: `${formatBannerTime(upcomingMatches[0].start_time)} · ${formatBannerBestOf(upcomingMatches[0].series_type)}`,
+        ctaLabel: '查看赛程',
+      }
+    : DEFAULT_FEATURED_EVENT);
+
   const displayTeams = eptTeams.length > 0 ? eptTeams : hotTeams.map((t: any, i: number) => ({
     rank: i + 1,
     name: t.name,
@@ -938,7 +1030,7 @@ export function HomeDashboard() {
           </div>
         </div>
         <MobileMatchToolbar />
-        <FeaturedEventBanner upcomingCards={bannerCards} />
+        <FeaturedEventBanner upcomingCards={bannerCards} spotlight={bannerSpotlight} />
         {prototypeMode ? (
           <PrototypeDashboardContent
             onOpenMatch={handleOpenMatch}

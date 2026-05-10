@@ -38,6 +38,10 @@ export interface LiveHeroPayload {
   stage?: string | null;
   bestOf?: string | number | null;
   seriesScore: string;
+  seriesScoreBreakdown?: {
+    team1?: number | null;
+    team2?: number | null;
+  } | null;
   live: boolean;
   startedAt?: string | number | null;
   teams: Array<{
@@ -152,6 +156,25 @@ function formatBestOf(value?: string | number | null) {
   const parsed = Number(normalized);
   if (Number.isFinite(parsed)) return `BO${parsed}`;
   return normalized;
+}
+
+function parseSeriesScore(payload: LiveHeroPayload) {
+  if (payload.seriesScoreBreakdown) {
+    return {
+      team1: payload.seriesScoreBreakdown.team1 ?? 0,
+      team2: payload.seriesScoreBreakdown.team2 ?? 0,
+    };
+  }
+
+  const match = String(payload.seriesScore || '').match(/(\d+)\s*[:-]\s*(\d+)/);
+  if (!match) {
+    return { team1: 0, team2: 0 };
+  }
+
+  return {
+    team1: Number(match[1]) || 0,
+    team2: Number(match[2]) || 0,
+  };
 }
 
 function toSortTimestamp(value: string | number | null | undefined): number {
@@ -521,7 +544,7 @@ export function HeroSection({
                     const selectedMapScore = parseMapScore(selectedMap);
                     const scoreTone = selectedMap?.status === 'live' ? 'text-emerald-300' : 'text-white';
                     const selectedDuration = formatGameTime(selectedMap?.gameTime ?? null);
-                    const [scoreLeft, scoreRight] = (liveHero.seriesScore || '0:0').split(':').map(s => parseInt(s.trim()) || 0);
+                    const { team1: scoreLeft, team2: scoreRight } = parseSeriesScore(liveHero);
                     const liveSeriesMaps = liveHero.maps
                       .filter((map) => map.matchId !== null && map.matchId !== undefined)
                       .map((map) => ({
