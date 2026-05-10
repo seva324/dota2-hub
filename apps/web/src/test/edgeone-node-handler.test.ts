@@ -40,12 +40,21 @@ describe('resolveApiTarget', () => {
       queryOverrides: {},
     });
   });
+
+  it('maps /api/ept-ranking onto the EPT ranking handler', () => {
+    expect(resolveApiTarget('/api/ept-ranking')).toEqual({
+      key: 'ept-ranking',
+      routePath: '/api/ept-ranking',
+      queryOverrides: {},
+    });
+  });
 });
 
 describe('runEdgeOneApiRequest', () => {
   afterEach(() => {
     vi.resetModules();
     vi.doUnmock('../../../../api/cron.js');
+    vi.doUnmock('../../../../api/ept-ranking.js');
     vi.doUnmock('../../../../api/matches.js');
     vi.doUnmock('../../../../lib/api-handlers/tournament-background.js');
   });
@@ -134,6 +143,32 @@ describe('runEdgeOneApiRequest', () => {
         query: expect.objectContaining({
           slug: 'dreamleague',
         }),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('passes /api/ept-ranking through the dedicated EPT ranking handler', async () => {
+    const eptRankingHandler = vi.fn(async (_req, res) => {
+      return res.status(200).json({ ok: true, source: 'edgeone-ept' });
+    });
+
+    vi.doMock('../../../../api/ept-ranking.js', () => ({
+      default: eptRankingHandler,
+    }));
+
+    const { runEdgeOneApiRequest } = await import('../../../../lib/server/edgeone-node-handler.js');
+    const response = await runEdgeOneApiRequest(new Request('https://edgeone.example/api/ept-ranking'));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      source: 'edgeone-ept',
+    });
+    expect(eptRankingHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        query: {},
       }),
       expect.any(Object),
     );
