@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Star, ExternalLink, UserRound, Trophy, Crosshair, Clock, TrendingUp, Medal } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { getHeroImageUrl } from '@/lib/assetUrls';
@@ -165,11 +166,6 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const tournamentList = Object.entries(tournamentPerf)
     .map(([name, { wins, losses, latestTs }]) => ({ name, wins, losses, latestTs }))
     .sort((a, b) => (b.wins + b.losses) - (a.wins + a.losses));
-
-  const sheetSide = isMobile ? 'bottom' : 'right';
-  const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl border-border/60 bg-card text-foreground p-0 overscroll-contain shadow-[var(--shadow-card)]'
-    : 'w-full sm:max-w-[420px] bg-card rounded-xl border-border/60 text-foreground p-0 overscroll-contain shadow-[var(--shadow-card),0_0_40px_rgba(0,50,100,0.12)]';
 
   /** ── Desktop header ── */
   const desktopHeader = (
@@ -628,22 +624,16 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
     </section>
   );
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={sheetSide} className={sheetClassName} data-visual-role="player-profile-flyout">
-        {/* Accessibility titles (visually hidden by structure but required) */}
-        <SheetTitle className="sr-only">{player?.playerName || '选手资料'}</SheetTitle>
-        <SheetDescription className="sr-only">{player?.teamName || ''} 选手资料</SheetDescription>
+  const profileContent = (
+    <div className="h-full overflow-y-auto">
+      {/* ── Header (desktop / mobile variants) ── */}
+      {isMobile ? mobileHeader : desktopHeader}
 
-        <div className="h-full overflow-y-auto">
-          {/* ── Header (desktop / mobile variants) ── */}
-          {isMobile ? mobileHeader : desktopHeader}
+      {/* Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
 
-          {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-slate-600/40 to-transparent" />
-
-          {/* ── Body ── */}
-          <div className="space-y-4 p-4">
+      {/* ── Body ── */}
+      <div className="space-y-4 p-4">
             {heroPoolSection}
 
             {isMobile && mobilePerformanceSection}
@@ -675,8 +665,23 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
               </button>
             )}
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
+      </div>
+    );
+
+    return isMobile ? (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="h-[92vh] w-full rounded-t-2xl bg-card text-foreground p-0 border border-border/40 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.5)]" data-visual-role="player-profile-flyout">
+          <SheetTitle className="sr-only">{player?.playerName || '选手资料'}</SheetTitle>
+          <SheetDescription className="sr-only">{player?.teamName || ''} 选手资料</SheetDescription>
+          {profileContent}
+        </SheetContent>
+      </Sheet>
+    ) : (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-full sm:max-w-md bg-card text-foreground p-0 gap-0 rounded-2xl border border-border/30 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.7)] max-h-[90vh]" data-visual-role="player-profile-flyout" showCloseButton={false}>
+          <DialogTitle className="sr-only">{player?.playerName || '选手资料'}</DialogTitle>
+          {profileContent}
+        </DialogContent>
+      </Dialog>
+    );
+  }
