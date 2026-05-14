@@ -1266,7 +1266,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
       <DialogContent data-visual-role="match-detail-modal"
         showCloseButton={false}
         aria-describedby={undefined}
-        className={`overflow-y-auto bg-[#0a1623] border-slate-700/60 rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.45)] p-4 sm:p-8 ${
+        className={`overflow-y-auto bg-gradient-to-b from-[#0a1623] to-[#061220] border-slate-700/60 rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.15)] p-4 sm:p-8 ${
           isPrototypeMode ? 'w-[96vw] sm:max-w-[1360px] max-h-[94vh]' : 'w-[82vw] sm:max-w-6xl max-h-[90vh]'
         }`}
       >

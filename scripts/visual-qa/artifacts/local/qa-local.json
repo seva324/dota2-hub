@@ -1,0 +1,8 @@
+{
+  "score": 72,
+  "top_3_fixes": [
+    "Tighten layout spacing to match the prototype rhythm: reduce section-to-section vertical gaps, shrink oversized panel paddings, and align main/side column gutters to a consistent grid.",
+    "Adjust typography tokens for closer hierarchy: increase body/label contrast and weight, reduce tiny low-contrast metadata text, and match prototype heading/body size ratios and line-heights.",
+    "Recalibrate visual tokens (color, radius, shadow): add the prototype-style blue glow/gradient depth, reduce overly flat card surfaces, standardize corner radii across cards/buttons, and use softer layered shadows instead of hard borders."
+  ]
+}

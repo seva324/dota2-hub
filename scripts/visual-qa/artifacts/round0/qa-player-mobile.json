@@ -1,0 +1,39 @@
+{
+  "score": 46,
+  "differences": [
+    {
+      "area": "Layout & spacing",
+      "detail": "Production is a narrow mobile single-column flow with compact vertical spacing; prototype is a wide desktop modal with much larger paddings and panel gaps."
+    },
+    {
+      "area": "Typography",
+      "detail": "Production uses smaller, denser text and tighter stat labels; prototype uses larger headers/body text and looser typographic rhythm."
+    },
+    {
+      "area": "Color system",
+      "detail": "Production leans navy/blue with restrained accent chips; prototype introduces stronger red emphasis (CTA/follow) and brighter green highlights, shifting visual balance."
+    },
+    {
+      "area": "Border radius",
+      "detail": "Production cards/chips are moderately rounded; prototype uses softer/larger rounding on modal and containers, giving a different component feel."
+    },
+    {
+      "area": "Shadows & glow",
+      "detail": "Production effects are subtle; prototype has stronger glow/blur and halo lighting, increasing perceived depth and reducing parity."
+    },
+    {
+      "area": "Image sizing",
+      "detail": "Production keeps portrait/hero visuals relatively compact within dense lists; prototype uses a much larger hero portrait and larger hero tiles, changing weight distribution."
+    },
+    {
+      "area": "Information hierarchy",
+      "detail": "Production prioritizes team overview + lineup + long-scroll detail; prototype prioritizes player modal storytelling with prominent bottom CTA, so primary attention order differs."
+    }
+  ],
+  "top_3_fixes": [
+    "Match production layout model first: mobile single-column sheet, full-width cards, and tighter spacing scale (roughly 12-20px rhythm).",
+    "Normalize typography to production density: reduce heading/body sizes and tighten stat/label spacing so more information sits above the fold.",
+    "Align visual tokens: reduce glow intensity, shrink major border radii, and rebalance accents toward production’s subdued navy/cyan/yellow with less dominant red CTA treatment."
+  ],
+  "pass_90_threshold": false
+}

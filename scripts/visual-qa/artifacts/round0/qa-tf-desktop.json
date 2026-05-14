@@ -1,0 +1,67 @@
+{
+  "score": 38,
+  "differences": [
+    {
+      "area": "layout",
+      "severity": "high",
+      "production": "Full-page, single-column mobile screen",
+      "prototype": "Right-side modal panel over dimmed homepage",
+      "notes": "Primary container pattern is different, so overall composition does not match."
+    },
+    {
+      "area": "spacing",
+      "severity": "high",
+      "production": "Larger vertical gaps, looser section rhythm, mixed card paddings",
+      "prototype": "Tighter, more uniform spacing with consistent internal padding",
+      "notes": "Section density and breathing room feel substantially different."
+    },
+    {
+      "area": "fonts",
+      "severity": "medium",
+      "production": "Heavier headings and larger numerics; mixed text emphasis feels stronger",
+      "prototype": "More compact type scale and more controlled weight contrast",
+      "notes": "Typographic hierarchy style differs even when content roles are similar."
+    },
+    {
+      "area": "colors",
+      "severity": "high",
+      "production": "High-saturation cyan/yellow/purple accents on deep navy",
+      "prototype": "Muted blue/teal glass palette with restrained green/red accents",
+      "notes": "Color temperature and saturation are not aligned."
+    },
+    {
+      "area": "border_radius",
+      "severity": "medium",
+      "production": "Rounder pills/cards in several modules",
+      "prototype": "More consistent medium radius across panel/cards/rows",
+      "notes": "Corner language is similar in spirit but not token-consistent."
+    },
+    {
+      "area": "shadows",
+      "severity": "high",
+      "production": "Mostly flat cards with light glow accents",
+      "prototype": "Stronger depth: layered shadows, inner glow, glass blur treatment",
+      "notes": "Depth model and surface treatment differ significantly."
+    },
+    {
+      "area": "image_sizing",
+      "severity": "medium",
+      "production": "Hero/player images vary more by section; some icons feel small vs card size",
+      "prototype": "More standardized image proportions and visual balance per row/card",
+      "notes": "Media scale system is less consistent in production."
+    },
+    {
+      "area": "info_hierarchy",
+      "severity": "high",
+      "production": "Linear scroll with equal visual weight across many modules",
+      "prototype": "Clear top-down hierarchy with grouped cards and strong bottom CTA",
+      "notes": "Attention flow and priority cues are materially different."
+    }
+  ],
+  "top_3_fixes": [
+    "Align the core container paradigm first (modal panel + backdrop vs full-page screen); this will fix most hierarchy and spacing mismatches.",
+    "Adopt a shared design token set for typography, color, radius, and elevation (especially muted palette + glass/shadow model).",
+    "Standardize component sizing rules for logos, avatars, and hero thumbnails using fixed size tokens and consistent padding/crop ratios."
+  ],
+  "pass_90_threshold": false
+}

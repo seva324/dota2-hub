@@ -1,0 +1,51 @@
+{
+  "score": 36,
+  "differences": [
+    {
+      "aspect": "layout",
+      "severity": "high",
+      "detail": "Production is a narrow, dense mobile stack focused on header + player cards, while prototype uses a wider canvas with many structured sections (overview, draft, graph, events, tables, timeline). Overall composition and section flow do not match."
+    },
+    {
+      "aspect": "spacing",
+      "severity": "high",
+      "detail": "Production uses tighter vertical rhythm and smaller inter-section gaps; prototype uses larger outer margins, card padding, and clearer whitespace separation between modules."
+    },
+    {
+      "aspect": "typography",
+      "severity": "medium",
+      "detail": "Font sizing/weight hierarchy differs: production has heavier, flatter text treatment; prototype uses more differentiated heading/body scales and clearer section-title emphasis."
+    },
+    {
+      "aspect": "color system",
+      "severity": "high",
+      "detail": "Accent palette is different (production leans green/yellow/coral; prototype leans brand red + neutral grays + controlled green/red state colors). Contrast tuning and highlight semantics are inconsistent."
+    },
+    {
+      "aspect": "border-radius",
+      "severity": "medium",
+      "detail": "Prototype applies larger, more consistent card and chip corner radii; production has smaller/mixed radii across tabs, rows, and cards."
+    },
+    {
+      "aspect": "shadows/elevation",
+      "severity": "medium",
+      "detail": "Prototype uses stronger depth cues (soft glow/overlay layering and textured background), while production appears flatter with minimal elevation separation."
+    },
+    {
+      "aspect": "image/icon sizing",
+      "severity": "high",
+      "detail": "Prototype features larger team logos and consistently sized icon systems across modules; production uses smaller logos/icons and lacks comparable visual prominence."
+    },
+    {
+      "aspect": "information hierarchy",
+      "severity": "high",
+      "detail": "Prototype has a clear top-down hierarchy and progressive disclosure across sections; production jumps quickly into detailed rows, reducing scanability and section-level orientation."
+    }
+  ],
+  "top_3_fixes": [
+    "Match the prototype layout structure first: same screen composition, section order, and spacing scale (outer margins, card paddings, inter-section gaps).",
+    "Unify design tokens to prototype: typography scale/weights, brand-accent mapping, neutral text colors, and consistent state colors.",
+    "Align component visuals: card/chip radius values, elevation/shadow treatment, and logo/icon sizing rules for stronger hierarchy."
+  ],
+  "pass_90_threshold": false
+}

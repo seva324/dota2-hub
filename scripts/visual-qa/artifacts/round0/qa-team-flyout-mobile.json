@@ -1,0 +1,46 @@
+{
+  "score": 57,
+  "differences": [
+    {
+      "category": "layout_spacing",
+      "severity": "high",
+      "detail": "Production is a tight single-column mobile stack with compact vertical rhythm; prototype is a wide modal with larger paddings/margins and more horizontal composition."
+    },
+    {
+      "category": "fonts",
+      "severity": "medium",
+      "detail": "Prototype uses larger and heavier typography (titles, metrics, CTA), while production text is smaller, denser, and more uniform across cards."
+    },
+    {
+      "category": "colors",
+      "severity": "high",
+      "detail": "Prototype introduces stronger red accents and brighter glow highlights; production is more muted navy/cyan with softer accent contrast."
+    },
+    {
+      "category": "border-radius",
+      "severity": "medium",
+      "detail": "Prototype has larger corner radii (outer modal and section cards), while production corners are tighter and more consistent across list cards."
+    },
+    {
+      "category": "shadows",
+      "severity": "medium",
+      "detail": "Prototype relies on stronger shadows/glows for depth; production appears flatter with subtler elevation and emphasis."
+    },
+    {
+      "category": "image_sizing",
+      "severity": "high",
+      "detail": "Player and emblem visuals are significantly larger in prototype (especially roster portraits), whereas production uses smaller thumbnails and denser list-item imagery."
+    },
+    {
+      "category": "info_hierarchy",
+      "severity": "high",
+      "detail": "Production prioritizes 'recent 10', next match, then roster in a strict vertical flow; prototype spreads emphasis across roster, tables, hero/stats split, and CTA, changing scan order."
+    }
+  ],
+  "top_3_fixes": [
+    "Match production structure first: convert prototype to compact single-column mobile flow, reduce section paddings, and tighten vertical spacing.",
+    "Normalize visual style tokens: reduce red/glow intensity, align to production navy/cyan accent balance, and lower shadow strength.",
+    "Adjust component scale: shrink portraits/icons and typography to production proportions, then rebalance heading/body/value hierarchy."
+  ],
+  "pass_90_threshold": false
+}

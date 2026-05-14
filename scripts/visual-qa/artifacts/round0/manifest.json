@@ -1,0 +1,43 @@
+{
+  "round": 0,
+  "timestamp": "2026-05-13T17:15:27.785Z",
+  "baseUrl": "https://dotahub.cn",
+  "captures": [
+    {
+      "module": "match-detail",
+      "viewport": "desktop",
+      "status": "captured",
+      "entity": "match"
+    },
+    {
+      "module": "team-flyout",
+      "viewport": "desktop",
+      "status": "captured",
+      "entity": "XGXtreme Gaming"
+    },
+    {
+      "module": "player-profile-flyout",
+      "viewport": "desktop",
+      "status": "captured",
+      "entity": "AmeWang Chunyu"
+    },
+    {
+      "module": "match-detail",
+      "viewport": "mobile",
+      "status": "blocked",
+      "error": "modal not found"
+    },
+    {
+      "module": "team-flyout",
+      "viewport": "mobile",
+      "status": "captured",
+      "entity": "XGXtreme Gaming"
+    },
+    {
+      "module": "player-profile-flyout",
+      "viewport": "mobile",
+      "status": "captured",
+      "entity": "AmeWang Chunyu"
+    }
+  ]
+}

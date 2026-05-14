@@ -1,0 +1,19 @@
+{
+  "score": 63,
+  "differences": [
+    "Layout structure differs: production uses compact, context cards/popovers; prototype uses a full-height right drawer, which changes visual balance and density.",
+    "Spacing is looser in prototype: larger paddings, taller rows, and bigger inter-section gaps than production.",
+    "Typography scale/weight is heavier in prototype; production has tighter type scale with clearer primary-vs-secondary text contrast.",
+    "Color treatment is brighter in prototype (stronger blue/green/red accents and panel gradient); production is darker and more restrained.",
+    "Border radius is less consistent in prototype: many blocks look flatter/squarer versus the rounder card and chip corners in production.",
+    "Shadows/overlays are stronger in prototype; production uses subtler depth with lighter blur and glow.",
+    "Image sizing/cropping differs: prototype avatar/hero tiles are larger and more dominant; production keeps imagery smaller relative to text blocks.",
+    "Information hierarchy is flatter in prototype because many modules have similar visual weight; production emphasizes key items more clearly."
+  ],
+  "top_3_fixes": [
+    "Match production density: reduce drawer/card padding, row heights, and vertical gaps; keep a more compact panel footprint.",
+    "Recalibrate type hierarchy: shrink secondary text sizes/weights, reserve strong weight/contrast for player name and key stats only.",
+    "Tune visual style to production: reduce gradient/shadow intensity, standardize larger corner radius values, and scale down avatars/icons."
+  ],
+  "pass_90_threshold": false
+}

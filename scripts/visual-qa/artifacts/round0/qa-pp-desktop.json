@@ -1,0 +1,20 @@
+{
+  "score": 61,
+  "differences": [
+    "Layout structure diverges: production uses a long single-column stack (especially hero pool as vertical rows with progress bars), while prototype uses more card-grid/horizontal modules.",
+    "Panel geometry differs: prototype right panel is wider with larger outer gutters; production panel is narrower and denser with tighter content packing.",
+    "Spacing rhythm is inconsistent vs production: prototype has larger breathing room between major blocks; production uses tighter vertical intervals in repeated list sections.",
+    "Typography hierarchy differs: production emphasizes larger, bolder primary metric and denser Chinese labels; prototype uses lighter weights and more uniform metric sizing.",
+    "Color treatment differs: prototype has stronger glassmorphism/gradient haze, while production is flatter dark-navy with higher contrast accent bars and less atmospheric glow.",
+    "Border-radius system differs: prototype applies broader, more uniform rounding across cards and media; production mixes tighter radii with sharper list-card feel.",
+    "Shadow/blur depth differs: prototype relies on soft shadows and backdrop blur; production uses crisper edges and subtler shadowing.",
+    "Image sizing/composition differs: prototype top avatar is larger rectangular portrait; production uses smaller circular avatar and larger per-row hero thumbnails in the hero pool.",
+    "Information hierarchy differs: production prioritizes win-rate block + hero usage list first; prototype distributes attention across more peer modules (achievements/tournament cards), reducing match to production emphasis."
+  ],
+  "top_3_fixes": [
+    "Match production component structure first: convert prototype hero pool to production-style vertical hero rows with progress bars and align section ordering/density.",
+    "Tune visual style to production: reduce backdrop blur/glass glow, darken base cards, increase accent contrast, and normalize shadows to crisper low-depth edges.",
+    "Align sizing tokens: narrow panel width, tighten inter-section spacing, switch header avatar to smaller circular treatment, and adjust font weights/sizes to production metric hierarchy."
+  ],
+  "pass_90_threshold": false
+}

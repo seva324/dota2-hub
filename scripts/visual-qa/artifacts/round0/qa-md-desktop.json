@@ -1,0 +1,53 @@
+{
+  "score": 58,
+  "differences": [
+    {
+      "category": "layout_spacing",
+      "severity": "high",
+      "production": "Single dense column with tight vertical rhythm and minimal outer breathing room.",
+      "prototype": "Clear page shell with larger gutters, section separation, and a two-column main/right-rail composition."
+    },
+    {
+      "category": "info_hierarchy",
+      "severity": "high",
+      "production": "Hierarchy is table-first; contextual layers are compressed (match context, progression, and secondary modules).",
+      "prototype": "Stronger hierarchy: global header -> match hero -> tabbed sections -> analytics -> tables -> supporting side modules."
+    },
+    {
+      "category": "fonts",
+      "severity": "medium",
+      "production": "Smaller, flatter typographic contrast; headers, labels, and data compete for attention.",
+      "prototype": "More deliberate size/weight contrast with clearer heading-to-metadata separation."
+    },
+    {
+      "category": "colors",
+      "severity": "medium",
+      "production": "Mostly uniform navy surfaces with bright metric colors that feel harsher and less tiered.",
+      "prototype": "Richer tonal layering and accent discipline (reds/greens/cyans) that guide focus."
+    },
+    {
+      "category": "border_radius",
+      "severity": "medium",
+      "production": "Radius usage feels less consistent across tabs/cards/chips.",
+      "prototype": "More consistent rounded system across containers, pills, and controls."
+    },
+    {
+      "category": "shadows",
+      "severity": "medium",
+      "production": "Flatter cards with limited depth separation.",
+      "prototype": "Soft glow + shadow layering creates clearer panel depth and section boundaries."
+    },
+    {
+      "category": "image_sizing",
+      "severity": "medium",
+      "production": "Icon/avatar/pick-ban visuals appear smaller and less prominent relative to row height.",
+      "prototype": "Image elements are more consistently sized and integrated into visual hierarchy."
+    }
+  ],
+  "top_3_fixes": [
+    "Rebuild the macro layout shell to match prototype structure: restore broader gutters, section spacing, and right-rail module rhythm.",
+    "Retune typography/hierarchy tokens: larger section headings, clearer weight tiers, and reduced visual competition in table numbers/labels.",
+    "Standardize visual system tokens (radius, border, shadow, icon/avatar sizes) to match prototype depth and polish."
+  ],
+  "pass_90_threshold": false
+}

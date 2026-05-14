@@ -1,0 +1,51 @@
+{
+  "score": 38,
+  "differences": [
+    {
+      "category": "layout",
+      "severity": "high",
+      "note": "Production is a full-page centered composition; prototype is a right-docked flyout panel over a darkened background."
+    },
+    {
+      "category": "spacing",
+      "severity": "high",
+      "note": "Production uses larger vertical gaps and roomy blocks; prototype is denser with tighter paddings and more compact section rhythm."
+    },
+    {
+      "category": "fonts",
+      "severity": "medium",
+      "note": "Production typography is larger and less compact; prototype uses a tighter type scale with clearer small-label/body/header hierarchy."
+    },
+    {
+      "category": "colors",
+      "severity": "medium",
+      "note": "Production accents are brighter (cyan/yellow) and higher saturation; prototype uses more muted slate/teal tones with controlled accent usage."
+    },
+    {
+      "category": "border_radius",
+      "severity": "medium",
+      "note": "Production corners are generally larger and more uniform; prototype uses more varied, slightly tighter radii across nested cards."
+    },
+    {
+      "category": "shadows",
+      "severity": "medium",
+      "note": "Prototype has stronger layered depth (glass/blur + soft shadows); production appears flatter with lighter shadow treatment."
+    },
+    {
+      "category": "image_sizing",
+      "severity": "medium",
+      "note": "Production hero/logo and avatar proportions are larger relative to container; prototype constrains imagery more tightly within layout modules."
+    },
+    {
+      "category": "info_hierarchy",
+      "severity": "high",
+      "note": "Prototype has deeper module hierarchy (many compact sections); production has fewer modules and flatter information structure."
+    }
+  ],
+  "top_3_fixes": [
+    "Switch to a right-side flyout container with fixed width, dark backdrop overlay, and panel-based structure to match the prototype’s primary layout.",
+    "Adopt prototype spacing and typography scales (smaller body text, tighter paddings, denser section rhythm) to align information density and hierarchy.",
+    "Standardize visual tokens to prototype values: muted color palette, tighter/varied border radii, stronger layered shadows/blur, and constrained image/avatar sizing."
+  ],
+  "pass_90_threshold": false
+}

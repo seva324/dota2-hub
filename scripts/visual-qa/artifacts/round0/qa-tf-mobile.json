@@ -1,0 +1,46 @@
+{
+  "score": 56,
+  "differences": [
+    {
+      "area": "layout_spacing",
+      "severity": "high",
+      "details": "Production is a compact mobile single-column flow; prototype is a wide desktop modal with larger gutters, wider cards, and multi-column sections, so spacing rhythm does not match."
+    },
+    {
+      "area": "fonts",
+      "severity": "medium",
+      "details": "Production typography is heavier and more compact (especially title/numbers); prototype uses lighter text weights and larger line heights, reducing visual density."
+    },
+    {
+      "area": "colors",
+      "severity": "high",
+      "details": "Accent system differs: production leans yellow/cyan/purple accents, while prototype uses red CTAs and green win text with different emphasis mapping."
+    },
+    {
+      "area": "border_radius",
+      "severity": "medium",
+      "details": "Production cards/pills are generally more rounded; prototype corners are comparatively sharper and less consistent across components."
+    },
+    {
+      "area": "shadows",
+      "severity": "medium",
+      "details": "Prototype uses stronger glow/vignette effects; production shadows are subtler and flatter, so depth treatment is mismatched."
+    },
+    {
+      "area": "image_sizing",
+      "severity": "high",
+      "details": "Prototype uses large cutout player portraits and larger hero tiles; production uses smaller circular avatars and tighter image blocks."
+    },
+    {
+      "area": "info_hierarchy",
+      "severity": "high",
+      "details": "Primary emphasis differs: production prioritizes quick stats + next match in a compact scan pattern; prototype prioritizes hero header + large roster strip + bottom CTA."
+    }
+  ],
+  "top_3_fixes": [
+    "Match production layout first: switch prototype to mobile-width single-column structure with production-like section order and tighter vertical spacing tokens.",
+    "Normalize visual tokens: align accent palette, font weights/sizes, corner radii, and shadow intensity to production component-by-component.",
+    "Resize media and hierarchy: reduce portrait/avatar scale, use compact circular player images, and rebalance emphasis toward stats/next-match blocks instead of oversized hero/CTA areas."
+  ],
+  "pass_90_threshold": false
+}

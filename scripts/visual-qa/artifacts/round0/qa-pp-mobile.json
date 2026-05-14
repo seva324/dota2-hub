@@ -1,0 +1,60 @@
+{
+  "score": 44,
+  "differences": [
+    {
+      "area": "layout_spacing",
+      "severity": "high",
+      "production": "Very dense vertical stacking with tight gutters/padding and compressed section spacing.",
+      "prototype": "Roomier modal composition with consistent large paddings, wider gutters, and stronger section separation.",
+      "impact": "Major mismatch in visual rhythm and readability."
+    },
+    {
+      "area": "typography",
+      "severity": "high",
+      "production": "Smaller type scale and flatter weight contrast between title, labels, and stats.",
+      "prototype": "Clearer hierarchy with larger headline, stronger weight tiers, and better stat emphasis.",
+      "impact": "Information priority is harder to scan in production."
+    },
+    {
+      "area": "colors",
+      "severity": "medium",
+      "production": "Flatter navy surfaces with lower depth and less controlled accent balance.",
+      "prototype": "Richer blue-black gradient, cleaner red/green accents, and better contrast tuning.",
+      "impact": "Production looks less premium and less aligned to brand mood."
+    },
+    {
+      "area": "border_radius",
+      "severity": "medium",
+      "production": "Smaller/inconsistent radii across cards, rows, and thumbnails.",
+      "prototype": "More uniform, slightly larger radii that create a cohesive glass-card language.",
+      "impact": "Component family feels less consistent."
+    },
+    {
+      "area": "shadows_and_glass",
+      "severity": "high",
+      "production": "Limited glow/blur depth; cards read mostly flat.",
+      "prototype": "Noticeable soft shadows, inner glow, and glassmorphism depth.",
+      "impact": "Loss of depth and visual polish."
+    },
+    {
+      "area": "image_sizing",
+      "severity": "medium",
+      "production": "Avatar/hero thumbnails are smaller and less dominant; less consistent visual weight.",
+      "prototype": "Larger primary avatar and stronger hero tile presence.",
+      "impact": "Key identity and hero-pool sections carry less visual impact."
+    },
+    {
+      "area": "info_hierarchy",
+      "severity": "high",
+      "production": "Secondary blocks compete with primary player summary; CTA emphasis is weaker.",
+      "prototype": "Clear top-down hierarchy: player identity -> hero pool -> performance -> achievements -> matches -> primary CTA.",
+      "impact": "User attention flow is less guided in production."
+    }
+  ],
+  "top_3_fixes": [
+    "Match the same breakpoint/layout system as prototype: increase container width behavior, section paddings, and inter-section spacing tokens.",
+    "Adopt prototype typography scale and weights for title, stat values, labels, and CTA to restore hierarchy.",
+    "Implement shared visual tokens for surface gradient, border-radius, blur/shadow depth, and image size presets (avatar + hero tiles)."
+  ],
+  "pass_90_threshold": false
+}
