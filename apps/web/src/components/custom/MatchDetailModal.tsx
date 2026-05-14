@@ -515,7 +515,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
     <>
         {/* Map tabs: only show separately in non-prototype mode */}
         {seriesMaps.length > 0 && !isPrototypeMode && (
-          <div className="mb-3 flex flex-wrap gap-2 rounded-xl border border-slate-700/40 bg-slate-950/40 p-2">
+          <div className="mb-3 flex flex-wrap gap-2 rounded-xl border border-border/40 bg-card/40 p-2">
             {seriesMaps.map((seriesMap) => {
               const active = String(activeMatchId) === String(seriesMap.matchId);
               return (
@@ -532,7 +532,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                 >
                   <span>{seriesMap.label}</span>
                   {typeof seriesMap.radiantScore === 'number' && typeof seriesMap.direScore === 'number' ? (
-                    <span className="rounded-md bg-slate-800/80 px-1.5 py-0.5 text-[11px] text-slate-300">
+                    <span className="rounded-md bg-secondary/80 px-1.5 py-0.5 text-[11px] text-foreground/80">
                       {seriesMap.radiantScore}:{seriesMap.direScore}
                     </span>
                   ) : null}
@@ -576,7 +576,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
             {/* ── Prototype-style hero header ── */}
             {isPrototypeMode ? (
-              <div className="mb-4 overflow-hidden rounded-xl border border-slate-800 bg-gradient-to-b from-[#0e1420] to-[#0a0f1a] border-b border-slate-800/60">
+              <div className="mb-4 overflow-hidden rounded-xl border border-border bg-gradient-to-b from-card to-background border-b border-border/60">
                 {/* Top row: teams + series score */}
                 <div className="flex items-center justify-between gap-4 px-5 py-4">
                   {/* Left team */}
@@ -712,24 +712,24 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                   }>
                     {isPrototypeMode ? (
                       <>
-                        <TabsTrigger value="overview" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><BarChart3 className="w-3.5 h-3.5 mr-1.5" />概览</TabsTrigger>
-                        <TabsTrigger value="draft" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><Swords className="w-3.5 h-3.5 mr-1.5" />阵容选择</TabsTrigger>
-                        <TabsTrigger value="players" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><Target className="w-3.5 h-3.5 mr-1.5" />比赛数据</TabsTrigger>
-                        <TabsTrigger value="economy" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><TrendingUp className="w-3.5 h-3.5 mr-1.5" />比赛进程</TabsTrigger>
-                        <TabsTrigger value="history" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-slate-400 data-[state=active]:border-b-orange-500 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"><Trophy className="w-3.5 h-3.5 mr-1.5" />历史交锋</TabsTrigger>
+                        <TabsTrigger value="overview" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-muted-foreground data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"><BarChart3 className="w-3.5 h-3.5 mr-1.5" />概览</TabsTrigger>
+                        <TabsTrigger value="draft" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-muted-foreground data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"><Swords className="w-3.5 h-3.5 mr-1.5" />阵容选择</TabsTrigger>
+                        <TabsTrigger value="players" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-muted-foreground data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"><Target className="w-3.5 h-3.5 mr-1.5" />比赛数据</TabsTrigger>
+                        <TabsTrigger value="economy" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-muted-foreground data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"><TrendingUp className="w-3.5 h-3.5 mr-1.5" />比赛进程</TabsTrigger>
+                        <TabsTrigger value="history" className="rounded-none border-b-2 border-b-transparent pb-2 pt-1 px-4 text-sm font-medium text-muted-foreground data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"><Trophy className="w-3.5 h-3.5 mr-1.5" />历史交锋</TabsTrigger>
                       </>
                     ) : (
                       <>
-                        <TabsTrigger value="players" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
+                        <TabsTrigger value="players" className="data-[state=active]:bg-secondary text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                           <Users className="w-3 h-3 mr-1" /><span>KDA</span>
                         </TabsTrigger>
-                        <TabsTrigger value="economy" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
+                        <TabsTrigger value="economy" className="data-[state=active]:bg-secondary text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                           <TrendingUp className="w-3 h-3 mr-1" /><span>经济</span>
                         </TabsTrigger>
-                        <TabsTrigger value="laning" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
+                        <TabsTrigger value="laning" className="data-[state=active]:bg-secondary text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                           <Users className="w-3 h-3 mr-1" /><span>对线</span>
                         </TabsTrigger>
-                        <TabsTrigger value="aireport" className="data-[state=active]:bg-slate-700 text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
+                        <TabsTrigger value="aireport" className="data-[state=active]:bg-secondary text-xs sm:text-sm min-w-[80px] grow basis-[48%] sm:flex-1 sm:basis-auto">
                           <FileText className="w-3 h-3 mr-1" /><span>AI战报</span>
                         </TabsTrigger>
                       </>

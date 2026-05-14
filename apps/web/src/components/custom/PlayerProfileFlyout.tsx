@@ -168,16 +168,16 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700/60 bg-[#0a1623] text-slate-100 p-0 overscroll-contain shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45)]'
-    : 'w-full sm:max-w-[420px] bg-[#0a1623] rounded-lg border-slate-700/60 text-slate-100 p-0 overscroll-contain shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]';
+    ? 'h-[92vh] w-full rounded-t-3xl border-border/60 bg-card text-foreground p-0 overscroll-contain shadow-[var(--shadow-card)]'
+    : 'w-full sm:max-w-[420px] bg-card rounded-xl border-border/60 text-foreground p-0 overscroll-contain shadow-[var(--shadow-card),0_0_40px_rgba(0,50,100,0.12)]';
 
   /** ── Desktop header ── */
   const desktopHeader = (
-    <div className="relative border-b border-slate-700/60 bg-[#151b27] px-5 pb-0 pt-5">
+    <div className="relative border-b border-border/60 bg-secondary/30 px-5 pb-0 pt-5">
       {/* 关注 button */}
       <button
         type="button"
-        className="absolute right-4 top-4 flex items-center gap-1.5 rounded-lg border border-red-500/70 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:border-red-400 hover:bg-red-500/10"
+        className="absolute right-4 top-4 flex items-center gap-1.5 rounded-lg border border-primary/70 px-3 py-1.5 text-xs font-medium text-primary transition hover:border-red-400 hover:bg-red-500/10"
       >
         <Star className="size-3" />
         关注
@@ -199,7 +199,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
         <div className="min-w-0 pt-1 pr-20">
           {/* Name + verified */}
           <div className="flex items-center gap-1.5">
-            <h2 className="truncate text-xl font-bold text-white">{player?.playerName || '—'}</h2>
+            <h2 className="truncate text-xl font-bold text-foreground">{player?.playerName || '—'}</h2>
             <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
           </div>
           {/* Real name */}
@@ -239,7 +239,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </div>
 
       {/* Stats bar */}
-      <div className="mt-4 grid grid-cols-5 divide-x divide-slate-600/30 overflow-hidden rounded-xl border border-slate-700/60 bg-gradient-to-r from-slate-800/70 via-slate-800/40 to-slate-800/70">
+      <div className="mt-4 grid grid-cols-5 divide-x divide-border/30 overflow-hidden rounded-xl border border-border/60 bg-gradient-to-r from-secondary/70 via-secondary/40 to-secondary/70">
         {[
           { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', color: player?.winRate != null ? (player.winRate >= 50 ? 'text-emerald-400' : 'text-red-400') : 'text-white' },
           { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '--', color: 'text-white' },

@@ -33,7 +33,7 @@ export function Navbar() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-slate-950/95 backdrop-blur-md shadow-lg border-b border-slate-800'
+          ? 'bg-background/95 backdrop-blur-md shadow-[var(--shadow-card)] border-b border-border'
           : 'bg-transparent'
       }`}
     >
@@ -41,12 +41,12 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center">
               <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="leading-tight">
-              <h1 className="text-base sm:text-xl font-bold text-white">DOTA2 Pro Hub</h1>
-              <p className="text-[10px] sm:text-xs text-slate-400 hidden xs:block">专业战报</p>
+              <h1 className="text-base sm:text-xl font-bold text-foreground">DOTA2 Pro Hub</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground hidden xs:block">专业战报</p>
             </div>
           </div>
 
@@ -56,7 +56,7 @@ export function Navbar() {
               <Button
                 key={item.href}
                 variant="ghost"
-                className="text-slate-300 hover:text-white hover:bg-slate-800/50"
+                className="text-muted-foreground hover:text-foreground hover:bg-secondary"
                 onClick={() => scrollToSection(item.href)}
               >
                 <item.icon className="w-4 h-4 mr-2" />
@@ -67,15 +67,15 @@ export function Navbar() {
 
           {/* Update Time */}
           <div className="hidden lg:block text-right">
-            <p className="text-xs text-slate-500">每日更新</p>
-            <p className="text-sm text-slate-300">08:00 AM</p>
+            <p className="text-xs text-muted-foreground">每日更新</p>
+            <p className="text-sm text-muted-foreground">08:00 AM</p>
           </div>
 
           {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-white"
+            className="md:hidden text-foreground"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -84,13 +84,13 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-800">
+          <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-2">
               {navItems.map((item) => (
                 <Button
                   key={item.href}
                   variant="ghost"
-                  className="justify-start text-slate-300 hover:text-white hover:bg-slate-800/50"
+                  className="justify-start text-muted-foreground hover:text-foreground hover:bg-secondary"
                   onClick={() => scrollToSection(item.href)}
                 >
                   <item.icon className="w-4 h-4 mr-3" />

@@ -558,16 +558,16 @@ export function HeroSection({
                       <Card
                         key={cardKey}
                         data-testid="hero-live-card"
-                        className={`overflow-hidden rounded-xl border border-white/10 bg-slate-900/90 text-left${isOddLast ? ' md:col-span-2 lg:col-span-1' : ''}`}
+                        className={`overflow-hidden rounded-xl border border-border/30 bg-card/90 text-left${isOddLast ? ' md:col-span-2 lg:col-span-1' : ''}`}
                       >
                         <CardContent className="p-0">
                           {/* Header: LIVE + league + stage */}
-                          <div className="flex items-center gap-2 border-b border-white/8 px-3 py-2">
+                          <div className="flex items-center gap-2 border-b border-border/20 px-3 py-2">
                             <Badge className="gap-1 bg-red-600 px-1.5 py-0.5 text-[10px] text-white">
                               <Radio className="h-2.5 w-2.5 animate-pulse" />
                               LIVE
                             </Badge>
-                            <span className="flex-1 truncate text-xs font-medium text-slate-300">{liveHero.leagueName}</span>
+                            <span className="flex-1 truncate text-xs font-medium text-foreground/80">{liveHero.leagueName}</span>
                             <span className="shrink-0 text-[10px] text-slate-500">{liveHero.stage || '小组赛'}</span>
                           </div>
 
