@@ -505,8 +505,8 @@ export function TeamFlyout({
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain border border-slate-700/60 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]'
-    : 'w-full sm:max-w-2xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain rounded-lg border-l border-slate-700/60 shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]';
+    ? 'h-[92vh] w-full rounded-t-3xl bg-card text-foreground p-0 overscroll-contain border border-border/60 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]'
+    : 'w-full sm:max-w-2xl bg-card text-foreground p-0 overscroll-contain rounded-xl border-l border-border/60 shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]';
 
   const teamHue = stringToHue(selectedTeam?.name || '');
 
@@ -516,7 +516,7 @@ export function TeamFlyout({
         <SheetContent side={sheetSide} className={sheetClassName} data-visual-role="team-flyout">
           <div className="h-full overflow-y-auto">
             <SheetHeader
-              className="relative border-b border-slate-700 p-6 pr-12 overflow-hidden"
+              className="relative border-b border-border p-6 pr-12 overflow-hidden"
               style={{
                 background: `linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42) 40%, hsl(${teamHue} 60% 25% / 0.35) 100%)`,
               }}
@@ -525,7 +525,7 @@ export function TeamFlyout({
                 <span className="text-[8rem] font-black tracking-[0.5em] text-white" style={{ fontFamily: 'system-ui' }}>DOTA2</span>
               </div>
               <div className="relative z-10 flex flex-col items-center gap-3">
-                <div className="w-20 h-20 rounded-2xl bg-slate-800/80 border border-slate-600/50 flex items-center justify-center overflow-hidden shadow-lg"
+                <div className="w-20 h-20 rounded-xl bg-secondary/80 border border-border/50 flex items-center justify-center overflow-hidden shadow-lg"
                   style={{ boxShadow: `0 0 24px hsl(${teamHue} 60% 40% / 0.15)` }}
                 >
                   <SafeImg
@@ -555,7 +555,7 @@ export function TeamFlyout({
 
             <div className="p-6 space-y-4">
               {/* Stats Bar */}
-              <div className="rounded-xl border border-sky-500/20 bg-slate-800/60 p-4 shadow-[0_0_24px_rgba(56,189,248,0.1)]">
+              <div className="rounded-xl border border-sky-500/20 bg-secondary/60 p-4 shadow-[0_0_24px_rgba(56,189,248,0.1)]">
                 <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest text-center mb-3">近 10 场</div>
                 <div className="flex items-center justify-between">
                   <div className="text-center flex-1">
