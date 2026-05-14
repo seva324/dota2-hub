@@ -2,7 +2,7 @@ import puppeteer from 'puppeteer';
 const b = await puppeteer.launch({headless:'new',args:['--no-sandbox']});
 const p = await b.newPage();
 await p.setViewport({width:1440,height:1100});
-await p.goto('https://dotahub.cn',{waitUntil:'networkidle2',timeout:30000});
+await p.goto(`https://dotahub.cn/?_t=${Date.now()}`,{waitUntil:'networkidle2',timeout:30000});
 await new Promise(r=>setTimeout(r,4000));
 await p.evaluate(()=>{for(const btn of document.querySelectorAll('button')){if((btn.className||'').includes('grid-cols-[88px')&&(btn.textContent||'').includes('VS')){btn.click();return;}}});
 await new Promise(r=>setTimeout(r,2500));
