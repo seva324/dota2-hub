@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Calendar, ExternalLink, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -503,82 +504,77 @@ export function TeamFlyout({
   const wins = serverStats?.wins ?? model?.wins ?? 0;
   const losses = serverStats?.losses ?? model?.losses ?? 0;
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
-  const sheetSide = isMobile ? 'bottom' : 'right';
-  const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl bg-card text-foreground p-0 overscroll-contain border border-border/60 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]'
-    : 'w-full sm:max-w-2xl bg-card text-foreground p-0 overscroll-contain rounded-xl border-l border-border/60 shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]';
-
   const teamHue = stringToHue(selectedTeam?.name || '');
 
-  return (
-    <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side={sheetSide} className={sheetClassName} data-visual-role="team-flyout">
-          <div className="h-full overflow-y-auto">
-            <SheetHeader
-              className="relative border-b border-border p-6 pr-12 overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42) 40%, hsl(${teamHue} 60% 25% / 0.35) 100%)`,
-              }}
-            >
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.03]">
-                <span className="text-[8rem] font-black tracking-[0.5em] text-white" style={{ fontFamily: 'system-ui' }}>DOTA2</span>
-              </div>
-              <div className="relative z-10 flex flex-col items-center gap-3">
-                <div className="w-20 h-20 rounded-xl bg-secondary/80 border border-border/50 flex items-center justify-center overflow-hidden shadow-lg"
-                  style={{ boxShadow: `0 0 24px hsl(${teamHue} 60% 40% / 0.15)` }}
-                >
-                  <SafeImg
-                    src={selectedTeamLogoUrl}
-                    alt={selectedTeam?.name || 'Team'}
-                    className="w-16 h-16 object-contain"
-                    fallback={<Shield className="w-8 h-8 text-slate-400" />}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <SheetTitle className="text-2xl font-bold text-white truncate">{selectedTeam?.name || 'Team'}</SheetTitle>
-                  <SheetDescription className="sr-only">Team details</SheetDescription>
-                </div>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {isFlyoutLoading && <Badge variant="outline" className="border-blue-500/30 text-blue-300">加载中...</Badge>}
-                  <Badge variant="outline" className="border-amber-500/40 text-amber-300 text-[10px] font-semibold tracking-wider uppercase">DOTA 2</Badge>
-                  {model?.meta?.tag && <Badge variant="outline" className="border-slate-600 text-slate-200">{model.meta.tag}</Badge>}
-                  {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, resolvedTeams) ? (
-                    <Badge variant="outline" className="border-red-500/40 text-red-300">
-                      <Flag className="w-3 h-3 mr-1" />
-                      {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') ? model.meta.region : 'China'}
-                    </Badge>
-                  ) : null}
-                </div>
-              </div>
-            </SheetHeader>
+  const panelHeader = (
+    <div
+      className="relative border-b border-border/30 p-5 overflow-hidden"
+      style={{
+        background: `linear-gradient(160deg, rgb(10 18 28) 0%, rgb(10 18 28) 35%, hsl(${teamHue} 50% 18% / 0.45) 100%)`,
+      }}
+    >
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.025]">
+        <span className="text-[7rem] font-black tracking-[0.5em] text-white" style={{ fontFamily: 'system-ui' }}>DOTA2</span>
+      </div>
+      <div className="relative z-10 flex items-center gap-4">
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-secondary/90 to-secondary/40 border border-border/30 flex items-center justify-center overflow-hidden shrink-0"
+          style={{ boxShadow: `0 0 28px hsl(${teamHue} 60% 40% / 0.2), 0 6px 20px -4px rgba(0,0,0,0.45)` }}
+        >
+          <SafeImg
+            src={selectedTeamLogoUrl}
+            alt={selectedTeam?.name || 'Team'}
+            className="w-10 h-10 object-contain"
+            fallback={<Shield className="w-6 h-6 text-slate-400" />}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg font-extrabold text-white tracking-tight truncate">{selectedTeam?.name || 'Team'}</h2>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {isFlyoutLoading && <Badge variant="outline" className="border-blue-500/30 text-blue-300 text-[10px]">加载中...</Badge>}
+            <Badge variant="outline" className="border-amber-500/30 text-amber-300/80 text-[10px] font-semibold tracking-wider uppercase">DOTA 2</Badge>
+            {model?.meta?.tag && <Badge variant="outline" className="border-border/40 text-muted-foreground text-[10px]">{model.meta.tag}</Badge>}
+            {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') || isChineseTeam({ teamId: selectedTeam?.team_id, name: selectedTeam?.name }, resolvedTeams) ? (
+              <Badge variant="outline" className="border-red-500/30 text-red-300/80 text-[10px]">
+                <Flag className="w-3 h-3 mr-0.5" />
+                {(model?.meta?.region && String(model.meta.region).toLowerCase() !== 'unknown') ? model.meta.region : 'China'}
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-            <div className="p-6 space-y-4">
+  const panelBody = (
+    <div className="h-full overflow-y-auto overscroll-contain">
+      {panelHeader}
+
+      <div className="p-5 space-y-3.5">
               {/* Stats Bar */}
-              <div className="rounded-xl border border-sky-500/20 bg-secondary/60 p-4 shadow-[0_0_24px_rgba(56,189,248,0.1)]">
-                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest text-center mb-3">近 10 场</div>
+              <div className="rounded-xl border border-border/30 bg-gradient-to-b from-secondary/70 to-secondary/40 p-4 shadow-[var(--shadow-card)]">
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest text-center mb-2.5">近 10 场战绩</div>
                 <div className="flex items-center justify-between">
                   <div className="text-center flex-1">
-                    <div className="text-2xl font-bold text-emerald-400 tabular-nums">{wins}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">胜</div>
+                    <div className="text-2xl font-extrabold text-emerald-400 tabular-nums">{wins}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">胜</div>
                   </div>
-                  <div className="w-px h-10 bg-slate-700" />
+                  <div className="w-px h-8 bg-border/40" />
                   <div className="text-center flex-1">
-                    <div className="text-2xl font-bold text-red-400 tabular-nums">{losses}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">负</div>
+                    <div className="text-2xl font-extrabold text-red-400 tabular-nums">{losses}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">负</div>
                   </div>
-                  <div className="w-px h-10 bg-slate-700" />
+                  <div className="w-px h-8 bg-border/40" />
                   <div className="text-center flex-1">
-                    <div className="text-3xl font-bold text-sky-400 tabular-nums">{winRate}%</div>
-                    <div className="text-xs text-slate-400 mt-0.5">胜率</div>
+                    <div className="text-[1.65rem] font-extrabold text-foreground tabular-nums">{winRate}%</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">胜率</div>
                   </div>
                 </div>
-                <div className="mt-3 h-2 rounded-full bg-slate-700/70 overflow-hidden">
+                <div className="mt-3 h-1.5 rounded-full bg-secondary/80 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-300 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 transition-all duration-500"
                     style={{
                       width: `${Math.min(100, Math.max(0, winRate))}%`,
-                      boxShadow: `0 0 12px rgba(52,211,153,0.4)`,
+                      boxShadow: '0 0 10px rgba(52,211,153,0.35)',
                     }}
                   />
                 </div>
@@ -586,9 +582,9 @@ export function TeamFlyout({
 
               {/* Upcoming Match */}
               <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-amber-400" />
-                  <h4 className="text-sm font-semibold text-slate-200">下一场</h4>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Calendar className="w-4 h-4 text-red-400" />
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">下一场</h4>
                 </div>
                 {model?.nextMatch ? (() => {
                   const nm = model.nextMatch;
@@ -598,9 +594,9 @@ export function TeamFlyout({
                   const direName = nm.dire_team_name || 'TBD';
                   const countdown = formatCountdown(nm.start_time);
                   return (
-                    <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-slate-800/80 to-amber-950/10 p-5 shadow-[0_0_24px_rgba(245,158,11,0.08)]">
-                      <div className="flex justify-center mb-3">
-                        <Badge className="animate-pulse-glow border-amber-400/50 bg-amber-500/15 text-amber-300 text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full">
+                    <div className="rounded-xl border border-red-500/20 bg-gradient-to-br from-secondary/70 to-red-950/10 p-4 shadow-[var(--shadow-card)]">
+                      <div className="flex justify-center mb-2.5">
+                        <Badge className="animate-pulse-glow border-red-400/40 bg-red-500/15 text-red-300 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
                           {countdown === 'LIVE' ? 'LIVE NOW' : '即将开始'}
                         </Badge>
                       </div>
@@ -612,13 +608,13 @@ export function TeamFlyout({
                           <span className="text-sm font-medium text-slate-100 text-center truncate w-full">{radName}</span>
                         </div>
                         <div className="flex flex-col items-center flex-shrink-0">
-                          <span className="text-lg font-extrabold text-amber-400 tracking-wider">VS</span>
-                          <span className="text-xs text-amber-300/80 mt-1.5 font-mono tabular-nums">{formatTs(nm.start_time)}</span>
+                          <span className="text-base font-extrabold text-red-400/90 tracking-widest">VS</span>
+                          <span className="text-[10px] text-muted-foreground mt-1.5 font-mono tabular-nums">{formatTs(nm.start_time)}</span>
                           {countdown && countdown !== 'LIVE' && (
-                            <span className="text-[10px] text-amber-400/60 mt-0.5 font-mono tabular-nums">in {countdown}</span>
+                            <span className="text-[10px] text-muted-foreground mt-0.5 font-mono tabular-nums">in {countdown}</span>
                           )}
                           {countdown === 'LIVE' && (
-                            <span className="text-[10px] text-red-400/80 mt-0.5 font-bold uppercase animate-pulse">LIVE</span>
+                            <span className="text-[10px] text-red-400 mt-0.5 font-bold uppercase animate-pulse">LIVE</span>
                           )}
                         </div>
                         <div className="flex flex-col items-center gap-2.5 min-w-0 flex-1">
@@ -628,7 +624,7 @@ export function TeamFlyout({
                           <span className="text-sm font-medium text-slate-100 text-center truncate w-full">{direName}</span>
                         </div>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-slate-700/50 text-xs text-slate-400 text-center">
+                      <div className="mt-3 pt-2.5 border-t border-border/30 text-[11px] text-muted-foreground text-center">
                         {getTournamentLabel(nm)} · {nm.series_type || 'BO3'}
                       </div>
                     </div>
@@ -642,15 +638,15 @@ export function TeamFlyout({
 
               {/* Roster */}
               <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <UserRound className="w-4 h-4 text-amber-400" />
-                  <h4 className="text-sm font-semibold text-slate-200">当前阵容</h4>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <UserRound className="w-4 h-4 text-red-400" />
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">当前阵容</h4>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {activeSquad.map((player, idx) => {
                     const flagUrl = toFlagImageUrl(player.countryCode, 32);
                     const body = (
-                      <div className="flex items-center gap-3 rounded-xl border border-slate-700/80 bg-gradient-to-br from-slate-800/60 to-slate-800/20 p-3 transition-all duration-200 hover:border-sky-400/40 hover:bg-gradient-to-br hover:from-slate-700/60 hover:to-sky-950/20 hover:shadow-[0_0_20px_rgba(56,189,248,0.18)] hover:scale-[1.03]">
+                      <div className="flex items-center gap-2.5 rounded-xl border border-border/30 bg-gradient-to-br from-secondary/50 to-secondary/20 p-2.5 transition-all duration-200 hover:border-red-400/30 hover:bg-gradient-to-br hover:from-secondary/70 hover:to-red-950/10 hover:shadow-[var(--shadow-glow)]">
                         <div className="w-12 h-12 rounded-full bg-slate-700/60 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {player.avatarUrl ? (
                             <img src={player.avatarUrl} alt={player.name} className="h-full w-full object-cover" />
@@ -697,9 +693,9 @@ export function TeamFlyout({
 
               {/* Hero Picks */}
               <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <Target className="w-4 h-4 text-purple-400" />
-                  <h4 className="text-sm font-semibold text-slate-200">常用英雄</h4>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Target className="w-4 h-4 text-red-400" />
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">常用英雄</h4>
                 </div>
                 <div className="space-y-2">
                   {topFiveHeroes.map(([heroId, cnt]) => {
@@ -714,7 +710,7 @@ export function TeamFlyout({
                     const img = getHeroImg(heroId, heroMap);
                     const heroName = heroMap[heroId]?.name_cn || heroMap[heroId]?.name || `Hero ${heroId}`;
                     return (
-                      <div key={heroId} className="flex items-center gap-3 rounded-lg bg-slate-800/50 border border-slate-700/80 p-2.5 hover:border-slate-600/80 transition-colors duration-200">
+                      <div key={heroId} className="flex items-center gap-2.5 rounded-xl bg-secondary/40 border border-border/30 p-2.5 hover:border-border/50 transition-colors duration-200">
                         {img ? (
                           <img src={img} alt={heroName} className="w-12 h-12 rounded object-cover flex-shrink-0 border border-slate-700/50" />
                         ) : (
@@ -763,10 +759,10 @@ export function TeamFlyout({
 
               {/* Recent Matches */}
               <section>
-                <div className="flex items-center gap-2 mb-3 text-white">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                  <h4 className="font-semibold">过去 3 个月比赛</h4>
-                  {isFlyoutLoading && <span className="text-xs text-slate-400">加载中…</span>}
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Trophy className="w-4 h-4 text-red-400" />
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">过去 3 个月比赛</h4>
+                  {isFlyoutLoading && <span className="text-[10px] text-muted-foreground ml-auto">加载中…</span>}
                 </div>
                 <div className="space-y-2">
                   {(model?.recentRows || []).map((row) => {
@@ -776,7 +772,7 @@ export function TeamFlyout({
                         ? 'border-red-500/60 text-red-300'
                         : 'border-slate-600 text-slate-200';
                     return (
-                      <div key={row.key} className="rounded-lg border border-slate-700 bg-slate-800/40 p-3">
+                      <div key={row.key} className="rounded-xl border border-border/30 bg-secondary/30 p-3 hover:border-border/50 transition-colors">
                         <div className="grid grid-cols-[minmax(0,1fr)_4.75rem_minmax(0,1fr)] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_7.5rem_minmax(0,1fr)] sm:gap-2 md:gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <button
@@ -870,12 +866,41 @@ export function TeamFlyout({
                   )}
                 </div>
               </section>
+
+              {/* Bottom CTA */}
+              <div className="mt-3 px-5 pb-6">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 active:scale-[0.98]"
+                >
+                  查看 {selectedTeam?.name || '战队'} 完整资料
+                  <ExternalLink className="size-3.5" />
+                </button>
+              </div>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+      );
 
-      <MatchDetailModal
+      return (
+        <>
+          {isMobile ? (
+            <Sheet open={open} onOpenChange={onOpenChange}>
+              <SheetContent side="bottom" className="h-[92vh] w-full rounded-t-2xl bg-card text-foreground p-0 border border-border/40 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.5)]" data-visual-role="team-flyout">
+                <SheetTitle className="sr-only">{selectedTeam?.name || '战队资料'}</SheetTitle>
+                <SheetDescription className="sr-only">战队详细信息</SheetDescription>
+                {panelBody}
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+              <DialogContent className="w-full sm:max-w-lg bg-card text-foreground p-0 gap-0 rounded-2xl border border-border/30 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.03)] max-h-[90vh]" data-visual-role="team-flyout" showCloseButton={false}>
+                <DialogTitle className="sr-only">{selectedTeam?.name || '战队资料'}</DialogTitle>
+                {panelBody}
+              </DialogContent>
+            </Dialog>
+          )}
+
+          <MatchDetailModal
         matchId={selectedMatchId}
         open={selectedMatchId !== null}
         onOpenChange={(next) => {
