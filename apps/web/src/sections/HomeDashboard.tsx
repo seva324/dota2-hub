@@ -330,7 +330,7 @@ function FeaturedEventBanner({
   const accent = buildFeaturedEventAccent(spotlight.title);
 
   return (
-    <section className="hidden overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_20%_50%,rgba(185,28,28,0.28),rgba(15,23,42,0.86)_45%,rgba(2,6,23,0.92))] p-4 shadow-[0_28px_90px_rgba(0,0,0,0.28)] lg:block">
+    <section className="hidden overflow-hidden rounded-2xl border border-border/30 bg-[radial-gradient(circle_at_20%_50%,rgba(185,28,28,0.28),rgba(15,23,42,0.86)_45%,rgba(2,6,23,0.92))] p-4 shadow-[var(--shadow-elevated)] lg:block">
       <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
         <div className="relative overflow-hidden min-h-48 rounded-xl border border-red-400/25 p-5" style={{background: 'linear-gradient(135deg, rgba(100,8,8,0.92) 0%, rgba(60,5,5,0.88) 40%, rgba(5,5,22,0.95) 100%)'}}>
           {/* layered radial glows */}
@@ -403,11 +403,11 @@ function RailPanel({ title, icon: Icon, children }: {
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+    <section className="rounded-2xl border border-border/40 bg-card p-4 shadow-[var(--shadow-elevated)] backdrop-blur-xl">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Icon className="size-4 text-red-300" />
-          <h2 className="text-sm font-bold text-white">{title}</h2>
+          <h2 className="text-base font-extrabold text-foreground tracking-tight">{title}</h2>
         </div>
         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-400">更多</Button>
       </div>
@@ -612,7 +612,7 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: Pr
     <div className="flex gap-4">
       {/* Left column */}
       <div className="w-2/3 flex flex-col gap-4 min-w-0">
-        <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.045] p-1">
+        <div className="flex gap-1 rounded-xl border border-border/40 bg-secondary/40 p-1">
           {tabs.map((tab) => (
             <button
               key={tab.label}
@@ -666,26 +666,26 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: Pr
       </div>
 
       {/* Right column */}
-      <aside className="w-1/3 flex flex-col gap-4 min-w-0">
-        <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
+      <aside className="w-1/3 flex flex-col gap-5 min-w-0">
+        <section className="rounded-2xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="mb-3 flex items-center gap-2">
             <Shield className="size-4 text-red-300" />
-            <h2 className="text-sm font-bold text-white">热门战队</h2>
+            <h2 className="text-base font-extrabold text-foreground tracking-tight">热门战队</h2>
             <Badge className="bg-amber-500/15 text-amber-300 border-0 text-[10px]">实时排名</Badge>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {hotTeams.map((team, index) => (
               <button
                 key={team.name}
                 type="button"
-                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-all hover:border-slate-600 hover:bg-white/[0.08] hover:shadow-[0_0_12px_rgba(239,68,68,0.06)]"
+                className="group flex w-full items-center gap-2 rounded-xl border border-border/30 bg-secondary/40 px-3 py-2 text-left transition-all hover:border-border/60 hover:bg-secondary/60 hover:shadow-[var(--shadow-glow)]"
                 onClick={() => onOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
                 <SafeImg src={teamLogoMap[team.name]} alt={team.name} className="size-7 shrink-0 object-contain group-hover:scale-110 transition-transform" fallback={<div className="size-7 shrink-0 rounded-full bg-slate-700" />} />
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-slate-100 group-hover:text-white transition-colors">{team.name}</span>
-                  <span className="block text-[10px] text-slate-500 group-hover:hidden">{team.rating} ELO</span>
+                  <span className="block text-xs text-muted-foreground group-hover:hidden">{team.rating} ELO</span>
                   <span className="hidden text-[10px] text-red-300/80 group-hover:block">点击查看详情 →</span>
                 </div>
                 <span className="text-xs tabular-nums text-slate-400 group-hover:hidden">{team.rating}</span>
@@ -697,20 +697,20 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: Pr
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-slate-800 p-4">
+        <section className="rounded-2xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UserRound className="size-4 text-red-300" />
-              <h2 className="text-sm font-bold text-white">热门选手</h2>
+              <h2 className="text-base font-extrabold text-foreground tracking-tight">热门选手</h2>
             </div>
             <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-red-300 hover:text-red-200">查看全部</Button>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {hotPlayers.map((player, index) => (
               <button
                 key={player.accountId}
                 type="button"
-                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-all hover:border-slate-600 hover:bg-white/[0.08]"
+                className="group flex w-full items-center gap-2 rounded-xl border border-border/30 bg-secondary/40 px-3 py-2 text-left transition-all hover:border-slate-600 hover:bg-white/[0.08]"
                 onClick={() => onOpenPlayer(player)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
@@ -719,7 +719,7 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: Pr
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-slate-100 group-hover:text-white transition-colors">{player.name}</span>
-                  <span className="block text-[10px] text-slate-500">{player.teamName}</span>
+                  <span className="block text-xs text-muted-foreground">{player.teamName}</span>
                 </div>
                 <span className="text-xs tabular-nums text-slate-400">{player.score}</span>
               </button>
@@ -952,7 +952,7 @@ export function HomeDashboard() {
       }));
 
   return (
-    <div className="relative mx-auto grid max-w-[1480px] gap-4 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-slate-900/40 via-slate-950 to-slate-950">
+    <div className="relative mx-auto grid max-w-[1480px] gap-5 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-secondary/40 via-background to-background">
       {/* DotaHub watermark */}
       <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center select-none">
         <div className="text-[16vw] font-black tracking-[0.25em] text-white/[0.012] rotate-[-8deg] translate-y-[-5%]">
@@ -997,12 +997,12 @@ export function HomeDashboard() {
       <aside className="relative z-10 hidden min-w-0 flex-col gap-4 lg:flex">
         <RailPanel title="热门战队" icon={Shield}>
           <Badge className="mb-2 inline-flex bg-amber-500/15 text-amber-300 border-0 text-[10px]">实时排名</Badge>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {displayTeams.map((team, index) => (
               <button
                 key={team.name}
                 type="button"
-                className="group flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-all hover:border-slate-600 hover:bg-white/[0.08] hover:shadow-[0_0_12px_rgba(239,68,68,0.06)]"
+                className="group flex w-full items-center gap-2 rounded-xl border border-border/30 bg-secondary/40 px-3 py-2 text-left transition-all hover:border-border/60 hover:bg-secondary/60 hover:shadow-[var(--shadow-glow)]"
                 onClick={() => handleOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
@@ -1014,7 +1014,7 @@ export function HomeDashboard() {
                 />
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-slate-100 group-hover:text-white transition-colors">{team.name}</span>
-                  <span className="block text-[10px] text-slate-500 group-hover:hidden">
+                  <span className="block text-xs text-muted-foreground group-hover:hidden">
                     {hasRealtimeEpt ? `${team.points.toLocaleString()} EPT pts` : `${team.points.toLocaleString()} ELO`}
                   </span>
                   <span className="hidden text-[10px] text-red-300/80 group-hover:block">点击查看详情 →</span>
@@ -1036,7 +1036,7 @@ export function HomeDashboard() {
             <span className="text-[11px] text-slate-500">实时新闻流</span>
             <a href="#news" className="h-6 px-2 text-[11px] text-red-300 hover:text-red-200 inline-flex items-center">查看全部</a>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {railNews.length ? railNews.map((item) => (
               <a
                 key={item.id}
@@ -1053,7 +1053,7 @@ export function HomeDashboard() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="rounded-full border border-red-400/20 bg-red-500/10 px-1.5 py-0.5 text-red-300">
                       {getNewsCategoryLabel(item.category)}
                     </span>
@@ -1086,12 +1086,12 @@ export function HomeDashboard() {
         <div className="border-t border-white/[0.05] mx-2" />
 
         <RailPanel title="人气选手" icon={UserRound}>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {dashboardHotPlayers.map((player, index) => (
               <button
                 key={player.accountId}
                 type="button"
-                className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:border-red-400/30 hover:bg-red-500/10"
+                className="flex w-full items-center justify-between rounded-xl border border-border/30 bg-secondary/40 px-3 py-2 text-left transition-colors hover:border-red-400/30 hover:bg-red-500/10"
                 onClick={() => void handleOpenPlayer(player)}
               >
                 <div className="flex items-center gap-2">

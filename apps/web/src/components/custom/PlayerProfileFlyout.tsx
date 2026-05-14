@@ -327,8 +327,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const heroPoolSection = (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="flex items-center gap-1.5 font-semibold text-white">
-          <Crosshair className="size-3.5 text-slate-400" />
+        <h4 className="flex items-center gap-1.5 text-xs font-bold text-foreground uppercase tracking-wider">
+          <Crosshair className="size-3.5 text-red-400" />
           英雄池
         </h4>
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
@@ -342,7 +342,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             const barColor = isPositive ? 'bg-emerald-500' : 'bg-red-500';
             const textColor = isPositive ? 'text-emerald-400' : 'text-red-400';
             return (
-              <div key={hero.heroId} className="flex items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800/30 p-2.5 transition hover:border-slate-600/60 hover:bg-slate-800/50">
+              <div key={hero.heroId} className="flex items-center gap-3 rounded-xl border border-border/30 bg-secondary/30 p-2.5 transition hover:border-slate-600/60 hover:bg-slate-800/50">
                 <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-slate-700">
                   {img ? (
                     <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
@@ -367,7 +367,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 p-4 text-sm text-slate-500">暂无英雄统计</div>
+        <div className="rounded-xl border border-border/30 bg-secondary/30 p-4 text-sm text-slate-500">暂无英雄统计</div>
       )}
     </section>
   );
@@ -376,8 +376,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const recentMatchSection = (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="flex items-center gap-1.5 font-semibold text-white">
-          <Clock className="size-3.5 text-slate-400" />
+        <h4 className="flex items-center gap-1.5 text-xs font-bold text-foreground uppercase tracking-wider">
+          <Clock className="size-3.5 text-red-400" />
           近期比赛
         </h4>
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">全部比赛 ›</button>
@@ -409,7 +409,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             return (
               <div
                 key={`${match.matchId}-${idx}`}
-                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/20 px-3 py-2.5 text-sm last:border-b-0 transition hover:bg-slate-800/30 ${rowBg}`}
+                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-border/15 px-3 py-2.5 text-sm last:border-b-0 transition hover:bg-slate-800/30 ${rowBg}`}
               >
                 {/* Hero image */}
                 <div className="flex justify-center">
@@ -451,7 +451,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 p-4 text-sm text-slate-500">暂无近期比赛</div>
+        <div className="rounded-xl border border-border/30 bg-secondary/30 p-4 text-sm text-slate-500">暂无近期比赛</div>
       )}
     </section>
   );
@@ -493,7 +493,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-700/60 bg-slate-800/30 p-3 text-xs text-slate-500">暂无数据</div>
+          <div className="rounded-xl border border-border/30 bg-secondary/30 p-3 text-xs text-slate-500">暂无数据</div>
         )}
       </section>
 
@@ -504,7 +504,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
         </h4>
         <div className="space-y-1.5 text-xs text-slate-400">
           {profileFacts.map((fact) => (
-            <div key={fact.label} className="flex items-start gap-1.5 rounded-lg border border-slate-700/40 bg-slate-800/20 px-2 py-1.5">
+            <div key={fact.label} className="flex items-start gap-1.5 rounded-lg border border-border/20 bg-secondary/20 px-2 py-1.5">
               <span className="text-sm text-amber-300">•</span>
               <div className="min-w-0">
                 <div className="text-[10px] font-medium text-slate-300 leading-tight">{fact.label}</div>
@@ -521,8 +521,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const tournamentPerfSection = tournamentList.length > 0 ? (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="flex items-center gap-1.5 font-semibold text-white">
-          <TrendingUp className="size-3.5 text-slate-400" />
+        <h4 className="flex items-center gap-1.5 text-xs font-bold text-foreground uppercase tracking-wider">
+          <TrendingUp className="size-3.5 text-red-400" />
           近期赛事表现
         </h4>
         <button type="button" className="text-xs text-slate-400 hover:text-slate-200">更多 ›</button>
@@ -573,8 +573,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
   const mobilePerformanceSection = (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="flex items-center gap-1.5 font-semibold text-white">
-          <TrendingUp className="size-3.5 text-slate-400" />
+        <h4 className="flex items-center gap-1.5 text-xs font-bold text-foreground uppercase tracking-wider">
+          <TrendingUp className="size-3.5 text-red-400" />
           近期表现
         </h4>
         <button type="button" className="text-xs text-slate-400">近20场 ›</button>
@@ -616,7 +616,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </h4>
       <div className="grid grid-cols-2 gap-2">
         {profileFacts.map((fact) => (
-          <div key={fact.label} className="flex items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/30 p-3">
+          <div key={fact.label} className="flex items-center gap-2 rounded-xl border border-border/30 bg-secondary/30 p-3">
             <span className="text-xl text-amber-300">•</span>
             <div>
               <div className="text-sm font-bold text-white">{fact.value}</div>
