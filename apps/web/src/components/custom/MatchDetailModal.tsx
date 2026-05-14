@@ -596,7 +596,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <div className="min-w-0">
                       <button
                         type="button"
-                        className={`truncate text-lg font-bold tracking-wide ${match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
+                        className={`truncate text-xl font-bold tracking-wide ${match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
                         onClick={() => { if (radiantTeamRef?.name) onTeamClick?.(radiantTeamRef); }}
                       >
                         {radiantTeamName}
@@ -638,7 +638,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <div className="min-w-0 text-right">
                       <button
                         type="button"
-                        className={`truncate text-lg font-bold tracking-wide ${!match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
+                        className={`truncate text-xl font-bold tracking-wide ${!match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
                         onClick={() => { if (direTeamRef?.name) onTeamClick?.(direTeamRef); }}
                       >
                         {direTeamName}
@@ -1266,7 +1266,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
       <DialogContent data-visual-role="match-detail-modal"
         showCloseButton={false}
         aria-describedby={undefined}
-        className={`overflow-y-auto bg-[#0a1623] border-slate-700/60 rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.45)] p-3 sm:p-6 ${
+        className={`overflow-y-auto bg-[#0a1623] border-slate-700/60 rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.45)] p-4 sm:p-8 ${
           isPrototypeMode ? 'w-[96vw] sm:max-w-[1360px] max-h-[94vh]' : 'w-[82vw] sm:max-w-6xl max-h-[90vh]'
         }`}
       >
