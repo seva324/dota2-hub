@@ -33,3 +33,8 @@ Thumbs.db
 
 # Local agent state
 .omx/
+  
+# Visual QA artifacts  
+scripts/visual-qa/artifacts/  
+artifacts/visual-qa/  
+session_*.json 

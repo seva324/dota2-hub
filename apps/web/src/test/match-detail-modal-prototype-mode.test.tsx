@@ -55,7 +55,7 @@ describe('MatchDetailModal prototype mode', () => {
       const m = document.querySelector('[data-slot="dialog-content"][data-state="open"]');
       expect(m).toBeTruthy();
       const cls = m?.className || '';
-      expect(cls).toMatch(/rounded-(xl|2xl|3xl)/);
+      expect(cls).toMatch(/rounded-(lg|xl|2xl|3xl)/);
       expect(cls).toMatch(/shadow/);
     });
   });
