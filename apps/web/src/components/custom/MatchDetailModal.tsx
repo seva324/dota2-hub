@@ -739,7 +739,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* Overview tab (prototype mode) */}
                   <TabsContent value="overview">
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {/* Map tabs row — between nav tabs and content */}
                       {seriesMaps.length > 0 && (
                         <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
@@ -782,10 +782,10 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         </div>
                       )}
                       {/* Draft section */}
-                      <div className="border-t border-slate-800/60 pt-5" />
+                      <div className="border-t border-border/30 pt-3" />
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">阵容选择</div>
                       <PrototypeOverview match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} />
-                      <div className="border-t border-slate-800/60 pt-5" />
+                      <div className="border-t border-border/30 pt-3" />
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">经济优势</div>
                       {(() => {
                         const radiantNw = match.players.filter(p => p.player_slot < 128).reduce((s, p) => s + getNetWorth(p), 0);
@@ -898,7 +898,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                           </div>
                         );
                       })()}
-                      <div className="border-t border-slate-800/60 pt-5" />
+                      <div className="border-t border-border/30 pt-3" />
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">比赛数据</div>
                       <div className="flex gap-4 items-stretch">
                         <div className="flex-1 min-w-0 overflow-hidden min-h-[320px] rounded-xl bg-slate-900/30 p-3">
