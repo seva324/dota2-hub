@@ -393,9 +393,10 @@ interface MatchDetailModalProps {
   onOpenChange: (open: boolean) => void;
   onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
   onPlayerClick?: (accountId: number) => void;
+  fullPage?: boolean;
 }
 
-export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange, onTeamClick, onPlayerClick }: MatchDetailModalProps) {
+export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange, onTeamClick, onPlayerClick, fullPage = false }: MatchDetailModalProps) {
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -403,7 +404,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
   const [isMobile, setIsMobile] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<number | string | null>(matchId);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const isPrototypeMode = usePrototypeMode();
+  const isPrototypeMode = usePrototypeMode() || fullPage;
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
@@ -1258,6 +1259,23 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
           </div>
         </SheetContent>
       </Sheet>
+    );
+  }
+
+  if (fullPage && !isMobile) {
+    return (
+      <div className="min-h-screen bg-background" data-visual-role="match-detail-page">
+        <div className="mx-auto max-w-[1480px] px-4 pt-24 lg:px-6 pb-12">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/40 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:border-border/50 transition-colors"
+          >
+            ← 返回首页
+          </button>
+          {detailBody}
+        </div>
+      </div>
     );
   }
 
