@@ -506,7 +506,7 @@ export function TeamFlyout({
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
     ? 'h-[92vh] w-full rounded-t-3xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain border border-slate-700/60 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]'
-    : 'w-full sm:max-w-2xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain rounded-xl border-l border-slate-700/60 shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]';
+    : 'w-full sm:max-w-2xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain rounded-lg border-l border-slate-700/60 shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45),0_0_40px_rgba(0,50,100,0.12)]';
 
   const teamHue = stringToHue(selectedTeam?.name || '');
 
