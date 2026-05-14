@@ -951,6 +951,20 @@ export function HomeDashboard() {
         points: team.rating,
       }));
 
+  if (selectedMatchId !== null) {
+    return (
+      <MatchDetailModal
+        matchId={selectedMatchId}
+        seriesMaps={selectedSeriesMaps}
+        open={true}
+        onOpenChange={(open) => { if (!open) { setSelectedMatchId(null); setSelectedSeriesMaps([]); } }}
+        fullPage
+        onTeamClick={(team) => { if (team.name) setSelectedTeamName(team.name); }}
+        onPlayerClick={handleOpenPlayerByAccountId}
+      />
+    );
+  }
+
   return (
     <div className="relative mx-auto grid max-w-[1480px] gap-5 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-secondary/40 via-background to-background">
       {/* DotaHub watermark */}
@@ -1116,15 +1130,6 @@ export function HomeDashboard() {
         </RailPanel>
 
       </aside>
-
-      {selectedMatchId !== null && (
-        <MatchDetailModal
-          matchId={selectedMatchId}
-          seriesMaps={selectedSeriesMaps}
-          open={selectedMatchId !== null}
-          onOpenChange={(open) => { if (!open) { setSelectedMatchId(null); setSelectedSeriesMaps([]); } }}
-        />
-      )}
 
       {selectedTeamName && (
         <TeamFlyout
