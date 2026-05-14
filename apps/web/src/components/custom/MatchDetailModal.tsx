@@ -515,7 +515,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
     <>
         {/* Map tabs: only show separately in non-prototype mode */}
         {seriesMaps.length > 0 && !isPrototypeMode && (
-          <div className="mb-4 flex flex-wrap gap-2 rounded-2xl border border-slate-800 bg-slate-950/60 p-2">
+          <div className="mb-3 flex flex-wrap gap-2 rounded-xl border border-slate-700/40 bg-slate-950/40 p-2">
             {seriesMaps.map((seriesMap) => {
               const active = String(activeMatchId) === String(seriesMap.matchId);
               return (
