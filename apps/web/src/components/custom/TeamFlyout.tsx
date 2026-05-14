@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Calendar, ExternalLink, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -881,24 +880,20 @@ export function TeamFlyout({
           </div>
       );
 
+      const sheetSide = isMobile ? 'bottom' : 'right';
+      const sheetClass = isMobile
+        ? 'h-[92vh] w-full rounded-t-2xl bg-card text-foreground p-0 border border-border/40 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.5)]'
+        : 'w-full sm:max-w-lg bg-card text-foreground p-0 border-l border-border/30 shadow-[-16px_0_48px_-12px_rgba(0,0,0,0.55)]';
+
       return (
         <>
-          {isMobile ? (
-            <Sheet open={open} onOpenChange={onOpenChange}>
-              <SheetContent side="bottom" className="h-[92vh] w-full rounded-t-2xl bg-card text-foreground p-0 border border-border/40 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.5)]" data-visual-role="team-flyout">
-                <SheetTitle className="sr-only">{selectedTeam?.name || '战队资料'}</SheetTitle>
-                <SheetDescription className="sr-only">战队详细信息</SheetDescription>
-                {panelBody}
-              </SheetContent>
-            </Sheet>
-          ) : (
-            <Dialog open={open} onOpenChange={onOpenChange}>
-              <DialogContent className="w-full sm:max-w-lg bg-card text-foreground p-0 gap-0 rounded-2xl border border-border/30 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.03)] max-h-[90vh]" data-visual-role="team-flyout" showCloseButton={false}>
-                <DialogTitle className="sr-only">{selectedTeam?.name || '战队资料'}</DialogTitle>
-                {panelBody}
-              </DialogContent>
-            </Dialog>
-          )}
+          <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side={sheetSide} className={sheetClass} data-visual-role="team-flyout">
+              <SheetTitle className="sr-only">{selectedTeam?.name || '战队资料'}</SheetTitle>
+              <SheetDescription className="sr-only">战队详细信息</SheetDescription>
+              {panelBody}
+            </SheetContent>
+          </Sheet>
 
           <MatchDetailModal
         matchId={selectedMatchId}
