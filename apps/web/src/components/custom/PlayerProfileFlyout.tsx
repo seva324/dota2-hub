@@ -630,7 +630,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={sheetSide} className={sheetClassName}>
+      <SheetContent side={sheetSide} className={sheetClassName} data-visual-role="player-profile-flyout">
         {/* Accessibility titles (visually hidden by structure but required) */}
         <SheetTitle className="sr-only">{player?.playerName || '选手资料'}</SheetTitle>
         <SheetDescription className="sr-only">{player?.teamName || ''} 选手资料</SheetDescription>

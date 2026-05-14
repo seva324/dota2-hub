@@ -40,6 +40,12 @@ describe('TeamFlyout', () => {
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
   });
 
+  it('renders with data-visual-role', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => createJsonResponse({})));
+    render(<TeamFlyout open onOpenChange={() => {}} selectedTeam={{ team_id: '1', name: 'Team Alpha' }} />);
+    expect(document.querySelector('[data-visual-role="team-flyout"]')).toBeTruthy();
+  });
+
   it('fetches team flyout data only after the flyout opens', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

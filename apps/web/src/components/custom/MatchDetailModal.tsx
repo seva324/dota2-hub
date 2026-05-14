@@ -1263,10 +1263,10 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+      <DialogContent data-visual-role="match-detail-modal"
         showCloseButton={false}
         aria-describedby={undefined}
-        className={`overflow-y-auto bg-[#0b1220] border-slate-800 p-3 sm:p-6 ${
+        className={`overflow-y-auto bg-[#0a1623] border-slate-700/60 rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.45)] p-3 sm:p-6 ${
           isPrototypeMode ? 'w-[96vw] sm:max-w-[1360px] max-h-[94vh]' : 'w-[82vw] sm:max-w-6xl max-h-[90vh]'
         }`}
       >

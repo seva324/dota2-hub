@@ -513,7 +513,7 @@ export function TeamFlyout({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side={sheetSide} className={sheetClassName}>
+        <SheetContent side={sheetSide} className={sheetClassName} data-visual-role="team-flyout">
           <div className="h-full overflow-y-auto">
             <SheetHeader
               className="relative border-b border-slate-700 p-6 pr-12 overflow-hidden"

@@ -15,6 +15,12 @@ describe('PlayerProfileFlyout', () => {
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
   });
 
+  it('renders with data-visual-role', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => createJsonResponse({})));
+    render(<PlayerProfileFlyout open onOpenChange={() => {}} player={{ accountId: 12345, playerName: 'Test', realName: '', teamId: '', teamName: '', signatureHeroes: [], mostPlayedHeroes: [], recentMatches: [] }} />);
+    expect(document.querySelector('[data-visual-role="player-profile-flyout"]')).toBeTruthy();
+  });
+
   it('uses a bottom sheet on mobile viewports', async () => {
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
