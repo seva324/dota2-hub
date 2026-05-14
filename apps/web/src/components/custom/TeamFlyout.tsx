@@ -505,8 +505,8 @@ export function TeamFlyout({
   const winRate = serverStats?.winRate ?? model?.winRate ?? 0;
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl bg-slate-900 text-slate-100 p-0 overscroll-contain border border-sky-400/20 shadow-[0_-8px_60px_rgba(56,189,248,0.12),0_0_120px_rgba(56,189,248,0.06)]'
-    : 'w-full sm:max-w-2xl bg-slate-900 text-slate-100 p-0 overscroll-contain border-l border-sky-400/20 shadow-[-8px_0_60px_rgba(56,189,248,0.12),0_0_120px_rgba(56,189,248,0.06)]';
+    ? 'h-[92vh] w-full rounded-t-3xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain border border-slate-700/60 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.45)]'
+    : 'w-full sm:max-w-2xl bg-[#0a1623] text-slate-100 p-0 overscroll-contain rounded-xl border-l border-slate-700/60 shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45)]';
 
   const teamHue = stringToHue(selectedTeam?.name || '');
 

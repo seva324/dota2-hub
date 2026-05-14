@@ -168,8 +168,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
   const sheetSide = isMobile ? 'bottom' : 'right';
   const sheetClassName = isMobile
-    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700/60 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 p-0 overscroll-contain'
-    : 'w-full sm:max-w-[420px] bg-gradient-to-b from-slate-900 to-slate-950 border-slate-700/60 text-slate-100 p-0 overscroll-contain';
+    ? 'h-[92vh] w-full rounded-t-3xl border-slate-700/60 bg-[#0a1623] text-slate-100 p-0 overscroll-contain shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.45)]'
+    : 'w-full sm:max-w-[420px] bg-[#0a1623] rounded-xl border-slate-700/60 text-slate-100 p-0 overscroll-contain';
 
   /** ── Desktop header ── */
   const desktopHeader = (
