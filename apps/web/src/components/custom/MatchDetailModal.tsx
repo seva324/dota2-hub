@@ -601,7 +601,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       >
                         {radiantTeamName}
                       </button>
-                      <div className="text-xs text-slate-500">世界排名 #8</div>
+                      <div className="text-xs text-slate-400">世界排名 #8</div>
                     </div>
                   </div>
 
@@ -630,7 +630,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         {match.radiant_win ? radiantTeamName : direTeamName} 胜利
                       </span>
                     </div>
-                    <div className="mt-0.5 text-xs text-slate-500">比赛时长 {formatDuration(match.duration)}</div>
+                    <div className="mt-0.5 text-xs text-slate-400">比赛时长 {formatDuration(match.duration)}</div>
                   </div>
 
                   {/* Right team */}
@@ -643,7 +643,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                       >
                         {direTeamName}
                       </button>
-                      <div className="text-xs text-slate-500">世界排名 #2</div>
+                      <div className="text-xs text-slate-400">世界排名 #2</div>
                     </div>
                     {(() => {
                       const logoSrc = getTeamLogoSrc(direTeamName, direTeamRef?.logo_url);
