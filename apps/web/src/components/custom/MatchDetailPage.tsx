@@ -8,13 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PicksBansInline } from '@/components/custom/PicksBansInline';
 import { MatchGraphs } from '@/components/custom/MatchGraphs';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { getHeroImageUrl } from '@/lib/assetUrls';
+import { resolveTeamLogo } from '@/lib/teams';
+
 function formatCompact(value: number): string {
   if (!Number.isFinite(value)) return '-';
   if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
   return String(Math.round(value));
 }
-import { getHeroImageUrl } from '@/lib/assetUrls';
-import { resolveTeamLogo } from '@/lib/teams';
 
 type MatchDetail = any;
 type HeroInfo = Record<number, { id: number; name: string; img: string; name_cn: string }>;
