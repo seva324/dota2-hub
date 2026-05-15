@@ -206,7 +206,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
   /** ── Desktop header ── */
   const desktopHeader = (
-    <div className="relative border-b border-border/60 bg-secondary/30 px-5 pb-0 pt-5">
+    <div className="relative border-b border-border/60 bg-secondary/30 px-3.5 pb-0 pt-3.5">
       {/* 关注 button */}
       <button
         type="button"
@@ -218,7 +218,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
       <div className="flex gap-4">
         {/* Player photo - gradient border ring */}
-        <div className="size-24 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-[2px] shadow-lg shadow-blue-900/25">
+        <div className="size-20 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-[2px] shadow-lg shadow-blue-900/25">
           <div className="h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-slate-700 to-slate-900">
             <SafeImg
               src={player?.avatarUrl}
@@ -232,8 +232,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
         <div className="min-w-0 pt-1 pr-20">
           {/* Name + verified */}
           <div className="flex items-center gap-1.5">
-            <h2 className="truncate text-xl font-bold text-foreground">{player?.playerName || '—'}</h2>
-            <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
+            <h2 className="truncate text-lg font-bold text-foreground">{player?.playerName || '—'}</h2>
+            <span className="flex size-3.5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[8px] font-bold text-white">✓</span>
           </div>
           {/* Real name */}
           {player?.realName && (
@@ -272,7 +272,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       </div>
 
       {/* Stats bar */}
-      <div className="mt-4 grid grid-cols-5 divide-x divide-border/30 overflow-hidden rounded-xl border border-border/60 bg-gradient-to-r from-secondary/70 via-secondary/40 to-secondary/70">
+      <div className="mt-3 grid grid-cols-5 divide-x divide-border/30 overflow-hidden rounded-lg border border-border/60 bg-gradient-to-r from-secondary/70 via-secondary/40 to-secondary/70">
         {[
           { label: '胜率', value: player?.winRate != null ? `${player.winRate.toFixed(1)}%` : '--', color: player?.winRate != null ? (player.winRate >= 50 ? 'text-emerald-400' : 'text-red-400') : 'text-white' },
           { label: '场均击杀', value: player?.avgKills != null ? player.avgKills.toFixed(1) : '--', color: 'text-white' },
@@ -280,9 +280,9 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
           { label: '场均GPM', value: player?.avgGpm != null ? String(player.avgGpm) : '--', color: 'text-amber-400' },
           { label: '场均XPM', value: player?.avgXpm != null ? String(player.avgXpm) : '--', color: 'text-amber-400' },
         ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center justify-center gap-1 py-3">
-              <span className={`text-3xl font-bold tabular-nums ${stat.color}`}>{stat.value}</span>
-              <span className="text-[10px] font-medium text-slate-400">{stat.label}</span>
+            <div key={stat.label} className="flex flex-col items-center justify-center gap-0.5 py-2">
+              <span className={`text-2xl font-bold tabular-nums ${stat.color}`}>{stat.value}</span>
+              <span className="text-[9px] font-medium text-slate-400">{stat.label}</span>
             </div>
           ))}
       </div>
@@ -375,8 +375,8 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             const barColor = isPositive ? 'bg-emerald-500' : 'bg-red-500';
             const textColor = isPositive ? 'text-emerald-400' : 'text-red-400';
             return (
-              <div key={hero.heroId} className="flex items-center gap-3 rounded-xl border border-border/30 bg-secondary/30 p-2.5 transition hover:border-slate-600/60 hover:bg-slate-800/50">
-                <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-slate-700">
+              <div key={hero.heroId} className="flex items-center gap-2 rounded-lg border border-border/30 bg-secondary/30 p-2 transition hover:border-slate-600/60 hover:bg-slate-800/50">
+                <div className="size-12 shrink-0 overflow-hidden rounded-md bg-slate-700">
                   {img ? (
                     <img src={img} alt={heroName} className="h-full w-full object-cover object-top" />
                   ) : (
@@ -418,7 +418,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       {recentMatches.length ? (
         <div className="overflow-hidden rounded-xl border border-slate-700/60">
           {/* Table header */}
-          <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-slate-700/60 bg-slate-800/60 px-3 py-2 text-[10px] font-medium text-slate-400">
+          <div className="grid grid-cols-[2rem_minmax(0,1fr)_2.5rem_2.5rem_3rem] items-center gap-x-2 border-b border-slate-700/60 bg-slate-800/60 px-3 py-2 text-[10px] font-medium text-slate-400">
             <span className="text-center">英雄</span>
             <span className="text-center">KDA</span>
             <span className="text-center">GPM</span>
@@ -442,7 +442,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             return (
               <div
                 key={`${match.matchId}-${idx}`}
-                className={`grid grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem_3.5rem] items-center gap-x-2 border-b border-border/15 px-3 py-2.5 text-sm last:border-b-0 transition hover:bg-slate-800/30 ${rowBg}`}
+                className={`grid grid-cols-[2rem_minmax(0,1fr)_2.5rem_2.5rem_3rem] items-center gap-x-2 border-b border-border/15 px-3 py-2.5 text-sm last:border-b-0 transition hover:bg-slate-800/30 ${rowBg}`}
               >
                 {/* Hero image */}
                 <div className="flex justify-center">
@@ -670,7 +670,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       <div className="h-px bg-gradient-to-r from-transparent via-border/30 to-transparent" />
 
       {/* ── Body ── */}
-      <div className="space-y-4 p-4">
+      <div className="space-y-3 p-3">
             {heroPoolSection}
 
             <ItemBuildSection items={
@@ -694,13 +694,13 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
           </div>
 
           {/* ── CTA ── */}
-          <div className={`${isMobile ? 'grid grid-cols-[1fr_auto] gap-2' : ''} px-4 pb-6`}>
+          <div className={`${isMobile ? 'grid grid-cols-[1fr_auto] gap-2' : ''} px-3 pb-4`}>
             <button
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500"
             >
               查看 {player?.playerName || '选手'} 的完整资料页
-              <ExternalLink className="size-4" />
+              <ExternalLink className="size-3.5" />
             </button>
             {isMobile && (
               <button

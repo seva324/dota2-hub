@@ -619,7 +619,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
             {isPrototypeMode ? (
               <div className="mb-4 overflow-hidden rounded-xl border border-border bg-gradient-to-b from-card to-background border-b border-border/60">
                 {/* Top row: teams + series score */}
-                <div className="flex items-center justify-between gap-4 px-5 py-4">
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
                   {/* Left team */}
                   <div className="flex min-w-0 items-center gap-3">
                     {(() => {
@@ -637,7 +637,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <div className="min-w-0">
                       <button
                         type="button"
-                        className={`truncate text-xl font-bold tracking-wide ${match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
+                        className={`truncate text-lg font-bold tracking-wide ${match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
                         onClick={() => { if (radiantTeamRef?.name) onTeamClick?.(radiantTeamRef); }}
                       >
                         {radiantTeamName}
@@ -679,7 +679,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <div className="min-w-0 text-right">
                       <button
                         type="button"
-                        className={`truncate text-xl font-bold tracking-wide ${!match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
+                        className={`truncate text-lg font-bold tracking-wide ${!match.radiant_win ? 'text-white' : 'text-slate-300'} hover:underline underline-offset-2`}
                         onClick={() => { if (direTeamRef?.name) onTeamClick?.(direTeamRef); }}
                       >
                         {direTeamName}
@@ -715,9 +715,9 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     {radiantTeamName}
                   </button>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className={`text-2xl md:text-3xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>{match.radiant_score}</span>
+                    <span className={`text-xl md:text-2xl font-bold ${match.radiant_score > match.dire_score ? 'text-green-400' : 'text-slate-400'}`}>{match.radiant_score}</span>
                     <span className="text-slate-600 text-lg md:text-xl">:</span>
-                    <span className={`text-2xl md:text-3xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>{match.dire_score}</span>
+                    <span className={`text-xl md:text-2xl font-bold ${match.dire_score > match.radiant_score ? 'text-green-400' : 'text-slate-400'}`}>{match.dire_score}</span>
                   </div>
                   <button
                     type="button"
@@ -779,7 +779,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
                   {/* Overview tab (prototype mode) */}
                   <TabsContent value="overview">
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {/* Map tabs row — between nav tabs and content */}
                       {seriesMaps.length > 0 && (
                         <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2">
@@ -845,7 +845,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         return (
                           <div className="space-y-4">
                             {/* Net worth comparison bars */}
-                            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                            <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-2.5">
                               <div className="mb-3 flex items-center justify-between">
                                 <span className="text-xs font-semibold text-slate-300">团队净值对比</span>
                                 <span className={`text-xs font-bold ${goldAdv >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{advLabel}</span>
@@ -1072,7 +1072,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                         onPlayerClick={onPlayerClick}
                       />
                     ) : (
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         <TeamSummaryTable
                           teamName={radiantTeamName}
                           teamRef={radiantTeamRef}
@@ -1118,13 +1118,13 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                   </TabsContent>
 
                   <TabsContent value="history">
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {[
                         { league: 'ESL One 伯明翰', date: '2024-05-15', rScore: 2, dScore: 1 },
                         { league: 'PGL Wallachia S4', date: '2024-04-27', rScore: 0, dScore: 2 },
                         { league: 'DreamLeague S22', date: '2024-03-12', rScore: 1, dScore: 2 },
                       ].map((h) => (
-                        <div key={h.date} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3">
+                        <div key={h.date} className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
                           <div className="h-7 w-7 shrink-0 rounded-full bg-slate-700" />
                           <div className="min-w-0 flex-1">
                             <div className="text-xs font-medium text-slate-300">{h.league}</div>
@@ -1505,7 +1505,7 @@ function MatchDataTable({
   const headerCols = 'grid-cols-[minmax(140px,1.5fr)_72px_90px_70px_58px_58px_80px_72px]';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {teamData.map(({ name, players, isRadiant: _isRadiant, isWinner, borderClass }) => (
         <div key={name} className="overflow-hidden rounded-xl border border-slate-800">
           {/* Team header */}
