@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, ExternalLink, Flag, Shield, Target, Trophy, UserRound } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -231,6 +231,8 @@ export function TeamFlyout({
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const [nextHistoryCursor, setNextHistoryCursor] = useState<number | null>(null);
   const [serverStats, setServerStats] = useState<{ wins: number; losses: number; winRate: number } | null>(null);
+  const [flyoutDataState, setFlyoutDataState] = useState<'loading' | 'ready'>('loading');
+  const flyoutContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/heroes')
@@ -325,6 +327,48 @@ export function TeamFlyout({
       cancelled = true;
     };
   }, [open, selectedTeam?.team_id, selectedTeam?.name]);
+
+  useEffect(() => {
+    if (!open) {
+      setFlyoutDataState('loading');
+      return;
+    }
+    if (isFlyoutLoading) {
+      setFlyoutDataState('loading');
+      return;
+    }
+    const container = flyoutContentRef.current;
+    if (!container) return;
+    const images = Array.from(container.querySelectorAll('img'));
+    let cancelled = false;
+    const markReady = () => {
+      if (cancelled) return;
+      setTimeout(() => {
+        if (!cancelled) setFlyoutDataState('ready');
+      }, 500);
+    };
+    if (images.length === 0) {
+      markReady();
+      return () => { cancelled = true; };
+    }
+    let loaded = 0;
+    const onLoad = () => {
+      loaded++;
+      if (loaded >= images.length) markReady();
+    };
+    images.forEach((img) => {
+      if (img.complete) {
+        loaded++;
+      } else {
+        img.addEventListener('load', onLoad, { once: true });
+      }
+    });
+    if (loaded >= images.length) markReady();
+    return () => {
+      cancelled = true;
+      images.forEach((img) => img.removeEventListener('load', onLoad));
+    };
+  }, [open, isFlyoutLoading]);
 
   const resolvedTeams = hasFetchedFlyoutData ? flyoutTeams : teams;
   const resolvedMatches = hasFetchedFlyoutData ? flyoutMatches : matches;
@@ -674,6 +718,8 @@ export function TeamFlyout({
                         key={`squad-${player.accountId}-${idx}`}
                         type="button"
                         className="text-left"
+                        data-visual-role={player.name === 'Ame' ? 'player-profile-trigger' : undefined}
+                        data-player-name={player.name === 'Ame' ? 'Ame' : undefined}
                         onClick={() => onPlayerClick?.(player.accountId!)}
                       >
                         {body}
@@ -888,10 +934,10 @@ export function TeamFlyout({
       return (
         <>
           <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side={sheetSide} className={sheetClass} data-visual-role="team-flyout">
+            <SheetContent side={sheetSide} className={sheetClass} data-visual-role="team-flyout" data-visual-state={flyoutDataState}>
               <SheetTitle className="sr-only">{selectedTeam?.name || '战队资料'}</SheetTitle>
               <SheetDescription className="sr-only">战队详细信息</SheetDescription>
-              {panelBody}
+              <div ref={flyoutContentRef}>{panelBody}</div>
             </SheetContent>
           </Sheet>
 

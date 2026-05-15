@@ -599,6 +599,8 @@ export function HeroSection({
                             <button
                               type="button"
                               className="text-center text-xs font-bold text-white hover:text-red-300 transition-colors"
+                              data-visual-role={teams[0]?.name === 'Tundra Esports' || teams[0]?.name === 'Tundra' ? 'team-flyout-trigger' : undefined}
+                              data-team-name={teams[0]?.name === 'Tundra Esports' || teams[0]?.name === 'Tundra' ? 'Tundra Esports' : undefined}
                               onClick={() => onOpenTeam?.(teams[0]?.name)}
                             >
                               {getAbbr(teams[0]?.name) || teams[0]?.name}
@@ -609,6 +611,8 @@ export function HeroSection({
                             <button
                               type="button"
                               className="text-center text-xs font-bold text-white hover:text-red-300 transition-colors"
+                              data-visual-role={teams[1]?.name === 'Tundra Esports' || teams[1]?.name === 'Tundra' ? 'team-flyout-trigger' : undefined}
+                              data-team-name={teams[1]?.name === 'Tundra Esports' || teams[1]?.name === 'Tundra' ? 'Tundra Esports' : undefined}
                               onClick={() => onOpenTeam?.(teams[1]?.name)}
                             >
                               {getAbbr(teams[1]?.name) || teams[1]?.name}
@@ -681,6 +685,8 @@ export function HeroSection({
                                       <button
                                         key={`${cardKey}-map-${mapIdx}`}
                                         type="button"
+                                        data-visual-role={mapIdx === 0 ? 'match-detail-trigger' : undefined}
+                                        data-map-label={mapIdx === 0 ? 'Map 1' : undefined}
                                         className={`flex flex-1 items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
                                           isSelected
                                             ? isLive ? 'bg-red-600/20 text-red-400 border-t-2 border-red-500' : 'bg-slate-800/60 text-white border-t-2 border-slate-500'

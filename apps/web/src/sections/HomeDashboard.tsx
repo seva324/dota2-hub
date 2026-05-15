@@ -679,6 +679,8 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: Pr
                 key={team.name}
                 type="button"
                 className="group flex w-full items-center gap-2 rounded-xl border border-border/30 bg-secondary/40 px-3 py-2 text-left transition-all hover:border-border/60 hover:bg-secondary/60 hover:shadow-[var(--shadow-glow)]"
+                data-visual-role={team.name === 'Tundra' ? 'team-flyout-trigger' : undefined}
+                data-team-name={team.name === 'Tundra' ? 'Tundra Esports' : undefined}
                 onClick={() => onOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>
@@ -1003,6 +1005,8 @@ export function HomeDashboard() {
                 key={team.name}
                 type="button"
                 className="group flex w-full items-center gap-2 rounded-xl border border-border/30 bg-secondary/40 px-3 py-2 text-left transition-all hover:border-border/60 hover:bg-secondary/60 hover:shadow-[var(--shadow-glow)]"
+                data-visual-role={team.name === 'Tundra' ? 'team-flyout-trigger' : undefined}
+                data-team-name={team.name === 'Tundra' ? 'Tundra Esports' : undefined}
                 onClick={() => handleOpenTeam(team.name)}
               >
                 <span className="w-4 shrink-0 text-xs font-bold text-amber-300">{index + 1}</span>

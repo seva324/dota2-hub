@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Star, ExternalLink, UserRound, Trophy, Crosshair, Clock, TrendingUp, Medal } from 'lucide-react';
+import { ItemBuildSection } from '@/components/custom/player-profile/ItemBuildSection';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -118,11 +119,47 @@ async function loadHeroMap(): Promise<Record<number, HeroMeta>> {
 export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }: PlayerProfileFlyoutProps) {
   const isMobile = useIsMobile();
   const [heroMap, setHeroMap] = useState<Record<number, HeroMeta>>({});
+  const [profileDataState, setProfileDataState] = useState<'loading' | 'ready'>('loading');
+  const profileContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setProfileDataState('loading');
+      return;
+    }
     loadHeroMap().then((data) => setHeroMap(data || {}));
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !player) return;
+    const container = profileContentRef.current;
+    if (!container) return;
+    const timer = setTimeout(() => {
+      const images = Array.from(container.querySelectorAll('img'));
+      if (images.length === 0) {
+        setProfileDataState('ready');
+        return;
+      }
+      let loaded = 0;
+      const checkDone = () => {
+        loaded++;
+        if (loaded >= images.length) {
+          setTimeout(() => setProfileDataState('ready'), 500);
+        }
+      };
+      images.forEach((img) => {
+        if (img.complete) {
+          checkDone();
+        } else {
+          img.addEventListener('load', checkDone, { once: true });
+        }
+      });
+      if (loaded >= images.length) {
+        setTimeout(() => setProfileDataState('ready'), 500);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [open, player]);
 
   const flagImageUrl = toFlagImageUrl(player?.nationality, 40);
   const playerTeamLogoUrl = resolveTeamLogo(
@@ -636,6 +673,15 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
       <div className="space-y-4 p-4">
             {heroPoolSection}
 
+            <ItemBuildSection items={
+              (player?.mostPlayedHeroes || []).slice(0, 4).map((h) => ({
+                itemId: h.heroId,
+                name: getHeroName(h.heroId, heroMap),
+                imageUrl: getHeroImg(h.heroId, heroMap),
+                usageRate: Math.round(h.winRate),
+              }))
+            } />
+
             {isMobile && mobilePerformanceSection}
 
             {isMobile ? mobileAchievementsSection : null}
@@ -670,17 +716,17 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
 
     return isMobile ? (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[92vh] w-full rounded-t-2xl bg-card text-foreground p-0 border border-border/40 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.5)]" data-visual-role="player-profile-flyout">
+        <SheetContent side="bottom" className="h-[92vh] w-full rounded-t-2xl bg-card text-foreground p-0 border border-border/40 shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.5)]" data-visual-role="player-profile-flyout" data-visual-state={profileDataState}>
           <SheetTitle className="sr-only">{player?.playerName || '选手资料'}</SheetTitle>
           <SheetDescription className="sr-only">{player?.teamName || ''} 选手资料</SheetDescription>
-          {profileContent}
+          <div ref={profileContentRef}>{profileContent}</div>
         </SheetContent>
       </Sheet>
     ) : (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full sm:max-w-md bg-card text-foreground p-0 gap-0 rounded-2xl border border-border/30 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.7)] max-h-[90vh]" data-visual-role="player-profile-flyout" showCloseButton={false}>
+        <DialogContent className="w-full sm:max-w-md bg-card text-foreground p-0 gap-0 rounded-2xl border border-border/30 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.7)] max-h-[90vh]" data-visual-role="player-profile-flyout" data-visual-state={profileDataState} showCloseButton={false}>
           <DialogTitle className="sr-only">{player?.playerName || '选手资料'}</DialogTitle>
-          {profileContent}
+          <div ref={profileContentRef}>{profileContent}</div>
         </DialogContent>
       </Dialog>
     );
