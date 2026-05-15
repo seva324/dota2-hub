@@ -13,9 +13,16 @@ const TARGET_DIR = path.join(ROOT_DIR, 'apps', 'web', 'public', 'images', 'mirro
 async function main() {
   await fs.access(SOURCE_DIR);
   await fs.rm(TARGET_DIR, { recursive: true, force: true });
-  await fs.mkdir(path.dirname(TARGET_DIR), { recursive: true });
-  await fs.cp(SOURCE_DIR, TARGET_DIR, { recursive: true, force: true });
-  console.log(`[sync-web-mirror-assets] synced ${SOURCE_DIR} -> ${TARGET_DIR}`);
+  // Only sync manifest.json — mirror PNGs (347MB+) exhaust EdgeOne build
+  // disk space when Vite copies public/ to dist/.  EdgeOne CDN serves them
+  // from the repo-root public/ directory.
+  for (const entry of ['manifest.json']) {
+    const src = path.join(SOURCE_DIR, entry);
+    const dst = path.join(TARGET_DIR, entry);
+    await fs.mkdir(path.dirname(dst), { recursive: true });
+    await fs.cp(src, dst, { force: true });
+  }
+  console.log(`[sync-web-mirror-assets] synced manifest.json ${SOURCE_DIR} -> ${TARGET_DIR}`);
 }
 
 main().catch((error) => {
