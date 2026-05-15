@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getHeroImageUrl, toCnAssetUrl } from '@/lib/assetUrls';
 import { MatchGraphs } from './MatchGraphs';
+import { MatchDetailPage } from './MatchDetailPage';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { LaningAnalysis } from './LaningAnalysis';
 import { AIReportSection } from './AIReportSection';
@@ -1306,16 +1307,22 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
   if (fullPage && !isMobile) {
     return (
       <div className="min-h-screen bg-background" data-visual-role="match-detail-page" data-visual-state={matchDataState}>
-        <div ref={matchContentRef} className="mx-auto max-w-[1480px] px-4 pt-24 lg:px-6 pb-12">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/40 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:border-border/50 transition-colors"
-          >
-            ← 返回首页
-          </button>
-          {detailBody}
-        </div>
+        <MatchDetailPage
+          match={match}
+          radiantTeamName={radiantTeamName}
+          direTeamName={direTeamName}
+          radiantTeamRef={radiantTeamRef}
+          direTeamRef={direTeamRef}
+          radiantSeriesWins={radiantSeriesWins}
+          direSeriesWins={direSeriesWins}
+          seriesMaps={seriesMaps}
+          activeMatchId={activeMatchId}
+          setActiveMatchId={setActiveMatchId}
+          heroesData={heroesData}
+          onClose={() => onOpenChange(false)}
+          onTeamClick={onTeamClick}
+          onPlayerClick={onPlayerClick}
+        />
       </div>
     );
   }
