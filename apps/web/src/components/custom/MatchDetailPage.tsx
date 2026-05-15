@@ -8,13 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PicksBansInline } from '@/components/custom/PicksBansInline';
 import { MatchGraphs } from '@/components/custom/MatchGraphs';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { getHeroImageUrl } from '@/lib/assetUrls';
+import { resolveTeamLogo } from '@/lib/teams';
+
 function formatCompact(value: number): string {
   if (!Number.isFinite(value)) return '-';
   if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
   return String(Math.round(value));
 }
-import { getHeroImageUrl } from '@/lib/assetUrls';
-import { resolveTeamLogo } from '@/lib/teams';
 
 type MatchDetail = any;
 type HeroInfo = Record<number, { id: number; name: string; img: string; name_cn: string }>;
@@ -64,10 +65,19 @@ function getHeroName(heroId: number, hd: HeroInfo): string {
 }
 
 export function MatchDetailPage({
-  match, radiantTeamName, direTeamName, radiantTeamRef, direTeamRef,
+  match: maybeMatch, radiantTeamName, direTeamName, radiantTeamRef, direTeamRef,
   radiantSeriesWins, direSeriesWins, seriesMaps, activeMatchId, setActiveMatchId,
   heroesData, onClose, onTeamClick, onPlayerClick,
 }: Props) {
+  if (!maybeMatch) {
+    return (
+      <div className="mx-auto max-w-[1360px] px-4 pt-6 pb-12">
+        <button onClick={onClose} className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/40 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5" /> 返回首页</button>
+        <div className="flex items-center justify-center py-32"><div className="animate-spin size-8 border-2 border-red-400 border-t-transparent rounded-full" /></div>
+      </div>
+    );
+  }
+  const match = maybeMatch;
   const radiantScore = seriesMaps.length > 0 ? radiantSeriesWins : match.radiant_score;
   const direScore = seriesMaps.length > 0 ? direSeriesWins : match.dire_score;
 
