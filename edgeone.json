@@ -2,7 +2,7 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build:web",
   "outputDirectory": "apps/web/dist",
-  "nodeVersion": "22.12",
+  "nodeVersion": "22.11.0",
   "nodeFunctionsConfig": {
     "maxDuration": 60
   },
