@@ -404,6 +404,8 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
   const [isMobile, setIsMobile] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<number | string | null>(matchId);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const matchContentRef = useRef<HTMLDivElement>(null);
+  const [matchDataState, setMatchDataState] = useState<'loading' | 'ready'>('loading');
   const isPrototypeMode = usePrototypeMode() || fullPage;
 
   useEffect(() => {
@@ -460,6 +462,44 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
       };
     }
   }, [activeMatchId, open]);
+
+  useEffect(() => {
+    if (!open) {
+      setMatchDataState('loading');
+      return;
+    }
+    if (loading || !match) {
+      setMatchDataState('loading');
+      return;
+    }
+    const container = matchContentRef.current;
+    if (!container) return;
+    const timer = setTimeout(() => {
+      const images = Array.from(container.querySelectorAll('img'));
+      if (images.length === 0) {
+        setMatchDataState('ready');
+        return;
+      }
+      let loaded = 0;
+      const checkDone = () => {
+        loaded++;
+        if (loaded >= images.length) {
+          setTimeout(() => setMatchDataState('ready'), 500);
+        }
+      };
+      images.forEach((img) => {
+        if (img.complete) {
+          checkDone();
+        } else {
+          img.addEventListener('load', checkDone, { once: true });
+        }
+      });
+      if (loaded >= images.length) {
+        setTimeout(() => setMatchDataState('ready'), 500);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [open, loading, match]);
 
   if (!activeMatchId) return null;
 
@@ -1228,7 +1268,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="left" showCloseButton={false} aria-describedby={undefined} className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain">
+        <SheetContent side="left" showCloseButton={false} aria-describedby={undefined} className="w-full sm:max-w-2xl bg-slate-900 border-slate-700 text-slate-100 p-0 overscroll-contain" data-visual-role="match-detail-modal" data-visual-state={matchDataState}>
           <SheetTitle className="sr-only">{match ? `${radiantTeamName} vs ${direTeamName}` : '比赛详情'}</SheetTitle>
           <button
             type="button"
@@ -1239,6 +1279,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
             <X className="h-4 w-4" />
           </button>
           <div
+            ref={matchContentRef}
             className="h-full overflow-x-hidden overflow-y-auto p-2 pt-14 sm:p-5"
             onTouchStart={(event) => {
               const touch = event.touches[0];
@@ -1264,8 +1305,8 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
   if (fullPage && !isMobile) {
     return (
-      <div className="min-h-screen bg-background" data-visual-role="match-detail-page">
-        <div className="mx-auto max-w-[1480px] px-4 pt-24 lg:px-6 pb-12">
+      <div className="min-h-screen bg-background" data-visual-role="match-detail-page" data-visual-state={matchDataState}>
+        <div ref={matchContentRef} className="mx-auto max-w-[1480px] px-4 pt-24 lg:px-6 pb-12">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -1281,7 +1322,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-visual-role="match-detail-modal"
+      <DialogContent data-visual-role="match-detail-modal" data-visual-state={matchDataState}
         showCloseButton={false}
         aria-describedby={undefined}
         className={`overflow-y-auto bg-gradient-to-b from-card to-background border-border/40 rounded-2xl shadow-[var(--shadow-modal),var(--shadow-glow)] p-3 sm:p-6 ${
@@ -1289,7 +1330,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
         }`}
       >
         <DialogTitle className="sr-only">{match ? `${radiantTeamName} vs ${direTeamName}` : '比赛详情'}</DialogTitle>
-        {detailBody}
+        <div ref={matchContentRef}>{detailBody}</div>
       </DialogContent>
     </Dialog>
   );
