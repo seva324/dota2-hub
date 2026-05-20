@@ -2008,6 +2008,166 @@ async function scrapeTaverna(options = {}) {
   }
 }
 
+function parseRussianRelativeTime(input = '', nowMs) {
+  const text = String(input || '').trim();
+  if (!text) return null;
+
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const match = text.match(/^(\d+)\s+(час(?:а|ов)?|минут[уы]?|день|дня|дней)\s+назад/i);
+  if (!match) return null;
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2].toLowerCase();
+
+  let seconds = 0;
+  if (unit.startsWith('час')) {
+    seconds = value * 3600;
+  } else if (unit.startsWith('минут')) {
+    seconds = value * 60;
+  } else if (unit.startsWith('ден') || unit.startsWith('дня') || unit.startsWith('дне')) {
+    seconds = value * 86400;
+  } else {
+    return null;
+  }
+
+  return Math.floor((now - seconds * 1000) / 1000);
+}
+
+function mapDota2NetCategory(categoryTag) {
+  if (!categoryTag) return 'news';
+  const lower = categoryTag.trim().toLowerCase();
+  if (lower === 'обновление' || lower === 'update' || lower === 'обновления' || lower.includes('гайд') || lower.includes('guide')) return 'patch';
+  if (lower === 'турниры' || lower === 'tournament' || lower === 'турнир' || lower.includes('игр') || lower.includes('game')) return 'tournament';
+  return 'news';
+}
+
+function extractDota2NetListItems(html, baseUrl) {
+  const items = [];
+  const itemRegex = /<div[^>]+class="[^"]*list-sorted-news__item[^"]*"[^>]*id="item-(\d+)"[^>]*>([\s\S]*?)(?=<div[^>]+class="[^"]*list-sorted-news__item[^"]*"|<\/div>\s*<\/div>\s*<\/div>\s*$)/gi;
+  let match;
+
+  while ((match = itemRegex.exec(html)) !== null) {
+    const block = match[2];
+
+    const titleMatch = block.match(/<a[^>]+class="[^"]*news-item__title[^"]*"[^>]*>([\s\S]*?)<\/a>/i);
+    const title = titleMatch ? decodeHtmlEntities(titleMatch[1].trim()) : '';
+    if (!title) continue;
+
+    const urlMatch = block.match(/<a[^>]+href="([^"]+)"[^>]+class="[^"]*news-item__title[^"]*"/i)
+      || block.match(/<a[^>]+class="[^"]*news-item__title[^"]*"[^>]+href="([^"]+)"/i)
+      || block.match(/<a[^>]+href="([^"]+)"[^>]+class="[^"]*news-item__picture[^"]*"/i)
+      || block.match(/<a[^>]+class="[^"]*news-item__picture[^"]*"[^>]+href="([^"]+)"/i);
+    const rawUrl = urlMatch?.[1];
+    if (!rawUrl) continue;
+    const url = normalizeUrl(rawUrl, baseUrl);
+    if (!url) continue;
+
+    const thumbMatch = block.match(/<a[^>]+class="[^"]*news-item__picture[^"]*"[^>]+style="background-image:\s*url\('([^']+)'\)/i)
+      || block.match(/<a[^>]+class="[^"]*news-item__picture[^"]*"[^>]+style="background-image:\s*url\(([^)]+)\)/i);
+    let imageUrl = thumbMatch?.[1] ? normalizeUrl(thumbMatch[1], baseUrl) : null;
+
+    const timeMatch = block.match(/<div[^>]+class="[^"]*news-item__statistics[^"]*"[^>]*>(?:<[^>]+>)*([^<]+)<\/div>/i);
+    const timeText = timeMatch?.[1]?.trim() || '';
+
+    const catMatch = block.match(/<div[^>]+class="[^"]*type-new__typo[^"]*"[^>]*>([^<]+)<\/div>/i);
+    const categoryTag = catMatch?.[1]?.trim() || null;
+
+    items.push({ title, url, imageUrl, timeText, categoryTag });
+  }
+
+  return items;
+}
+
+async function scrapeDota2Net(options = {}) {
+  const source = 'dota2net';
+  const baseUrl = 'https://dota2.net';
+  const listUrl = `${baseUrl}/allnews`;
+
+  try {
+    const listHtml = await fetchTextWithRetries(listUrl, {
+      attempts: 2,
+      retryDelayMs: 800,
+      timeout: 15000,
+      label: 'dota2net list',
+    });
+
+    const listItems = extractDota2NetListItems(listHtml, baseUrl);
+    console.log(`[News API] Dota2.net list items: ${listItems.length}`);
+
+    if (listItems.length === 0) {
+      return { items: [], source, success: false, error: 'No Dota2.net list items found' };
+    }
+
+    const now = Date.now();
+    const detailTasks = listItems.map(async (li) => {
+      try {
+        const detailHtml = await fetchTextWithRetries(li.url, {
+          attempts: 2,
+          retryDelayMs: 600,
+          timeout: 12000,
+          label: `dota2net detail: ${li.url}`,
+        });
+
+        const title = getMetaContent(detailHtml, 'og:title')
+          || getTitleFromHtml(detailHtml)
+          || li.title;
+        if (!title) return null;
+
+        const summary = stripHtml(getMetaContent(detailHtml, 'og:description') || getMetaContent(detailHtml, 'description') || '');
+
+        let content = '';
+        const postContent = detailHtml.match(/<div[^>]+class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<\/div>\s*){0,2}<\/div>/i)?.[1];
+        if (postContent) {
+          content = stripHtmlWithParagraphs(postContent);
+        } else {
+          const articleBlock = detailHtml.match(/<div[^>]+class="[^"]*main-block_post-content[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i)?.[1];
+          if (articleBlock) {
+            content = stripHtmlWithParagraphs(articleBlock);
+          }
+        }
+        if (content) content = truncateText(content);
+
+        const publishedAtSeconds = parseRussianRelativeTime(li.timeText, now);
+        const publishedAt = publishedAtSeconds ? new Date(publishedAtSeconds * 1000) : new Date(now);
+
+        const imageUrl = li.imageUrl || normalizeUrl(getMetaContent(detailHtml, 'og:image') || '', baseUrl) || undefined;
+
+        return {
+          id: generateId(li.url, source),
+          title,
+          summary: summary || undefined,
+          content: content || undefined,
+          content_markdown: content || undefined,
+          url: li.url,
+          imageUrl,
+          source: 'Dota2.net',
+          publishedAt,
+          category: mapDota2NetCategory(li.categoryTag),
+        };
+      } catch (error) {
+        console.warn(`[News API] Dota2.net detail failed for ${li.url}: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+      }
+    });
+
+    const settled = await Promise.allSettled(detailTasks);
+    const items = settled.filter((r) => r.status === 'fulfilled' && r.value).map((r) => r.value);
+
+    if (items.length === 0) {
+      return { items: [], source, success: false, error: 'No Dota2.net article details parsed' };
+    }
+
+    return { items, source, success: true };
+  } catch (error) {
+    return {
+      items: [],
+      source,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 async function scrapeHawkLive() {
   const source = 'hawk';
   const baseUrl = 'https://hawk.live';
@@ -3581,7 +3741,7 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count = removed.length;
   }
 
-  const onlySource = ['bo3', 'hawk', 'cyberscore', 'taverna'].includes(options?.onlySource)
+  const onlySource = ['bo3', 'hawk', 'cyberscore', 'taverna', 'dota2net'].includes(options?.onlySource)
     ? options.onlySource
     : null;
   const sourceTasks = [];
@@ -3593,6 +3753,9 @@ export async function syncNewsToDb(options = {}) {
   }
   if (!onlySource || onlySource === 'hawk') {
     sourceTasks.push({ key: 'hawk', run: () => scrapeHawkLive() });
+  }
+  if (!onlySource || onlySource === 'dota2net') {
+    sourceTasks.push({ key: 'dota2net', run: () => scrapeDota2Net() });
   }
   if (!onlySource || onlySource === 'bo3') {
     const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
@@ -3768,6 +3931,9 @@ export const __test__ = {
   parseTavernaNewsSitemap,
   extractTavernaBodyData,
   parseTavernaFeedItems,
+  parseRussianRelativeTime,
+  extractDota2NetListItems,
+  mapDota2NetCategory,
 };
 
 export default async function handler(req, res) {
