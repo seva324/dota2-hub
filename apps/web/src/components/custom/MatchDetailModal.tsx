@@ -367,13 +367,13 @@ function hasAghanimShard(player: Player): boolean {
 const teamLogoMap: Record<string, string> = {
   XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
   'Team Spirit': '/images/mirror/teams/team-spirit-white.svg',
-  Falcons: '/images/mirror/teams/team-falcons.svg',
-  Tundra: '/images/mirror/teams/tundra-esports.svg',
+  Falcons: '/images/mirror/teams/team-falcons-ranking-dark.webp',
+  Tundra: '/images/mirror/teams/tundra-esports-white.svg',
   Liquid: '/images/mirror/teams/team-liquid-white.svg',
-  Gaimin: '/images/mirror/teams/gaimin-gladiators.svg',
-  BetBoom: '/images/mirror/teams/betboom-team.svg',
-  Aurora: '/images/mirror/teams/aurora.svg',
-  'Yakult Brothers': '/images/mirror/teams/yakult-brothers.svg',
+  Gaimin: '/images/mirror/teams/gaimin-gladiators.webp',
+  BetBoom: '/images/mirror/teams/betboom_team.svg',
+  Aurora: '/images/mirror/teams/aurora-ranking-dark.png',
+  'Yakult Brothers': '/images/mirror/teams/yakult-brothers.webp',
 };
 
 function getTeamLogoSrc(teamName: string, logoUrl?: string | null): string | undefined {

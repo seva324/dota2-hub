@@ -423,7 +423,7 @@ describe('/api/player-profile account_id filter regression', () => {
     await handler(req as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect((res.payload as any)?.player?.avatar_url).toBe('https://prod.example.com/images/mirror/players/9403474.png');
+    expect((res.payload as any)?.player?.avatar_url).toBe('https://prod.example.com/images/mirror/players/9403474.webp');
     expect((res.payload as any)?.recent_matches?.[0]?.selected_team?.logo_url).toBe('https://prod.example.com/images/mirror/teams/8261500.png');
     expect((res.payload as any)?.recent_matches?.[0]?.opponent?.logo_url).toBe('https://prod.example.com/images/mirror/teams/7119388.png');
     expect((res.payload as any)?.next_match?.selected_team?.logo_url).toBe('https://prod.example.com/images/mirror/teams/8261500.png');

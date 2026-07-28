@@ -177,7 +177,7 @@ describe('/api/team-flyout', () => {
     expect((res.payload as any).activeSquad).toEqual([{
       account_id: '11',
       name: 'Player 11',
-      avatar_url: 'https://prod.example.com/images/mirror/players/9403474.png',
+      avatar_url: 'https://prod.example.com/images/mirror/players/9403474.webp',
     }]);
   });
 });

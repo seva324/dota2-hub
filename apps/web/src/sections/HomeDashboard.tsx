@@ -22,7 +22,7 @@ const prototypeTeams = [
   { team_id: '4', name: 'Tundra', tag: 'Tundra', logo_url: '/images/mirror/teams/tundra-esports-white.svg', region: 'EU' },
   { team_id: '5', name: 'Liquid', tag: 'Liquid', logo_url: '/images/mirror/teams/team-liquid-white.svg', region: 'EU' },
   { team_id: '6', name: 'Aurora', tag: 'Aurora', logo_url: '/images/mirror/teams/aurora-ranking-dark.png', region: 'SEA' },
-  { team_id: '7', name: 'Yakult Brothers', tag: 'YB', logo_url: '/images/mirror/teams/yakult-brothers.svg', region: 'China', is_cn_team: true },
+  { team_id: '7', name: 'Yakult Brothers', tag: 'YB', logo_url: '/images/mirror/teams/yakult-brothers.webp', region: 'China', is_cn_team: true },
 ];
 
 const teamLogoMap: Record<string, string> = {
@@ -32,9 +32,9 @@ const teamLogoMap: Record<string, string> = {
   Tundra: '/images/mirror/teams/tundra-esports-white.svg',
   Liquid: '/images/mirror/teams/team-liquid-white.svg',
   Aurora: '/images/mirror/teams/aurora-ranking-dark.png',
-  YB: '/images/mirror/teams/yakult-brothers.svg',
-  'Yakult Brothers': '/images/mirror/teams/yakult-brothers.svg',
-  GG: '/images/mirror/teams/gaimin-gladiators.svg',
+  YB: '/images/mirror/teams/yakult-brothers.webp',
+  'Yakult Brothers': '/images/mirror/teams/yakult-brothers.webp',
+  GG: '/images/mirror/teams/gaimin-gladiators.webp',
   Spirit: '/images/mirror/teams/team-spirit-white.svg',
   'Xtreme Gaming': '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
   'Team Falcons': '/images/mirror/teams/team-falcons-ranking-dark.webp',

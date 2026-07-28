@@ -131,7 +131,7 @@ describe('/api/pro-players', () => {
     await handler(req as any, res as any);
 
     expect(res.statusCode).toBe(200);
-    expect((res.payload as any)?.avatar_url).toBe('https://prod.example.com/images/mirror/players/9403474.png');
+    expect((res.payload as any)?.avatar_url).toBe('https://prod.example.com/images/mirror/players/9403474.webp');
   });
 
   it('returns the full map when no account_id is provided', async () => {
@@ -163,7 +163,7 @@ describe('/api/pro-players', () => {
         name: 'Player One',
         team_id: '2001',
         team_name: 'Team Alpha',
-        avatar_url: '/images/mirror/players/9403474.png',
+        avatar_url: '/images/mirror/players/9403474.webp',
       }),
     });
   });
