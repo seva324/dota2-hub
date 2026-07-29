@@ -171,7 +171,8 @@ export function toFlagEmoji(countryCode?: string | null): string {
 export function toFlagImageUrl(countryCode?: string | null, width = 40): string {
   const code = String(countryCode || '').trim().toLowerCase();
   if (!/^[a-z]{2}$/.test(code)) return '';
-  return `https://flagcdn.com/w${Math.max(16, Math.trunc(width))}/${code}.png`;
+  void width; // flags are mirrored SVGs, resolution-independent
+  return `/images/mirror/flags/${code}.svg`;
 }
 
 export function formatBirthDisplay(date?: string | null, month?: number | null, year?: number | null): string {
