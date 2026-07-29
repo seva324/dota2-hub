@@ -71,7 +71,7 @@ export function MatchDetailPage({
 }: Props) {
   if (!maybeMatch) {
     return (
-      <div className="mx-auto max-w-[1360px] px-4 pt-6 pb-12">
+      <div className="mx-auto max-w-[1360px] px-4 pt-24 pb-12">
         <button onClick={onClose} className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/40 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5" /> 返回首页</button>
         <div className="flex items-center justify-center py-32"><div className="animate-spin size-8 border-2 border-red-400 border-t-transparent rounded-full" /></div>
       </div>
@@ -94,7 +94,7 @@ export function MatchDetailPage({
   );
 
   return (
-    <div className="mx-auto max-w-[1360px] px-4 pt-6 pb-12">
+    <div className="mx-auto max-w-[1360px] px-4 pt-24 pb-12">
       {/* Back button */}
       <button onClick={onClose} className="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/40 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:border-border/50 transition-colors">
         <ArrowLeft className="size-3.5" /> 返回首页
@@ -197,7 +197,7 @@ export function MatchDetailPage({
                     <span className="text-center">净值</span> <span className="text-center">GPM</span>
                     <span className="text-center">XPM</span> <span className="text-center">伤害</span> <span className="text-center">治疗</span>
                   </div>
-                  {[radiantPlayers, direPlayers].map((team, _ti) => team.map((p: any, i: number) => {
+                  {[radiantPlayers, direPlayers].map((team) => team.map((p: any, i: number) => {
                     const heroImg = p.hero_id ? getHeroImg(p.hero_id, heroesData) : '';
                     const heroName = p.hero_id ? getHeroName(p.hero_id, heroesData) : '';
                     const isRadiant = p.player_slot < 128;

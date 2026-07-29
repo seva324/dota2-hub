@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Users, TrendingUp, FileText, Backpack, ChevronDown, X, Swords, Shield, Landmark, Skull, Trophy, BarChart3, Target } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -429,6 +430,22 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
       setActiveMatchId(matchId);
     }
   }, [matchId, open]);
+
+  // Desktop fullPage mode renders as a fixed overlay: lock body scroll and
+  // support Escape-to-close like the mobile Sheet / dialog variants.
+  useEffect(() => {
+    if (!open || !fullPage || isMobile) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onOpenChange(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, fullPage, isMobile, onOpenChange]);
 
   useEffect(() => {
     if (activeMatchId && open) {
@@ -1305,8 +1322,16 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
   }
 
   if (fullPage && !isMobile) {
-    return (
-      <div className="min-h-screen bg-background" data-visual-role="match-detail-page" data-visual-state={matchDataState}>
+    // Render as a fixed full-viewport overlay (portal to body) so the match
+    // detail actually appears on click instead of mounting far below the
+    // dashboard in normal flow. z-50 keeps parity with sheets/dialogs, which
+    // are portaled after this element and therefore paint above it.
+    return createPortal(
+      <div
+        className="fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-background"
+        data-visual-role="match-detail-page"
+        data-visual-state={matchDataState}
+      >
         <MatchDetailPage
           match={match}
           radiantTeamName={radiantTeamName}
@@ -1323,7 +1348,8 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
           onTeamClick={onTeamClick}
           onPlayerClick={onPlayerClick}
         />
-      </div>
+      </div>,
+      document.body,
     );
   }
 
@@ -1513,7 +1539,7 @@ function MatchDataTable({
 
   return (
     <div className="space-y-4">
-      {teamData.map(({ name, players, isRadiant: _isRadiant, isWinner, borderClass }) => (
+      {teamData.map(({ name, players, isWinner, borderClass }) => (
         <div key={name} className="overflow-hidden rounded-xl border border-slate-800">
           {/* Team header */}
           <div className={`flex items-center gap-2 border-l-2 ${borderClass} bg-slate-800/40 border-b border-slate-800 px-4 py-2.5`}>

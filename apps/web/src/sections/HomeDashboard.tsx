@@ -510,10 +510,10 @@ function LiveMatchCard({ data, onClick }: { data: LiveHeroPayload; onClick?: () 
             ))}
           </div>
         )}
-        <Button size="sm" className="shrink-0 border border-red-400/30 bg-red-500/15 text-red-200 hover:bg-red-500/25 h-8 px-3 text-xs">
+        <span className="shrink-0 inline-flex h-8 items-center rounded-md border border-red-400/30 bg-red-500/15 px-3 text-xs font-medium text-red-200">
           <Play className="mr-1 size-3 fill-red-300" />
           观看
-        </Button>
+        </span>
       </div>
     </button>
   );
@@ -757,7 +757,6 @@ export function HomeDashboard() {
   const [eptTeams, setEptTeams] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
   const [featuredSpotlight, setFeaturedSpotlight] = useState<FeaturedSpotlight | null>(null);
-  const [liveMatchCount, setLiveMatchCount] = useState(0);
   const [railNews, setRailNews] = useState<RailNewsItem[]>([]);
   const [dashboardHotPlayers, setDashboardHotPlayers] = useState<HotPlayer[]>(
     hotPlayers.map(({ name, accountId, teamName, nationality }) => ({
@@ -825,7 +824,6 @@ export function HomeDashboard() {
               ? [liveData.live]
               : [];
           const spotlightMatch = liveMatches[0];
-          setLiveMatchCount(liveMatches.length);
 
           if (spotlightMatch) {
             setFeaturedSpotlight({
@@ -841,11 +839,9 @@ export function HomeDashboard() {
             setFeaturedSpotlight(null);
           }
         } catch {
-          setLiveMatchCount(0);
           setFeaturedSpotlight(null);
         }
       } else {
-        setLiveMatchCount(0);
         setFeaturedSpotlight(null);
       }
 
@@ -955,29 +951,13 @@ export function HomeDashboard() {
 
   return (
     <div className="relative mx-auto grid max-w-[1480px] gap-5 px-4 pt-20 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-6 lg:pt-24 bg-gradient-to-b from-secondary/40 via-background to-background">
-      {/* DotaHub watermark */}
-      <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center select-none">
-        <div className="text-[16vw] font-black tracking-[0.25em] text-white/[0.012] rotate-[-8deg] translate-y-[-5%]">
-          DotaHub
-        </div>
+      {/* Full-width strip: mobile filter/date row + desktop featured banner */}
+      <div className="relative z-10 flex min-w-0 flex-col gap-4 lg:col-span-2">
+        <MobileMatchToolbar />
+        <FeaturedEventBanner upcomingCards={bannerCards} spotlight={bannerSpotlight} />
       </div>
 
       <div className="relative z-10 flex min-w-0 flex-col gap-4">
-        {/* Page header */}
-        <div className="flex items-center gap-4 mb-1">
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight text-white lg:text-2xl">
-              赛事中心
-              <span className="ml-2 inline-flex items-center rounded-full bg-red-600/15 px-2 py-0.5 text-[11px] font-semibold text-red-300">
-                <span className="size-1.5 rounded-full bg-red-400 mr-1.5 animate-pulse" />
-                {liveMatchCount} 场进行中
-              </span>
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">Dota 2 职业赛事 · 实时数据</p>
-          </div>
-        </div>
-        <MobileMatchToolbar />
-        <FeaturedEventBanner upcomingCards={bannerCards} spotlight={bannerSpotlight} />
         {prototypeMode ? (
           <PrototypeDashboardContent
             onOpenMatch={handleOpenMatch}
@@ -1050,11 +1030,12 @@ export function HomeDashboard() {
                 className="group flex items-center gap-3 rounded-xl border border-white/10 bg-black/15 px-3 py-2 transition-colors hover:border-red-400/30 hover:bg-white/[0.08]"
               >
                 <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-slate-800">
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={item.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-[10px] font-bold text-red-200">{getNewsCategoryLabel(item.category)}</span>
-                  )}
+                  <SafeImg
+                    src={item.image_url || ''}
+                    alt={item.title}
+                    className="h-full w-full object-cover"
+                    fallback={<span className="text-[10px] font-bold text-red-200">{getNewsCategoryLabel(item.category)}</span>}
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

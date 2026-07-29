@@ -312,12 +312,12 @@ export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
                           alt={item.title}
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/dota2-hub/images/patch-update.jpg';
+                            (e.target as HTMLImageElement).src = '/images/patch-update.jpg';
                           }}
                         />
                       ) : (
                         <img
-                          src="/dota2-hub/images/patch-update.jpg"
+                          src="/images/patch-update.jpg"
                           alt={item.title}
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
                         />
@@ -380,11 +380,11 @@ export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
               >
                 <div className="flex items-start gap-3">
                   <img
-                    src={item.image_url || '/dota2-hub/images/patch-update.jpg'}
+                    src={item.image_url || '/images/patch-update.jpg'}
                     alt={item.title}
                     className="w-24 h-16 object-cover rounded shrink-0"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/dota2-hub/images/patch-update.jpg';
+                      (e.target as HTMLImageElement).src = '/images/patch-update.jpg';
                     }}
                   />
                   <div className="min-w-0">
@@ -416,7 +416,7 @@ export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
                     alt={selectedNews.title}
                     className="w-full max-h-80 rounded-md object-cover mb-4"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/dota2-hub/images/patch-update.jpg';
+                      (e.target as HTMLImageElement).src = '/images/patch-update.jpg';
                     }}
                   />
                 )}
