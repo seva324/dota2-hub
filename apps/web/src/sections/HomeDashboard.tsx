@@ -271,7 +271,7 @@ function MobileMatchToolbar() {
         </div>
         <div className="hidden items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2 text-sm text-slate-300 min-[440px]:flex">
           <CalendarDays className="size-4" />
-          5月18日 周日
+          {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}
         </div>
       </div>
     </section>
