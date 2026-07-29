@@ -93,7 +93,10 @@ describe('asset image proxy helpers', () => {
   })
 
   it('rewrites browser-consumed hero and item assets through the same helper', () => {
-    expect(getHeroImageUrl(1, 'antimage')).toBe('/api/asset-image?url=https%3A%2F%2Fcdn.steamstatic.com%2Fapps%2Fdota2%2Fimages%2Fheroes%2Fantimage_lg.png')
+    // heroes covered by the static mirror bypass the proxy entirely
+    expect(getHeroImageUrl(1, 'antimage')).toBe('/images/mirror/heroes/1.png')
+    // heroes missing from the mirror still go through the proxy
+    expect(getHeroImageUrl(999999, null)).toBe('/api/asset-image?url=https%3A%2F%2Fcdn.cloudflare.steamstatic.com%2Fapps%2Fdota2%2Fimages%2Fdota_react%2Fheroes%2F999999.png')
     expect(toCnAssetUrl('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.png')).toBe('/api/asset-image?url=https%3A%2F%2Fcdn.cloudflare.steamstatic.com%2Fapps%2Fdota2%2Fimages%2Fdota_react%2Fitems%2Fblink.png')
   })
 
