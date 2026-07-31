@@ -12,6 +12,7 @@ import { MatchesDashboard } from '@/sections/MatchesDashboard';
 import { usePrototypeMode } from '@/lib/prototypeMode';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
+import type { RouteState } from '@/lib/hashRouter';
 
 const nowTs = () => Math.floor(Date.now() / 1000);
 
@@ -733,26 +734,17 @@ function PrototypeDashboardContent({ onOpenMatch, onOpenTeam, onOpenPlayer }: Pr
   );
 }
 
-export function HomeDashboard() {
+export function HomeDashboard({
+  route,
+  navigate,
+  closeOverlay,
+}: {
+  route: RouteState;
+  navigate: (route: RouteState, options?: { replace?: boolean }) => void;
+  closeOverlay: () => void;
+}) {
   const prototypeMode = usePrototypeMode();
-  const devPlayer = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('devPlayer');
-  const devMatch = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('devMatch');
-  const devTeam = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('devTeam');
-  const [selectedMatchId, setSelectedMatchId] = useState<number | null>(devMatch ? 7777 : null);
-  const [selectedSeriesMaps, setSelectedSeriesMaps] = useState<Array<{
-    label: string;
-    matchId: string;
-    radiantScore?: number;
-    direScore?: number;
-    duration?: number;
-  }>>(devMatch ? [
-    { label: '地图 1', matchId: '7777', radiantScore: 23, direScore: 18 },
-    { label: '地图 2', matchId: '7778', radiantScore: 15, direScore: 29 },
-    { label: '地图 3', matchId: '7779', radiantScore: 20, direScore: 15 },
-  ] : []);
-  const [selectedTeamName, setSelectedTeamName] = useState<string | null>(devTeam ? 'XG' : null);
-  const [selectedPlayer, setSelectedPlayer] = useState<HotPlayer | null>(devPlayer ? hotPlayers[0] : null);
-  const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(devPlayer ? createSidebarPlayerModel(hotPlayers[0]) : null);
+  const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(null);
 
   const [eptTeams, setEptTeams] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
@@ -864,7 +856,61 @@ export function HomeDashboard() {
     void fetchData();
   }, [prototypeMode]);
 
-  const handleOpenMatch = (matchId: number | string, seriesMaps: Array<{
+  const overlay = route.overlay;
+  const activeMatchId = overlay?.type === 'match' ? Number(overlay.matchId) : null;
+  const activeTeamName = overlay?.type === 'team' ? overlay.teamName : null;
+  const activePlayerId = overlay?.type === 'player' ? Number(overlay.accountId) : null;
+
+  // Replace model: opening an overlay pushes one history entry (back closes it);
+  // switching overlays replaces in place so history depth stays ≤ 2.
+  const openOverlay = (next: Extract<RouteState['overlay'], NonNullable<RouteState['overlay']>>) => {
+    navigate({ page: 'home', overlay: next }, { replace: overlay !== null });
+  };
+
+  // seriesMaps is richer than a URL can carry; keep it as an enhancement seeded
+  // when opening a match from a card, and clear it when the match overlay closes.
+  const [seriesMaps, setSeriesMaps] = useState<Array<{
+    label: string;
+    matchId: string;
+    radiantScore?: number;
+    direScore?: number;
+    duration?: number;
+  }>>([]);
+
+  useEffect(() => {
+    if (activeMatchId === null || !Number.isFinite(activeMatchId)) {
+      setSeriesMaps([]);
+    }
+  }, [activeMatchId]);
+
+  // Player overlay: build a fallback model from the account id, then fetch and
+  // merge the full profile. Preserves a curated name pre-seeded from the rail.
+  useEffect(() => {
+    if (activePlayerId === null || !Number.isFinite(activePlayerId)) return;
+    let cancelled = false;
+    setPlayerModel((current) =>
+      current?.accountId === activePlayerId ? current : createMinimalPlayerFlyoutModel(activePlayerId),
+    );
+    void fetchPlayerProfileFlyoutModel(activePlayerId, {
+      onHydrated: (fullModel) => {
+        if (cancelled) return;
+        setPlayerModel((current) =>
+          current?.accountId === activePlayerId ? mergePlayerModel(current, fullModel) : current,
+        );
+      },
+    })
+      .then((model) => {
+        if (cancelled) return;
+        setPlayerModel((current) => {
+          if (current?.accountId !== activePlayerId) return current;
+          return mergePlayerModel(current, model);
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activePlayerId]);
+
+  const handleOpenMatch = (matchId: number | string, maps: Array<{
     label: string;
     matchId: string;
     radiantScore?: number;
@@ -872,45 +918,28 @@ export function HomeDashboard() {
     duration?: number;
   }> = []) => {
     const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
-    if (Number.isFinite(numericId)) {
-      setSelectedMatchId(numericId);
-      setSelectedSeriesMaps(seriesMaps);
-    }
+    if (!Number.isFinite(numericId)) return;
+    setSeriesMaps(maps);
+    openOverlay({ type: 'match', matchId: String(numericId) });
   };
 
   const handleOpenTeam = (teamName: string) => {
-    setSelectedTeamName(teamName);
+    openOverlay({ type: 'team', teamName });
   };
 
-  const handleOpenPlayer = async (player: HotPlayer) => {
-    const fallback = createSidebarPlayerModel(player);
-    setSelectedPlayer(player);
-    setPlayerModel(fallback);
-
-    try {
-      const model = await fetchPlayerProfileFlyoutModel(player.accountId, {
-        onHydrated: (fullModel) => {
-          setPlayerModel((current) => (
-            current?.accountId === player.accountId ? mergePlayerModel(fallback, fullModel) : current
-          ));
-        },
-      });
-      setPlayerModel((current) => {
-        if (current?.accountId !== player.accountId) return current;
-        return mergePlayerModel(fallback, model);
-      });
-    } catch {
-      setPlayerModel((current) => current?.accountId === player.accountId ? fallback : current);
-    }
+  const handleOpenPlayer = (player: HotPlayer) => {
+    setPlayerModel(createSidebarPlayerModel(player));
+    openOverlay({ type: 'player', accountId: String(player.accountId) });
   };
 
   const handleOpenPlayerByAccountId = (accountId: number) => {
-    const player = dashboardHotPlayers.find((candidate) => candidate.accountId === accountId) || {
-      name: String(accountId),
-      accountId,
-      teamName: selectedTeamName || 'Free Agent',
-    };
-    void handleOpenPlayer(player);
+    const player = dashboardHotPlayers.find((candidate) => candidate.accountId === accountId);
+    if (player) {
+      handleOpenPlayer(player);
+    } else {
+      setPlayerModel(null);
+      openOverlay({ type: 'player', accountId: String(accountId) });
+    }
   };
 
   const bannerCards: FeaturedCard[] = upcomingMatches.length > 0
@@ -1102,37 +1131,36 @@ export function HomeDashboard() {
 
       </aside>
 
-      {selectedTeamName && (
+      {activeTeamName !== null && (
         <TeamFlyout
-          open={selectedTeamName !== null}
-          onOpenChange={(open) => { if (!open) setSelectedTeamName(null); }}
-          selectedTeam={prototypeTeams.find((team) => team.name === selectedTeamName) || { name: selectedTeamName }}
+          open={true}
+          onOpenChange={(open) => { if (!open) closeOverlay(); }}
+          selectedTeam={prototypeTeams.find((team) => team.name === activeTeamName) || { name: activeTeamName }}
           teams={prototypeMode ? prototypeTeams : []}
           matches={prototypeMode ? prototypeMatches : []}
           upcoming={prototypeMode ? prototypeUpcoming : []}
           onPlayerClick={handleOpenPlayerByAccountId}
+          onTeamSelect={(team) => { if (team.name) handleOpenTeam(team.name); }}
         />
       )}
 
-      {selectedPlayer && (
+      {activePlayerId !== null && Number.isFinite(activePlayerId) && (
         <PlayerProfileFlyout
-          open={selectedPlayer !== null}
-          onOpenChange={(open) => { if (!open) { setSelectedPlayer(null); setPlayerModel(null); } }}
+          open={true}
+          onOpenChange={(open) => { if (!open) closeOverlay(); }}
           player={playerModel}
-          onTeamSelect={(team) => {
-            if (team.name) setSelectedTeamName(team.name);
-          }}
+          onTeamSelect={(team) => { if (team.name) handleOpenTeam(team.name); }}
         />
       )}
 
-      {selectedMatchId !== null && (
+      {activeMatchId !== null && Number.isFinite(activeMatchId) && (
         <MatchDetailModal
-          matchId={selectedMatchId}
-          seriesMaps={selectedSeriesMaps}
+          matchId={activeMatchId}
+          seriesMaps={seriesMaps}
           open={true}
-          onOpenChange={(open) => { if (!open) { setSelectedMatchId(null); setSelectedSeriesMaps([]); } }}
+          onOpenChange={(open) => { if (!open) closeOverlay(); }}
           fullPage
-          onTeamClick={(team) => { if (team.name) setSelectedTeamName(team.name); }}
+          onTeamClick={(team) => { if (team.name) handleOpenTeam(team.name); }}
           onPlayerClick={handleOpenPlayerByAccountId}
         />
       )}

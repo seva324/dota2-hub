@@ -76,6 +76,21 @@ vi.mock('@/lib/playerProfile', () => ({
 
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
+import type { RouteState } from '@/lib/hashRouter';
+
+function renderControlledHomeDashboard() {
+  const navigate = vi.fn();
+  const closeOverlay = vi.fn();
+  const initialRoute: RouteState = { page: 'home', overlay: null };
+  const { rerender } = render(
+    <HomeDashboard route={initialRoute} navigate={navigate} closeOverlay={closeOverlay} />,
+  );
+  return { navigate, closeOverlay, rerender };
+}
+
+function overlayRoute(overlay: RouteState['overlay']): RouteState {
+  return { page: 'home', overlay };
+}
 
 describe('HomeDashboard quick links', () => {
   beforeEach(() => {
@@ -124,16 +139,19 @@ describe('HomeDashboard quick links', () => {
   });
 
   it('opens match, team, and player detail surfaces from visible dashboard controls', async () => {
-    render(<HomeDashboard />);
+    const { rerender } = renderControlledHomeDashboard();
 
     fireEvent.click(screen.getByRole('button', { name: '打开测试比赛' }));
+    rerender(<HomeDashboard route={overlayRoute({ type: 'match', matchId: '123456' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
     expect(screen.getByText('比赛详情 123456')).toBeInTheDocument();
 
     const teamSpiritButtons = screen.getAllByRole('button', { name: /Team Spirit/ });
     fireEvent.click(teamSpiritButtons[0]);
+    rerender(<HomeDashboard route={overlayRoute({ type: 'team', teamName: 'Team Spirit' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
     expect(screen.getByText('战队详情 Team Spirit')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Ame/ }));
+    rerender(<HomeDashboard route={overlayRoute({ type: 'player', accountId: '898754153' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText('选手详情 Ame')).toBeInTheDocument();
@@ -150,9 +168,10 @@ describe('HomeDashboard quick links', () => {
       recentMatches: [],
     });
 
-    render(<HomeDashboard />);
+    const { rerender } = renderControlledHomeDashboard();
 
     fireEvent.click(screen.getByRole('button', { name: /Ame/ }));
+    rerender(<HomeDashboard route={overlayRoute({ type: 'player', accountId: '898754153' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText('选手详情 Ame')).toBeInTheDocument();
@@ -161,7 +180,7 @@ describe('HomeDashboard quick links', () => {
   });
 
   it('does not render HeroSection when prototype mode is enabled', () => {
-    render(<HomeDashboard />);
+    renderControlledHomeDashboard();
 
     expect(heroSectionSpy).toHaveBeenLastCalledWith(expect.objectContaining({
       prototypeMode: false,
@@ -171,7 +190,7 @@ describe('HomeDashboard quick links', () => {
     heroSectionSpy.mockClear();
     window.history.pushState({}, '', '/?prototype=1');
 
-    render(<HomeDashboard />);
+    renderControlledHomeDashboard();
 
     expect(heroSectionSpy).not.toHaveBeenCalled();
   });
