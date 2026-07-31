@@ -9,6 +9,14 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    server: {
+      deps: {
+        // Load repo scripts/ modules as native Node ESM instead of esbuild-
+        // transforming them; vitest chokes on shebang CLIs like
+        // scripts/manual-api/enrich-pro-players.js.
+        external: [/scripts\//],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -12,17 +12,17 @@ const MODULES = [
   {
     module: 'team-flyout',
     selector: '[data-state="open"][role="dialog"]',
-    url: `${BASE}/?prototype=1&devTeam=1`,
+    url: `${BASE}/#/team/Team%20Spirit`,
   },
   {
     module: 'player-profile',
     selector: '[role="dialog"]',
-    url: `${BASE}/?prototype=1&devPlayer=1`,
+    url: `${BASE}/#/player/898754153`,
   },
   {
     module: 'match-detail',
     selector: '[role="dialog"]',
-    url: `${BASE}/?prototype=1&devMatch=1`,
+    url: `${BASE}/#/match/7777`,
   },
 ];
 

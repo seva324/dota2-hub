@@ -2,15 +2,24 @@ import { Bell, CalendarDays, Home, Moon, Search, Shield, UserCircle, Users } fro
 import { Button } from '@/components/ui/button';
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import { Footer } from '@/sections/Footer';
+import { TopLevelPlaceholder } from '@/pages/TopLevelPlaceholder';
+import { useHashRoute } from '@/hooks/useHashRoute';
+import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
 
-const desktopNavItems = ['首页', '赛事', '比赛', '战队', '选手'];
+const desktopNavItems: Array<{ label: string; page: TopLevelPage }> = [
+  { label: '首页', page: 'home' },
+  { label: '赛事', page: 'tournaments' },
+  { label: '比赛', page: 'matches' },
+  { label: '战队', page: 'teams' },
+  { label: '选手', page: 'players' },
+];
 
-const mobileNavItems = [
-  { label: '首页', icon: Home },
-  { label: '赛程', icon: CalendarDays },
-  { label: '战队', icon: Shield },
-  { label: '选手', icon: Users },
-  { label: '我的', icon: UserCircle },
+const mobileNavItems: Array<{ label: string; page: TopLevelPage; icon: typeof Home }> = [
+  { label: '首页', page: 'home', icon: Home },
+  { label: '赛程', page: 'tournaments', icon: CalendarDays },
+  { label: '战队', page: 'teams', icon: Shield },
+  { label: '选手', page: 'players', icon: Users },
+  { label: '我的', page: 'home', icon: UserCircle },
 ];
 
 function DotaHubMark() {
@@ -23,23 +32,36 @@ function DotaHubMark() {
 }
 
 function App() {
+  const { route, navigate, closeOverlay } = useHashRoute();
+  const page = route.page;
+  const goTo = (target: TopLevelPage) => {
+    navigate({ page: target, overlay: null } satisfies RouteState, { replace: false });
+  };
+
   return (
     <div className="min-h-screen bg-[#05090d] text-foreground">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#05090d]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1480px] items-center gap-5 px-4 lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <DotaHubMark />
-            <span className="text-xl font-black tracking-tight text-white">DotaHub</span>
+            <button type="button" className="flex items-center gap-3" onClick={() => goTo('home')}>
+              <DotaHubMark />
+              <span className="text-xl font-black tracking-tight text-white">DotaHub</span>
+            </button>
           </div>
 
           <nav aria-label="主导航" className="hidden h-full items-center gap-1 lg:flex">
             {desktopNavItems.map((item) => (
               <Button
-                key={item}
+                key={item.page}
                 variant="ghost"
-                className="h-full rounded-none border-b-2 border-transparent px-4 text-sm font-semibold text-slate-300 hover:border-red-500 hover:bg-transparent hover:text-white"
+                className={`h-full rounded-none border-b-2 px-4 text-sm font-semibold ${
+                  page === item.page
+                    ? 'border-red-500 text-white'
+                    : 'border-transparent text-slate-300 hover:border-red-500 hover:bg-transparent hover:text-white'
+                }`}
+                onClick={() => goTo(item.page)}
               >
-                {item}
+                {item.label}
               </Button>
             ))}
           </nav>
@@ -80,15 +102,20 @@ function App() {
       </header>
 
       <main className="pb-24 lg:pb-0">
-        <HomeDashboard />
+        {page === 'home' ? (
+          <HomeDashboard route={route} navigate={navigate} closeOverlay={closeOverlay} />
+        ) : (
+          <TopLevelPlaceholder page={page} onBack={() => goTo('home')} />
+        )}
       </main>
 
       <nav aria-label="移动端主导航" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-[#071017]/95 px-2 py-2 backdrop-blur-xl lg:hidden">
         {mobileNavItems.map((item, index) => (
           <Button
-            key={item.label}
+            key={`${item.page}-${index}`}
             variant="ghost"
-            className={`h-14 flex-col gap-1 rounded-xl text-xs ${index === 0 ? 'text-red-400' : 'text-slate-400'}`}
+            className={`h-14 flex-col gap-1 rounded-xl text-xs ${page === item.page ? 'text-red-400' : 'text-slate-400'}`}
+            onClick={() => goTo(item.page)}
           >
             <item.icon className="size-5" />
             {item.label}
