@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
-import { aggregateMatchesBySeries } from '@/lib/seriesAggregation';
+import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/TournamentCarousel';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import type { RouteState } from '@/lib/hashRouter';
@@ -43,6 +43,9 @@ interface LiveHeroPayload {
     gameTime?: number | null;
     team1Score?: number | null;
     team2Score?: number | null;
+    team1NetWorthLead?: number | null;
+    team1TotalGold?: number | null;
+    team2TotalGold?: number | null;
   } | null;
 }
 
@@ -151,24 +154,6 @@ interface UpcomingMatch {
   tournament_name_cn?: string | null;
 }
 
-interface FinishedMatch {
-  match_id: string | number;
-  series_id?: string | number | null;
-  radiant_team_id?: string | number | null;
-  dire_team_id?: string | number | null;
-  radiant_team_name: string;
-  dire_team_name: string;
-  radiant_team_logo?: string | null;
-  dire_team_logo?: string | null;
-  radiant_score?: number | null;
-  dire_score?: number | null;
-  radiant_win?: boolean | number | null;
-  start_time: number;
-  duration?: number | null;
-  tournament_name?: string | null;
-  series_type?: string | null;
-}
-
 interface FinishedSeries {
   match_id: string | number;
   radiant_team_name: string;
@@ -180,48 +165,6 @@ interface FinishedSeries {
   start_time: number;
   tournament_name?: string | null;
   series_type?: string | null;
-}
-
-function resolveSeriesWins(series: readonly FinishedMatch[], team: 'radiant' | 'dire') {
-  const primaryMatch = series[0];
-  const targetId = String(team === 'radiant' ? primaryMatch?.radiant_team_id ?? '' : primaryMatch?.dire_team_id ?? '');
-  const targetName = team === 'radiant' ? primaryMatch?.radiant_team_name : primaryMatch?.dire_team_name;
-
-  return series.reduce((wins, match) => {
-    if (match.radiant_win === null || match.radiant_win === undefined) return wins;
-    const radiantWon = match.radiant_win === true || match.radiant_win === 1;
-    const winnerId = String((radiantWon ? match.radiant_team_id : match.dire_team_id) ?? '');
-    const winnerName = radiantWon ? match.radiant_team_name : match.dire_team_name;
-    if ((targetId && winnerId === targetId) || (!targetId && winnerName === targetName)) return wins + 1;
-    return wins;
-  }, 0);
-}
-
-function toFinishedSeries(matches: FinishedMatch[]): FinishedSeries[] {
-  return aggregateMatchesBySeries(matches)
-    .map((series) => {
-      const orderedMatches = series.maps.map((map) => map.match);
-      const primaryMatch = series.primaryMatch;
-      const latestMatch = orderedMatches[orderedMatches.length - 1] ?? primaryMatch;
-      const detailMatchId = [...series.maps]
-        .reverse()
-        .map((map) => map.matchId)
-        .find((matchId) => matchId !== null) || primaryMatch.match_id;
-      return {
-        match_id: detailMatchId,
-        radiant_team_name: primaryMatch.radiant_team_name,
-        dire_team_name: primaryMatch.dire_team_name,
-        radiant_team_logo: primaryMatch.radiant_team_logo,
-        dire_team_logo: primaryMatch.dire_team_logo,
-        radiant_score: resolveSeriesWins(orderedMatches, 'radiant'),
-        dire_score: resolveSeriesWins(orderedMatches, 'dire'),
-        start_time: latestMatch.start_time,
-        tournament_name: primaryMatch.tournament_name || null,
-        series_type: primaryMatch.series_type || null,
-      };
-    })
-    .filter((series) => series.radiant_score > 0 || series.dire_score > 0)
-    .sort((left, right) => right.start_time - left.start_time);
 }
 
 /* ------------------------------------------------------------------ */
@@ -278,15 +221,19 @@ function HeroBanner({ liveCount, upcomingCount, resultsCount }: {
 }) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/[0.06]" style={{ backgroundColor: '#0a0e14' }}>
-      {/* 背景占位：后续替换为赛事现场背景图 */}
+      {/* Hero 背景图：轻微毛玻璃 */}
+      <img
+        src="/images/hero-background.png"
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover blur-[2px]"
+      />
+      {/* 半透明蒙版 */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: 'linear-gradient(120deg, rgba(43,85,232,0.16) 0%, rgba(43,85,232,0.04) 40%, rgba(10,14,20,0) 70%), radial-gradient(ellipse at 85% 90%, rgba(255,59,48,0.1) 0%, transparent 55%)',
+          background: 'linear-gradient(100deg, rgba(10,14,20,0.9) 0%, rgba(10,14,20,0.72) 40%, rgba(10,14,20,0.45) 75%, rgba(10,14,20,0.6) 100%)',
         }}
       />
-      {/* 装饰网格线 */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
       <div className="relative z-10 flex min-h-[440px] flex-col justify-center px-8 py-14 lg:px-14">
         <h1 className="text-5xl font-black leading-[1.05] tracking-tight text-white lg:text-6xl">
           LIVE.
@@ -326,6 +273,57 @@ function HeroBanner({ liveCount, upcomingCount, resultsCount }: {
 }
 
 /* ------------------------------------------------------------------ */
+/* 共享卡片原子组件                                                       */
+/* ------------------------------------------------------------------ */
+
+const CARD = {
+  logo: 'h-10 w-10',
+  teamName: 'text-[13px] font-semibold leading-snug',
+  badge: 'rounded px-2 py-0.5 text-[11px] font-bold',
+  meta: 'text-[11px]',
+};
+
+/** 统一的队伍列：logo 上方、队名下方、固定高度两行。三组卡片共用。
+ *  alignDown：把 logo+队名整体下移约 20px，使视觉中心与中间比分区对齐。
+ *  badge 槽位固定高度，保证有无经济领先时三列高度一致。 */
+function TeamColumn({ name, logo, accent, badge, alignDown }: {
+  name: string;
+  logo?: string | null;
+  accent?: boolean;
+  badge?: ReactNode;
+  alignDown?: boolean;
+}) {
+  return (
+    <div className={`flex min-w-0 flex-col items-center ${alignDown ? 'translate-y-[20px]' : ''}`}>
+      <SafeImg
+        src={logo || ''}
+        alt={name}
+        className={`${CARD.logo} shrink-0 object-contain`}
+        fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{name.substring(0, 2).toUpperCase()}</div>}
+      />
+      <span
+        className={`${CARD.teamName} line-clamp-2 mt-1 w-full min-h-8 text-center`}
+        style={{ color: accent === false ? '#a1a1aa' : '#fff' }}
+      >
+        {name}
+      </span>
+      {/* 固定高度的 badge 槽位，保持列高一致 */}
+      <div className="mt-0.5 flex h-4 items-center justify-center">
+        {badge}
+      </div>
+    </div>
+  );
+}
+
+/** 统一的卡片状态标签（LIVE / COMPLETED / 时间） */
+function CardStatus({ text, tone = 'time' }: { text: string; tone?: 'live' | 'completed' | 'time' }) {
+  const style = tone === 'live'
+    ? { color: '#fff', backgroundColor: design.red }
+    : { color: '#a1a1aa', backgroundColor: '#2a2d35' };
+  return <span className={CARD.badge} style={style}>{text}</span>;
+}
+
+/* ------------------------------------------------------------------ */
 /* Schedule 卡片                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -344,42 +342,19 @@ function ScheduleCard({ match, isLive, onOpen }: {
       style={{ backgroundColor: design.card }}
     >
       <div className="flex items-center justify-between">
-        <span
-          className="rounded px-2 py-0.5 text-[11px] font-bold"
-          style={isLive
-            ? { color: '#fff', backgroundColor: design.red }
-            : { color: '#fff', backgroundColor: '#2a2d35' }}
-        >
-          {isLive ? 'LIVE' : formatCSTTime(match.start_time)}
-        </span>
+        <CardStatus text={isLive ? 'LIVE' : formatCSTTime(match.start_time)} tone={isLive ? 'live' : 'time'} />
         <span className="rounded px-2 py-0.5 text-[11px] font-semibold" style={{ color: '#a1a1aa', backgroundColor: '#2a2d35' }}>
           {formatBestOf(match.series_type)}
         </span>
       </div>
 
-      <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="flex min-w-0 flex-col items-center gap-1.5">
-          <SafeImg
-            src={resolveTeamLogo(left, match.radiant_team_logo)}
-            alt={left}
-            className="h-10 w-10 shrink-0 object-contain"
-            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{left.substring(0, 2).toUpperCase()}</div>}
-          />
-          <span className="line-clamp-2 w-full text-center text-[13px] font-semibold leading-tight text-white group-hover:opacity-90">{left}</span>
-        </div>
+      <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <TeamColumn name={left} logo={match.radiant_team_logo} />
         <span className="shrink-0 text-xs font-bold" style={{ color: '#71717a' }}>VS</span>
-        <div className="flex min-w-0 flex-col items-center gap-1.5">
-          <SafeImg
-            src={resolveTeamLogo(right, match.dire_team_logo)}
-            alt={right}
-            className="h-10 w-10 shrink-0 object-contain"
-            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{right.substring(0, 2).toUpperCase()}</div>}
-          />
-          <span className="line-clamp-2 w-full text-center text-[13px] font-semibold leading-tight text-white group-hover:opacity-90">{right}</span>
-        </div>
+        <TeamColumn name={right} logo={match.dire_team_logo} />
       </div>
 
-      <div className="mt-4 line-clamp-1 text-center text-[11px]" style={{ color: '#71717a' }}>
+      <div className="mt-3 line-clamp-1 min-h-4 text-center text-[11px]" style={{ color: '#71717a' }}>
         {match.tournament_name_cn || match.tournament_name || ''}
       </div>
 
@@ -406,8 +381,17 @@ function LiveMatchCard({ hero, onOpen }: {
 }) {
   const team1 = hero.teams?.[0]?.name || 'TBD';
   const team2 = hero.teams?.[1]?.name || 'TBD';
-  const score = parseSeriesScore(hero.seriesScore);
+  const seriesScore = parseSeriesScore(hero.seriesScore);
   const liveMap = hero.liveMap;
+
+  // 当前局击杀（小比分/首要）：大字号展示；系列比分（次要）：小字号
+  const kills1 = liveMap?.team1Score ?? '—';
+  const kills2 = liveMap?.team2Score ?? '—';
+
+  // 经济领先：正值 = 队伍1领先；无数据则不渲染该行（保持高度一致用固定行）
+  const netWorthLead = liveMap?.team1NetWorthLead ?? null;
+  const hasNetWorth = netWorthLead != null && Number.isFinite(netWorthLead);
+  const netWorthAbs = hasNetWorth ? Math.abs(netWorthLead!) : null;
 
   return (
     <button
@@ -419,62 +403,72 @@ function LiveMatchCard({ hero, onOpen }: {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.05] to-transparent" />
 
       <div className="relative flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-bold text-white" style={{ backgroundColor: design.red }}>
-          <span className="size-1.5 animate-pulse rounded-full bg-white" />
-          LIVE
-        </span>
+        <CardStatus text="LIVE" tone="live" />
         <span className="rounded px-2 py-0.5 text-[11px] font-semibold" style={{ color: '#a1a1aa', backgroundColor: '#2a2d35' }}>
           {formatBestOf(hero.bestOf)}
         </span>
       </div>
 
+      {/* 队伍竖排（logo 上、队名下），整体下移让视觉中心与比分对齐 */}
       <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="flex min-w-0 flex-col items-center gap-1">
-          <SafeImg
-            src={resolveTeamLogo(team1, hero.teams?.[0]?.logo)}
-            alt={team1}
-            className="h-8 w-8 shrink-0 object-contain"
-            fallback={<div className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team1.substring(0, 2).toUpperCase()}</div>}
-          />
-          <span className="line-clamp-2 w-full text-center text-xs font-semibold leading-snug text-white">{team1}</span>
-        </div>
-        <div className="flex w-14 shrink-0 flex-col items-center">
+        <TeamColumn
+          name={team1}
+          logo={hero.teams?.[0]?.logo}
+          alignDown
+          badge={hasNetWorth && netWorthLead! > 0 ? <NetWorthBadge value={netWorthAbs!} /> : null}
+        />
+        {/* 当前局击杀：首要、大字号、固定列宽 */}
+        <div className="flex w-16 shrink-0 flex-col items-center justify-center">
           <div className="flex items-baseline gap-1">
-            <span className="text-lg font-black tabular-nums text-white">{score.team1}</span>
-            <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
-            <span className="text-lg font-black tabular-nums text-white">{score.team2}</span>
+            <span className="text-2xl font-black tabular-nums text-white">{kills1}</span>
+            <span className="text-base font-bold" style={{ color: '#71717a' }}>:</span>
+            <span className="text-2xl font-black tabular-nums text-white">{kills2}</span>
           </div>
-          {/* 当前局击杀小比分，无数据显示 — */}
-          <span className="mt-0.5 text-[11px] font-semibold tabular-nums" style={{ color: liveMap?.status === 'live' ? '#ff8a80' : '#71717a' }}>
-            {liveMap && (liveMap.team1Score != null || liveMap.team2Score != null) ? `${liveMap.team1Score ?? 0} : ${liveMap.team2Score ?? 0}` : '—'}
-          </span>
         </div>
-        <div className="flex min-w-0 flex-col items-center gap-1">
-          <SafeImg
-            src={resolveTeamLogo(team2, hero.teams?.[1]?.logo)}
-            alt={team2}
-            className="h-8 w-8 shrink-0 object-contain"
-            fallback={<div className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team2.substring(0, 2).toUpperCase()}</div>}
-          />
-          <span className="line-clamp-2 w-full text-center text-xs font-semibold leading-snug text-white">{team2}</span>
-        </div>
+        <TeamColumn
+          name={team2}
+          logo={hero.teams?.[1]?.logo}
+          alignDown
+          badge={hasNetWorth && netWorthLead! < 0 ? <NetWorthBadge value={netWorthAbs!} /> : null}
+        />
       </div>
 
-      <div className="relative mt-3 flex items-center justify-between">
-        <span className="truncate text-[11px]" style={{ color: '#71717a' }}>
-          {hero.leagueName}
-          {hero.stage ? ` · ${hero.stage}` : ''}
+      {/* 系列比分：独占一行，始终居中 */}
+      <div className="relative mt-3 flex h-4 items-center justify-center">
+        <span className="text-[11px] font-semibold tabular-nums" style={{ color: '#71717a' }}>
+          Series {seriesScore.team1} : {seriesScore.team2}
         </span>
-        <span className="text-[11px] font-semibold" style={{ color: liveMap?.status === 'live' ? design.red : '#a1a1aa' }}>
+      </div>
+
+      <div className="relative mt-3 line-clamp-2 min-h-8 text-center text-[11px]" style={{ color: '#71717a' }}>
+        {hero.leagueName}
+        {hero.stage ? ` · ${hero.stage}` : ''}
+      </div>
+
+      <div className="relative mt-2 flex items-center justify-between gap-2">
+        <span className="shrink-0 text-[11px] font-semibold" style={{ color: liveMap?.status === 'live' ? design.red : '#a1a1aa' }}>
           {liveMap?.label ? liveMap.label.replace(/Map\s*(\d+)/i, 'Game $1') : 'Game 1'}
         </span>
-      </div>
-
-      <div className="relative mt-3 flex items-center justify-end gap-1.5 text-xs font-semibold" style={{ color: design.blue }}>
-        <Play className="size-3.5 fill-current" />
-        观看
+        <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: design.blue }}>
+          <Play className="size-3.5 fill-current" />
+          观看
+        </span>
       </div>
     </button>
+  );
+}
+
+function formatNetWorth(value: number): string {
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  return String(value);
+}
+
+/** 经济领先标签：▲ 数值，显示在领先方队伍名下方 */
+function NetWorthBadge({ value }: { value: number }) {
+  return (
+    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums" style={{ color: '#ff8a80' }}>
+      ▲ {formatNetWorth(value)}
+    </span>
   );
 }
 
@@ -500,26 +494,19 @@ function ResultCard({ match, onOpen }: {
       style={{ backgroundColor: design.card }}
     >
       <div className="flex items-center justify-between">
-        <span className="rounded px-2 py-0.5 text-[11px] font-bold" style={{ color: '#a1a1aa', backgroundColor: '#2a2d35' }}>
-          COMPLETED
-        </span>
+        <CardStatus text="COMPLETED" tone="completed" />
         <span className="text-[11px] font-semibold" style={{ color: '#71717a' }}>
           {formatBestOf(match.series_type)}
         </span>
       </div>
 
       <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="flex min-w-0 flex-col items-center gap-1.5">
-          <SafeImg
-            src={resolveTeamLogo(match.radiant_team_name, match.radiant_team_logo)}
-            alt={match.radiant_team_name}
-            className="h-10 w-10 shrink-0 object-contain"
-            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{match.radiant_team_name.substring(0, 2).toUpperCase()}</div>}
-          />
-          <span className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight" style={{ color: match.radiant_score > match.dire_score ? '#fff' : '#a1a1aa' }}>
-            {match.radiant_team_name}
-          </span>
-        </div>
+        <TeamColumn
+          name={match.radiant_team_name}
+          logo={match.radiant_team_logo}
+          alignDown
+          accent={match.radiant_score > match.dire_score}
+        />
         <div className="flex shrink-0 items-center px-1">
           <div className="flex items-baseline gap-1.5">
             <span className={`text-2xl font-black tabular-nums ${match.radiant_score > match.dire_score ? 'text-white' : ''}`} style={{ color: match.radiant_score > match.dire_score ? '#fff' : '#71717a' }}>
@@ -531,21 +518,16 @@ function ResultCard({ match, onOpen }: {
             </span>
           </div>
         </div>
-        <div className="flex min-w-0 flex-col items-center gap-1.5">
-          <SafeImg
-            src={resolveTeamLogo(match.dire_team_name, match.dire_team_logo)}
-            alt={match.dire_team_name}
-            className="h-10 w-10 shrink-0 object-contain"
-            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{match.dire_team_name.substring(0, 2).toUpperCase()}</div>}
-          />
-          <span className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight" style={{ color: match.dire_score > match.radiant_score ? '#fff' : '#a1a1aa' }}>
-            {match.dire_team_name}
-          </span>
-        </div>
+        <TeamColumn
+          name={match.dire_team_name}
+          logo={match.dire_team_logo}
+          alignDown
+          accent={match.dire_score > match.radiant_score}
+        />
       </div>
 
-      <div className="mt-4 flex items-center justify-center text-[11px]" style={{ color: '#71717a' }}>
-        {formatTimeAgo(match.start_time)}
+      <div className="mt-3 min-h-4 truncate text-center text-[11px]" style={{ color: '#71717a' }}>
+        {match.tournament_name || formatTimeAgo(match.start_time)}
       </div>
     </button>
   );
@@ -943,16 +925,18 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
   }>>([]);
   const [rankings, setRankings] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
   const [topPlayers, setTopPlayers] = useState<TopPlayer[]>(hotPlayersSeed);
+  const [primaryLeagues, setPrimaryLeagues] = useState<PrimaryLeague[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
-      const [upcomingRes, liveRes, matchesRes, newsRes, rankRes] = await Promise.allSettled([
+      const [upcomingRes, liveRes, matchesRes, newsRes, rankRes, leaguesRes] = await Promise.allSettled([
         fetch('/api/upcoming?limit=12&days=2'),
         fetch('/api/live-hero', { cache: 'no-store' }),
         fetch('/api/matches?limit=24'),
         fetch('/api/news'),
         fetch('/api/ept-ranking'),
+        fetch('/api/primary-leagues'),
       ]);
 
       // Top players: enrich seeds from pro-players API (avatar, team, name)
@@ -1001,10 +985,13 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
       if (!cancelled && matchesRes.status === 'fulfilled' && matchesRes.value.ok) {
         try {
           const data = await matchesRes.value.json();
-          const matches: FinishedMatch[] = Array.isArray(data) ? data : (data.matches || []);
-          setResults(toFinishedSeries(
-            matches.filter((m) => m.radiant_team_name && m.dire_team_name)
-          ));
+          const matches: FinishedSeries[] = Array.isArray(data) ? data : (data.matches || []);
+          // DLTV results 已是系列赛成品比分（radiant_score/dire_score），直接使用。
+          setResults(
+            matches
+              .filter((m) => m.radiant_team_name && m.dire_team_name)
+              .sort((a, b) => (b.start_time ?? 0) - (a.start_time ?? 0))
+          );
         } catch { /* 保留空态 */ }
       }
 
@@ -1019,6 +1006,13 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         try {
           const data = await rankRes.value.json();
           setRankings(Array.isArray(data?.teams) ? data.teams.slice(0, 5) : []);
+        } catch { /* 保留空态 */ }
+      }
+
+      if (!cancelled && leaguesRes.status === 'fulfilled' && leaguesRes.value.ok) {
+        try {
+          const data = await leaguesRes.value.json();
+          setPrimaryLeagues(Array.isArray(data?.tournaments) ? data.tournaments : []);
         } catch { /* 保留空态 */ }
       }
 
@@ -1194,8 +1188,15 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
           )}
         </section>
 
-        {/* Tournament Spotlight */}
-        <TournamentSpotlight />
+        {/* Tournament Spotlight / Primary Leagues */}
+        {primaryLeagues.length > 0 ? (
+          <section>
+            <SectionHeader title="Tournaments" linkLabel="View All Tournaments" />
+            <TournamentCarousel tournaments={primaryLeagues} />
+          </section>
+        ) : (
+          <TournamentSpotlight />
+        )}
 
         {/* Latest News */}
         <LatestNewsSection

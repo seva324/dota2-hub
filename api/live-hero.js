@@ -30,8 +30,13 @@ function toLiveHeroPayload(match) {
     matchId,
     label: 'Map 1',
     status: 'live',
-    team1Score: match.radiantKills ?? 0,
-    team2Score: match.direKills ?? 0,
+    team1Score: match.radiantKills ?? null,
+    team2Score: match.direKills ?? null,
+    team1NetWorthLead: match.radiantNetWorth != null || match.direNetWorth != null
+      ? (match.radiantNetWorth ?? 0) - (match.direNetWorth ?? 0)
+      : null,
+    team1TotalGold: match.radiantNetWorth ?? null,
+    team2TotalGold: match.direNetWorth ?? null,
     gameTime,
   };
 
