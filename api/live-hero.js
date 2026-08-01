@@ -1,22 +1,59 @@
-import { getDb } from '../lib/db.js';
-import { explainLiveHeroMatching, getLiveHeroPayloads } from '../lib/server/live-hero-service.js';
+import { getDltvLive } from '../lib/server/dltv-matches-service.js';
+import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
 
-const LIVE_HERO_CACHE_CONTROL = 'public, max-age=2, s-maxage=2, stale-while-revalidate=3';
+const LIVE_HERO_CACHE_CONTROL = 'public, max-age=10, s-maxage=10, stale-while-revalidate=30';
 const LIVE_HERO_NO_STORE_CACHE_CONTROL = 'no-store';
 
-function toPositiveInt(value, fallback, { min = 1, max = 3600 } = {}) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  const normalized = Math.trunc(parsed);
-  if (normalized < min) return fallback;
-  return Math.min(normalized, max);
+function shouldBypassSharedCache(query) {
+  return String(query?.refresh || '') === '1' || String(query?.debug || '') === '1';
 }
 
-function shouldBypassSharedCache(query) {
-  return String(query?.refresh || '') === '1'
-    || String(query?.debug || '') === '1'
-    || String(query?.team_a || '').trim().length > 0
-    || String(query?.team_b || '').trim().length > 0;
+// DLTV logo paths are relative (e.g. /uploads/teams/...). Prefer curated
+// GitHub logos for top teams; otherwise qualify with the DLTV origin.
+function resolveLogo(name, relativeLogo) {
+  const curated = getCuratedTeamLogoGithubUrl({ name });
+  if (curated) return curated;
+  if (relativeLogo) return `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}`;
+  return null;
+}
+
+// Map a parsed DLTV live match onto the frontend's LiveHeroPayload shape.
+// DLTV has no per-map history on the list page: build a single "live" map
+// from the current kills / game time, and use series wins for the series score.
+function toLiveHeroPayload(match) {
+  const team1Score = match.seriesWins1 ?? 0;
+  const team2Score = match.seriesWins2 ?? 0;
+  const gameTime = match.gameTime ?? null;
+  const matchId = match.matchId ? String(match.matchId) : null;
+
+  const map = {
+    matchId,
+    label: 'Map 1',
+    status: 'live',
+    team1Score: match.radiantKills ?? 0,
+    team2Score: match.direKills ?? 0,
+    gameTime,
+  };
+
+  return {
+    source: 'dltv',
+    sourceUrl: match.matchUrl || null,
+    sourceSeriesId: match.seriesId ? String(match.seriesId) : null,
+    leagueName: match.tournament || '',
+    stage: match.stage || null,
+    bestOf: match.bestOf || 'BO3',
+    seriesScore: `${team1Score}:${team2Score}`,
+    seriesScoreBreakdown: { team1: team1Score, team2: team2Score },
+    live: true,
+    startedAt: null,
+    viewerCount: null,
+    teams: [
+      { side: 'team1', name: match.radiantName, logo: resolveLogo(match.radiantName, match.radiantLogo) },
+      { side: 'team2', name: match.direName, logo: resolveLogo(match.direName, match.direLogo) },
+    ],
+    maps: [map],
+    liveMap: map,
+  };
 }
 
 export default async function handler(req, res) {
@@ -29,29 +66,20 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const db = getDb();
-
   try {
-    const options = {
-      forceRefresh: String(req.query?.refresh || '') === '1',
-      debug: String(req.query?.debug || '') === '1',
-      maxAgeSeconds: toPositiveInt(req.query?.max_age, 180),
-      teamA: String(req.query?.team_a || '').trim() || undefined,
-      teamB: String(req.query?.team_b || '').trim() || undefined,
-    };
-    const liveMatches = await getLiveHeroPayloads(db, options);
-    const live = liveMatches[0] || null;
-    const debug = options.debug ? await explainLiveHeroMatching(db, options) : undefined;
+    const forceRefresh = String(req.query?.refresh || '') === '1';
+    const { live: liveMatches, source } = await getDltvLive({ forceRefresh });
+    const liveHeroes = liveMatches.map(toLiveHeroPayload);
+    const live = liveHeroes[0] || null;
 
     return res.status(200).json({
       live: live || null,
-      liveMatches,
-      ...(debug ? { debug } : {}),
+      liveMatches: liveHeroes,
       meta: {
-        hasLive: liveMatches.length > 0,
-        liveCount: liveMatches.length,
+        hasLive: liveHeroes.length > 0,
+        liveCount: liveHeroes.length,
         generatedAt: new Date().toISOString(),
-        source: live ? live.source || 'hawk.live' : 'hero_live_scores',
+        source: liveHeroes.length > 0 ? 'dltv' : source,
       },
     });
   } catch (error) {
@@ -65,7 +93,7 @@ export default async function handler(req, res) {
         hasLive: false,
         liveCount: 0,
         generatedAt: new Date().toISOString(),
-        source: 'hero_live_scores',
+        source: 'dltv',
       },
     });
   }

@@ -1,15 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const getLiveHeroPayloads = vi.fn();
-const explainLiveHeroMatching = vi.fn();
+const getDltvLive = vi.fn();
 
-vi.mock('../../../../lib/server/live-hero-service.js', () => ({
-  explainLiveHeroMatching,
-  getLiveHeroPayloads,
-}));
-
-vi.mock('@neondatabase/serverless', () => ({
-  neon: vi.fn(() => ({ query: vi.fn() })),
+vi.mock('../../../../lib/server/dltv-matches-service.js', () => ({
+  getDltvLive,
 }));
 
 function createRes() {
@@ -35,23 +29,33 @@ function createRes() {
   };
 }
 
+const LIVE_MATCH = {
+  seriesId: '427391',
+  matchId: '8924126326',
+  tournament: 'Games of the Future 2026',
+  eventUrl: 'https://dltv.org/events/games-of-the-future-2026',
+  matchUrl: 'https://dltv.org/matches/427391/enjoy-vs-yakult-brothers',
+  stage: "Losers' Match",
+  bestOf: 'BO3',
+  radiantName: 'ENJOY',
+  direName: 'Yakult Brothers',
+  radiantLogo: '/uploads/teams/small/a.png',
+  direLogo: '/uploads/teams/small/b.png',
+  radiantKills: 28,
+  direKills: 12,
+  seriesWins1: 1,
+  seriesWins2: 1,
+  gameTime: 1683,
+};
+
 describe('/api/live-hero', () => {
   beforeEach(() => {
     vi.resetModules();
-    process.env.DATABASE_URL = 'postgres://example.test/db';
-    getLiveHeroPayloads.mockReset();
-    explainLiveHeroMatching.mockReset();
+    getDltvLive.mockReset();
   });
 
-  it('returns the live hero payload', async () => {
-    getLiveHeroPayloads.mockResolvedValue([{
-      leagueName: 'PGL Wallachia Season 7: Group Stage',
-      seriesScore: '1 - 1',
-      teams: [{ name: 'Aurora' }, { name: 'Heroic' }],
-      maps: [],
-      live: true,
-      source: 'hawk.live',
-    }]);
+  it('returns the live hero payload mapped from DLTV', async () => {
+    getDltvLive.mockResolvedValue({ live: [LIVE_MATCH], source: 'dltv' });
 
     const { default: handler } = await import('../../../../api/live-hero.js');
     const res = createRes();
@@ -59,50 +63,39 @@ describe('/api/live-hero', () => {
     await handler({ method: 'GET', query: {} } as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect((res.payload as any).live?.leagueName).toBe('PGL Wallachia Season 7: Group Stage');
-    expect((res.payload as any).liveMatches).toHaveLength(1);
-    expect((res.payload as any).meta.liveCount).toBe(1);
-    expect(getLiveHeroPayloads).toHaveBeenCalled();
-    expect(res.headers['Cache-Control']).toBe('public, max-age=2, s-maxage=2, stale-while-revalidate=3');
+    const payload = res.payload as any;
+    expect(payload.live?.leagueName).toBe('Games of the Future 2026');
+    expect(payload.live?.seriesScore).toBe('1:1');
+    expect(payload.live?.teams).toHaveLength(2);
+    expect(payload.live?.teams[0].name).toBe('ENJOY');
+    expect(payload.live?.liveMap?.team1Score).toBe(28);
+    expect(payload.liveMatches).toHaveLength(1);
+    expect(payload.meta.liveCount).toBe(1);
+    expect(payload.meta.source).toBe('dltv');
   });
 
-  it('passes refresh intent and team filters through to the live hero service', async () => {
-    getLiveHeroPayloads.mockResolvedValue([]);
+  it('passes refresh intent to the service', async () => {
+    getDltvLive.mockResolvedValue({ live: [], source: 'cache' });
     const { default: handler } = await import('../../../../api/live-hero.js');
     const res = createRes();
 
-    await handler({ method: 'GET', query: { refresh: '1', max_age: '90', team_a: 'Aurora', team_b: 'Heroic' } } as never, res as never);
+    await handler({ method: 'GET', query: { refresh: '1' } } as never, res as never);
 
-    expect(getLiveHeroPayloads).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      forceRefresh: true,
-      maxAgeSeconds: 90,
-      teamA: 'Aurora',
-      teamB: 'Heroic',
-    }));
+    expect(getDltvLive).toHaveBeenCalledWith(expect.objectContaining({ forceRefresh: true }));
     expect((res.payload as any).live).toBeNull();
     expect((res.payload as any).liveMatches).toEqual([]);
     expect(res.headers['Cache-Control']).toBe('no-store');
   });
 
-  it('includes debug matching details when requested', async () => {
-    getLiveHeroPayloads.mockResolvedValue([]);
-    explainLiveHeroMatching.mockResolvedValue({
-      matched: [{ reason: 'matched_by_league_name' }],
-      unmatchedHawkSeries: [{ reason: 'no_matching_tournament_keyword' }],
-    });
-
+  it('returns an empty envelope when there are no live matches', async () => {
+    getDltvLive.mockResolvedValue({ live: [], source: 'dltv' });
     const { default: handler } = await import('../../../../api/live-hero.js');
     const res = createRes();
 
-    await handler({ method: 'GET', query: { debug: '1' } } as never, res as never);
+    await handler({ method: 'GET', query: {} } as never, res as never);
 
-    expect(explainLiveHeroMatching).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      debug: true,
-    }));
-    expect((res.payload as any).debug).toEqual({
-      matched: [{ reason: 'matched_by_league_name' }],
-      unmatchedHawkSeries: [{ reason: 'no_matching_tournament_keyword' }],
-    });
-    expect(res.headers['Cache-Control']).toBe('no-store');
+    expect((res.payload as any).live).toBeNull();
+    expect((res.payload as any).liveMatches).toEqual([]);
+    expect((res.payload as any).meta.hasLive).toBe(false);
   });
 });
