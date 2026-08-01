@@ -429,34 +429,34 @@ function LiveMatchCard({ hero, onOpen }: {
       </div>
 
       <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="flex min-w-0 items-center justify-end gap-2">
+        <div className="flex min-w-0 flex-col items-center gap-1">
           <SafeImg
             src={resolveTeamLogo(team1, hero.teams?.[0]?.logo)}
             alt={team1}
-            className="h-9 w-9 shrink-0 object-contain"
-            fallback={<div className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team1.substring(0, 2).toUpperCase()}</div>}
+            className="h-8 w-8 shrink-0 object-contain"
+            fallback={<div className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team1.substring(0, 2).toUpperCase()}</div>}
           />
-          <span className="min-w-0 text-right text-[13px] font-semibold leading-tight text-white line-clamp-2">{team1}</span>
+          <span className="line-clamp-2 w-full text-center text-xs font-semibold leading-snug text-white">{team1}</span>
         </div>
-        <div className="flex w-16 shrink-0 flex-col items-center">
+        <div className="flex w-14 shrink-0 flex-col items-center">
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-black tabular-nums text-white">{score.team1}</span>
+            <span className="text-lg font-black tabular-nums text-white">{score.team1}</span>
             <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
-            <span className="text-xl font-black tabular-nums text-white">{score.team2}</span>
+            <span className="text-lg font-black tabular-nums text-white">{score.team2}</span>
           </div>
           {/* 当前局击杀小比分，无数据显示 — */}
           <span className="mt-0.5 text-[11px] font-semibold tabular-nums" style={{ color: liveMap?.status === 'live' ? '#ff8a80' : '#71717a' }}>
             {liveMap && (liveMap.team1Score != null || liveMap.team2Score != null) ? `${liveMap.team1Score ?? 0} : ${liveMap.team2Score ?? 0}` : '—'}
           </span>
         </div>
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 text-[13px] font-semibold leading-tight text-white line-clamp-2">{team2}</span>
+        <div className="flex min-w-0 flex-col items-center gap-1">
           <SafeImg
             src={resolveTeamLogo(team2, hero.teams?.[1]?.logo)}
             alt={team2}
-            className="h-9 w-9 shrink-0 object-contain"
-            fallback={<div className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team2.substring(0, 2).toUpperCase()}</div>}
+            className="h-8 w-8 shrink-0 object-contain"
+            fallback={<div className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team2.substring(0, 2).toUpperCase()}</div>}
           />
+          <span className="line-clamp-2 w-full text-center text-xs font-semibold leading-snug text-white">{team2}</span>
         </div>
       </div>
 
