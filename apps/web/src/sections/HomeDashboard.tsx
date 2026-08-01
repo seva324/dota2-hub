@@ -448,6 +448,11 @@ function LiveMatchCard({ hero, onOpen }: {
       <div className="relative mt-2 flex items-center justify-between gap-2">
         <span className="shrink-0 text-[11px] font-semibold" style={{ color: liveMap?.status === 'live' ? design.red : '#a1a1aa' }}>
           {liveMap?.label ? liveMap.label.replace(/Map\s*(\d+)/i, 'Game $1') : 'Game 1'}
+          {formatGameClock(liveMap?.gameTime) && (
+            <span className="ml-1.5 font-semibold tabular-nums" style={{ color: '#71717a' }}>
+              {formatGameClock(liveMap?.gameTime)}
+            </span>
+          )}
         </span>
         <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: design.blue }}>
           <Play className="size-3.5 fill-current" />
@@ -466,10 +471,18 @@ function formatNetWorth(value: number): string {
 /** 经济领先标签：▲ 数值，显示在领先方队伍名下方 */
 function NetWorthBadge({ value }: { value: number }) {
   return (
-    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums" style={{ color: '#ff8a80' }}>
-      ▲ {formatNetWorth(value)}
+    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums" style={{ color: '#ff8a80' }}>
+      <span className="inline-block size-1.5 rounded-full" style={{ backgroundColor: '#ff8a80' }} />
+      +{formatNetWorth(value)}
     </span>
   );
+}
+
+function formatGameClock(seconds?: number | null): string {
+  if (!seconds || seconds <= 0) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 function parseSeriesScore(value: string) {
