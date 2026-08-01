@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
@@ -90,12 +90,6 @@ function formatBestOf(value?: string | number | null): string {
   if (normalized.startsWith('BO')) return normalized;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? `BO${parsed}` : normalized;
-}
-
-function formatViewers(viewers?: number | null): string {
-  if (!viewers || viewers <= 0) return '0';
-  if (viewers >= 1000) return `${(viewers / 1000).toFixed(1)}K`;
-  return String(viewers);
 }
 
 const hotPlayersSeed: TopPlayer[] = [
@@ -363,29 +357,29 @@ function ScheduleCard({ match, isLive, onOpen }: {
         </span>
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-4">
-        <div className="flex flex-1 items-center justify-end gap-2.5">
+      <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="flex min-w-0 flex-col items-center gap-1.5">
           <SafeImg
             src={resolveTeamLogo(left, match.radiant_team_logo)}
             alt={left}
-            className="h-10 w-10 object-contain"
-            fallback={<div className="flex size-10 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{left.substring(0, 2).toUpperCase()}</div>}
+            className="h-10 w-10 shrink-0 object-contain"
+            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{left.substring(0, 2).toUpperCase()}</div>}
           />
-          <span className="truncate text-sm font-semibold text-white group-hover:opacity-90">{left}</span>
+          <span className="line-clamp-2 w-full text-center text-[13px] font-semibold leading-tight text-white group-hover:opacity-90">{left}</span>
         </div>
-        <span className="text-xs font-bold" style={{ color: '#71717a' }}>VS</span>
-        <div className="flex flex-1 items-center gap-2.5">
-          <span className="truncate text-sm font-semibold text-white group-hover:opacity-90">{right}</span>
+        <span className="shrink-0 text-xs font-bold" style={{ color: '#71717a' }}>VS</span>
+        <div className="flex min-w-0 flex-col items-center gap-1.5">
           <SafeImg
             src={resolveTeamLogo(right, match.dire_team_logo)}
             alt={right}
-            className="h-10 w-10 object-contain"
-            fallback={<div className="flex size-10 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{right.substring(0, 2).toUpperCase()}</div>}
+            className="h-10 w-10 shrink-0 object-contain"
+            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{right.substring(0, 2).toUpperCase()}</div>}
           />
+          <span className="line-clamp-2 w-full text-center text-[13px] font-semibold leading-tight text-white group-hover:opacity-90">{right}</span>
         </div>
       </div>
 
-      <div className="mt-5 truncate text-center text-[11px]" style={{ color: '#71717a' }}>
+      <div className="mt-4 line-clamp-1 text-center text-[11px]" style={{ color: '#71717a' }}>
         {match.tournament_name_cn || match.tournament_name || ''}
       </div>
 
@@ -429,14 +423,13 @@ function LiveMatchCard({ hero, onOpen }: {
           <span className="size-1.5 animate-pulse rounded-full bg-white" />
           LIVE
         </span>
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: '#a1a1aa' }}>
-          <Eye className="size-3.5" />
-          {formatViewers(hero.viewerCount)}
+        <span className="rounded px-2 py-0.5 text-[11px] font-semibold" style={{ color: '#a1a1aa', backgroundColor: '#2a2d35' }}>
+          {formatBestOf(hero.bestOf)}
         </span>
       </div>
 
-      <div className="relative mt-5 flex items-center justify-center gap-2">
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+      <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="flex min-w-0 items-center justify-end gap-2">
           <SafeImg
             src={resolveTeamLogo(team1, hero.teams?.[0]?.logo)}
             alt={team1}
@@ -445,12 +438,18 @@ function LiveMatchCard({ hero, onOpen }: {
           />
           <span className="min-w-0 text-right text-[13px] font-semibold leading-tight text-white line-clamp-2">{team1}</span>
         </div>
-        <div className="flex shrink-0 items-baseline gap-1.5">
-          <span className="text-xl font-black tabular-nums text-white">{score.team1}</span>
-          <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
-          <span className="text-xl font-black tabular-nums text-white">{score.team2}</span>
+        <div className="flex w-16 shrink-0 flex-col items-center">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-black tabular-nums text-white">{score.team1}</span>
+            <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
+            <span className="text-xl font-black tabular-nums text-white">{score.team2}</span>
+          </div>
+          {/* 当前局击杀小比分，无数据显示 — */}
+          <span className="mt-0.5 text-[11px] font-semibold tabular-nums" style={{ color: liveMap?.status === 'live' ? '#ff8a80' : '#71717a' }}>
+            {liveMap && (liveMap.team1Score != null || liveMap.team2Score != null) ? `${liveMap.team1Score ?? 0} : ${liveMap.team2Score ?? 0}` : '—'}
+          </span>
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <span className="min-w-0 text-[13px] font-semibold leading-tight text-white line-clamp-2">{team2}</span>
           <SafeImg
             src={resolveTeamLogo(team2, hero.teams?.[1]?.logo)}
@@ -461,7 +460,7 @@ function LiveMatchCard({ hero, onOpen }: {
         </div>
       </div>
 
-      <div className="relative mt-4 flex items-center justify-between">
+      <div className="relative mt-3 flex items-center justify-between">
         <span className="truncate text-[11px]" style={{ color: '#71717a' }}>
           {hero.leagueName}
           {hero.stage ? ` · ${hero.stage}` : ''}
@@ -509,33 +508,44 @@ function ResultCard({ match, onOpen }: {
         </span>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-3">
-        <SafeImg
-          src={resolveTeamLogo(match.radiant_team_name, match.radiant_team_logo)}
-          alt={match.radiant_team_name}
-          className="h-9 w-9 object-contain"
-          fallback={<div className="flex size-9 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{match.radiant_team_name.substring(0, 2).toUpperCase()}</div>}
-        />
-        <div className="flex items-baseline gap-1.5">
-          <span className={`text-2xl font-black tabular-nums ${match.radiant_score > match.dire_score ? 'text-white' : ''}`} style={{ color: match.radiant_score > match.dire_score ? '#fff' : '#71717a' }}>
-            {match.radiant_score}
-          </span>
-          <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
-          <span className={`text-2xl font-black tabular-nums ${match.dire_score > match.radiant_score ? 'text-white' : ''}`} style={{ color: match.dire_score > match.radiant_score ? '#fff' : '#71717a' }}>
-            {match.dire_score}
+      <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="flex min-w-0 flex-col items-center gap-1.5">
+          <SafeImg
+            src={resolveTeamLogo(match.radiant_team_name, match.radiant_team_logo)}
+            alt={match.radiant_team_name}
+            className="h-10 w-10 shrink-0 object-contain"
+            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{match.radiant_team_name.substring(0, 2).toUpperCase()}</div>}
+          />
+          <span className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight" style={{ color: match.radiant_score > match.dire_score ? '#fff' : '#a1a1aa' }}>
+            {match.radiant_team_name}
           </span>
         </div>
-        <SafeImg
-          src={resolveTeamLogo(match.dire_team_name, match.dire_team_logo)}
-          alt={match.dire_team_name}
-          className="h-9 w-9 object-contain"
-          fallback={<div className="flex size-9 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{match.dire_team_name.substring(0, 2).toUpperCase()}</div>}
-        />
+        <div className="flex shrink-0 items-center px-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className={`text-2xl font-black tabular-nums ${match.radiant_score > match.dire_score ? 'text-white' : ''}`} style={{ color: match.radiant_score > match.dire_score ? '#fff' : '#71717a' }}>
+              {match.radiant_score}
+            </span>
+            <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
+            <span className={`text-2xl font-black tabular-nums ${match.dire_score > match.radiant_score ? 'text-white' : ''}`} style={{ color: match.dire_score > match.radiant_score ? '#fff' : '#71717a' }}>
+              {match.dire_score}
+            </span>
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col items-center gap-1.5">
+          <SafeImg
+            src={resolveTeamLogo(match.dire_team_name, match.dire_team_logo)}
+            alt={match.dire_team_name}
+            className="h-10 w-10 shrink-0 object-contain"
+            fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{match.dire_team_name.substring(0, 2).toUpperCase()}</div>}
+          />
+          <span className="line-clamp-2 w-full text-center text-[11px] font-medium leading-tight" style={{ color: match.dire_score > match.radiant_score ? '#fff' : '#a1a1aa' }}>
+            {match.dire_team_name}
+          </span>
+        </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-[11px]">
-        <span className="truncate font-semibold text-white">{match.radiant_team_name} vs {match.dire_team_name}</span>
-        <span className="shrink-0 pl-2" style={{ color: '#71717a' }}>{formatTimeAgo(match.start_time)}</span>
+      <div className="mt-4 flex items-center justify-center text-[11px]" style={{ color: '#71717a' }}>
+        {formatTimeAgo(match.start_time)}
       </div>
     </button>
   );
