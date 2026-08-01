@@ -656,16 +656,25 @@ function LatestNewsSection({ items, onMore }: { items: NewsItem[]; onMore?: () =
             href={featured.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex min-h-[220px] flex-col justify-end overflow-hidden rounded-xl p-5 transition-transform hover:-translate-y-0.5"
+            className="group relative flex min-h-[220px] flex-col justify-end overflow-hidden rounded-xl p-5 transition-transform hover:-translate-y-0.5"
             style={{ backgroundColor: design.card }}
           >
-            <div className="mb-3 flex items-center gap-2">
+            {featured.image_url && (
+              <SafeImg
+                src={featured.image_url}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover opacity-40 transition-opacity group-hover:opacity-55"
+                fallback={null}
+              />
+            )}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="relative z-10 mb-3 flex items-center gap-2">
               <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: design.red }}>
                 {getNewsCategory(featured.category)}
               </span>
-              <span className="text-[11px]" style={{ color: '#71717a' }}>{formatNewsDate(featured.published_at)}</span>
+              <span className="text-[11px]" style={{ color: '#a1a1aa' }}>{formatNewsDate(featured.published_at)}</span>
             </div>
-            <h3 className="text-lg font-bold leading-snug text-white group-hover:opacity-90">{featured.title}</h3>
+            <h3 className="relative z-10 text-lg font-bold leading-snug text-white group-hover:opacity-90">{featured.title}</h3>
           </a>
         )}
         <div className="flex flex-col justify-between gap-2">
@@ -709,25 +718,50 @@ function RankingsSection({ teams, onMore }: {
 }) {
   return (
     <section>
-      <SectionHeader title="Rankings" linkLabel="View Full Rankings" onClick={onMore} />
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-extrabold tracking-tight text-white">Rankings</h2>
+          {/* Teams / Players tabs（与原型一致，Teams 蓝下划线选中） */}
+          <div className="flex items-center gap-4">
+            <button type="button" className="border-b-2 pb-0.5 text-sm font-semibold" style={{ color: '#fff', borderColor: design.blue }}>
+              Teams
+            </button>
+            <button type="button" className="pb-0.5 text-sm font-semibold text-slate-500 hover:text-slate-300">
+              Players
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onMore}
+          className="text-sm font-semibold transition-opacity hover:opacity-80"
+          style={{ color: design.blue }}
+        >
+          View Full Rankings <span aria-hidden>→</span>
+        </button>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {teams.slice(0, 5).map((team) => (
           <button
             key={String(team.rank)}
             type="button"
             onClick={onMore}
-            className="group flex flex-col items-center rounded-xl p-4 text-center transition-transform hover:-translate-y-0.5"
+            className="group relative flex flex-col rounded-xl p-4 text-left transition-transform hover:-translate-y-0.5"
             style={{ backgroundColor: design.card }}
           >
-            <span className="text-xs font-bold" style={{ color: '#71717a' }}>#{team.rank}</span>
-            <SafeImg
-              src={resolveTeamLogo(team.name, team.logo)}
-              alt={team.name}
-              className="my-3 h-12 w-12 object-contain"
-              fallback={<div className="my-3 flex size-12 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team.name.substring(0, 2).toUpperCase()}</div>}
-            />
-            <span className="truncate text-sm font-semibold text-white group-hover:opacity-90">{team.name}</span>
-            <span className="mt-0.5 text-xs tabular-nums" style={{ color: '#71717a' }}>{team.points.toLocaleString()} PTS</span>
+            <span className="absolute left-4 top-3 text-[11px] font-bold" style={{ color: '#71717a' }}>#{team.rank}</span>
+            <div className="mt-4 flex items-center gap-2.5">
+              <SafeImg
+                src={resolveTeamLogo(team.name, team.logo)}
+                alt={team.name}
+                className="h-10 w-10 shrink-0 object-contain"
+                fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team.name.substring(0, 2).toUpperCase()}</div>}
+              />
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-semibold text-white group-hover:opacity-90">{team.name}</span>
+                <span className="mt-0.5 block text-xs tabular-nums" style={{ color: '#71717a' }}>{team.points.toLocaleString()} PTS</span>
+              </div>
+            </div>
           </button>
         ))}
       </div>
