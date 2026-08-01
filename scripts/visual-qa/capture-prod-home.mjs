@@ -24,7 +24,7 @@ async function snap(viewport, suffix) {
     broken: [...document.images].filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src.slice(0, 130)).slice(0, 12),
   }));
   console.log(suffix, JSON.stringify(info, null, 1));
-  await page.screenshot({ path: `${OUT}/homepage.${suffix}.png` });
+  await page.screenshot({ path: `${OUT}/homepage.${suffix}.png`, fullPage: true });
   console.log('captured', `${OUT}/homepage.${suffix}.png`);
   await page.close();
 }

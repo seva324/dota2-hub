@@ -314,8 +314,7 @@ function HeroBanner({ liveCount, upcomingCount, resultsCount }: {
             <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Upcoming</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-3xl font-black tabular-nums text-white">{resultsCount}</span>
-            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Results</span>
+            <span className="text-3xl font-black tabular-nums text-white">{resultsCount}</span>            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Results</span>
           </div>
         </div>
 
@@ -444,15 +443,15 @@ function LiveMatchCard({ hero, onOpen }: {
             className="h-9 w-9 shrink-0 object-contain"
             fallback={<div className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team1.substring(0, 2).toUpperCase()}</div>}
           />
-          <span className="truncate text-sm font-semibold text-white">{team1}</span>
+          <span className="min-w-0 text-right text-[13px] font-semibold leading-tight text-white line-clamp-2">{team1}</span>
         </div>
         <div className="flex shrink-0 items-baseline gap-1.5">
-          <span className="text-2xl font-black tabular-nums text-white">{score.team1}</span>
+          <span className="text-xl font-black tabular-nums text-white">{score.team1}</span>
           <span className="text-sm font-bold" style={{ color: '#71717a' }}>:</span>
-          <span className="text-2xl font-black tabular-nums text-white">{score.team2}</span>
+          <span className="text-xl font-black tabular-nums text-white">{score.team2}</span>
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="truncate text-sm font-semibold text-white">{team2}</span>
+          <span className="min-w-0 text-[13px] font-semibold leading-tight text-white line-clamp-2">{team2}</span>
           <SafeImg
             src={resolveTeamLogo(team2, hero.teams?.[1]?.logo)}
             alt={team2}
