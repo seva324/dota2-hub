@@ -1,18 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-type TaggedFn = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>) & {
-  query: (sql: string, params?: unknown[]) => Promise<unknown[]>;
-};
 
-const taggedMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
-const db = (Object.assign(
-  async (strings: TemplateStringsArray, ...values: unknown[]) => taggedMock(strings, ...values),
-  { query: vi.fn() }
-) as unknown) as TaggedFn;
+const getDltvUpcoming = vi.fn();
 
-const neonMock = vi.fn(() => db);
+vi.mock('../../../../lib/server/dltv-matches-service.js', () => ({
+  getDltvUpcoming,
+}));
 
-vi.mock('@neondatabase/serverless', () => ({
-  neon: neonMock,
+vi.mock('../../../../lib/team-logo-overrides.js', () => ({
+  getCuratedTeamLogoGithubUrl: ({ name }: { name?: string }) =>
+    name ? `https://raw.githubusercontent.com/seva324/dota2-hub/main/public/images/mirror/teams/${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}-ranking-dark.webp` : null,
 }));
 
 function createRes() {
@@ -38,148 +34,63 @@ function createRes() {
   };
 }
 
-function renderSql(strings: TemplateStringsArray) {
-  return strings.join(' ').replace(/\s+/g, ' ').trim();
-}
+const UPCOMING_MATCH = {
+  seriesId: '427594',
+  radiantName: 'Team NS',
+  direName: 'Team VooDooSh',
+  radiantLogo: '/uploads/teams/cw5MeHtSNB8jkfJIaO8VEa3gzhjJ2Oxr.webp',
+  direLogo: '/uploads/teams/uf7JIQl2vVKv8q9UafIFhR6j8IknHYBV.webp',
+  tournament: 'BETBOOM Streamers Battle 14',
+  eventUrl: 'https://dltv.org/events/betboom-streamers-battle-14',
+  matchUrl: 'https://dltv.org/matches/427594/team-ns-vs-team-voodoosh',
+  stage: "Losers' Round 1",
+  bestOf: 'BO3',
+  timestamp: Math.floor(Date.now() / 1000) + 3600,
+};
 
 describe('/api/upcoming', () => {
   beforeEach(() => {
     vi.resetModules();
-    process.env.DATABASE_URL = 'postgres://example.test/db';
-    taggedMock.mockReset();
-    neonMock.mockClear();
-
-    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
-      const sql = renderSql(strings);
-      if (sql.includes('FROM upcoming_series')) {
-        return [{
-          id: 1,
-          series_id: 11,
-          radiant_team_id: 1,
-          dire_team_id: 2,
-          radiant_team_name: 'Xtreme Gaming',
-          dire_team_name: 'Team Liquid',
-          radiant_team_name_cn: '雪碧? nope',
-          dire_team_name_cn: '液体',
-          start_time: 100,
-          series_type: 1,
-          tournament_name: 'DreamLeague',
-          tournament_name_cn: '梦幻联赛',
-          tournament_tier: 'S',
-          status: 'upcoming',
-        }];
-      }
-      if (sql.includes('SELECT * FROM teams')) {
-        return [
-          { team_id: 1, name: 'Xtreme Gaming', logo_url: 'https://steamcdn-a.akamaihd.net/logo.png', region: 'China', is_cn_team: 1 },
-        ];
-      }
-      return [];
-    });
+    getDltvUpcoming.mockReset();
+    getDltvUpcoming.mockResolvedValue({ upcoming: [UPCOMING_MATCH], source: 'dltv' });
   });
 
-  it('defaults to a 2-day window and includes the selected days in the response', async () => {
+  it('maps DLTV upcoming matches into the response envelope', async () => {
     const { default: handler } = await import('../../../../api/upcoming.js');
     const res = createRes();
 
     await handler({ method: 'GET', query: {} } as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect((res.payload as any).days).toBe(2);
-    expect((res.payload as any).upcoming).toHaveLength(1);
-    expect((res.payload as any).upcoming[0].radiant_team_logo).toContain('xtreme-gaming-ranking-dark.webp');
-
-    const upcomingCall = taggedMock.mock.calls.find((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
-    expect(upcomingCall).toBeDefined();
-    const [, nowValue, maxStartTime] = upcomingCall as unknown as [TemplateStringsArray, number, number];
-    expect(maxStartTime - nowValue).toBe(2 * 86400);
+    const payload = res.payload as any;
+    expect(payload.days).toBe(7);
+    expect(payload.upcoming).toHaveLength(1);
+    expect(payload.teams).toEqual([]);
+    expect(payload.upcoming[0].radiant_team_name).toBe('Team NS');
+    expect(payload.upcoming[0].dire_team_name).toBe('Team VooDooSh');
+    expect(payload.upcoming[0].series_type).toBe('BO3');
+    expect(payload.upcoming[0].start_time).toBe(UPCOMING_MATCH.timestamp);
+    expect(payload.upcoming[0].radiant_team_logo).toContain('raw.githubusercontent.com');
   });
 
-  it('caps an oversized days query at 14 days', async () => {
+  it('defaults days to 7 and caps at 14', async () => {
     const { default: handler } = await import('../../../../api/upcoming.js');
     const res = createRes();
+    await handler({ method: 'GET', query: {} } as never, res as never);
+    expect((res.payload as any).days).toBe(7);
 
-    await handler({ method: 'GET', query: { days: '99' } } as never, res as never);
-
-    expect((res.payload as any).days).toBe(14);
-    const upcomingCall = taggedMock.mock.calls.findLast((call) => renderSql(call[0] as TemplateStringsArray).includes('FROM upcoming_series'));
-    const [, nowValue, maxStartTime] = upcomingCall as unknown as [TemplateStringsArray, number, number];
-    expect(maxStartTime - nowValue).toBe(14 * 86400);
+    const res2 = createRes();
+    await handler({ method: 'GET', query: { days: '99' } } as never, res2 as never);
+    expect((res2.payload as any).days).toBe(14);
   });
 
-  it('falls back to upcoming_series team names when a team row is missing', async () => {
-    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
-      const sql = renderSql(strings);
-      if (sql.includes('FROM upcoming_series')) {
-        return [{
-          id: 'dltv_426313',
-          series_id: 'dltv_426313',
-          radiant_team_id: '8260983',
-          dire_team_id: null,
-          radiant_team_name: 'Xtreme Gaming',
-          dire_team_name: 'Roar Gaming',
-          radiant_team_name_cn: null,
-          dire_team_name_cn: null,
-          radiant_team_row_name: 'Xtreme Gaming',
-          dire_team_row_name: null,
-          radiant_team_row_name_cn: null,
-          dire_team_row_name_cn: null,
-          start_time: 100,
-          series_type: 'BO1',
-          tournament_name: 'ESL Challenger China Season 3',
-          tournament_name_cn: null,
-          tournament_tier: 'A',
-          status: 'upcoming',
-        }];
-      }
-      return [];
-    });
-
+  it('returns empty upcoming when the service returns nothing', async () => {
+    getDltvUpcoming.mockResolvedValue({ upcoming: [], source: 'dltv' });
     const { default: handler } = await import('../../../../api/upcoming.js');
     const res = createRes();
 
     await handler({ method: 'GET', query: {} } as never, res as never);
 
-    const [match] = (res.payload as any).upcoming;
-    expect(match.radiant_team_name).toBe('Xtreme Gaming');
-    expect(match.dire_team_name).toBe('Roar Gaming');
-    expect(match.series_type).toBe('BO1');
-  });
-
-  it('fills curated logos by series name when the team row and team id are both missing', async () => {
-    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
-      const sql = renderSql(strings);
-      if (sql.includes('FROM upcoming_series')) {
-        return [{
-          id: 2,
-          series_id: 22,
-          radiant_team_id: null,
-          dire_team_id: null,
-          radiant_team_name: '1win Team',
-          dire_team_name: 'Ivory',
-          radiant_team_name_cn: null,
-          dire_team_name_cn: null,
-          start_time: 100,
-          series_type: 1,
-          tournament_name: 'DreamLeague',
-          tournament_name_cn: null,
-          tournament_tier: 'S',
-          status: 'upcoming',
-        }];
-      }
-      if (sql.includes('SELECT * FROM teams')) {
-        return [];
-      }
-      return [];
-    });
-
-    const { default: handler } = await import('../../../../api/upcoming.js');
-    const res = createRes();
-
-    await handler({ method: 'GET', query: {} } as never, res as never);
-
-    const [match] = (res.payload as any).upcoming;
-    expect(match.radiant_team_logo).toContain('1win-team-ranking-dark.webp');
-    expect(match.dire_team_logo).toContain('ivory-ranking-dark.webp');
+    expect((res.payload as any).upcoming).toEqual([]);
   });
 });

@@ -1,31 +1,21 @@
 /**
  * Matches API
- * Data: Neon PostgreSQL
+ * Data: DLTV (https://dltv.org/results — "match finished" cards)
+ * `?__mp` 路由保留给微信小程序，走 Neon DB。
  */
 
 import { getDb } from '../lib/db.js';
-import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { getDltvResults } from '../lib/server/dltv-matches-service.js';
 import { handleMpRoute } from '../lib/server/mp-route-handler.js';
+import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
 
-function normalizeLogo(url, req) {
-  return getMirroredAssetUrl(url, req);
-}
-
-function convertSeriesType(seriesType) {
-  if (seriesType === null || seriesType === undefined || seriesType === '') return 'BO3';
-  const map = {
-    0: 'BO1',
-    1: 'BO3',
-    2: 'BO5',
-    3: 'BO2'
-  };
-  if (typeof seriesType === 'string') {
-    const normalized = seriesType.toUpperCase();
-    if (normalized.startsWith('BO')) return normalized;
-    const parsed = Number(seriesType);
-    return Number.isInteger(parsed) && map[parsed] ? map[parsed] : 'BO3';
-  }
-  return map[seriesType] || 'BO3';
+// DLTV logo paths are relative (e.g. /uploads/teams/...). Prefer curated
+// GitHub logos for top teams; otherwise qualify with the DLTV origin.
+function resolveLogo(name, relativeLogo) {
+  const curated = getCuratedTeamLogoGithubUrl({ name });
+  if (curated) return curated;
+  if (relativeLogo) return `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}`;
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -37,101 +27,41 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const db = getDb();
-  if (!db) {
-    return res.status(500).json({ error: 'Database not available' });
-  }
-
+  // 微信小程序路由：保留 DB 支持。
   if (req.query?.__mp) {
+    const db = getDb();
+    if (!db) return res.status(500).json({ error: 'Database not available' });
     return handleMpRoute(req, res, db);
   }
 
+  const requestedLimit = Math.max(1, Math.min(500, Number(req.query.limit) || 24));
+
   try {
-    const normalize = (value) => String(value || '').trim().toLowerCase();
-    const requestedTeamId = req.query.team_id ? String(req.query.team_id).trim() : '';
-    const requestedTeamName = req.query.team_name ? String(req.query.team_name).trim() : '';
-    const requestedLimit = Math.max(
-      1,
-      Math.min(
-        500,
-        Number(req.query.limit) || (requestedTeamId || requestedTeamName ? 120 : 200)
-      )
-    );
+    const { results, source } = await getDltvResults();
 
-    let teamIds = [];
-    if (requestedTeamId) {
-      teamIds = [requestedTeamId];
-    } else if (requestedTeamName) {
-      const needle = normalize(requestedTeamName);
-      const matchingTeams = await db`
-        SELECT team_id FROM teams
-        WHERE LOWER(name) = ${needle}
-           OR LOWER(tag) = ${needle}
-           OR LOWER(COALESCE(name_cn, '')) = ${needle}
-        LIMIT 5
-      `;
-      teamIds = matchingTeams.map((t) => String(t.team_id)).filter(Boolean);
-    }
-
-    let matches;
-    if (teamIds.length > 0) {
-      matches = await db.query(
-        `
-          SELECT m.*, s.league_id,
-                 COALESCE(NULLIF(us.tournament_name_cn, ''), us.tournament_name) AS tournament_name,
-                 rt.name AS radiant_team_name, rt.logo_url AS radiant_team_logo,
-                 dt.name AS dire_team_name, dt.logo_url AS dire_team_logo
-          FROM matches m
-          LEFT JOIN series s ON m.series_id = s.series_id
-          LEFT JOIN upcoming_series us ON CAST(us.series_id AS TEXT) = CAST(m.series_id AS TEXT)
-          LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
-          LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
-          WHERE CAST(m.radiant_team_id AS TEXT) = ANY($1::text[])
-             OR CAST(m.dire_team_id AS TEXT) = ANY($1::text[])
-          ORDER BY m.start_time DESC
-          LIMIT $2
-        `,
-        [teamIds, requestedLimit]
-      );
-    } else {
-      matches = await db.query(
-        `
-          SELECT m.*, s.league_id,
-                 COALESCE(NULLIF(us.tournament_name_cn, ''), us.tournament_name) AS tournament_name,
-                 rt.name AS radiant_team_name, rt.logo_url AS radiant_team_logo,
-                 dt.name AS dire_team_name, dt.logo_url AS dire_team_logo
-          FROM matches m
-          LEFT JOIN series s ON m.series_id = s.series_id
-          LEFT JOIN upcoming_series us ON CAST(us.series_id AS TEXT) = CAST(m.series_id AS TEXT)
-          LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id
-          LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
-          ORDER BY m.start_time DESC
-          LIMIT $1
-        `,
-        [requestedLimit]
-      );
-    }
-
-    const formatted = matches.map((m) => ({
-      match_id: String(m.match_id),
-      series_id: m.series_id ? String(m.series_id) : null,
-      radiant_team_id: m.radiant_team_id,
-      dire_team_id: m.dire_team_id,
-      radiant_team_name: m.radiant_team_name || null,
-      dire_team_name: m.dire_team_name || null,
-      radiant_team_logo: normalizeLogo(m.radiant_team_logo, req),
-      dire_team_logo: normalizeLogo(m.dire_team_logo, req),
-      radiant_score: m.radiant_score,
-      dire_score: m.dire_score,
-      radiant_win: m.radiant_win ? 1 : 0,
-      start_time: m.start_time,
-      duration: m.duration,
-      league_id: m.league_id,
-      tournament_name: m.tournament_name || null,
-      series_type: convertSeriesType(m.series_type),
-      status: m.status,
+    const formatted = results.slice(0, requestedLimit).map((row) => ({
+      match_id: row.seriesId ? String(row.seriesId) : null,
+      series_id: row.seriesId ? String(row.seriesId) : null,
+      radiant_team_id: null,
+      dire_team_id: null,
+      radiant_team_name: row.radiantName || null,
+      dire_team_name: row.direName || null,
+      radiant_team_logo: resolveLogo(row.radiantName, row.radiantLogo),
+      dire_team_logo: resolveLogo(row.direName, row.direLogo),
+      radiant_score: row.radiantScore ?? null,
+      dire_score: row.direScore ?? null,
+      radiant_win: (row.radiantScore ?? 0) > (row.direScore ?? 0) ? 1 : 0,
+      start_time: row.startTime ?? null,
+      duration: null,
+      league_id: null,
+      tournament_name: row.tournament || null,
+      series_type: row.bestOf || 'BO3',
+      status: 'completed',
+      match_url: row.matchUrl || null,
     }));
 
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=180');
+    res.setHeader('X-DLTV-Source', source);
     return res.status(200).json(formatted);
   } catch (e) {
     console.error('[Matches API] Error:', e.message);
