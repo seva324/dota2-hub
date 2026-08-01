@@ -63,3 +63,37 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `seva324/dota2-hub`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## 识图能力
+
+底层模型不具备原生识图能力。遇到图片时，**不要用 Read 工具**，改用 vision.cjs：
+
+```
+node vision.cjs "<图片路径>" "用中文描述这张图片"
+```
+
+- 支持本地路径和网络 URL（网络 URL 加 `--url` 前缀：`node vision.cjs --url "<图片链接>"`）
+
+### 触发场景
+
+- 用户分享图片路径（本地或网络 URL）
+- 消息中出现 "Saved attachments:" 并列出图片
+- 用户要求分析、描述、识别图片内容
+
+### 配置好之后
+
+用户直接发图片，自动识图，无需手动打命令。

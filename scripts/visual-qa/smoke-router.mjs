@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer-core';
-const BASE = 'http://localhost:5173';
+const BASE = process.env.SMOKE_BASE || 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const browser = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
 const results = [];

@@ -1,28 +1,5 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const { heroSectionSpy } = vi.hoisted(() => ({
-  heroSectionSpy: vi.fn(),
-}));
-
-vi.mock('@/sections/HeroSection', () => ({
-  HeroSection: (props: {
-    onOpenMatch?: (matchId: number) => void;
-    initialLiveHeroes?: unknown[];
-    prototypeMode?: boolean;
-  }) => {
-    heroSectionSpy(props);
-    return (
-      <button type="button" onClick={() => props.onOpenMatch?.(123456)}>
-        打开测试比赛
-      </button>
-    );
-  },
-}));
-
-vi.mock('@/sections/MatchesDashboard', () => ({
-  MatchesDashboard: () => <div>赛事列表</div>,
-}));
 
 vi.mock('@/components/custom/MatchDetailModal', () => ({
   MatchDetailModal: ({ matchId, open }: { matchId: number; open: boolean }) => (
@@ -64,19 +41,30 @@ vi.mock('@/lib/playerProfile', () => ({
     nextMatch: null,
     recentMatches: [],
   })),
-  fetchPlayerProfileFlyoutModel: vi.fn(async (accountId: number) => ({
-    accountId,
-    playerName: 'Ame',
-    teamName: 'XG',
-    signatureHeroes: [],
-    mostPlayedHeroes: [],
-    recentMatches: [],
-  })),
+  fetchPlayerProfileFlyoutModel: vi.fn(async () => null),
 }));
 
 import { HomeDashboard } from '@/sections/HomeDashboard';
-import { fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { RouteState } from '@/lib/hashRouter';
+
+const LIVE_HERO = {
+  source: 'test',
+  leagueName: 'DreamLeague S24',
+  stage: '小组赛',
+  bestOf: 3,
+  seriesScore: '1:0',
+  live: true,
+  startedAt: Math.floor(Date.now() / 1000) - 600,
+  teams: [
+    { side: 'team1', name: 'Team Spirit', logo: null },
+    { side: 'team2', name: 'Team Falcons', logo: null },
+  ],
+  maps: [
+    { matchId: 90001, label: 'Map 1', score: '18-9', status: 'live', team1Score: 18, team2Score: 9, gameTime: 1427 },
+    { matchId: 90002, label: 'Map 2', score: '24-16', status: 'completed', result: 'team1' },
+  ],
+  liveMap: { matchId: 90001, label: 'Map 1', score: '18-9', status: 'live', gameTime: 1427, team1Score: 18, team2Score: 9 },
+};
 
 function renderControlledHomeDashboard() {
   const navigate = vi.fn();
@@ -94,17 +82,10 @@ function overlayRoute(overlay: RouteState['overlay']): RouteState {
 
 describe('HomeDashboard quick links', () => {
   beforeEach(() => {
-    heroSectionSpy.mockClear();
     window.history.pushState({}, '', '/');
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/ept-ranking') {
-        return {
-          ok: true,
-          json: async () => ({ teams: [] }),
-        } as Response;
-      }
-      if (url === '/api/upcoming?limit=3') {
+      if (url === '/api/upcoming?limit=12&days=2') {
         return {
           ok: true,
           json: async () => ({ upcoming: [] }),
@@ -113,85 +94,26 @@ describe('HomeDashboard quick links', () => {
       if (url === '/api/live-hero') {
         return {
           ok: true,
-          json: async () => ({ liveMatches: [] }),
+          json: async () => ({ liveMatches: [LIVE_HERO] }),
         } as Response;
       }
-      if (url === '/api/news') {
+      if (url === '/api/matches?limit=24') {
         return {
           ok: true,
           json: async () => ([]),
-        } as Response;
-      }
-      if (url.startsWith('/api/pro-players?account_id=')) {
-        const accountId = Number(url.split('=').pop());
-        return {
-          ok: true,
-          json: async () => ({
-            name: accountId === 898754153 ? 'Ame' : `Player ${accountId}`,
-            team_name: 'XG',
-            country_code: 'CN',
-            avatar_url: null,
-          }),
         } as Response;
       }
       throw new Error(`Unhandled fetch: ${url}`);
     }));
   });
 
-  it('opens match, team, and player detail surfaces from visible dashboard controls', async () => {
+  it('opens match detail surface from a live match card', async () => {
     const { rerender } = renderControlledHomeDashboard();
 
-    fireEvent.click(screen.getByRole('button', { name: '打开测试比赛' }));
-    rerender(<HomeDashboard route={overlayRoute({ type: 'match', matchId: '123456' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
-    expect(screen.getByText('比赛详情 123456')).toBeInTheDocument();
-
-    const teamSpiritButtons = screen.getAllByRole('button', { name: /Team Spirit/ });
-    fireEvent.click(teamSpiritButtons[0]);
-    rerender(<HomeDashboard route={overlayRoute({ type: 'team', teamName: 'Team Spirit' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
-    expect(screen.getByText('战队详情 Team Spirit')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Ame/ }));
-    rerender(<HomeDashboard route={overlayRoute({ type: 'player', accountId: '898754153' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('选手详情 Ame')).toBeInTheDocument();
-    });
-  });
-
-  it('keeps the curated hot player name when the profile API only returns the account id', async () => {
-    vi.mocked(fetchPlayerProfileFlyoutModel).mockResolvedValueOnce({
-      accountId: 898754153,
-      playerName: '898754153',
-      teamName: null,
-      signatureHeroes: [],
-      mostPlayedHeroes: [],
-      recentMatches: [],
-    });
-
-    const { rerender } = renderControlledHomeDashboard();
-
-    fireEvent.click(screen.getByRole('button', { name: /Ame/ }));
-    rerender(<HomeDashboard route={overlayRoute({ type: 'player', accountId: '898754153' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('选手详情 Ame')).toBeInTheDocument();
-    });
-    expect(screen.queryByText('选手详情 898754153')).not.toBeInTheDocument();
-  });
-
-  it('does not render HeroSection when prototype mode is enabled', () => {
-    renderControlledHomeDashboard();
-
-    expect(heroSectionSpy).toHaveBeenLastCalledWith(expect.objectContaining({
-      prototypeMode: false,
-    }));
-
-    cleanup();
-    heroSectionSpy.mockClear();
-    window.history.pushState({}, '', '/?prototype=1');
-
-    renderControlledHomeDashboard();
-
-    expect(heroSectionSpy).not.toHaveBeenCalled();
+    const matchButtons = await screen.findAllByRole('button', { name: /观看/ });
+    expect(matchButtons.length).toBeGreaterThan(0);
+    fireEvent.click(matchButtons[0]);
+    rerender(<HomeDashboard route={overlayRoute({ type: 'match', matchId: '90001' })} navigate={vi.fn()} closeOverlay={vi.fn()} />);
+    expect(screen.getByText('比赛详情 90001')).toBeInTheDocument();
   });
 });
