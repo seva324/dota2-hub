@@ -87,18 +87,6 @@
     {
       "source": "/assets/*",
       "cacheTtl": 31536000
-    },
-    {
-      "source": "/api/upcoming*",
-      "cacheTtl": 30
-    },
-    {
-      "source": "/api/live-hero*",
-      "cacheTtl": 10
-    },
-    {
-      "source": "/api/matches*",
-      "cacheTtl": 60
     }
   ]
 }
