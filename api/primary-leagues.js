@@ -63,7 +63,6 @@ export default async function handler(req, res) {
   }
 
   const forceRefresh = String(req.query?.refresh || '') === '1';
-  const rawDebug = String(req.query?.raw || '') === '1';
   const now = Date.now();
 
   if (!forceRefresh && memoryCache && now - memoryCacheAt < CACHE_TTL_MS) {
@@ -71,31 +70,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { raw, type } = await fetchHomeHtml();
+    const { raw } = await fetchHomeHtml();
     if (!raw) {
       if (memoryCache) {
         return res.status(200).json({ tournaments: memoryCache, source: 'stale' });
       }
       return res.status(200).json({ tournaments: [], source: 'failed' });
-    }
-
-    // 诊断模式：返回 HTML 关键结构信息，便于定位抓取差异
-    if (rawDebug) {
-      const hasPrize = /prize\s*pool/i.test(raw);
-      const hasTier = />tier<\/div>/i.test(raw);
-      const primaryIdx = raw.indexOf('class="primary"');
-      return res.status(200).json({
-        _debug: {
-          type,
-          length: raw.length,
-          hasPrize,
-          hasTier,
-          primaryAt: primaryIdx,
-          prizeContext: hasPrize ? raw.slice(raw.search(/prize\s*pool/i) - 80, raw.search(/prize\s*pool/i) + 250).replace(/[\r\n]+/g, ' ').slice(0, 300) : null,
-          tierContext: hasTier ? raw.slice(raw.search(/>tier<\/div>/i) - 80, raw.search(/>tier<\/div>/i) + 250).replace(/[\r\n]+/g, ' ').slice(0, 300) : null,
-        },
-        tournaments: parseDltvPrimaryLeagues(raw),
-      });
     }
 
     const tournaments = parseDltvPrimaryLeagues(raw);
