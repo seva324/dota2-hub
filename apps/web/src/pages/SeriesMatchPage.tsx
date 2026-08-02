@@ -366,7 +366,8 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
     const params = new URLSearchParams({ series_id: matchId });
     if (slug) params.set('slug', slug);
     try {
-      const res = await fetch(`/api/match-page?${params.toString()}`, { cache: 'no-store' });
+      // 允许浏览器/EdgeOne 复用缓存（EdgeOne 按 origin Cache-Control 决定是否缓存 /api/match-page）。
+      const res = await fetch(`/api/match-page?${params.toString()}`);
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         setError(data?.error || `加载失败（${res.status}）`);
