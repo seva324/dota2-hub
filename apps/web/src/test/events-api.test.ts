@@ -89,6 +89,37 @@ describe('/api/events cache + single-flight', () => {
     expect((res.payload as any).events.upcoming).toEqual([]);
   });
 
+  it('quick mode returns ongoing/upcoming fast with empty finished, then full poll fills finished', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => 'x'.repeat(600),
+    })) as typeof fetch;
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: handler } = await import('../../../../api/events.js');
+    const req = { method: 'GET', query: { quick: '1' } };
+    const res = createRes();
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).partial).toBe(true);
+    expect((res.payload as any).events.ongoing).toHaveLength(1);
+    expect((res.payload as any).events.upcoming).toEqual([]);
+    expect((res.payload as any).events.finished).toEqual([]);
+    // quick 只等 /events 一页即返回；finished 页抓取已后台发起（fire-and-forget），
+    // 响应不被它阻塞，所以此时只有 ongoing + 已发起的 finished 两次 fetch。
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // 后台补齐 finished 后，全量请求直接命中缓存返回 finished，不再重复抓取。
+    await vi.advanceTimersByTimeAsync(0);
+    const resFull = createRes();
+    await handler({ method: 'GET', query: {} } as never, resFull as never);
+    expect(resFull.statusCode).toBe(200);
+    expect((resFull.payload as any).events.finished).toHaveLength(1);
+    expect((resFull.payload as any).source).toBe('cache');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('serves cached events on repeat requests and stale-with-background-refresh after TTL', async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
