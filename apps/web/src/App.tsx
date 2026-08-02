@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Home, Moon, Search, Shield, UserCircle, Users } from 'lucide-react';
+import { Bell, CalendarDays, Home, Moon, Newspaper, Search, Shield, UserCircle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import { Footer } from '@/sections/Footer';
@@ -10,18 +10,20 @@ import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
 
 const desktopNavItems: Array<{ label: string; page: TopLevelPage }> = [
   { label: '首页', page: 'home' },
+  { label: '赛程', page: 'matches' },
   { label: '赛事', page: 'tournaments' },
-  { label: '比赛', page: 'matches' },
   { label: '战队', page: 'teams' },
   { label: '选手', page: 'players' },
+  { label: '新闻', page: 'news' },
 ];
 
 const mobileNavItems: Array<{ label: string; page: TopLevelPage; icon: typeof Home }> = [
   { label: '首页', page: 'home', icon: Home },
-  { label: '赛程', page: 'tournaments', icon: CalendarDays },
-  { label: '战队', page: 'teams', icon: Shield },
-  { label: '选手', page: 'players', icon: Users },
-  { label: '我的', page: 'home', icon: UserCircle },
+  { label: '赛程', page: 'matches', icon: CalendarDays },
+  { label: '赛事', page: 'tournaments', icon: Shield },
+  { label: '战队', page: 'teams', icon: Users },
+  { label: '选手', page: 'players', icon: UserCircle },
+  { label: '新闻', page: 'news', icon: Newspaper },
 ];
 
 function DotaHubMark() {
@@ -119,7 +121,7 @@ function App() {
         )}
       </main>
 
-      <nav aria-label="移动端主导航" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-white/10 bg-[#071017]/95 px-2 py-2 backdrop-blur-xl lg:hidden">
+      <nav aria-label="移动端主导航" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-6 border-t border-white/10 bg-[#071017]/95 px-1 py-2 backdrop-blur-xl lg:hidden">
         {mobileNavItems.map((item, index) => (
           <Button
             key={`${item.page}-${index}`}

@@ -5,6 +5,8 @@ import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
+import { EmptyState, LiveEmptyState } from '@/components/custom/EmptyState';
+import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { LiveMatchCard, type LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/TournamentCarousel';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
@@ -133,17 +135,6 @@ interface FinishedSeries {
 /* 区块头                                                               */
 /* ------------------------------------------------------------------ */
 
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div
-      className="flex h-24 items-center justify-center rounded-xl border border-dashed border-white/10 text-sm"
-      style={{ color: '#71717a', backgroundColor: 'rgba(255,255,255,0.02)' }}
-    >
-      {label}
-    </div>
-  );
-}
-
 function SectionHeader({ title, accent, linkLabel, onClick }: {
   title: string;
   accent?: { text: string; count: string };
@@ -261,7 +252,7 @@ function TeamColumn({ name, logo, accent, badge, alignDown }: {
         src={logo || ''}
         alt={name}
         className={`${CARD.logo} shrink-0 object-contain`}
-        fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{name.substring(0, 2).toUpperCase()}</div>}
+        fallback={<TeamLogoFallback name={name} size={40} />}
       />
       <span
         className={`${CARD.teamName} line-clamp-2 mt-1 w-full min-h-8 text-center`}
@@ -602,7 +593,7 @@ function RankingsSection({ teams, onMore }: {
                 src={resolveTeamLogo(team.name, team.logo)}
                 alt={team.name}
                 className="h-10 w-10 shrink-0 object-contain"
-                fallback={<div className="flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team.name.substring(0, 2).toUpperCase()}</div>}
+                fallback={<TeamLogoFallback name={team.name} size={40} />}
               />
               <div className="min-w-0">
                 <span className="block truncate text-sm font-semibold text-white group-hover:opacity-90">{team.name}</span>
@@ -676,7 +667,7 @@ function TopPlayersTeamsSection({ players, teams, onMore }: {
                 src={resolveTeamLogo(team.name, team.logo)}
                 alt={team.name}
                 className="h-9 w-9 shrink-0 object-contain"
-                fallback={<div className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#2a2d35', color: '#a1a1aa' }}>{team.name.substring(0, 2).toUpperCase()}</div>}
+                fallback={<TeamLogoFallback name={team.name} size={36} />}
               />
               <div className="min-w-0">
                 <span className="block truncate text-sm font-semibold text-white group-hover:opacity-90">{team.name}</span>
@@ -1017,7 +1008,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
               ))}
             </div>
           ) : (
-            <EmptyState label="当前没有进行中的比赛" />
+            <LiveEmptyState />
           )}
         </section>
 

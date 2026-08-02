@@ -1,5 +1,6 @@
 import { getDltvLive } from '../lib/server/dltv-matches-service.js';
 import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const LIVE_HERO_CACHE_CONTROL = 'public, max-age=10, s-maxage=10, stale-while-revalidate=30';
 const LIVE_HERO_NO_STORE_CACHE_CONTROL = 'no-store';
@@ -10,17 +11,18 @@ function shouldBypassSharedCache(query) {
 
 // DLTV logo paths are relative (e.g. /uploads/teams/...). Prefer curated
 // GitHub logos for top teams; otherwise qualify with the DLTV origin.
-function resolveLogo(name, relativeLogo) {
+// 最终走 /api/asset-image 代理，保证国内浏览器可加载。
+function resolveLogo(name, relativeLogo, req) {
   const curated = getCuratedTeamLogoGithubUrl({ name });
-  if (curated) return curated;
-  if (relativeLogo) return `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}`;
-  return null;
+  const raw = curated || (relativeLogo ? `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}` : null);
+  if (!raw) return null;
+  return getMirroredAssetUrl(raw, req);
 }
 
 // Map a parsed DLTV live match onto the frontend's LiveHeroPayload shape.
 // DLTV has no per-map history on the list page: build a single "live" map
 // from the current kills / game time, and use series wins for the series score.
-function toLiveHeroPayload(match) {
+function toLiveHeroPayload(match, req) {
   const team1Score = match.seriesWins1 ?? 0;
   const team2Score = match.seriesWins2 ?? 0;
   const gameTime = match.gameTime ?? null;
@@ -53,8 +55,8 @@ function toLiveHeroPayload(match) {
     startedAt: null,
     viewerCount: null,
     teams: [
-      { side: 'team1', name: match.radiantName, logo: resolveLogo(match.radiantName, match.radiantLogo) },
-      { side: 'team2', name: match.direName, logo: resolveLogo(match.direName, match.direLogo) },
+      { side: 'team1', name: match.radiantName, logo: resolveLogo(match.radiantName, match.radiantLogo, req) },
+      { side: 'team2', name: match.direName, logo: resolveLogo(match.direName, match.direLogo, req) },
     ],
     maps: [map],
     liveMap: map,
@@ -74,7 +76,7 @@ export default async function handler(req, res) {
   try {
     const forceRefresh = String(req.query?.refresh || '') === '1';
     const { live: liveMatches, source } = await getDltvLive({ forceRefresh });
-    const liveHeroes = liveMatches.map(toLiveHeroPayload);
+    const liveHeroes = liveMatches.map((match) => toLiveHeroPayload(match, req));
     const live = liveHeroes[0] || null;
 
     return res.status(200).json({
