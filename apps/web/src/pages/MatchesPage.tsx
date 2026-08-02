@@ -7,6 +7,7 @@ import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import type { LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { Button } from '@/components/ui/button';
 import { slugFromMatchUrl } from '@/lib/matchUrl';
+import { apiFetch } from '@/lib/api-cache';
 
 const design = {
   blue: '#2b55e8',
@@ -15,6 +16,12 @@ const design = {
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 30_000;
+
+// 与首页共用同一份缓存：URL 必须完全一致才能命中（精确键）。
+// live-hero 是实时数据，30s 轮询不缓存（ttl 0），只做并发去重。
+const UPCOMING_API_URL = '/api/upcoming?limit=20&days=7';
+const RESULTS_API_URL = '/api/matches?limit=40';
+const LIVE_API_URL = '/api/live-hero';
 
 interface UpcomingMatch {
   id?: string | number;
@@ -332,32 +339,21 @@ export function MatchesPage({
 
   const loadData = useCallback(async () => {
     try {
-      const [liveRes, upcomingRes, matchesRes] = await Promise.all([
-        fetch('/api/live-hero', { cache: 'no-store' }),
-        fetch('/api/upcoming?limit=20&days=7'),
-        fetch('/api/matches?limit=40'),
+      const [live, upcoming, matches] = await Promise.all([
+        apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>(LIVE_API_URL, { ttlMs: 0 }),
+        apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL),
+        apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL),
       ]);
 
-      if (liveRes.ok) {
-        const data = await liveRes.json();
-        const liveMatches = Array.isArray(data?.liveMatches)
-          ? data.liveMatches
-          : data?.live
-            ? [data.live]
-            : [];
-        setLiveHeroes(liveMatches);
-      }
-
-      if (upcomingRes.ok) {
-        const data = await upcomingRes.json();
-        setUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
-      }
-
-      if (matchesRes.ok) {
-        const data = await matchesRes.json();
-        const matches: FinishedMatch[] = Array.isArray(data) ? data : (data.matches || []);
-        setFinished(matches.filter((m) => m.radiant_team_name && m.dire_team_name));
-      }
+      const liveMatches = Array.isArray(live?.liveMatches)
+        ? live.liveMatches
+        : live?.live
+          ? [live.live]
+          : [];
+      setLiveHeroes(liveMatches);
+      setUpcoming(Array.isArray(upcoming?.upcoming) ? upcoming.upcoming : []);
+      const finishedList: FinishedMatch[] = Array.isArray(matches) ? matches : (matches.matches || []);
+      setFinished(finishedList.filter((m) => m.radiant_team_name && m.dire_team_name));
     } catch (e) {
       console.error('[MatchesPage] Failed to load data:', e);
     }
@@ -372,9 +368,8 @@ export function MatchesPage({
     let cancelled = false;
     const refreshLive = async () => {
       try {
-        const response = await fetch('/api/live-hero', { cache: 'no-store' });
-        if (!response.ok) return;
-        const data = await response.json();
+        // 与 loadData 同用 ttl 0：只做并发去重，30s 轮询每次真正刷新比分。
+        const data = await apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>(LIVE_API_URL, { ttlMs: 0 });
         if (cancelled) return;
         const liveMatches = Array.isArray(data?.liveMatches)
           ? data.liveMatches
