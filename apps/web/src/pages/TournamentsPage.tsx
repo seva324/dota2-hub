@@ -33,6 +33,8 @@ interface EventsPayload {
   };
   source?: Record<string, string>;
   fetchedAt?: string;
+  /** quick 模式：finished 尚在后台补齐，页面先渲染 ongoing/upcoming。 */
+  partial?: boolean;
 }
 
 const design = {
@@ -367,27 +369,57 @@ export function TournamentsPage() {
   const [payload, setPayload] = useState<EventsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [finishedLoading, setFinishedLoading] = useState(false);
 
+  // quick 模式：首屏只等 ongoing+upcoming 页（~1-6s），finished 后台补齐后轮询拉全量。
   useEffect(() => {
     let cancelled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
     const controller = new AbortController();
-    (async () => {
+
+    const fetchFull = async () => {
       try {
         const res = await fetch('/api/events', { signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as EventsPayload;
-        if (!cancelled) setPayload(data);
+        if (cancelled) return;
+        setPayload(data);
+        setLoading(false);
+        setFinishedLoading(false);
       } catch (err) {
         if (!cancelled && !(err instanceof DOMException && err.name === 'AbortError')) {
           setError('赛事数据加载失败，请稍后重试。');
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+      }
+    };
+
+    (async () => {
+      try {
+        const res = await fetch('/api/events?quick=1', { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as EventsPayload;
+        if (cancelled) return;
+        // quick 响应先落盘，finished 为空时显示加载态。
+        setPayload(data);
+        setLoading(false);
+        const finishedNow = data.events?.finished?.length || 0;
+        if (data.partial || finishedNow === 0) {
+          setFinishedLoading(true);
+          // 后台补齐 finished 后，轮询全量接口拿完整列表。
+          pollTimer = setTimeout(fetchFull, 4000);
+        }
+      } catch (err) {
+        if (!cancelled && !(err instanceof DOMException && err.name === 'AbortError')) {
+          // quick 失败则回退全量。
+          await fetchFull();
+        }
       }
     })();
+
     return () => {
       cancelled = true;
       controller.abort();
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, []);
 
@@ -465,7 +497,15 @@ export function TournamentsPage() {
           )}
 
           {/* Finished */}
-          {finished.length > 0 && (
+          {finishedLoading && finished.length === 0 ? (
+            <section>
+              <SectionHeading eyebrow="History" title={<span className="inline-flex items-center gap-2"><SectionDot tone="slate" />已结束</span>} count={0} />
+              <div className="flex h-16 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#1a1d24] text-sm text-slate-500">
+                <span className="size-4 animate-spin rounded-full border-2 border-slate-600 border-t-slate-300" />
+                已结束赛事加载中…
+              </div>
+            </section>
+          ) : finished.length > 0 ? (
             <section>
               <SectionHeading eyebrow="History" title={<span className="inline-flex items-center gap-2"><SectionDot tone="slate" />已结束</span>} count={finished.length} />
               <div className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/10 bg-[#1a1d24]">
@@ -474,7 +514,7 @@ export function TournamentsPage() {
                 ))}
               </div>
             </section>
-          )}
+          ) : null}
         </div>
       )}
 

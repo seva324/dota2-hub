@@ -23,8 +23,14 @@ const CACHE_TTL_MS = 180_000;
 const STALE_MAX_AGE_MS = 15 * 60 * 1000;
 // 冷启动同步抓取的硬上限：宁可返回空也不阻塞首屏。
 const BUILD_TIMEOUT_MS = 15000;
+// quick 模式（只抓 ongoing+upcoming 页）的上限：首屏最多等这么长。
+const QUICK_BUILD_TIMEOUT_MS = 6000;
 // single-flight：并发请求共享同一次在途抓取，防止 thundering herd。
 let buildPayloadInFlight = null;
+// quick 与 full 共享的 /events 页在途抓取，避免 quick 先发时 full 再重复抓一次。
+let ongoingPageInFlight = null;
+// finished 页在途抓取：quick 先行时后台补齐 finished，后台与 full 共享。
+let finishedPageInFlight = null;
 
 function isFresh(now) {
   return memoryCache && now - memoryCacheAt < CACHE_TTL_MS;
@@ -87,6 +93,16 @@ async function fetchHtml(url, fetchImpl = fetch) {
   return { raw: '', sourceType: 'failed' };
 }
 
+/** 抓取 /events 页（ongoing+upcoming），附带 6s 有界上限：首屏只等这一页。 */
+function fetchOngoingHtml(fetchImpl) {
+  return withTimeout(fetchHtml(DLTV_EVENTS_URL, fetchImpl), QUICK_BUILD_TIMEOUT_MS, 'ongoing page timed out');
+}
+
+/** 抓取 /events/finished 页，无上限：后台补齐，成功才写缓存。 */
+function fetchFinishedHtml(fetchImpl) {
+  return fetchHtml(DLTV_FINISHED_URL, fetchImpl);
+}
+
 function groupByStatus(entries) {
   const ongoing = [];
   const upcoming = [];
@@ -130,33 +146,108 @@ function rebasePayloadImages(payload, req) {
   };
 }
 
-async function buildPayload() {
-  const [ongoingRes, finishedRes] = await Promise.all([
-    fetchHtml(DLTV_EVENTS_URL),
-    fetchHtml(DLTV_FINISHED_URL),
+/**
+ * 抓取 /events 页（ongoing+upcoming），解析后分组。
+ * 快路径：单页、6s 有界上限、single-flight。
+ */
+async function buildOngoingUpcoming({ fetchImpl = fetch } = {}) {
+  if (ongoingPageInFlight) return ongoingPageInFlight;
+  ongoingPageInFlight = (async () => {
+    const res = await fetchOngoingHtml(fetchImpl);
+    const entries = res.raw ? parseDltvEventsPageRaw(res.raw, 'ongoing') : [];
+    const grouped = groupByStatus(entries);
+    return {
+      ongoing: grouped.ongoing,
+      upcoming: grouped.upcoming,
+      source: res.sourceType,
+    };
+  })().finally(() => {
+    ongoingPageInFlight = null;
+  });
+  return ongoingPageInFlight;
+}
+
+/**
+ * 抓取 /events/finished 页，解析出 finished 列表。无上限。
+ */
+async function buildFinished({ fetchImpl = fetch } = {}) {
+  if (finishedPageInFlight) return finishedPageInFlight;
+  finishedPageInFlight = (async () => {
+    const res = await fetchFinishedHtml(fetchImpl);
+    const entries = res.raw ? parseDltvEventsPageRaw(res.raw, 'finished') : [];
+    return {
+      finished: entries,
+      source: res.sourceType,
+    };
+  })().finally(() => {
+    finishedPageInFlight = null;
+  });
+  return finishedPageInFlight;
+}
+
+/** 全量抓取两页：写缓存的完整 payload。 */
+async function buildFullPayload({ fetchImpl = fetch } = {}) {
+  const [ongoingUpcoming, finished] = await Promise.all([
+    buildOngoingUpcoming({ fetchImpl }),
+    buildFinished({ fetchImpl }),
   ]);
 
-  const ongoingUpcoming = ongoingRes.raw ? parseDltvEventsPageRaw(ongoingRes.raw, 'ongoing') : [];
-  const finished = finishedRes.raw ? parseDltvEventsPageRaw(finishedRes.raw, 'finished') : [];
-
-  if (ongoingUpcoming.length === 0 && finished.length === 0) {
-    return null;
-  }
+  const all = [...ongoingUpcoming.ongoing, ...ongoingUpcoming.upcoming, ...finished.finished];
+  if (all.length === 0) return null;
 
   return {
-    events: groupByStatus([...ongoingUpcoming, ...finished]),
+    events: {
+      ongoing: ongoingUpcoming.ongoing,
+      upcoming: ongoingUpcoming.upcoming,
+      finished: finished.finished,
+    },
     source: {
-      ongoing: ongoingRes.sourceType,
-      finished: finishedRes.sourceType,
+      ongoing: ongoingUpcoming.source,
+      finished: finished.source,
     },
     fetchedAt: new Date().toISOString(),
   };
 }
 
+/** 只抓 ongoing+upcoming 的快速 payload（不写缓存）：首屏秒回。 */
+async function buildQuickPayload({ fetchImpl = fetch } = {}) {
+  const ongoingUpcoming = await buildOngoingUpcoming({ fetchImpl });
+  return {
+    events: {
+      ongoing: ongoingUpcoming.ongoing,
+      upcoming: ongoingUpcoming.upcoming,
+      finished: [],
+    },
+    source: {
+      ongoing: ongoingUpcoming.source,
+      finished: null,
+    },
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+/** 后台补齐 finished 并写缓存：quick 快速页已发出后 fire-and-forget。 */
+async function refreshFinishedBackground({ ongoing = [], upcoming = [], ongoingSource = 'failed', fetchImpl = fetch } = {}) {
+  try {
+    const finished = await buildFinished({ fetchImpl });
+    // 只有拿到非空 finished 才写缓存；空 finished 说明 finished 页抓取失败，
+    // 不写缓存，让随后的全量请求走一次真正的冷构建。
+    if (finished.finished.length === 0) return;
+    memoryCache = {
+      events: { ongoing, upcoming, finished: finished.finished },
+      source: { ongoing: ongoingSource, finished: finished.source },
+      fetchedAt: new Date().toISOString(),
+    };
+    memoryCacheAt = Date.now();
+  } catch (error) {
+    console.error('[Events API] background finished refresh failed:', error instanceof Error ? error.message : String(error));
+  }
+}
+
 /** single-flight + 有界超时：并发共享一次抓取，超时抛错由调用方回退 stale/空。 */
-function runBuildPayloadWithTimeout() {
+function runBuildPayloadWithTimeout({ fetchImpl = fetch } = {}) {
   if (buildPayloadInFlight) return buildPayloadInFlight;
-  buildPayloadInFlight = withTimeout(buildPayload(), BUILD_TIMEOUT_MS, 'events build timed out').finally(() => {
+  buildPayloadInFlight = withTimeout(buildFullPayload({ fetchImpl }), BUILD_TIMEOUT_MS, 'events build timed out').finally(() => {
     buildPayloadInFlight = null;
   });
   return buildPayloadInFlight;
@@ -173,6 +264,7 @@ export default async function handler(req, res) {
   }
 
   const forceRefresh = String(req.query?.refresh || '') === '1';
+  const quick = String(req.query?.quick || '') === '1';
   const now = Date.now();
 
   if (!forceRefresh && isFresh(now)) {
@@ -185,9 +277,33 @@ export default async function handler(req, res) {
     return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'stale' });
   }
 
-  // 真冷启动（或 forceRefresh）：同步抓取，8s 硬上限。
+  // 真冷启动（或 forceRefresh）：
+  //  - quick 模式：只抓 ongoing+upcoming 页（6s 有界），finished 后台补齐，首屏先渲染两段。
+  //  - 常规模式：全量两页，15s 硬上限。
+  if (quick) {
+    try {
+      const quickPayload = await buildQuickPayload({ fetchImpl: req.fetchImpl });
+      if (quickPayload.events.ongoing.length > 0 || quickPayload.events.upcoming.length > 0) {
+        // 后台补齐 finished，并带上已抓到的 ongoing/upcoming 一起写缓存，避免重复抓 /events 页。
+        void refreshFinishedBackground({
+          ongoing: quickPayload.events.ongoing,
+          upcoming: quickPayload.events.upcoming,
+          ongoingSource: quickPayload.source.ongoing,
+          fetchImpl: req.fetchImpl,
+        });
+        return res.status(200).json({ ...rebasePayloadImages(quickPayload, req), partial: true });
+      }
+    } catch (error) {
+      console.error('[Events API] quick build failed:', error instanceof Error ? error.message : String(error));
+    }
+    if (memoryCache) {
+      return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'stale' });
+    }
+    return res.status(200).json({ events: { ongoing: [], upcoming: [], finished: [] }, source: 'failed' });
+  }
+
   try {
-    const payload = await runBuildPayloadWithTimeout();
+    const payload = await runBuildPayloadWithTimeout({ fetchImpl: req.fetchImpl });
     if (payload) {
       memoryCache = payload;
       memoryCacheAt = now;
@@ -206,7 +322,7 @@ export default async function handler(req, res) {
 /** 后台刷新 events 缓存：成功写内存，失败静默保留旧数据。 */
 async function refreshBackground() {
   try {
-    const payload = await buildPayload();
+    const payload = await buildFullPayload();
     if (payload) {
       memoryCache = payload;
       memoryCacheAt = Date.now();
