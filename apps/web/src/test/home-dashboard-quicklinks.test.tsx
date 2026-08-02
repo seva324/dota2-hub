@@ -46,6 +46,7 @@ vi.mock('@/lib/playerProfile', () => ({
 
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import type { RouteState } from '@/lib/hashRouter';
+import { __resetApiCache } from '@/lib/api-cache';
 
 const LIVE_HERO = {
   source: 'test',
@@ -82,10 +83,11 @@ function overlayRoute(overlay: RouteState['overlay']): RouteState {
 
 describe('HomeDashboard quick links', () => {
   beforeEach(() => {
+    __resetApiCache();
     window.history.pushState({}, '', '/');
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/upcoming?limit=12&days=2') {
+      if (url === '/api/upcoming?limit=20&days=7') {
         return {
           ok: true,
           json: async () => ({ upcoming: [] }),
@@ -97,7 +99,7 @@ describe('HomeDashboard quick links', () => {
           json: async () => ({ liveMatches: [LIVE_HERO] }),
         } as Response;
       }
-      if (url === '/api/matches?limit=24') {
+      if (url === '/api/matches?limit=40') {
         return {
           ok: true,
           json: async () => ([]),

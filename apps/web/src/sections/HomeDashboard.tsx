@@ -12,10 +12,19 @@ import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/Tour
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { slugFromMatchUrl } from '@/lib/matchUrl';
+import { apiFetch } from '@/lib/api-cache';
 import type { RouteState } from '@/lib/hashRouter';
 
 const nowTs = () => Math.floor(Date.now() / 1000);
 const LIVE_REFRESH_INTERVAL_MS = 30_000;
+// 与比赛页共用同一份缓存：URL 必须完全一致才能命中（精确键）。
+// live-hero 是实时数据，30s 轮询不缓存（ttl 0），只做并发去重。
+const UPCOMING_API_URL = '/api/upcoming?limit=20&days=7';
+const RESULTS_API_URL = '/api/matches?limit=40';
+const LIVE_API_URL = '/api/live-hero';
+
+/** live-hero API 响应：liveMatches 数组（常规）或 live 单场（旧格式兼容）。 */
+type LiveHeroApi = { liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload };
 
 const teamLogoMap: Record<string, string> = {
   XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
@@ -781,9 +790,8 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
     const loadLive = async () => {
       try {
-        const response = await fetch('/api/live-hero', { cache: 'no-store' });
-        if (!response.ok) return;
-        const data = await response.json();
+        // live-hero 是实时数据：ttl 0 不缓存，只做并发去重（single-flight）。
+        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: 0 });
         if (cancelled) return;
         const liveMatches = Array.isArray(data?.liveMatches)
           ? data.liveMatches
@@ -796,9 +804,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
     const loadUpcoming = async () => {
       try {
-        const response = await fetch('/api/upcoming?limit=12&days=2');
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL);
         if (cancelled) return;
         setUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
       } catch { /* 保留空态 */ } finally {
@@ -809,9 +815,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
     const loadResults = async () => {
       try {
-        const response = await fetch('/api/matches?limit=24');
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await apiFetch<FinishedSeries[] | { matches: FinishedSeries[] }>(RESULTS_API_URL);
         if (cancelled) return;
         const matches: FinishedSeries[] = Array.isArray(data) ? data : (data.matches || []);
         // DLTV results 已是系列赛成品比分（radiant_score/dire_score），直接使用。
@@ -893,9 +897,8 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     let cancelled = false;
     const refreshLive = async () => {
       try {
-        const response = await fetch('/api/live-hero', { cache: 'no-store' });
-        if (!response.ok) return;
-        const data = await response.json();
+        // 与 loadLive 同用 ttl 0：只做并发去重，30s 轮询每次真正刷新比分。
+        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: 0 });
         if (cancelled) return;
         const liveMatches = Array.isArray(data?.liveMatches)
           ? data.liveMatches

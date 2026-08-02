@@ -21,6 +21,7 @@ vi.mock('@/lib/playerProfile', () => ({
 
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import type { RouteState } from '@/lib/hashRouter';
+import { __resetApiCache } from '@/lib/api-cache';
 
 function finishedMatch(overrides: Record<string, unknown> = {}) {
   return {
@@ -72,6 +73,7 @@ function renderHomeDashboard() {
 
 describe('HomeDashboard result navigation (Part 3)', () => {
   beforeEach(() => {
+    __resetApiCache();
     window.history.pushState({}, '', '/');
   });
 
