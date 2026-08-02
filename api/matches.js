@@ -8,14 +8,16 @@ import { getDb } from '../lib/db.js';
 import { getDltvResults } from '../lib/server/dltv-matches-service.js';
 import { handleMpRoute } from '../lib/server/mp-route-handler.js';
 import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 // DLTV logo paths are relative (e.g. /uploads/teams/...). Prefer curated
 // GitHub logos for top teams; otherwise qualify with the DLTV origin.
-function resolveLogo(name, relativeLogo) {
+// 最终走 /api/asset-image 代理，保证国内浏览器可加载。
+function resolveLogo(name, relativeLogo, req) {
   const curated = getCuratedTeamLogoGithubUrl({ name });
-  if (curated) return curated;
-  if (relativeLogo) return `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}`;
-  return null;
+  const raw = curated || (relativeLogo ? `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}` : null);
+  if (!raw) return null;
+  return getMirroredAssetUrl(raw, req);
 }
 
 export default async function handler(req, res) {
@@ -46,8 +48,8 @@ export default async function handler(req, res) {
       dire_team_id: null,
       radiant_team_name: row.radiantName || null,
       dire_team_name: row.direName || null,
-      radiant_team_logo: resolveLogo(row.radiantName, row.radiantLogo),
-      dire_team_logo: resolveLogo(row.direName, row.direLogo),
+      radiant_team_logo: resolveLogo(row.radiantName, row.radiantLogo, req),
+      dire_team_logo: resolveLogo(row.direName, row.direLogo, req),
       radiant_score: row.radiantScore ?? null,
       dire_score: row.direScore ?? null,
       radiant_win: (row.radiantScore ?? 0) > (row.direScore ?? 0) ? 1 : 0,

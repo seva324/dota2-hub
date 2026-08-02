@@ -100,7 +100,7 @@ function UpcomingRow({ match, onOpen }: {
     <button
       type="button"
       onClick={() => onOpen?.(match.series_id ?? match.id ?? '')}
-      className="grid w-full grid-cols-[72px_1fr_1.6fr_56px_96px] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+      className="grid w-full grid-cols-[90px_1.4fr_1.6fr_56px_96px] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
     >
       <div className="text-left">
         <div className="text-sm font-bold tabular-nums leading-6 text-white">{formatMatchTime(match.start_time)}</div>
@@ -139,10 +139,10 @@ function CompletedRow({ match, onOpen }: {
     <button
       type="button"
       onClick={() => onOpen?.(match.match_id)}
-      className="grid w-full grid-cols-[92px_1.4fr_1.6fr_56px_96px] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
+      className="grid w-full grid-cols-[90px_1.4fr_1.6fr_56px_96px] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04]"
     >
-      <div>
-        <span className="rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
           COMPLETED
         </span>
       </div>
