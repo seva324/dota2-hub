@@ -5,49 +5,11 @@ import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamFlyout } from '@/components/custom/TeamFlyout';
+import { LiveMatchCard, type LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/TournamentCarousel';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import type { RouteState } from '@/lib/hashRouter';
-
-interface LiveHeroPayload {
-  source?: string;
-  sourceUrl?: string | null;
-  leagueName: string;
-  stage?: string | null;
-  bestOf?: string | number | null;
-  seriesScore: string;
-  live?: boolean;
-  startedAt?: string | number | null;
-  viewerCount?: number | null;
-  teams?: Array<{
-    side?: 'team1' | 'team2';
-    name: string;
-    logo?: string | null;
-  }>;
-  maps?: Array<{
-    matchId?: string | number | null;
-    label: string;
-    score?: string | null;
-    status?: 'completed' | 'live' | 'upcoming';
-    result?: 'team1' | 'team2' | null;
-    team1Score?: number | null;
-    team2Score?: number | null;
-    gameTime?: number | null;
-  }>;
-  liveMap?: {
-    matchId?: string | number | null;
-    label: string;
-    score?: string | null;
-    status?: 'live';
-    gameTime?: number | null;
-    team1Score?: number | null;
-    team2Score?: number | null;
-    team1NetWorthLead?: number | null;
-    team1TotalGold?: number | null;
-    team2TotalGold?: number | null;
-  } | null;
-}
 
 const nowTs = () => Math.floor(Date.now() / 1000);
 
@@ -369,126 +331,6 @@ function ScheduleCard({ match, isLive, onOpen }: {
       </Button>
     </button>
   );
-}
-
-/* ------------------------------------------------------------------ */
-/* Live Match 卡片                                                       */
-/* ------------------------------------------------------------------ */
-
-function LiveMatchCard({ hero, onOpen }: {
-  hero: LiveHeroPayload;
-  onOpen?: () => void;
-}) {
-  const team1 = hero.teams?.[0]?.name || 'TBD';
-  const team2 = hero.teams?.[1]?.name || 'TBD';
-  const seriesScore = parseSeriesScore(hero.seriesScore);
-  const liveMap = hero.liveMap;
-
-  // 当前局击杀（小比分/首要）：大字号展示；系列比分（次要）：小字号
-  const kills1 = liveMap?.team1Score ?? '—';
-  const kills2 = liveMap?.team2Score ?? '—';
-
-  // 经济领先：正值 = 队伍1领先；无数据则不渲染该行（保持高度一致用固定行）
-  const netWorthLead = liveMap?.team1NetWorthLead ?? null;
-  const hasNetWorth = netWorthLead != null && Number.isFinite(netWorthLead);
-  const netWorthAbs = hasNetWorth ? Math.abs(netWorthLead!) : null;
-
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group relative flex flex-col overflow-hidden rounded-xl p-4 text-left transition-transform hover:-translate-y-0.5"
-      style={{ backgroundColor: design.card }}
-    >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.05] to-transparent" />
-
-      <div className="relative flex items-center justify-between">
-        <CardStatus text="LIVE" tone="live" />
-        <span className="rounded px-2 py-0.5 text-[11px] font-semibold" style={{ color: '#a1a1aa', backgroundColor: '#2a2d35' }}>
-          {formatBestOf(hero.bestOf)}
-        </span>
-      </div>
-
-      {/* 队伍竖排（logo 上、队名下），整体下移让视觉中心与比分对齐 */}
-      <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <TeamColumn
-          name={team1}
-          logo={hero.teams?.[0]?.logo}
-          alignDown
-          badge={hasNetWorth && netWorthLead! > 0 ? <NetWorthBadge value={netWorthAbs!} /> : null}
-        />
-        {/* 当前局击杀：首要、大字号、固定列宽 */}
-        <div className="flex w-16 shrink-0 flex-col items-center justify-center">
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black tabular-nums text-white">{kills1}</span>
-            <span className="text-base font-bold" style={{ color: '#71717a' }}>:</span>
-            <span className="text-2xl font-black tabular-nums text-white">{kills2}</span>
-          </div>
-        </div>
-        <TeamColumn
-          name={team2}
-          logo={hero.teams?.[1]?.logo}
-          alignDown
-          badge={hasNetWorth && netWorthLead! < 0 ? <NetWorthBadge value={netWorthAbs!} /> : null}
-        />
-      </div>
-
-      {/* 系列比分：独占一行，始终居中 */}
-      <div className="relative mt-3 flex h-4 items-center justify-center">
-        <span className="text-[11px] font-semibold tabular-nums" style={{ color: '#71717a' }}>
-          Series {seriesScore.team1} : {seriesScore.team2}
-        </span>
-      </div>
-
-      <div className="relative mt-3 line-clamp-2 min-h-8 text-center text-[11px]" style={{ color: '#71717a' }}>
-        {hero.leagueName}
-        {hero.stage ? ` · ${hero.stage}` : ''}
-      </div>
-
-      <div className="relative mt-2 flex items-center justify-between gap-2">
-        <span className="shrink-0 text-[11px] font-semibold" style={{ color: liveMap?.status === 'live' ? design.red : '#a1a1aa' }}>
-          {liveMap?.label ? liveMap.label.replace(/Map\s*(\d+)/i, 'Game $1') : 'Game 1'}
-          {formatGameClock(liveMap?.gameTime) && (
-            <span className="ml-1.5 font-semibold tabular-nums" style={{ color: '#71717a' }}>
-              {formatGameClock(liveMap?.gameTime)}
-            </span>
-          )}
-        </span>
-        <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: design.blue }}>
-          <Play className="size-3.5 fill-current" />
-          观看
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function formatNetWorth(value: number): string {
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-  return String(value);
-}
-
-/** 经济领先标签：▲ 数值，显示在领先方队伍名下方 */
-function NetWorthBadge({ value }: { value: number }) {
-  return (
-    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums" style={{ color: '#ff8a80' }}>
-      <span className="inline-block size-1.5 rounded-full" style={{ backgroundColor: '#ff8a80' }} />
-      +{formatNetWorth(value)}
-    </span>
-  );
-}
-
-function formatGameClock(seconds?: number | null): string {
-  if (!seconds || seconds <= 0) return '';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function parseSeriesScore(value: string) {
-  const match = String(value || '').match(/(\d+)\s*[:-]\s*(\d+)/);
-  if (!match) return { team1: 0, team2: 0 };
-  return { team1: Number(match[1]) || 0, team2: Number(match[2]) || 0 };
 }
 
 /* ------------------------------------------------------------------ */

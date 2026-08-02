@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import { Footer } from '@/sections/Footer';
 import { TopLevelPlaceholder } from '@/pages/TopLevelPlaceholder';
+import { MatchesPage } from '@/pages/MatchesPage';
+import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
 
@@ -104,6 +106,14 @@ function App() {
       <main className="pb-24 lg:pb-0">
         {page === 'home' ? (
           <HomeDashboard route={route} navigate={navigate} closeOverlay={closeOverlay} />
+        ) : page === 'matches' ? (
+          <MatchesPage
+            onOpenMatch={(matchId) => {
+              const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
+              if (!Number.isFinite(numericId)) return;
+              navigate({ page: 'matches', overlay: { type: 'match', matchId: String(numericId) } }, { replace: route.overlay !== null });
+            }}
+          />
         ) : (
           <TopLevelPlaceholder page={page} onBack={() => goTo('home')} />
         )}
@@ -124,6 +134,16 @@ function App() {
       </nav>
 
       <Footer lastUpdated={new Date().toISOString()} />
+
+      {/* matches 页的比赛详情弹窗 */}
+      {page === 'matches' && route.overlay?.type === 'match' && Number.isFinite(Number(route.overlay.matchId)) && (
+        <MatchDetailModal
+          matchId={Number(route.overlay.matchId)}
+          open
+          onOpenChange={(open) => { if (!open) closeOverlay(); }}
+          fullPage
+        />
+      )}
     </div>
   );
 }
