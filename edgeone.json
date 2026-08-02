@@ -69,6 +69,69 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/api/live-hero*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=15, s-maxage=15, stale-while-revalidate=30"
+        }
+      ]
+    },
+    {
+      "source": "/api/upcoming*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=60, s-maxage=60, stale-while-revalidate=180"
+        }
+      ]
+    },
+    {
+      "source": "/api/matches*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=120, s-maxage=120, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
+      "source": "/api/tournaments*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=120, s-maxage=120, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
+      "source": "/api/news*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=120, s-maxage=120, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
+      "source": "/api/ept-ranking*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=300, stale-while-revalidate=3600"
+        }
+      ]
+    },
+    {
+      "source": "/api/primary-leagues*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=180, s-maxage=180, stale-while-revalidate=300"
+        }
+      ]
     }
   ],
   "caches": [
@@ -87,6 +150,34 @@
     {
       "source": "/assets/*",
       "cacheTtl": 31536000
+    },
+    {
+      "source": "/api/live-hero*",
+      "cacheTtl": 15
+    },
+    {
+      "source": "/api/upcoming*",
+      "cacheTtl": 60
+    },
+    {
+      "source": "/api/matches*",
+      "cacheTtl": 120
+    },
+    {
+      "source": "/api/tournaments*",
+      "cacheTtl": 120
+    },
+    {
+      "source": "/api/news*",
+      "cacheTtl": 120
+    },
+    {
+      "source": "/api/ept-ranking*",
+      "cacheTtl": 300
+    },
+    {
+      "source": "/api/primary-leagues*",
+      "cacheTtl": 180
     }
   ]
 }
