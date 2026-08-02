@@ -19,6 +19,20 @@ const CACHE_CONTROL = 'public, max-age=180, s-maxage=180, stale-while-revalidate
 let memoryCache = null;
 let memoryCacheAt = 0;
 const CACHE_TTL_MS = 180_000;
+// stale 容忍上限：超过这个时间不再返回旧数据，直接同步重抓。
+const STALE_MAX_AGE_MS = 15 * 60 * 1000;
+// 冷启动同步抓取的硬上限：宁可返回空也不阻塞首屏。
+const BUILD_TIMEOUT_MS = 8000;
+// single-flight：并发请求共享同一次在途抓取，防止 thundering herd。
+let buildPayloadInFlight = null;
+
+function isFresh(now) {
+  return memoryCache && now - memoryCacheAt < CACHE_TTL_MS;
+}
+
+function isUsableStale(now) {
+  return memoryCache && now - memoryCacheAt < STALE_MAX_AGE_MS;
+}
 
 function buildTimeoutSignal(timeoutMs) {
   const controller = new AbortController();
@@ -29,6 +43,18 @@ function buildTimeoutSignal(timeoutMs) {
       clearTimeout(timer);
     },
   };
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  let timer = null;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 async function fetchHtml(url, fetchImpl = fetch) {
@@ -127,6 +153,15 @@ async function buildPayload() {
   };
 }
 
+/** single-flight + 有界超时：并发共享一次抓取，超时抛错由调用方回退 stale/空。 */
+function runBuildPayloadWithTimeout() {
+  if (buildPayloadInFlight) return buildPayloadInFlight;
+  buildPayloadInFlight = withTimeout(buildPayload(), BUILD_TIMEOUT_MS, 'events build timed out').finally(() => {
+    buildPayloadInFlight = null;
+  });
+  return buildPayloadInFlight;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -140,28 +175,43 @@ export default async function handler(req, res) {
   const forceRefresh = String(req.query?.refresh || '') === '1';
   const now = Date.now();
 
-  if (!forceRefresh && memoryCache && now - memoryCacheAt < CACHE_TTL_MS) {
+  if (!forceRefresh && isFresh(now)) {
     return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'cache' });
   }
 
+  // stale-while-revalidate：有旧数据（未超 stale 上限）立即返回 + 后台刷新。
+  if (!forceRefresh && isUsableStale(now)) {
+    void refreshBackground();
+    return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'stale' });
+  }
+
+  // 真冷启动（或 forceRefresh）：同步抓取，8s 硬上限。
+  try {
+    const payload = await runBuildPayloadWithTimeout();
+    if (payload) {
+      memoryCache = payload;
+      memoryCacheAt = now;
+      return res.status(200).json(rebasePayloadImages(payload, req));
+    }
+  } catch (error) {
+    console.error('[Events API] build failed:', error instanceof Error ? error.message : String(error));
+  }
+
+  if (memoryCache) {
+    return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'stale' });
+  }
+  return res.status(200).json({ events: { ongoing: [], upcoming: [], finished: [] }, source: 'failed' });
+}
+
+/** 后台刷新 events 缓存：成功写内存，失败静默保留旧数据。 */
+async function refreshBackground() {
   try {
     const payload = await buildPayload();
-
-    if (!payload) {
-      if (memoryCache) {
-        return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'stale' });
-      }
-      return res.status(200).json({ events: { ongoing: [], upcoming: [], finished: [] }, source: 'failed' });
+    if (payload) {
+      memoryCache = payload;
+      memoryCacheAt = Date.now();
     }
-
-    memoryCache = payload;
-    memoryCacheAt = now;
-    return res.status(200).json(rebasePayloadImages(payload, req));
   } catch (error) {
-    console.error('[Events API] Error:', error instanceof Error ? error.message : String(error));
-    if (memoryCache) {
-      return res.status(200).json({ ...rebasePayloadImages(memoryCache, req), source: 'stale' });
-    }
-    return res.status(200).json({ events: { ongoing: [], upcoming: [], finished: [] }, source: 'error' });
+    console.error('[Events API] background refresh failed:', error instanceof Error ? error.message : String(error));
   }
 }
