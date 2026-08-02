@@ -5,6 +5,7 @@ import { Footer } from '@/sections/Footer';
 import { TopLevelPlaceholder } from '@/pages/TopLevelPlaceholder';
 import { MatchesPage } from '@/pages/MatchesPage';
 import { SeriesMatchPage } from '@/pages/SeriesMatchPage';
+import { NewsPage } from '@/pages/NewsPage';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
@@ -131,6 +132,8 @@ function App() {
             slug={route.slug}
             onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
           />
+        ) : page === 'news' ? (
+          <NewsPage />
         ) : (
           <TopLevelPlaceholder page={page} onBack={() => goTo('home')} />
         )}

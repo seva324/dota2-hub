@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Anton.woff2') format('woff2');
+}
+
 @layer base {
   :root {
     /* Visual-parity design tokens v1
