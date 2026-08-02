@@ -8,6 +8,7 @@ import { getDltvMatchPage } from '../lib/server/dltv-match-page-service.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 const MATCH_PAGE_CACHE_CONTROL = 'public, max-age=120, s-maxage=600, stale-while-revalidate=3600';
+const MATCH_PAGE_NO_STORE_CACHE_CONTROL = 'no-store';
 
 function proxyUrl(url, req) {
   if (!url) return null;
@@ -76,6 +77,9 @@ export default async function handler(req, res) {
   try {
     const { series, source } = await getDltvMatchPage({ seriesId, slug });
     if (!series) {
+      // 404 不能进共享缓存：一次抓取失败（DLTV 偶发 404/超时）不应把"没找到比赛"
+      // 缓存 600 秒，否则所有用户都会看到假的"not found"。
+      res.setHeader('Cache-Control', MATCH_PAGE_NO_STORE_CACHE_CONTROL);
       return res.status(404).json({ error: 'Match page not found on DLTV' });
     }
 
@@ -132,6 +136,8 @@ export default async function handler(req, res) {
     return res.status(200).json(payload);
   } catch (e) {
     console.error('[MatchPage API] Error:', e instanceof Error ? e.message : String(e));
+    // 500 同样不缓存，避免一次性源错误污染共享缓存。
+    res.setHeader('Cache-Control', MATCH_PAGE_NO_STORE_CACHE_CONTROL);
     return res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 }
