@@ -319,7 +319,7 @@ function NewsCard({ item }: { item: NewsItem }) {
         {item.summary && (
           <p className="mt-2 flex-1 text-[13.5px] leading-relaxed text-[#a1a1aa] line-clamp-2">{item.summary}</p>
         )}
-        <div className="mt-3.5 flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs" style={{ color: design.text3 }}>
+        <div className="mt-3.5 flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs" style={{ color: '#8a93a5' }}>
           <span className="font-medium">{item.source}</span>
           <span className="font-semibold transition-colors group-hover:text-[#5b7cff]">
             阅读全文 <ArrowRight className="ml-0.5 inline-block size-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -445,9 +445,6 @@ export function NewsPage() {
         >
           News<span style={{ color: design.red }}>.</span>
         </h1>
-        <p className="mt-3 text-sm" style={{ color: '#9aa3b2' }}>
-          Dota 2 电竞资讯速递 · 来自 Hawk Live 与 BO3.gg
-        </p>
       </div>
 
       {/* 分类筛选 */}
