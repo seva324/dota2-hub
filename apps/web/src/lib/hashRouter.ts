@@ -1,4 +1,4 @@
-export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players';
+export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news';
 
 export type OverlayState =
   | { type: 'match'; matchId: string }
@@ -10,7 +10,7 @@ export interface RouteState {
   overlay: OverlayState | null;
 }
 
-const TOP_LEVEL_PAGES: TopLevelPage[] = ['home', 'tournaments', 'matches', 'teams', 'players'];
+const TOP_LEVEL_PAGES: TopLevelPage[] = ['home', 'tournaments', 'matches', 'teams', 'players', 'news'];
 
 export function parseHash(hash: string): RouteState {
   const raw = hash.replace(/^#/, '');

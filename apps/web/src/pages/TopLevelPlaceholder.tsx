@@ -22,6 +22,11 @@ const PAGE_META: Record<Exclude<TopLevelPage, 'home'>, { title: string; badge: s
     badge: 'Players',
     description: '选手数据、英雄池与近期表现页面即将上线。现在先回到首页查看人气选手速览。',
   },
+  news: {
+    title: '新闻',
+    badge: 'News',
+    description: 'Dota 2 资讯聚合即将上线。现在先回到首页查看最新新闻。',
+  },
 };
 
 export function TopLevelPlaceholder({ page, onBack }: { page: Exclude<TopLevelPage, 'home'>; onBack: () => void }) {

@@ -35,7 +35,8 @@ describe('App shell', () => {
     expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: '移动端主导航' })).toBeInTheDocument();
     expect(screen.getByText('home dashboard')).toBeInTheDocument();
-    expect(screen.getByText('我的')).toBeInTheDocument();
+    expect(screen.getAllByText('新闻').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('赛程').length).toBeGreaterThan(0);
     expect(screen.getByText('登录 / 注册')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -44,7 +45,8 @@ describe('App shell', () => {
     vi.stubGlobal('fetch', vi.fn());
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: '赛事' }));
+    const tournamentsBtn = screen.getAllByRole('button', { name: '赛事' })[0];
+    fireEvent.click(tournamentsBtn);
 
     expect(screen.getByText('placeholder: tournaments')).toBeInTheDocument();
     expect(window.location.hash).toBe('#/tournaments');
