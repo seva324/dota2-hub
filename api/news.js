@@ -3770,6 +3770,11 @@ export const __test__ = {
   parseTavernaFeedItems,
 };
 
+const NEWS_MEMORY_CACHE_TTL_MS = 120_000;
+let newsMemoryCache = null;
+let newsMemoryCacheAt = 0;
+let newsSyncInFlight = null;
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -3786,9 +3791,24 @@ export default async function handler(req, res) {
       return res.status(200).json(makeFallbackNews());
     }
 
+    const requestedLimit = Math.max(1, Math.min(MAX_ITEMS, Number(req.query.limit) || MAX_ITEMS));
+    const now = Date.now();
+    const cacheFresh = newsMemoryCache && now - newsMemoryCacheAt < NEWS_MEMORY_CACHE_TTL_MS;
+
+    // 内存 TTL 缓存：命中直接返回，避免冷启动反复 sync / 每次请求都查库
+    if (newsMemoryCache && !cacheFresh && !newsSyncInFlight) {
+      newsSyncInFlight = (async () => {
+        await syncNewsToDb();
+      })().catch(() => {}).finally(() => {
+        newsSyncInFlight = null;
+      });
+    }
+    if (newsMemoryCache) {
+      return res.status(200).json(newsMemoryCache);
+    }
+
     await ensureNewsTable(db);
     const clientImageOptions = { publicOrigin: getPublicOrigin(req) };
-    const requestedLimit = Math.max(1, Math.min(MAX_ITEMS, Number(req.query.limit) || MAX_ITEMS));
     let stored = await getStoredNews(db, requestedLimit, clientImageOptions);
 
     // Cold-start fallback: do one sync when table is empty.
@@ -3801,6 +3821,8 @@ export default async function handler(req, res) {
       return res.status(200).json(makeFallbackNews());
     }
 
+    newsMemoryCache = stored;
+    newsMemoryCacheAt = Date.now();
     return res.status(200).json(stored);
   } catch (error) {
     console.error('[News API] Unexpected error:', error);

@@ -134,6 +134,24 @@
       ]
     },
     {
+      "source": "/api/team-ranking*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=600, stale-while-revalidate=1800"
+        }
+      ]
+    },
+    {
+      "source": "/api/events*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=120, s-maxage=120, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
       "source": "/api/primary-leagues*",
       "headers": [
         {
@@ -187,6 +205,14 @@
     {
       "source": "/api/ept-ranking*",
       "cacheTtl": 300
+    },
+    {
+      "source": "/api/team-ranking*",
+      "cacheTtl": 600
+    },
+    {
+      "source": "/api/events*",
+      "cacheTtl": 120
     },
     {
       "source": "/api/primary-leagues*",

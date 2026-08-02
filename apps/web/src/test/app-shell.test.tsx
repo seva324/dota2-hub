@@ -17,6 +17,15 @@ vi.mock('@/pages/TopLevelPlaceholder', () => ({
     </div>
   ),
 }));
+vi.mock('@/pages/TournamentsPage', () => ({
+  TournamentsPage: () => <div>tournaments page</div>,
+}));
+vi.mock('@/pages/TeamsPage', () => ({
+  TeamsPage: () => <div>teams page</div>,
+}));
+vi.mock('@/pages/NewsPage', () => ({
+  NewsPage: () => <div>news page</div>,
+}));
 
 import App from '@/App';
 
@@ -48,7 +57,7 @@ describe('App shell', () => {
     const tournamentsBtn = screen.getAllByRole('button', { name: '赛事' })[0];
     fireEvent.click(tournamentsBtn);
 
-    expect(screen.getByText('placeholder: tournaments')).toBeInTheDocument();
+    expect(screen.getByText('tournaments page')).toBeInTheDocument();
     expect(window.location.hash).toBe('#/tournaments');
   });
 

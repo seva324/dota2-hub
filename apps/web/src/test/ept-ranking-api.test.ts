@@ -25,6 +25,7 @@ function createRes() {
 describe('/api/ept-ranking', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.resetModules();
   });
 
   it('parses top teams from the DLTV ranking page', async () => {
@@ -60,7 +61,7 @@ describe('/api/ept-ranking', () => {
     await handler({ method: 'GET', query: {} } as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    expect(res.headers['Cache-Control']).toContain('max-age=3600');
+    expect(res.headers['Cache-Control']).toContain('max-age=300');
     expect(res.payload).toEqual({
       teams: [
         { rank: 1, name: 'Tundra Esports', logo: 'https://cdn.example/tundra.png', points: 14510 },

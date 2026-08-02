@@ -5,7 +5,9 @@ import { Footer } from '@/sections/Footer';
 import { TopLevelPlaceholder } from '@/pages/TopLevelPlaceholder';
 import { MatchesPage } from '@/pages/MatchesPage';
 import { SeriesMatchPage } from '@/pages/SeriesMatchPage';
+import { TeamsPage } from '@/pages/TeamsPage';
 import { NewsPage } from '@/pages/NewsPage';
+import { TournamentsPage } from '@/pages/TournamentsPage';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
@@ -110,6 +112,8 @@ function App() {
       <main className="pb-24 lg:pb-0">
         {page === 'home' ? (
           <HomeDashboard route={route} navigate={navigate} closeOverlay={closeOverlay} />
+        ) : page === 'tournaments' ? (
+          <TournamentsPage />
         ) : page === 'matches' ? (
           <MatchesPage
             onOpenMatch={(matchId, maps) => {
@@ -134,6 +138,8 @@ function App() {
           />
         ) : page === 'news' ? (
           <NewsPage />
+        ) : page === 'teams' ? (
+          <TeamsPage />
         ) : (
           <TopLevelPlaceholder page={page} onBack={() => goTo('home')} />
         )}

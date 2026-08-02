@@ -6,12 +6,15 @@ import { EmptyState, LiveEmptyState } from '@/components/custom/EmptyState';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import type { LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { Button } from '@/components/ui/button';
+import { slugFromMatchUrl } from '@/lib/matchUrl';
 
 const design = {
   blue: '#2b55e8',
   red: '#ff3b30',
   card: '#1a1d24',
 };
+
+const LIVE_REFRESH_INTERVAL_MS = 30_000;
 
 interface UpcomingMatch {
   id?: string | number;
@@ -58,13 +61,6 @@ function formatBestOf(value?: string | number | null): string {
   if (normalized.startsWith('BO')) return normalized;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? `BO${parsed}` : normalized;
-}
-
-/** 从 DLTV match_url（https://dltv.org/matches/<id>/<slug>）提取 slug，用于比赛详情页加载数据 */
-function slugFromMatchUrl(url?: string | null): string {
-  if (!url) return '';
-  const match = String(url).match(/\/matches\/\d+\/([^/]+)/i);
-  return match?.[1] ?? '';
 }
 
 function formatTimeAgo(ts: number): string {
@@ -370,6 +366,30 @@ export function MatchesPage({
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Live 30s 自动刷新：直播区比分持续更新，无需手动刷新
+  useEffect(() => {
+    let cancelled = false;
+    const refreshLive = async () => {
+      try {
+        const response = await fetch('/api/live-hero', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        const liveMatches = Array.isArray(data?.liveMatches)
+          ? data.liveMatches
+          : data?.live
+            ? [data.live]
+            : [];
+        setLiveHeroes(liveMatches);
+      } catch { /* 保留现有数据 */ }
+    };
+    const timer = setInterval(() => void refreshLive(), LIVE_REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
     <div className="relative mx-auto w-full max-w-[1280px] px-4 pt-24 lg:px-6" style={{ backgroundColor: '#0f1115' }}>

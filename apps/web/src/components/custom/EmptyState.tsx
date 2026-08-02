@@ -6,11 +6,12 @@ const RED = '#ff3b30';
 /**
  * 统一的空状态：虚线框改为实线 + 微光晕，图标 + 主文案 + 引导副文案。
  */
-export function EmptyState({ icon, label, hint, tone = 'default' }: {
+export function EmptyState({ icon, label, hint, tone = 'default', children }: {
   icon?: React.ReactNode;
   label: string;
   hint?: string;
   tone?: 'default' | 'live';
+  children?: React.ReactNode;
 }) {
   const IconComp = icon;
   const accent = tone === 'live' ? RED : BLUE;
@@ -33,6 +34,7 @@ export function EmptyState({ icon, label, hint, tone = 'default' }: {
       )}
       <div className="text-sm font-semibold text-slate-200">{label}</div>
       {hint && <div className="text-xs text-slate-500">{hint}</div>}
+      {children}
     </div>
   );
 }
