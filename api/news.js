@@ -3787,7 +3787,8 @@ export default async function handler(req, res) {
 
     await ensureNewsTable(db);
     const clientImageOptions = { publicOrigin: getPublicOrigin(req) };
-    let stored = await getStoredNews(db, MAX_ITEMS, clientImageOptions);
+    const requestedLimit = Math.max(1, Math.min(MAX_ITEMS, Number(req.query.limit) || MAX_ITEMS));
+    let stored = await getStoredNews(db, requestedLimit, clientImageOptions);
 
     // Cold-start fallback: do one sync when table is empty.
     if (stored.length === 0) {
