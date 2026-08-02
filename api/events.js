@@ -22,7 +22,7 @@ const CACHE_TTL_MS = 180_000;
 // stale 容忍上限：超过这个时间不再返回旧数据，直接同步重抓。
 const STALE_MAX_AGE_MS = 15 * 60 * 1000;
 // 冷启动同步抓取的硬上限：宁可返回空也不阻塞首屏。
-const BUILD_TIMEOUT_MS = 8000;
+const BUILD_TIMEOUT_MS = 15000;
 // single-flight：并发请求共享同一次在途抓取，防止 thundering herd。
 let buildPayloadInFlight = null;
 

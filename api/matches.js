@@ -6,6 +6,7 @@
 
 import { getDb } from '../lib/db.js';
 import { getDltvResults } from '../lib/server/dltv-matches-service.js';
+import { prewarmMatchPages } from '../lib/server/dltv-match-page-service.js';
 import { handleMpRoute } from '../lib/server/mp-route-handler.js';
 import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
@@ -18,6 +19,13 @@ function resolveLogo(name, relativeLogo, req) {
   const raw = curated || (relativeLogo ? `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}` : null);
   if (!raw) return null;
   return getMirroredAssetUrl(raw, req);
+}
+
+/** 从 DLTV matchUrl（/matches/<seriesId>/<slug>）提取详情页 slug。 */
+function extractSlugFromMatchUrl(matchUrl) {
+  if (!matchUrl) return undefined;
+  const match = String(matchUrl).match(/\/matches\/\d+\/([^/?#]+)/i);
+  return match?.[1] || undefined;
 }
 
 export default async function handler(req, res) {
@@ -40,6 +48,16 @@ export default async function handler(req, res) {
 
   try {
     const { results, source } = await getDltvResults();
+
+    // 首页结果列表很快（results 走 live 同源列表抓取 + 2min 缓存），顺手后台预热前几条
+    // 比赛详情页：用户点击 results 卡片时直接命中 match-page 内存/热缓存，省掉 12-31s 冷抓取。
+    // fire-and-forget，不阻塞本次响应；预热的抓取失败静默（getDltvMatchPage 自带缓存写入）。
+    prewarmMatchPages(
+      results.slice(0, 3).map((row) => ({
+        seriesId: row.seriesId,
+        slug: extractSlugFromMatchUrl(row.matchUrl),
+      })),
+    );
 
     const formatted = results.slice(0, requestedLimit).map((row) => ({
       match_id: row.seriesId ? String(row.seriesId) : null,

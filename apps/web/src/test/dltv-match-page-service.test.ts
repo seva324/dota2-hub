@@ -199,7 +199,7 @@ describe('dltv match page service', () => {
     await vi.waitFor(() => expect(writeDltvMatchesHotCache).toHaveBeenCalled());
   });
 
-  it('bounds a hung cold fetch to 6s and returns failed', async () => {
+  it('bounds a hung cold fetch to 6s and reports source timeout (retryable)', async () => {
     vi.useFakeTimers();
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     readDltvMatchesHotCache.mockResolvedValue(null);
@@ -209,7 +209,7 @@ describe('dltv match page service', () => {
     await vi.advanceTimersByTimeAsync(6000);
 
     const result = await promise;
-    expect(result).toEqual({ series: null, source: 'failed' });
+    expect(result).toEqual({ series: null, source: 'timeout' });
     expect(writeDltvMatchesHotCache).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
@@ -229,5 +229,18 @@ describe('dltv match page service', () => {
     // 等后台刷新 settle，确认旧数据未被覆盖
     await new Promise((r) => setTimeout(r, 0));
     expect(writeDltvMatchesHotCache).not.toHaveBeenCalled();
+  });
+
+  it('prewarmMatchPages fires a background fetch for unseen series and dedupes repeats', async () => {
+    const { prewarmMatchPages } = await import('../../../../lib/server/dltv-match-page-service.js');
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
+
+    // 预热两次相同 series：第一次触发，第二次受 5min 间隔去重。
+    prewarmMatchPages([{ seriesId: '427573', slug: 'og-vs-nigma' }], { fetchImpl });
+    prewarmMatchPages([{ seriesId: '427573', slug: 'og-vs-nigma' }], { fetchImpl });
+
+    // 底层抓取是后台 fire-and-forget，给它一个 tick 完成。
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
