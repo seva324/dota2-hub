@@ -45,6 +45,45 @@ function parseEptHtml(html) {
   return teams.sort((left, right) => left.rank - right.rank);
 }
 
+const CACHE_TTL_MS = 300_000;
+const CACHE_CONTROL = 'public, max-age=300, s-maxage=300, stale-while-revalidate=86400';
+
+let memoryCache = null;
+let memoryCacheAt = 0;
+let refreshInFlight = null;
+
+async function refreshEptRanking(now) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  let response;
+  try {
+    response = await fetch('https://dltv.org/teams', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; DotaHub/1.0; +https://dotahub.cn)',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    throw new Error(`DLTV returned HTTP ${response.status}`);
+  }
+
+  const html = await response.text();
+  const teams = parseEptHtml(html);
+  if (teams.length === 0) {
+    throw new Error('No teams parsed from DLTV HTML');
+  }
+
+  memoryCache = teams.slice(0, 10);
+  memoryCacheAt = now;
+  return memoryCache;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -54,38 +93,35 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const forceRefresh = String(req.query?.refresh || '') === '1';
+  const now = Date.now();
+
+  if (memoryCache && !forceRefresh) {
+    const cacheFresh = now - memoryCacheAt < CACHE_TTL_MS;
+    // stale-while-revalidate：有缓存先返回(可能过期)，过期时后台刷新
+    if (!cacheFresh && !refreshInFlight) {
+      refreshInFlight = refreshEptRanking(now)
+        .catch((error) => {
+          console.error('[EPT Ranking] Background refresh failed:', error instanceof Error ? error.message : error);
+        })
+        .finally(() => {
+          refreshInFlight = null;
+        });
+    }
+    res.setHeader('Cache-Control', CACHE_CONTROL);
+    return res.status(200).json({ teams: memoryCache, source: cacheFresh ? 'cache' : 'stale' });
+  }
+
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    let response;
-    try {
-      response = await fetch('https://dltv.org/teams', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; DotaHub/1.0; +https://dotahub.cn)',
-          Accept: 'text/html,application/xhtml+xml',
-        },
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    if (!response.ok) {
-      throw new Error(`DLTV returned HTTP ${response.status}`);
-    }
-
-    const html = await response.text();
-    const teams = parseEptHtml(html);
-    if (teams.length === 0) {
-      throw new Error('No teams parsed from DLTV HTML');
-    }
-
-    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
-    return res.status(200).json({ teams: teams.slice(0, 10), source: 'dltv' });
+    const teams = await refreshEptRanking(now);
+    res.setHeader('Cache-Control', CACHE_CONTROL);
+    return res.status(200).json({ teams, source: 'dltv' });
   } catch (error) {
     console.error('[EPT Ranking] Scrape failed, using fallback:', error instanceof Error ? error.message : error);
     res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
+    if (memoryCache) {
+      return res.status(200).json({ teams: memoryCache, source: 'stale' });
+    }
     return res.status(200).json({ teams: FALLBACK_TEAMS, source: 'fallback' });
   }
 }

@@ -10,6 +10,7 @@ const CACHE_CONTROL = 'public, max-age=180, s-maxage=180, stale-while-revalidate
 
 let memoryCache = null;
 let memoryCacheAt = 0;
+let refreshInFlight = null;
 const CACHE_TTL_MS = 180_000;
 
 function buildTimeoutSignal(timeoutMs) {
@@ -52,6 +53,18 @@ async function fetchHomeHtml(fetchImpl = fetch) {
   return { raw: '', type: 'failed' };
 }
 
+async function refreshPrimaryLeagues(now) {
+  const { raw } = await fetchHomeHtml();
+  if (!raw) throw new Error('Home HTML fetch failed');
+
+  const tournaments = parseDltvPrimaryLeagues(raw);
+  if (tournaments.length === 0) throw new Error('No tournaments parsed');
+
+  memoryCache = tournaments;
+  memoryCacheAt = now;
+  return tournaments;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -65,26 +78,24 @@ export default async function handler(req, res) {
   const forceRefresh = String(req.query?.refresh || '') === '1';
   const now = Date.now();
 
-  if (!forceRefresh && memoryCache && now - memoryCacheAt < CACHE_TTL_MS) {
-    return res.status(200).json({ tournaments: memoryCache, source: 'cache' });
+  if (memoryCache && !forceRefresh) {
+    const cacheFresh = now - memoryCacheAt < CACHE_TTL_MS;
+    // stale-while-revalidate：有缓存先返回(可能过期)，过期时后台刷新
+    if (!cacheFresh && !refreshInFlight) {
+      refreshInFlight = refreshPrimaryLeagues(now)
+        .catch((error) => {
+          console.error('[Primary Leagues API] Background refresh failed:', error instanceof Error ? error.message : String(error));
+        })
+        .finally(() => {
+          refreshInFlight = null;
+        });
+    }
+    return res.status(200).json({ tournaments: memoryCache, source: cacheFresh ? 'cache' : 'stale' });
   }
 
   try {
-    const { raw } = await fetchHomeHtml();
-    if (!raw) {
-      if (memoryCache) {
-        return res.status(200).json({ tournaments: memoryCache, source: 'stale' });
-      }
-      return res.status(200).json({ tournaments: [], source: 'failed' });
-    }
-
-    const tournaments = parseDltvPrimaryLeagues(raw);
-    if (tournaments.length > 0) {
-      memoryCache = tournaments;
-      memoryCacheAt = now;
-    }
-
-    return res.status(200).json({ tournaments, source: tournaments.length > 0 ? 'dltv' : 'empty' });
+    const tournaments = await refreshPrimaryLeagues(now);
+    return res.status(200).json({ tournaments, source: 'dltv' });
   } catch (error) {
     console.error('[Primary Leagues API] Error:', error instanceof Error ? error.message : String(error));
     return res.status(200).json({ tournaments: memoryCache || [], source: 'error' });

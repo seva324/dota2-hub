@@ -11,9 +11,11 @@ import { LiveMatchCard, type LiveHeroPayload } from '@/components/custom/LiveMat
 import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/TournamentCarousel';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
+import { slugFromMatchUrl } from '@/lib/matchUrl';
 import type { RouteState } from '@/lib/hashRouter';
 
 const nowTs = () => Math.floor(Date.now() / 1000);
+const LIVE_REFRESH_INTERVAL_MS = 30_000;
 
 const teamLogoMap: Record<string, string> = {
   XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
@@ -129,6 +131,7 @@ interface FinishedSeries {
   start_time: number;
   tournament_name?: string | null;
   series_type?: string | null;
+  match_url?: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -775,97 +778,138 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
   useEffect(() => {
     let cancelled = false;
-    const fetchData = async () => {
-      const [upcomingRes, liveRes, matchesRes, newsRes, rankRes, leaguesRes] = await Promise.allSettled([
-        fetch('/api/upcoming?limit=12&days=2'),
-        fetch('/api/live-hero', { cache: 'no-store' }),
-        fetch('/api/matches?limit=24'),
-        fetch('/api/news?limit=4'),
-        fetch('/api/ept-ranking'),
-        fetch('/api/primary-leagues'),
-      ]);
 
-      // Top players: enrich seeds from pro-players API (avatar, team, name)
-      if (!cancelled) {
-        const playerRequests = hotPlayersSeed.map(async (seed) => {
-          try {
-            const response = await fetch(`/api/pro-players?account_id=${seed.accountId}`);
-            if (!response.ok) return seed;
-            const payload = await response.json();
-            if (!payload || typeof payload !== 'object') return seed;
-            return {
-              name: payload.name || seed.name,
-              accountId: seed.accountId,
-              teamName: payload.team_name || seed.teamName,
-              nationality: payload.country_code ? String(payload.country_code).toUpperCase() : seed.nationality,
-              avatarUrl: payload.avatar_url || null,
-            } satisfies TopPlayer;
-          } catch {
-            return seed;
-          }
-        });
-        Promise.all(playerRequests).then((results) => {
-          if (!cancelled) setTopPlayers(results);
-        });
-      }
-
-      if (!cancelled && upcomingRes.status === 'fulfilled' && upcomingRes.value.ok) {
-        try {
-          const data = await upcomingRes.value.json();
-          setUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
-        } catch { /* 保留空态 */ }
-      }
-
-      if (!cancelled && liveRes.status === 'fulfilled' && liveRes.value.ok) {
-        try {
-          const data = await liveRes.value.json();
-          const liveMatches = Array.isArray(data?.liveMatches)
-            ? data.liveMatches
-            : data?.live
-              ? [data.live]
-              : [];
-          setLiveHeroes(liveMatches);
-        } catch { /* 保留空态 */ }
-      }
-
-      if (!cancelled && matchesRes.status === 'fulfilled' && matchesRes.value.ok) {
-        try {
-          const data = await matchesRes.value.json();
-          const matches: FinishedSeries[] = Array.isArray(data) ? data : (data.matches || []);
-          // DLTV results 已是系列赛成品比分（radiant_score/dire_score），直接使用。
-          setResults(
-            matches
-              .filter((m) => m.radiant_team_name && m.dire_team_name)
-              .sort((a, b) => (b.start_time ?? 0) - (a.start_time ?? 0))
-          );
-        } catch { /* 保留空态 */ }
-      }
-
-      if (!cancelled && newsRes.status === 'fulfilled' && newsRes.value.ok) {
-        try {
-          const data = await newsRes.value.json();
-          setNews((Array.isArray(data) ? data : []).slice(0, 4));
-        } catch { /* 保留空态 */ }
-      }
-
-      if (!cancelled && rankRes.status === 'fulfilled' && rankRes.value.ok) {
-        try {
-          const data = await rankRes.value.json();
-          setRankings(Array.isArray(data?.teams) ? data.teams.slice(0, 5) : []);
-        } catch { /* 保留空态 */ }
-      }
-
-      if (!cancelled && leaguesRes.status === 'fulfilled' && leaguesRes.value.ok) {
-        try {
-          const data = await leaguesRes.value.json();
-          setPrimaryLeagues(Array.isArray(data?.tournaments) ? data.tournaments : []);
-        } catch { /* 保留空态 */ }
-      }
-
-      if (!cancelled) setLoading(false);
+    const loadLive = async () => {
+      try {
+        const response = await fetch('/api/live-hero', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        const liveMatches = Array.isArray(data?.liveMatches)
+          ? data.liveMatches
+          : data?.live
+            ? [data.live]
+            : [];
+        setLiveHeroes(liveMatches);
+      } catch { /* 保留现有数据 */ }
     };
-    void fetchData();
+
+    const loadUpcoming = async () => {
+      try {
+        const response = await fetch('/api/upcoming?limit=12&days=2');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        setUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
+      } catch { /* 保留空态 */ } finally {
+        // loading 只 gate 赛程骨架屏：upcoming 一回来就结束骨架屏，其余区块独立渐进渲染
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    const loadResults = async () => {
+      try {
+        const response = await fetch('/api/matches?limit=24');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        const matches: FinishedSeries[] = Array.isArray(data) ? data : (data.matches || []);
+        // DLTV results 已是系列赛成品比分（radiant_score/dire_score），直接使用。
+        setResults(
+          matches
+            .filter((m) => m.radiant_team_name && m.dire_team_name)
+            .sort((a, b) => (b.start_time ?? 0) - (a.start_time ?? 0))
+        );
+      } catch { /* 保留空态 */ }
+    };
+
+    const loadNews = async () => {
+      try {
+        const response = await fetch('/api/news?limit=4');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        setNews((Array.isArray(data) ? data : []).slice(0, 4));
+      } catch { /* 保留空态 */ }
+    };
+
+    const loadRankings = async () => {
+      try {
+        const response = await fetch('/api/ept-ranking');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        setRankings(Array.isArray(data?.teams) ? data.teams.slice(0, 5) : []);
+      } catch { /* 保留空态 */ }
+    };
+
+    const loadLeagues = async () => {
+      try {
+        const response = await fetch('/api/primary-leagues');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        setPrimaryLeagues(Array.isArray(data?.tournaments) ? data.tournaments : []);
+      } catch { /* 保留空态 */ }
+    };
+
+    const loadTopPlayers = async () => {
+      // Top players: enrich seeds from pro-players API (avatar, team, name)
+      const playerRequests = hotPlayersSeed.map(async (seed) => {
+        try {
+          const response = await fetch(`/api/pro-players?account_id=${seed.accountId}`);
+          if (!response.ok) return seed;
+          const payload = await response.json();
+          if (!payload || typeof payload !== 'object') return seed;
+          return {
+            name: payload.name || seed.name,
+            accountId: seed.accountId,
+            teamName: payload.team_name || seed.teamName,
+            nationality: payload.country_code ? String(payload.country_code).toUpperCase() : seed.nationality,
+            avatarUrl: payload.avatar_url || null,
+          } satisfies TopPlayer;
+        } catch {
+          return seed;
+        }
+      });
+      const results = await Promise.all(playerRequests);
+      if (!cancelled) setTopPlayers(results);
+    };
+
+    // 各自独立 fetch → 渐进渲染：快端点先填充，慢端点(如 news)后填充
+    void loadLive();
+    void loadUpcoming();
+    void loadResults();
+    void loadNews();
+    void loadRankings();
+    void loadLeagues();
+    void loadTopPlayers();
+
     return () => { cancelled = true; };
+  }, []);
+
+  // Live 30s 自动刷新：首页/比赛页直播区比分持续更新，无需手动刷新
+  useEffect(() => {
+    let cancelled = false;
+    const refreshLive = async () => {
+      try {
+        const response = await fetch('/api/live-hero', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        const liveMatches = Array.isArray(data?.liveMatches)
+          ? data.liveMatches
+          : data?.live
+            ? [data.live]
+            : [];
+        setLiveHeroes(liveMatches);
+      } catch { /* 保留现有数据 */ }
+    };
+    const timer = setInterval(() => void refreshLive(), LIVE_REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, []);
 
   const overlay = route.overlay;
@@ -917,9 +961,15 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     radiantScore?: number;
     direScore?: number;
     duration?: number;
-  }> = []) => {
+  }> = [], slug = '') => {
     const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
     if (!Number.isFinite(numericId)) return;
+    if (slug) {
+      // 已结束的系列赛：带 DLTV slug，跳独立比赛详情页
+      navigate({ page: 'match', overlay: null, matchId: String(numericId), slug }, { replace: false });
+      return;
+    }
+    // 直播：无 DLTV slug，保留弹窗
     setSeriesMaps(maps);
     openOverlay({ type: 'match', matchId: String(numericId) });
   };
@@ -1025,7 +1075,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
                 <ResultCard
                   key={String(match.match_id)}
                   match={match}
-                  onOpen={() => handleOpenMatch(match.match_id)}
+                  onOpen={() => handleOpenMatch(match.match_id, [], slugFromMatchUrl(match.match_url))}
                 />
               ))}
             </div>
