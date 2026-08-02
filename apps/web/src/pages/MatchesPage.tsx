@@ -60,6 +60,13 @@ function formatBestOf(value?: string | number | null): string {
   return Number.isFinite(parsed) ? `BO${parsed}` : normalized;
 }
 
+/** 从 DLTV match_url（https://dltv.org/matches/<id>/<slug>）提取 slug，用于比赛详情页加载数据 */
+function slugFromMatchUrl(url?: string | null): string {
+  if (!url) return '';
+  const match = String(url).match(/\/matches\/\d+\/([^/]+)/i);
+  return match?.[1] ?? '';
+}
+
 function formatTimeAgo(ts: number): string {
   const diff = Math.max(0, Math.floor(Date.now() / 1000) - ts);
   const minutes = Math.floor(diff / 60);
@@ -138,14 +145,14 @@ function TeamMatchup({ left, right, center }: {
 
 function UpcomingRow({ match, onOpen }: {
   match: UpcomingMatch;
-  onOpen?: (id: string | number) => void;
+  onOpen?: (id: string | number, maps?: Array<{ slug?: string }>) => void;
 }) {
   const left = match.radiant_team_name || 'TBD';
   const right = match.dire_team_name || 'TBD';
   return (
     <button
       type="button"
-      onClick={() => onOpen?.(match.series_id ?? match.id ?? '')}
+      onClick={() => onOpen?.(match.series_id ?? match.id ?? '', [{ slug: slugFromMatchUrl(match.match_url) }])}
       className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.04]"
     >
       {/* 左信息列：时间 + 赛事名 */}
@@ -188,14 +195,14 @@ function UpcomingRow({ match, onOpen }: {
 
 function CompletedRow({ match, onOpen }: {
   match: FinishedMatch;
-  onOpen?: (id: string | number) => void;
+  onOpen?: (id: string | number, maps?: Array<{ slug?: string }>) => void;
 }) {
   const radiantWon = (match.radiant_score ?? 0) > (match.dire_score ?? 0);
   const direWon = (match.dire_score ?? 0) > (match.radiant_score ?? 0);
   return (
     <button
       type="button"
-      onClick={() => onOpen?.(match.match_id)}
+      onClick={() => onOpen?.(match.match_id, [{ slug: slugFromMatchUrl(match.match_url) }])}
       className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.04]"
     >
       {/* 左信息列：COMPLETED 标签 + 赛事名 */}
@@ -267,8 +274,9 @@ export function MatchesPage({
   onOpenMatch,
 }: {
   onOpenMatch?: (matchId: string | number, maps?: Array<{
-    label: string;
-    matchId: string;
+    slug?: string;
+    label?: string;
+    matchId?: string;
     radiantScore?: number;
     direScore?: number;
     duration?: number;
@@ -406,7 +414,7 @@ export function MatchesPage({
             <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
               <div className="divide-y divide-white/[0.04]">
                 {displayedUpcoming.map((match) => (
-                  <UpcomingRow key={String(match.series_id ?? match.id ?? match.start_time)} match={match} onOpen={(id) => onOpenMatch?.(id)} />
+                  <UpcomingRow key={String(match.series_id ?? match.id ?? match.start_time)} match={match} onOpen={(id, maps) => onOpenMatch?.(id, maps)} />
                 ))}
               </div>
               {filteredUpcoming.length > upcomingLimit && (
@@ -482,7 +490,7 @@ export function MatchesPage({
             <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
               <div className="divide-y divide-white/[0.04]">
                 {filteredFinished.slice(0, visibleCount).map((match) => (
-                  <CompletedRow key={String(match.match_id)} match={match} onOpen={(id) => onOpenMatch?.(id)} />
+                  <CompletedRow key={String(match.match_id)} match={match} onOpen={(id, maps) => onOpenMatch?.(id, maps)} />
                 ))}
               </div>
               {visibleCount < filteredFinished.length && (

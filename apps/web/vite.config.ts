@@ -67,7 +67,10 @@ export function createEdgeOneApiPlugin() {
         response.headers.forEach((value: string, key: string) => {
           res.setHeader(key, value);
         });
-        res.end(await response.text());
+        // Image/font responses carry binary bodies; reading them as text would
+        // lossily re-encode non-UTF-8 bytes (→ U+FFFD) and corrupt the image.
+        const isBinary = (response.headers.get('content-type') || '').startsWith('image/');
+        res.end(isBinary ? Buffer.from(await response.arrayBuffer()) : await response.text());
       });
     },
   };

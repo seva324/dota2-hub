@@ -25,8 +25,8 @@ describe('useHashRoute', () => {
   it('parses a deep link from the initial hash', () => {
     window.location.hash = '#/match/7777';
     const { result } = renderHook(() => useHashRoute());
-    expect(result.current.route.overlay).toEqual({ type: 'match', matchId: '7777' });
-    expect(result.current.route.page).toBe('home');
+    expect(result.current.route.page).toBe('match');
+    expect(result.current.route.matchId).toBe('7777');
   });
 
   it('updates on hashchange events', () => {
@@ -53,7 +53,7 @@ describe('useHashRoute', () => {
   });
 
   it('closeOverlay returns to the home hash', () => {
-    window.location.hash = '#/match/7777';
+    window.location.hash = '#/home/match/90001';
     const { result } = renderHook(() => useHashRoute());
     act(() => result.current.closeOverlay());
     expect(window.location.hash).toBe('#/');

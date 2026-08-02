@@ -65,7 +65,7 @@ export function LiveMatchesCarousel({ liveHeroes, onOpenMatch }: {
       <Carousel setApi={setApi} opts={{ loop: true, align: 'start' }} className="w-full">
         <CarouselContent className="-ml-4">
           {liveHeroes.map((hero) => (
-            <CarouselItem key={`${hero.leagueName}-${hero.teams?.[0]?.name}-${hero.teams?.[1]?.name}`} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+            <CarouselItem key={`${hero.leagueName}-${hero.teams?.[0]?.name}-${hero.teams?.[1]?.name}`} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
               <LiveMatchCard
                 hero={hero}
                 onOpen={() => {
