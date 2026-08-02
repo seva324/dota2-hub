@@ -780,7 +780,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         fetch('/api/upcoming?limit=12&days=2'),
         fetch('/api/live-hero', { cache: 'no-store' }),
         fetch('/api/matches?limit=24'),
-        fetch('/api/news'),
+        fetch('/api/news?limit=4'),
         fetch('/api/ept-ranking'),
         fetch('/api/primary-leagues'),
       ]);
