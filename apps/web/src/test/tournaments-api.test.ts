@@ -899,4 +899,139 @@ describe('/api/tournaments lazy loading', () => {
     ]);
     expect(JSON.stringify(res.payload)).not.toContain('EHOME.immortal');
   });
+
+  it('serves tournament detail from the memory cache on repeat requests within TTL', async () => {
+    let tournamentQueries = 0;
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        tournamentQueries += 1;
+        return [{
+          id: 'blast-slam-7-sea-qual',
+          league_id: 19538,
+          name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+          status: 'finished',
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+        }];
+      }
+      if (sql.includes('WHERE event_group_slug =')) {
+        return [{
+          id: 'blast-slam-7',
+          league_id: 19101,
+          name: 'BLAST Slam 7',
+          status: 'upcoming',
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-7',
+        }];
+      }
+      if (sql.includes('COUNT(*)::int AS count')) {
+        return [{ count: 1 }];
+      }
+      if (sql.includes('FROM series')) {
+        return [{
+          series_id: 'blast-sea-series-1',
+          league_id: 19538,
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_wins: 2,
+          dire_wins: 1,
+          series_type: 1,
+          stage: 'Playoffs',
+          start_time: 1700500000,
+        }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async (sql: string) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim();
+      if (normalized.includes('FROM teams') && normalized.includes('team_id::TEXT = ANY($1::text[])')) {
+        return [
+          { team_id: 1, name: 'Team A', logo_url: 'https://steamcdn-a.akamaihd.net/team-a.png' },
+          { team_id: 2, name: 'Team B', logo_url: 'https://steamcdn-a.akamaihd.net/team-b.png' },
+        ];
+      }
+      if (normalized.includes('FROM matches') && normalized.includes('series_id::TEXT = ANY($1::text[])')) {
+        return [{
+          match_id: 101,
+          series_id: 'blast-sea-series-1',
+          radiant_team_id: 1,
+          dire_team_id: 2,
+          radiant_score: 30,
+          dire_score: 20,
+          radiant_win: true,
+          start_time: 1700500000,
+          duration: 2400,
+          picks_bans: [],
+        }];
+      }
+      throw new Error(`Unexpected query SQL: ${normalized}`);
+    });
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const req = { method: 'GET', query: { tournamentId: '19538', limit: '10', offset: '0' }, headers: { host: 'example.com' } };
+
+    const res = createRes();
+    await handler(req as never, res as never);
+    expect(res.statusCode).toBe(200);
+
+    // 60s TTL 内第二次请求不再打 DB 查询 tournament 行。
+    const res2 = createRes();
+    await handler(req as never, res2 as never);
+    expect(res2.statusCode).toBe(200);
+    expect((res2.payload as any).series).toEqual((res.payload as any).series);
+    expect(tournamentQueries).toBe(1);
+  });
+
+  it('keys the tournament detail cache by request host to avoid asset URL leaks', async () => {
+    let tournamentQueries = 0;
+    taggedMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = renderSql(strings);
+      if (sql.includes('WHERE CAST(league_id AS TEXT)')) {
+        tournamentQueries += 1;
+        return [{
+          id: 'blast-slam-7-sea-qual',
+          league_id: 19538,
+          name: 'BLAST Slam 7: Southeast Asia Closed Qualifier',
+          status: 'finished',
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-vii-southeast-asia-closed-qualifier',
+        }];
+      }
+      if (sql.includes('WHERE event_group_slug =')) {
+        return [{
+          id: 'blast-slam-7',
+          league_id: 19101,
+          name: 'BLAST Slam 7',
+          status: 'upcoming',
+          event_group_slug: 'blast-slam-7',
+          dltv_event_slug: 'blast-slam-7',
+        }];
+      }
+      if (sql.includes('COUNT(*)::int AS count')) {
+        return [{ count: 1 }];
+      }
+      if (sql.includes('FROM series')) {
+        return [];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    queryMock.mockImplementation(async () => []);
+
+    const { default: handler } = await import('../../../../api/tournaments.js');
+    const reqA = { method: 'GET', query: { tournamentId: '19538', limit: '10', offset: '0' }, headers: { host: 'a.example.com' } };
+    const reqB = { method: 'GET', query: { tournamentId: '19538', limit: '10', offset: '0' }, headers: { host: 'b.example.com' } };
+
+    const resA = createRes();
+    await handler(reqA as never, resA as never);
+    expect(resA.statusCode).toBe(200);
+
+    // 不同 host 是不同缓存条目，会重新查 DB。
+    const resB = createRes();
+    await handler(reqB as never, resB as never);
+    expect(resB.statusCode).toBe(200);
+    expect(tournamentQueries).toBe(2);
+  });
 });

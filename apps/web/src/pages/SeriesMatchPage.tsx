@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Loader2, User } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
@@ -359,6 +359,9 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
 }) {
   const [payload, setPayload] = useState<MatchPagePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const loadRef = useRef<(() => void) | null>(null);
 
   const load = useCallback(async () => {
     setPayload(null);
@@ -374,16 +377,45 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
         return;
       }
       const data: MatchPagePayload = await res.json();
+      // 服务端真冷启动抓取超时（source:'timeout'）：后台抓取仍在跑，2.5s 后自动重试。
+      // 第 1 次超时触发 3 次重试；重试期间显示"正在加载"而非错误。
       if (!data?.maps?.length) {
+        if (data?.source === 'timeout') {
+          setRetrying(true);
+          setAttempt((n) => n + 1);
+          return;
+        }
         setError('该系列赛暂无比赛数据');
         return;
       }
+      setRetrying(false);
+      setAttempt(0);
       setPayload(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : '网络错误');
     }
   }, [matchId, slug]);
 
+  // 超时后自动重试（最多 3 次），并清掉 loading 防卡死。
+  useEffect(() => {
+    if (retrying && attempt <= 3) {
+      const timer = setTimeout(() => {
+        setRetrying(false);
+        loadRef.current?.();
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+    if (retrying && attempt > 3) {
+      setError('比赛详情加载超时，请稍后重试。');
+    }
+  }, [retrying, attempt]);
+
+  // 记录最新 load 引用，供超时重试调用。
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
+
+  // 初始加载。
   useEffect(() => {
     load();
   }, [load]);

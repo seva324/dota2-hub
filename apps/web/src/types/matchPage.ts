@@ -63,6 +63,7 @@ export interface MatchPagePayload {
   startTime: number | null;
   radiantWins: number;
   direWins: number;
+  source?: 'cache' | 'stale' | 'dltv' | 'timeout';
   teams: {
     radiant: SeriesTeamInfo;
     dire: SeriesTeamInfo;

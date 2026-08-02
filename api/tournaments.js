@@ -111,6 +111,38 @@ const TOURNAMENT_SERIES_LEAGUE_ALIASES = {
 };
 const TOURNAMENT_SERIES_WINDOW_PADDING_SECONDS = 12 * 60 * 60;
 
+// 详情分支模块级内存缓存：同一 tournament 在 60s 内重复访问不重复打 DB。
+// key = tournament:<host>:<id>:<limit>:<offset>。host 参与 key，因为
+// 资产 URL 依赖请求 host（getMirroredAssetUrl），跨 host 共享会串数据。
+const DETAIL_CACHE_TTL_MS = 60_000;
+const detailCache = new Map();
+// featured 分支 loadTeams（全表 teams）缓存 5min，避免每次请求都全表扫描。
+const TEAMS_CACHE_TTL_MS = 5 * 60_000;
+let teamsCache = null;
+let teamsCacheAt = 0;
+
+function requestHostKey(req) {
+  return String(
+    req?.headers?.host
+    || req?.headers?.Host
+    || req?.headers?.['x-forwarded-host']
+    || req?.headers?.['X-Forwarded-Host']
+    || req?.headers?.['x-original-host']
+    || req?.headers?.['X-Original-Host']
+    || process.env.PUBLIC_SITE_URL
+    || ''
+  ).toLowerCase();
+}
+
+async function loadTeamsCached(db) {
+  const now = Date.now();
+  if (teamsCache && now - teamsCacheAt < TEAMS_CACHE_TTL_MS) return teamsCache;
+  const loaded = await loadTeams(db);
+  teamsCache = loaded;
+  teamsCacheAt = now;
+  return loaded;
+}
+
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
@@ -1087,7 +1119,7 @@ export default async function handler(req, res) {
       const forceRefresh = String(req.query?.refresh || '').trim() === '1';
       const [payload, { teams, teamMap }, seriesCandidates] = await Promise.all([
         fetchFeaturedTournamentPayload(tournamentId, { forceRefresh }),
-        loadTeams(db),
+        loadTeamsCached(db),
         loadFeaturedSeriesCandidates(db, definition.leagueId),
       ]);
 
@@ -1107,12 +1139,28 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Cache-Control', TOURNAMENT_DETAIL_CACHE_CONTROL);
+    const cacheKey = `tournament:${requestHostKey(req)}:${tournamentId}:${limit}:${offset}`;
+    const now = Date.now();
+    const cachedDetail = detailCache.get(cacheKey);
+    if (cachedDetail && now - cachedDetail.refreshedAt < DETAIL_CACHE_TTL_MS) {
+      return res.status(200).json(cachedDetail.payload);
+    }
+
     const tournament = await getTournamentById(db, tournamentId);
     if (!tournament) {
       return res.status(404).json({ error: 'Tournament not found' });
     }
-    const groupedTournaments = await loadTournamentGroup(db, tournament);
+
     const leagueIds = getTournamentSeriesLeagueIds(tournament);
+    const timeWindow = getTournamentSeriesWindow(tournament);
+
+    // tournament 已拿到：group、系列页、阶段窗口三者互不依赖，并行取回。
+    const [groupedTournaments, seriesPageResult, stageWindows] = await Promise.all([
+      loadTournamentGroup(db, tournament),
+      loadSeriesPage(db, leagueIds, limit, offset, { timeWindow }),
+      Promise.resolve(normalizeStageWindows(tournament.stage_windows)),
+    ]);
+
     const leagueNameById = new Map(leagueIds.map((leagueId) => [String(leagueId), tournament.name || null]));
     for (const row of groupedTournaments) {
       const key = String(row.league_id || '');
@@ -1120,11 +1168,8 @@ export default async function handler(req, res) {
         leagueNameById.set(key, row.name || null);
       }
     }
-    const timeWindow = getTournamentSeriesWindow(tournament);
 
-    const { total: totalSeries, pageSeries } = await loadSeriesPage(db, leagueIds, limit, offset, { timeWindow });
-
-    const stageWindows = normalizeStageWindows(tournament.stage_windows);
+    const { total: totalSeries, pageSeries } = seriesPageResult;
     let total = totalSeries;
     let series = [];
 
@@ -1147,7 +1192,7 @@ export default async function handler(req, res) {
       series = buildUpcomingSeriesPayload(upcomingPage.pageSeries, teamMap, stageWindows, leagueNameById, req);
     }
 
-    return res.status(200).json({
+    const payload = {
       tournament: {
         ...formatTournament(tournament, req),
         related_tournaments: buildRelatedTournaments(groupedTournaments, tournament, req),
@@ -1159,7 +1204,10 @@ export default async function handler(req, res) {
         total,
         hasMore: offset + series.length < total
       }
-    });
+    };
+
+    detailCache.set(cacheKey, { payload, refreshedAt: now });
+    return res.status(200).json(payload);
   } catch (e) {
     console.error('[Tournaments API] Error:', e.message);
     return res.status(500).json({ error: e.message });
