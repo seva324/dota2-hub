@@ -13,6 +13,9 @@ vi.mock('@/sections/HomeDashboard', () => ({
 vi.mock('@/sections/Footer', () => ({
   Footer: () => <div>footer</div>,
 }));
+vi.mock('@/pages/SeriesMatchPage', () => ({
+  SeriesMatchPage: (props: { matchId: string; slug?: string }) => <div>series match: {props.matchId}{props.slug ? ` (${props.slug})` : ''}</div>,
+}));
 
 import App from '@/App';
 
@@ -27,10 +30,16 @@ describe('App deep links', () => {
     window.location.hash = '';
   });
 
-  it('opens a match deep link on first load', () => {
+  it('opens a match deep link as the standalone match page', () => {
     setHash('#/match/7777');
     render(<App />);
-    expect(screen.getByText('deep match: 7777')).toBeInTheDocument();
+    expect(screen.getByText('series match: 7777')).toBeInTheDocument();
+  });
+
+  it('opens a home match overlay from a home deep link', () => {
+    setHash('#/home/match/90001');
+    render(<App />);
+    expect(screen.getByText('deep match: 90001')).toBeInTheDocument();
   });
 
   it('opens a team deep link on first load', () => {
@@ -46,9 +55,9 @@ describe('App deep links', () => {
   });
 
   it('closes the overlay back to home when the hash returns to #/', async () => {
-    setHash('#/match/7777');
+    setHash('#/home/match/90001');
     render(<App />);
-    expect(screen.getByText('deep match: 7777')).toBeInTheDocument();
+    expect(screen.getByText('deep match: 90001')).toBeInTheDocument();
 
     setHash('#/');
     await waitFor(() => {

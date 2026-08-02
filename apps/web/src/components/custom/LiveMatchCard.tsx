@@ -156,7 +156,7 @@ export function LiveMatchCard({ hero, onOpen }: {
     <button
       type="button"
       onClick={onOpen}
-      className="group relative flex flex-col overflow-hidden rounded-xl p-4 text-left transition-transform hover:-translate-y-0.5"
+      className="group relative flex h-full w-full flex-col overflow-hidden rounded-xl p-4 text-left transition-transform hover:-translate-y-0.5"
       style={{ backgroundColor: design.card }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.05] to-transparent" />

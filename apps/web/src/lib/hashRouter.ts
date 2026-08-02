@@ -1,4 +1,4 @@
-export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news';
+export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match';
 
 export type OverlayState =
   | { type: 'match'; matchId: string }
@@ -8,13 +8,17 @@ export type OverlayState =
 export interface RouteState {
   page: TopLevelPage;
   overlay: OverlayState | null;
+  /** 仅 page==='match'：DLTV 系列赛 ID */
+  matchId?: string;
+  /** 仅 page==='match'：DLTV 详情页 slug（/matches/<id>/<slug>），用于让 maps 非空 */
+  slug?: string;
 }
 
 const TOP_LEVEL_PAGES: TopLevelPage[] = ['home', 'tournaments', 'matches', 'teams', 'players', 'news'];
 
 export function parseHash(hash: string): RouteState {
   const raw = hash.replace(/^#/, '');
-  const [path] = raw.split('?');
+  const [path, queryString] = raw.split('?');
   const segments = path.split('/').filter((segment) => segment.length > 0);
 
   if (segments.length === 0) {
@@ -22,6 +26,11 @@ export function parseHash(hash: string): RouteState {
   }
 
   const [first, second] = segments;
+
+  // 首页弹窗的 match 覆盖层：`#/home/match/<id>`（与新比赛详情页 `#/match/<id>` 区分开）
+  if (first === 'home' && second === 'match' && segments.length >= 3) {
+    return { page: 'home', overlay: { type: 'match', matchId: decodeURIComponent(segments[2]) } };
+  }
 
   if (TOP_LEVEL_PAGES.includes(first as TopLevelPage)) {
     if (segments.length > 1) {
@@ -33,7 +42,13 @@ export function parseHash(hash: string): RouteState {
   switch (first) {
     case 'match': {
       if (!second) return { page: 'home', overlay: null };
-      return { page: 'home', overlay: { type: 'match', matchId: decodeURIComponent(second) } };
+      const query = new URLSearchParams(queryString || '');
+      return {
+        page: 'match',
+        overlay: null,
+        matchId: decodeURIComponent(second),
+        slug: query.get('slug') ?? undefined,
+      };
     }
     case 'team': {
       if (!second) return { page: 'home', overlay: null };
@@ -50,10 +65,14 @@ export function parseHash(hash: string): RouteState {
 }
 
 export function toHash(route: RouteState): string {
+  if (route.page === 'match' && route.matchId) {
+    const base = `#/match/${encodeURIComponent(route.matchId)}`;
+    return route.slug ? `${base}?slug=${encodeURIComponent(route.slug)}` : base;
+  }
   if (route.overlay) {
     switch (route.overlay.type) {
       case 'match':
-        return `#/match/${encodeURIComponent(route.overlay.matchId)}`;
+        return `#/home/match/${encodeURIComponent(route.overlay.matchId)}`;
       case 'team':
         return `#/team/${encodeURIComponent(route.overlay.teamName)}`;
       case 'player':

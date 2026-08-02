@@ -21,10 +21,28 @@ describe('parseHash', () => {
     expect(parseHash('#/players')).toEqual({ page: 'players', overlay: null });
   });
 
-  it('parses a match deep link with implicit home page', () => {
+  it('parses a match deep link as its own page', () => {
     expect(parseHash('#/match/7777')).toEqual({
+      page: 'match',
+      overlay: null,
+      matchId: '7777',
+      slug: undefined,
+    });
+  });
+
+  it('parses a match deep link with a slug', () => {
+    expect(parseHash('#/match/427386?slug=midas-club-vs-team-resilience')).toEqual({
+      page: 'match',
+      overlay: null,
+      matchId: '427386',
+      slug: 'midas-club-vs-team-resilience',
+    });
+  });
+
+  it('parses a home match overlay deep link', () => {
+    expect(parseHash('#/home/match/90001')).toEqual({
       page: 'home',
-      overlay: { type: 'match', matchId: '7777' },
+      overlay: { type: 'match', matchId: '90001' },
     });
   });
 
@@ -60,8 +78,15 @@ describe('toHash', () => {
     expect(toHash({ page: 'tournaments', overlay: null })).toBe('#/tournaments');
   });
 
-  it('serializes a match overlay', () => {
-    expect(toHash({ page: 'home', overlay: { type: 'match', matchId: '7777' } })).toBe('#/match/7777');
+  it('serializes the standalone match page', () => {
+    expect(toHash({ page: 'match', overlay: null, matchId: '7777' })).toBe('#/match/7777');
+    expect(toHash({ page: 'match', overlay: null, matchId: '7777', slug: 'midas-club-vs-team-resilience' })).toBe(
+      '#/match/7777?slug=midas-club-vs-team-resilience',
+    );
+  });
+
+  it('serializes a home match overlay', () => {
+    expect(toHash({ page: 'home', overlay: { type: 'match', matchId: '90001' } })).toBe('#/home/match/90001');
   });
 
   it('serializes a team overlay with encoding', () => {
@@ -82,7 +107,8 @@ describe('toHash', () => {
   });
 
   it('round-trips a match deep link', () => {
-    const parsed = parseHash('#/match/7777');
-    expect(toHash(parsed)).toBe('#/match/7777');
+    const parsed = parseHash('#/match/7777?slug=midas-club-vs-team-resilience');
+    expect(parsed.page).toBe('match');
+    expect(toHash(parsed)).toBe('#/match/7777?slug=midas-club-vs-team-resilience');
   });
 });

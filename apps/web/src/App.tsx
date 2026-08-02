@@ -4,6 +4,7 @@ import { HomeDashboard } from '@/sections/HomeDashboard';
 import { Footer } from '@/sections/Footer';
 import { TopLevelPlaceholder } from '@/pages/TopLevelPlaceholder';
 import { MatchesPage } from '@/pages/MatchesPage';
+import { SeriesMatchPage } from '@/pages/SeriesMatchPage';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
@@ -110,11 +111,25 @@ function App() {
           <HomeDashboard route={route} navigate={navigate} closeOverlay={closeOverlay} />
         ) : page === 'matches' ? (
           <MatchesPage
-            onOpenMatch={(matchId) => {
+            onOpenMatch={(matchId, maps) => {
               const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
               if (!Number.isFinite(numericId)) return;
-              navigate({ page: 'matches', overlay: { type: 'match', matchId: String(numericId) } }, { replace: route.overlay !== null });
+              const firstMap = Array.isArray(maps) && maps.length > 0 ? maps[0] : null;
+              const slug = typeof firstMap?.slug === 'string' && firstMap.slug ? firstMap.slug : '';
+              if (slug) {
+                // 已结束 / 未开始的系列赛：带 DLTV slug，走新比赛详情页
+                navigate({ page: 'match', overlay: null, matchId: String(numericId), slug }, { replace: false });
+              } else {
+                // 直播：OpenDota matchId（无 DLTV slug），保留弹窗
+                navigate({ page: 'matches', overlay: { type: 'match', matchId: String(numericId) } }, { replace: false });
+              }
             }}
+          />
+        ) : page === 'match' && route.matchId ? (
+          <SeriesMatchPage
+            matchId={route.matchId}
+            slug={route.slug}
+            onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
           />
         ) : (
           <TopLevelPlaceholder page={page} onBack={() => goTo('home')} />
@@ -137,7 +152,7 @@ function App() {
 
       <Footer lastUpdated={new Date().toISOString()} />
 
-      {/* matches 页的比赛详情弹窗 */}
+      {/* matches 页的直播比赛弹窗（无 DLTV slug 的 OpenDota matchId） */}
       {page === 'matches' && route.overlay?.type === 'match' && Number.isFinite(Number(route.overlay.matchId)) && (
         <MatchDetailModal
           matchId={Number(route.overlay.matchId)}
