@@ -9,6 +9,7 @@ const runSyncLiquipediaMock = vi.fn();
 const upsertLiquipediaTournamentMetadataMock = vi.fn();
 const syncNewsToDbMock = vi.fn();
 const translateNewsBackfillMock = vi.fn();
+const warmDltvCachesMock = vi.fn();
 
 vi.mock('@neondatabase/serverless', () => ({
   neon: neonMock,
@@ -34,6 +35,10 @@ vi.mock('../../../../lib/server/sync-liquipedia.js', () => ({
 vi.mock('../../../../api/news.js', () => ({
   syncNewsToDb: syncNewsToDbMock,
   translateNewsBackfill: translateNewsBackfillMock,
+}));
+
+vi.mock('../../../../lib/server/dltv-warm.js', () => ({
+  warmDltvCaches: warmDltvCachesMock,
 }));
 
 function createRes() {
@@ -75,6 +80,7 @@ describe('/api/cron incremental refresh actions', () => {
     upsertLiquipediaTournamentMetadataMock.mockReset();
     syncNewsToDbMock.mockReset();
     translateNewsBackfillMock.mockReset();
+    warmDltvCachesMock.mockReset();
 
     warmPlayerProfileCacheMock.mockResolvedValue({ selected: 12, refreshed: 12, failed: 0, mode: 'incremental' });
     warmTeamFlyoutCacheMock.mockResolvedValue({ selected: 8, refreshed: 8, failed: 0, mode: 'incremental' });
@@ -83,6 +89,26 @@ describe('/api/cron incremental refresh actions', () => {
     upsertLiquipediaTournamentMetadataMock.mockResolvedValue({ success: true });
     syncNewsToDbMock.mockResolvedValue({ success: true });
     translateNewsBackfillMock.mockResolvedValue({ translated: 5, completed: 5, pending: 0, provider: 'minimax' });
+    warmDltvCachesMock.mockResolvedValue({
+      lists: { live: 1, upcoming: 3, results: 10 },
+      matchPages: { total: 10, skippedFresh: 5, warmed: 5 },
+      dbAvailable: true,
+    });
+  });
+
+  it('routes warm-dltv to the scheduled DLTV warmer', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: { action: 'warm-dltv' },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(warmDltvCachesMock).toHaveBeenCalledTimes(1);
+    expect(res.payload).toMatchObject({ ok: true, action: 'warm-dltv', result: { lists: { live: 1 } } });
   });
 
   it('passes incremental windows to the derived-data refresh alias', async () => {

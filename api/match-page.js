@@ -7,7 +7,9 @@
 import { getDltvMatchPage } from '../lib/server/dltv-match-page-service.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
-const MATCH_PAGE_CACHE_CONTROL = 'public, max-age=120, s-maxage=600, stale-while-revalidate=3600';
+// match-page 现在由预热 cron 写 Neon（6h 缓存），数据更静态；CDN 边缘缓存加长到 6h，
+// 让 EdgeOne 吸收重复点击、省 Neon 读。浏览器端仍短缓存（300s），保证更新及时可见。
+const MATCH_PAGE_CACHE_CONTROL = 'public, max-age=300, s-maxage=21600, stale-while-revalidate=86400';
 const MATCH_PAGE_NO_STORE_CACHE_CONTROL = 'no-store';
 
 function proxyUrl(url, req) {
