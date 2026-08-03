@@ -4,6 +4,7 @@ import { within } from '@testing-library/react';
 import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
 import { HeroSection } from '@/sections/HeroSection';
+import { __resetApiCache } from '@/lib/api-cache';
 
 const HERO_LIVE_MATCHES = [
   {
@@ -57,6 +58,7 @@ function buildLiveHeroResponse(liveMatches = cloneLiveMatches()) {
 
 describe('HeroSection live spotlight', () => {
   beforeEach(() => {
+    __resetApiCache();
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/api/upcoming')) {

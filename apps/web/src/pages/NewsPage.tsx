@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Newspaper } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { apiFetch } from '@/lib/api-cache';
 import {
   Dialog,
   DialogContent,
@@ -361,9 +362,7 @@ export function NewsPage() {
       setLoading(true);
       setLoadError('');
       try {
-        const response = await fetch('/api/news?limit=30');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
+        const payload = await apiFetch<NewsItem[]>('/api/news?limit=30', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
         if (cancelled) return;
         setNews(Array.isArray(payload) ? payload : []);
       } catch (error) {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Calendar, Trophy, ArrowUpRight } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { EmptyState } from '@/components/custom/EmptyState';
+import { apiFetch } from '@/lib/api-cache';
 
 /**
  * 赛事目录页（Apple HK 产品风，深色电竞主题）
@@ -379,9 +380,7 @@ export function TournamentsPage() {
 
     const fetchFull = async () => {
       try {
-        const res = await fetch('/api/events', { signal: controller.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as EventsPayload;
+        const data = await apiFetch<EventsPayload>('/api/events', { ttlMs: 5 * 60 * 1000, cacheEmpty: false, signal: controller.signal });
         if (cancelled) return;
         setPayload(data);
         setLoading(false);
@@ -395,9 +394,7 @@ export function TournamentsPage() {
 
     (async () => {
       try {
-        const res = await fetch('/api/events?quick=1', { signal: controller.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as EventsPayload;
+        const data = await apiFetch<EventsPayload>('/api/events?quick=1', { ttlMs: 5 * 60 * 1000, cacheEmpty: false, signal: controller.signal });
         if (cancelled) return;
         // quick 响应先落盘，finished 为空时显示加载态。
         setPayload(data);

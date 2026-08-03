@@ -16,6 +16,7 @@ vi.mock('@/lib/playerProfile', () => ({
 }));
 
 import { UpcomingSection } from '@/sections/UpcomingSection';
+import { __resetApiCache } from '@/lib/api-cache';
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = [];
@@ -48,6 +49,7 @@ class MockIntersectionObserver {
 describe('UpcomingSection lazy loading', () => {
   beforeEach(() => {
     MockIntersectionObserver.instances = [];
+    __resetApiCache();
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver as unknown as typeof IntersectionObserver);
     vi.stubGlobal('fetch', vi.fn());
   });

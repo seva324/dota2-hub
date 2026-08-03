@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Newspaper, Flame, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { apiFetch } from '@/lib/api-cache';
 import {
   Dialog,
   DialogContent,
@@ -220,12 +221,7 @@ export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
       setIsLoading(true);
       setLoadError('');
       try {
-        const response = await fetch('/api/news');
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const payload = await response.json();
+        const payload = await apiFetch<NewsItem[]>('/api/news', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
         if (cancelled) return;
 
         setLazyNews(Array.isArray(payload) ? payload : []);

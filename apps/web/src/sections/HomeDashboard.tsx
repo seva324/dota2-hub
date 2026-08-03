@@ -835,9 +835,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
     const loadNews = async () => {
       try {
-        const response = await fetch('/api/news?limit=4');
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await apiFetch<NewsItem[]>('/api/news?limit=4', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
         if (cancelled) return;
         setNews((Array.isArray(data) ? data : []).slice(0, 4));
       } catch { /* 保留空态 */ }
@@ -845,9 +843,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
     const loadRankings = async () => {
       try {
-        const response = await fetch('/api/ept-ranking');
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await apiFetch<{ teams?: Array<{ rank: number; name: string; logo: string | null; points: number }> }>('/api/ept-ranking', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
         if (cancelled) return;
         setRankings(Array.isArray(data?.teams) ? data.teams.slice(0, 5) : []);
       } catch { /* 保留空态 */ }
@@ -855,9 +851,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
     const loadLeagues = async () => {
       try {
-        const response = await fetch('/api/primary-leagues');
-        if (!response.ok) return;
-        const data = await response.json();
+        const data = await apiFetch<{ tournaments?: PrimaryLeague[] }>('/api/primary-leagues', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
         if (cancelled) return;
         setPrimaryLeagues(Array.isArray(data?.tournaments) ? data.tournaments : []);
       } catch { /* 保留空态 */ }
@@ -867,9 +861,12 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
       // Top players: enrich seeds from pro-players API (avatar, team, name)
       const playerRequests = hotPlayersSeed.map(async (seed) => {
         try {
-          const response = await fetch(`/api/pro-players?account_id=${seed.accountId}`);
-          if (!response.ok) return seed;
-          const payload = await response.json();
+          const payload = await apiFetch<{
+            name?: string;
+            team_name?: string;
+            country_code?: string;
+            avatar_url?: string | null;
+          }>(`/api/pro-players?account_id=${seed.accountId}`, { ttlMs: 60 * 60 * 1000, cacheEmpty: false });
           if (!payload || typeof payload !== 'object') return seed;
           return {
             name: payload.name || seed.name,

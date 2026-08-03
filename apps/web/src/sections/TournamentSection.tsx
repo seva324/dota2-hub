@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { isChineseTeam as isChineseTeamFromTeams, resolveTeamLogo } from '@/lib/teams';
+import { apiFetch } from '@/lib/api-cache';
 
 // Hero data type
 interface HeroData {
@@ -31,9 +32,9 @@ const heroesData: Record<number, HeroData> = {};
 
 async function loadHeroesData() {
   try {
-    const res = await fetch('/api/heroes');
-    const heroesJson = await res.json();
-    Object.entries(heroesJson).forEach(([key, value]) => {
+    // 英雄数据静态，1h 共享缓存
+    const heroesJson = await apiFetch<Record<string, unknown>>('/api/heroes', { ttlMs: 60 * 60 * 1000, cacheEmpty: false });
+    Object.entries(heroesJson || {}).forEach(([key, value]) => {
       heroesData[parseInt(key)] = value as HeroData;
     });
   } catch (err) {
@@ -2561,20 +2562,10 @@ export function TournamentSection({
 
     const bootstrapSection = async () => {
       try {
-        const [tournamentsResponse, teamsResponse] = await Promise.all([
-          fetch('/api/tournaments'),
-          fetch('/api/teams')
+        const [tournamentsPayload, teamsPayload] = await Promise.all([
+          apiFetch<{ tournaments?: Tournament[] }>('/api/tournaments', { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
+          apiFetch<NonNullable<TournamentSectionProps['teams']>>('/api/teams', { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
         ]);
-
-        if (!tournamentsResponse.ok) {
-          throw new Error(`tournaments_http_${tournamentsResponse.status}`);
-        }
-        if (!teamsResponse.ok) {
-          throw new Error(`teams_http_${teamsResponse.status}`);
-        }
-
-        const tournamentsPayload = await tournamentsResponse.json();
-        const teamsPayload = await teamsResponse.json();
         if (cancelled) return;
 
         setLazyTournaments(Array.isArray(tournamentsPayload?.tournaments) ? tournamentsPayload.tournaments : []);

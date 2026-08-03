@@ -47,7 +47,7 @@ function isEmptyPayload(payload: unknown): boolean {
  */
 export async function apiFetch<T = unknown>(
   url: string,
-  options: { ttlMs?: number; cacheEmpty?: boolean; fetchImpl?: FetchLike } = {},
+  options: { ttlMs?: number; cacheEmpty?: boolean; fetchImpl?: FetchLike; signal?: AbortSignal } = {},
 ): Promise<T> {
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -65,7 +65,7 @@ export async function apiFetch<T = unknown>(
   }
 
   const task = (async () => {
-    const res = await fetchImpl(url);
+    const res = options.signal ? await fetchImpl(url, { signal: options.signal }) : await fetchImpl(url);
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
     const payload = (await res.json()) as T;
     if (cacheable && (options.cacheEmpty !== false || !isEmptyPayload(payload))) {
