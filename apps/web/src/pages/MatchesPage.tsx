@@ -386,8 +386,8 @@ export function MatchesPage({
     try {
       const [live, upcoming, matches] = await Promise.all([
         apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>(LIVE_API_URL, { ttlMs: 0 }),
-        apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL, { cacheEmpty: false }),
-        apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL, { cacheEmpty: false }),
+        apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL, { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
+        apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL, { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
       ]);
 
       const liveMatches = Array.isArray(live?.liveMatches)

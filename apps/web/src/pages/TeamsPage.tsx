@@ -6,6 +6,7 @@ import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { EmptyState } from '@/components/custom/EmptyState';
 import { toCnAssetUrl } from '@/lib/assetUrls';
 import { toFlagImageUrl } from '@/lib/playerProfile';
+import { apiFetch } from '@/lib/api-cache';
 
 interface RankingPlayer {
   name: string;
@@ -200,9 +201,7 @@ export function TeamsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/team-ranking');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await apiFetch<{ teams?: RankingTeam[]; updatedAt?: number }>('/api/team-ranking', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
       if (!Array.isArray(data?.teams) || data.teams.length === 0) {
         throw new Error('empty');
       }

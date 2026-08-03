@@ -7,6 +7,7 @@ import { SafeImg } from '@/components/custom/SafeImg';
 import { isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
 import type { TeamLike } from '@/lib/teams';
 import { aggregateMatchesBySeries } from '@/lib/seriesAggregation';
+import { apiFetch } from '@/lib/api-cache';
 
 interface Match {
   id: number | string;
@@ -383,12 +384,11 @@ export function HeroSection({
 
     const loadUpcomingData = async () => {
       try {
-        const upcomingResponse = await fetch(buildHeroUpcomingApiUrl());
-        if (!upcomingResponse.ok) {
-          throw new Error(`Upcoming HTTP ${upcomingResponse.status}`);
-        }
-
-        const upcomingPayload = await upcomingResponse.json();
+        // 列表数据走共享缓存：导航回来 0 网络请求；空结果不缓存（穿透重试）
+        const upcomingPayload = await apiFetch<{ upcoming?: Match[]; teams?: TeamLike[] }>(
+          buildHeroUpcomingApiUrl(),
+          { ttlMs: 5 * 60 * 1000, cacheEmpty: false },
+        );
         if (cancelled) return;
 
         setLazyUpcoming(Array.isArray(upcomingPayload?.upcoming) ? upcomingPayload.upcoming : []);

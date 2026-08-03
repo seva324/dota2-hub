@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CalendarDays, Trophy } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { aggregateMatchesBySeries } from '@/lib/seriesAggregation';
+import { apiFetch } from '@/lib/api-cache';
 
 interface UpcomingMatch {
   id: string | number;
@@ -280,18 +281,18 @@ export function MatchesDashboard({
 
   const loadData = useCallback(async () => {
     try {
-      const [upcomingRes, matchesRes] = await Promise.all([
-        fetch('/api/upcoming?limit=8&days=7'),
-        fetch('/api/matches?limit=24'),
+      // 列表走共享缓存（导航回来 0 请求）；allSettled 保留单项成功
+      const [upcomingRes, matchesRes] = await Promise.allSettled([
+        apiFetch<{ upcoming?: UpcomingMatch[] }>('/api/upcoming?limit=8&days=7', { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
+        apiFetch<FinishedMatch[] | { matches?: FinishedMatch[] }>('/api/matches?limit=24', { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
       ]);
 
-      if (upcomingRes.ok) {
-        const data = await upcomingRes.json();
-        setUpcoming(data.upcoming || []);
+      if (upcomingRes.status === 'fulfilled') {
+        setUpcoming(upcomingRes.value?.upcoming || []);
       }
 
-      if (matchesRes.ok) {
-        const data = await matchesRes.json();
+      if (matchesRes.status === 'fulfilled') {
+        const data = matchesRes.value;
         const matches: FinishedMatch[] = Array.isArray(data) ? data : (data.matches || []);
         setFinished(toFinishedSeries(
           matches.filter((match) => match.radiant_team_name && match.dire_team_name)

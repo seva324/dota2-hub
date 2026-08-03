@@ -7,6 +7,7 @@ import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { findTeamRow, isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
+import { apiFetch } from '@/lib/api-cache';
 
 
 
@@ -237,12 +238,10 @@ export function UpcomingSection({
       setIsLoading(true);
       setLoadError('');
       try {
-        const response = await fetch(buildUpcomingApiUrl());
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const payload = await response.json();
+        const payload = await apiFetch<{ upcoming?: Match[]; teams?: NonNullable<UpcomingSectionProps['teams']> }>(
+          buildUpcomingApiUrl(),
+          { ttlMs: 5 * 60 * 1000, cacheEmpty: false },
+        );
         if (cancelled) return;
 
         setLazyUpcoming(Array.isArray(payload?.upcoming) ? payload.upcoming : []);

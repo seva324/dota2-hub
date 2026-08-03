@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Loader2, User } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
+import { apiFetch } from '@/lib/api-cache';
 import type {
   MatchPagePayload,
   SeriesMapBlock,
@@ -409,14 +410,8 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
     const params = new URLSearchParams({ series_id: matchId });
     if (slug) params.set('slug', slug);
     try {
-      // 允许浏览器/EdgeOne 复用缓存（EdgeOne 按 origin Cache-Control 决定是否缓存 /api/match-page）。
-      const res = await fetch(`/api/match-page?${params.toString()}`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setError(data?.error || `加载失败（${res.status}）`);
-        return;
-      }
-      const data: MatchPagePayload = await res.json();
+      // 客户端 5min 共享缓存（match-page 服务端已 Neon 缓存 6h）；返回 matchdetail 再进入 0 请求
+      const data = await apiFetch<MatchPagePayload>(`/api/match-page?${params.toString()}`, { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
       // 服务端真冷启动抓取超时（source:'timeout'）：后台抓取仍在跑，2.5s 后自动重试。
       // 第 1 次超时触发 3 次重试；重试期间显示"正在加载"而非错误。
       if (!data?.maps?.length) {

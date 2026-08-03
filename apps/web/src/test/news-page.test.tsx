@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { NewsPage } from '@/pages/NewsPage';
+import { __resetApiCache } from '@/lib/api-cache';
 
 function makeItem(overrides: Partial<{ id: string; title: string; summary: string; category: string; source: string; image_url: string; published_at: number; url: string }> = {}) {
   return {
@@ -26,6 +27,7 @@ function stubFetch(items: unknown[]) {
 describe('NewsPage', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
+    __resetApiCache();
   });
 
   it('fetches news on mount and renders the headline + cards', async () => {

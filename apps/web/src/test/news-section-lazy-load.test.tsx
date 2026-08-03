@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { NewsSection } from '@/sections/NewsSection';
+import { __resetApiCache } from '@/lib/api-cache';
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = [];
@@ -34,6 +35,7 @@ class MockIntersectionObserver {
 describe('NewsSection lazy loading', () => {
   beforeEach(() => {
     MockIntersectionObserver.instances = [];
+    __resetApiCache();
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver as unknown as typeof IntersectionObserver);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
