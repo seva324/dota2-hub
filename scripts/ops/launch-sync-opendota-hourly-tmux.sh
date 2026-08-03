@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# launchd / 非登录 shell 的 PATH 不含 /usr/local/bin（tmux 所在），显式补上
+export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 session="d2hub-sync-opendota-hourly"
-base_url="https://dota2-hub.vercel.app"
+base_url="https://dotahub.cn"
 interval_min="60"
 timeout_ms="420000"
 min_interval_min="60"
