@@ -5,6 +5,7 @@ import { getDb } from '../lib/db.js';
 import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
+import { warmDltvCaches } from '../lib/server/dltv-warm.js';
 
 let cronActionGateReady = false;
 const inMemoryCronActionGate = new Map();
@@ -262,6 +263,11 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
     const db = getDb();
     if (!db) throw new Error('Database not available');
     return { action, result: await backfillDltvTeamLogos(db, { dryRun: Boolean(raw?.dryRun === true || raw?.dryRun === 'true') }) };
+  }
+  if (action === 'warm-dltv') {
+    // 定时预热：列表 → Redis hot-cache，match-page → Neon。把 DLTV 抓取从用户
+    // 请求路径收敛到 cron，避免突发抓取触发反爬。min interval 由调度/调用方控制。
+    return { action, result: await warmDltvCaches({ fetchImpl: undefined }) };
   }
   if (action === 'sync-news') {
     return { action, result: await syncNewsToDb(buildSyncNewsOptions(raw)) };

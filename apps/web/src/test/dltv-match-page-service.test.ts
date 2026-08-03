@@ -1,13 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const readDltvMatchesHotCache = vi.fn();
-const writeDltvMatchesHotCache = vi.fn();
+const getDbMock = vi.fn();
+const readDltvMatchPageCache = vi.fn();
+const writeDltvMatchPageCache = vi.fn();
+const ensureDltvMatchPageCacheTable = vi.fn();
 
-vi.mock('../../../../lib/server/dltv-matches-hot-cache.js', () => ({
-  readDltvMatchesHotCache,
-  writeDltvMatchesHotCache,
+vi.mock('../../../../lib/db.js', () => ({
+  getDb: () => getDbMock(),
 }));
 
+vi.mock('../../../../lib/server/dltv-match-page-db-cache.js', () => ({
+  ensureDltvMatchPageCacheTable,
+  readDltvMatchPageCache,
+  writeDltvMatchPageCache,
+  freshDltvMatchPageSeriesIds: vi.fn().mockResolvedValue(new Set()),
+}));
+
+const fakeDb = {};
 const SERIES_ITEM_MARKER = 'series_item = ';
 
 /** 不带 slug 的 404 壳页：只有 series_item 作为函数参数名，没有 `series_item = ` 赋值标记。 */
@@ -84,10 +93,14 @@ describe('dltv match page service', () => {
   beforeEach(() => {
     // resetModules: 每次测试重载模块，清空模块级 memoryCache / inFlight single-flight 状态。
     vi.resetModules();
-    readDltvMatchesHotCache.mockReset();
-    writeDltvMatchesHotCache.mockReset();
-    readDltvMatchesHotCache.mockResolvedValue(null);
-    writeDltvMatchesHotCache.mockResolvedValue(undefined);
+    getDbMock.mockReset();
+    getDbMock.mockReturnValue(fakeDb);
+    readDltvMatchPageCache.mockReset();
+    writeDltvMatchPageCache.mockReset();
+    ensureDltvMatchPageCacheTable.mockReset();
+    ensureDltvMatchPageCacheTable.mockResolvedValue(undefined);
+    readDltvMatchPageCache.mockResolvedValue(null);
+    writeDltvMatchPageCache.mockResolvedValue(undefined);
   });
 
   it('accepts a real detail page containing the series_item = marker', async () => {
@@ -109,7 +122,7 @@ describe('dltv match page service', () => {
     expect(result.sourceType).toBe('failed');
   });
 
-  it('parses a full series from the with-slug URL and writes the hot cache', async () => {
+  it('parses a full series from the with-slug URL and writes the Neon cache', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
     const { series, source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
@@ -120,7 +133,8 @@ describe('dltv match page service', () => {
     expect(series?.direTeam?.name).toBe('Nigma Galaxy');
     expect(series?.maps).toHaveLength(1);
     expect(series?.maps[0].available).toBe(true);
-    expect(writeDltvMatchesHotCache).toHaveBeenCalledTimes(1);
+    expect(writeDltvMatchPageCache).toHaveBeenCalledTimes(1);
+    expect(writeDltvMatchPageCache).toHaveBeenCalledWith(fakeDb, 427573, expect.any(Object));
   });
 
   it('returns null series when the no-slug URL returns a 404 shell without the marker', async () => {
@@ -129,7 +143,7 @@ describe('dltv match page service', () => {
     const { series } = await getDltvMatchPage({ seriesId: 427573 }, { fetchImpl });
 
     expect(series).toBeNull();
-    expect(writeDltvMatchesHotCache).not.toHaveBeenCalled();
+    expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
   });
 
   it('rebuilds the slug and re-fetches when the marker page has no map data', async () => {
@@ -151,9 +165,9 @@ describe('dltv match page service', () => {
     expect(secondUrl).toContain('/matches/427573/og-vs-nigma-galaxy-esl-one');
   });
 
-  it('serves a fresh hot-cache payload without fetching', async () => {
+  it('serves a fresh Neon cache payload without fetching', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
-    readDltvMatchesHotCache.mockResolvedValue({
+    readDltvMatchPageCache.mockResolvedValue({
       payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
       refreshedAt: Date.now(),
     });
@@ -163,7 +177,20 @@ describe('dltv match page service', () => {
     expect(series).toEqual({ seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } });
     expect(source).toBe('cache');
     expect(fetchImpl).not.toHaveBeenCalled();
-    expect(writeDltvMatchesHotCache).not.toHaveBeenCalled();
+    expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
+  });
+
+  it('serves a fresh in-memory payload on a second call without re-fetching', async () => {
+    const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
+    readDltvMatchPageCache.mockResolvedValue(null);
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
+
+    const first = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
+    const second = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
+
+    expect(first.source).toBe('dltv');
+    expect(second.source).toBe('cache');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it('shares a single fetch across concurrent cold requests (single-flight)', async () => {
@@ -179,14 +206,30 @@ describe('dltv match page service', () => {
     expect(a.series).not.toBeNull();
     expect(b.series).not.toBeNull();
     expect(a.source).toBe('dltv');
-    expect(writeDltvMatchesHotCache).toHaveBeenCalledTimes(1);
+    expect(writeDltvMatchPageCache).toHaveBeenCalledTimes(1);
   });
 
-  it('returns stale payload immediately while a background refresh rewrites the hot cache', async () => {
+  it('forceRefresh skips both cache layers and fetches fresh', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
-    readDltvMatchesHotCache.mockResolvedValue({
+    // 即使 Neon 有新鲜缓存，forceRefresh 也要绕过它直接抓取（预热 cron 用）。
+    readDltvMatchPageCache.mockResolvedValue({
       payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
-      refreshedAt: Date.now() - 20 * 60 * 1000, // 过期 > CACHE_TTL_MS (10min)
+      refreshedAt: Date.now(),
+    });
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
+
+    const { source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl, forceRefresh: true });
+
+    expect(source).toBe('dltv');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(writeDltvMatchPageCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns stale payload immediately while a background refresh rewrites the Neon cache', async () => {
+    const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
+    readDltvMatchPageCache.mockResolvedValue({
+      payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
+      refreshedAt: Date.now() - 7 * 60 * 60 * 1000, // 过期 > DB_CACHE_TTL_MS (6h)
     });
     const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
 
@@ -196,13 +239,13 @@ describe('dltv match page service', () => {
     expect(series).toEqual({ seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } });
     // 后台刷新已发起抓取
     expect(fetchImpl).toHaveBeenCalled();
-    await vi.waitFor(() => expect(writeDltvMatchesHotCache).toHaveBeenCalled());
+    await vi.waitFor(() => expect(writeDltvMatchPageCache).toHaveBeenCalled());
   });
 
   it('bounds a hung cold fetch to 15s and reports source timeout (retryable)', async () => {
     vi.useFakeTimers();
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
-    readDltvMatchesHotCache.mockResolvedValue(null);
+    readDltvMatchPageCache.mockResolvedValue(null);
     const neverResolving = (async () => new Promise(() => {})) as unknown as typeof fetch;
 
     const promise = getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl: neverResolving });
@@ -210,15 +253,15 @@ describe('dltv match page service', () => {
 
     const result = await promise;
     expect(result).toEqual({ series: null, source: 'timeout' });
-    expect(writeDltvMatchesHotCache).not.toHaveBeenCalled();
+    expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
 
   it('falls back to stale when a background refresh fails', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
-    readDltvMatchesHotCache.mockResolvedValue({
+    readDltvMatchPageCache.mockResolvedValue({
       payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
-      refreshedAt: Date.now() - 20 * 60 * 1000,
+      refreshedAt: Date.now() - 7 * 60 * 60 * 1000,
     });
     const fetchImpl = vi.fn().mockRejectedValue(new Error('network down'));
 
@@ -228,7 +271,7 @@ describe('dltv match page service', () => {
     expect(series).toEqual({ seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } });
     // 等后台刷新 settle，确认旧数据未被覆盖
     await new Promise((r) => setTimeout(r, 0));
-    expect(writeDltvMatchesHotCache).not.toHaveBeenCalled();
+    expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
   });
 
   it('prewarmMatchPages fires a background fetch for unseen series and dedupes repeats', async () => {

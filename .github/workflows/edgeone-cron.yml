@@ -6,6 +6,7 @@ on:
     - cron: '30 9 * * *'
     - cron: '0 14 * * *'
     - cron: '30 14 * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
     inputs:
       target:
@@ -34,6 +35,8 @@ jobs:
             TARGET_PATH="/api/sync-news"
           elif [ "${{ github.event.schedule }}" = "0 14 * * *" ]; then
             TARGET_PATH="/api/sync-liquipedia"
+          elif [ "${{ github.event.schedule }}" = "*/10 * * * *" ]; then
+            TARGET_PATH="/api/cron?action=warm-dltv&minIntervalMin=10"
           else
             TARGET_PATH="/api/cron?action=refresh-derived-data-incremental"
           fi
