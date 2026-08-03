@@ -79,7 +79,7 @@ describe('dltv-matches-service (Part 1a speedups)', () => {
 
   it('returns stale data immediately (source=stale) while a background refresh writes the hot cache', async () => {
     const { getDltvLive } = await importService();
-    mockRead.mockResolvedValue({ payload: [{ id: 'stale' }], refreshedAt: Date.now() - 20_000 });
+    mockRead.mockResolvedValue({ payload: [{ id: 'stale' }], refreshedAt: Date.now() - 40_000 });
     const calls: string[] = [];
     const fetchImpl = createFetchImpl(calls);
 
