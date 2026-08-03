@@ -54,7 +54,12 @@ export default async function handler(req, res) {
         match_url: row.matchUrl || null,
       }));
 
-    res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30, stale-while-revalidate=120');
+    // 抓取失败时 source='failed'：不缓存空响应，避免 CDN 缓存污染后续请求。
+    if (result.length === 0 || source === 'failed') {
+      res.setHeader('Cache-Control', 'no-store');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30, stale-while-revalidate=120');
+    }
     res.setHeader('X-DLTV-Source', source);
     return res.status(200).json({
       days,
