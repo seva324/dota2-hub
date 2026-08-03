@@ -77,19 +77,12 @@ export default async function handler(req, res) {
   try {
     const { series, source } = await getDltvMatchPage({ seriesId, slug });
 
-    // 真冷启动抓取超时（12-31s）→ 返回 200 + source:'timeout'，绝不 404：
+    // 真冷启动抓取超时/失败 → 返回 200 + source:'timeout'，绝不 404：
     // 前端看到 timeout 会自动重试，且底层抓取仍在后台跑，重试大概率命中内存缓存。
     // no-store 防止 EdgeOne 把空/超时响应缓存 600s。
-    if (!series && source === 'timeout') {
+    if (!series) {
       res.setHeader('Cache-Control', MATCH_PAGE_NO_STORE_CACHE_CONTROL);
       return res.status(200).json({ seriesId, source: 'timeout', maps: [] });
-    }
-
-    if (!series) {
-      // 404 不能进共享缓存：一次抓取失败（DLTV 偶发 404/超时）不应把"没找到比赛"
-      // 缓存 600 秒，否则所有用户都会看到假的"not found"。
-      res.setHeader('Cache-Control', MATCH_PAGE_NO_STORE_CACHE_CONTROL);
-      return res.status(404).json({ error: 'Match page not found on DLTV' });
     }
 
     const playersMeta = series.players || {};

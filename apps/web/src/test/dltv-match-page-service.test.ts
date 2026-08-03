@@ -199,14 +199,14 @@ describe('dltv match page service', () => {
     await vi.waitFor(() => expect(writeDltvMatchesHotCache).toHaveBeenCalled());
   });
 
-  it('bounds a hung cold fetch to 12s and reports source timeout (retryable)', async () => {
+  it('bounds a hung cold fetch to 15s and reports source timeout (retryable)', async () => {
     vi.useFakeTimers();
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     readDltvMatchesHotCache.mockResolvedValue(null);
     const neverResolving = (async () => new Promise(() => {})) as unknown as typeof fetch;
 
     const promise = getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl: neverResolving });
-    await vi.advanceTimersByTimeAsync(12000);
+    await vi.advanceTimersByTimeAsync(15000);
 
     const result = await promise;
     expect(result).toEqual({ series: null, source: 'timeout' });
