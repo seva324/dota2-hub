@@ -1,66 +1,11 @@
-import { getDltvLive } from '../lib/server/dltv-matches-service.js';
-import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
-import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
+import { getDb } from '../lib/db.js';
+import { getLiveHeroPayloads } from '../lib/server/live-hero-service.js';
 
 const LIVE_HERO_CACHE_CONTROL = 'public, max-age=30, s-maxage=30, stale-while-revalidate=60';
 const LIVE_HERO_NO_STORE_CACHE_CONTROL = 'no-store';
 
 function shouldBypassSharedCache(query) {
   return String(query?.refresh || '') === '1' || String(query?.debug || '') === '1';
-}
-
-// DLTV logo paths are relative (e.g. /uploads/teams/...). Prefer curated
-// GitHub logos for top teams; otherwise qualify with the DLTV origin.
-// 最终走 /api/asset-image 代理，保证国内浏览器可加载。
-function resolveLogo(name, relativeLogo, req) {
-  const curated = getCuratedTeamLogoGithubUrl({ name });
-  const raw = curated || (relativeLogo ? `https://dltv.org${relativeLogo.startsWith('/') ? '' : '/'}${relativeLogo}` : null);
-  if (!raw) return null;
-  return getMirroredAssetUrl(raw, req);
-}
-
-// Map a parsed DLTV live match onto the frontend's LiveHeroPayload shape.
-// DLTV has no per-map history on the list page: build a single "live" map
-// from the current kills / game time, and use series wins for the series score.
-function toLiveHeroPayload(match, req) {
-  const team1Score = match.seriesWins1 ?? 0;
-  const team2Score = match.seriesWins2 ?? 0;
-  const gameTime = match.gameTime ?? null;
-  const matchId = match.matchId ? String(match.matchId) : null;
-
-  const map = {
-    matchId,
-    label: 'Map 1',
-    status: 'live',
-    team1Score: match.radiantKills ?? null,
-    team2Score: match.direKills ?? null,
-    team1NetWorthLead: match.radiantNetWorth != null || match.direNetWorth != null
-      ? (match.radiantNetWorth ?? 0) - (match.direNetWorth ?? 0)
-      : null,
-    team1TotalGold: match.radiantNetWorth ?? null,
-    team2TotalGold: match.direNetWorth ?? null,
-    gameTime,
-  };
-
-  return {
-    source: 'dltv',
-    sourceUrl: match.matchUrl || null,
-    sourceSeriesId: match.seriesId ? String(match.seriesId) : null,
-    leagueName: match.tournament || '',
-    stage: match.stage || null,
-    bestOf: match.bestOf || 'BO3',
-    seriesScore: `${team1Score}:${team2Score}`,
-    seriesScoreBreakdown: { team1: team1Score, team2: team2Score },
-    live: true,
-    startedAt: null,
-    viewerCount: null,
-    teams: [
-      { side: 'team1', name: match.radiantName, logo: resolveLogo(match.radiantName, match.radiantLogo, req) },
-      { side: 'team2', name: match.direName, logo: resolveLogo(match.direName, match.direLogo, req) },
-    ],
-    maps: [map],
-    liveMap: map,
-  };
 }
 
 export default async function handler(req, res) {
@@ -74,12 +19,22 @@ export default async function handler(req, res) {
   }
 
   try {
+    const db = getDb();
     const forceRefresh = String(req.query?.refresh || '') === '1';
-    const { live: liveMatches, source } = await getDltvLive({ forceRefresh });
-    const liveHeroes = liveMatches.map((match) => toLiveHeroPayload(match, req));
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 20));
+
+    // HAWK live 链路（与小程序一致）：热缓存（Neon）30s 新鲜 + Neon hero_live_scores 持久化。
+    // 传 req 让 hydratePayloadTeamLogos 走 curated/mirror/代理 解析 LOGO。
+    const payloads = await getLiveHeroPayloads(db, {
+      maxAgeSeconds: 180,
+      limit,
+      forceRefresh,
+      req,
+    });
+    const liveHeroes = Array.isArray(payloads) ? payloads.filter(Boolean) : [];
     const live = liveHeroes[0] || null;
 
-    // 抓取失败/无 live 时不缓存空响应，避免 CDN 把空数据缓存污染后续请求。
+    // 无 live 时不缓存空响应，避免 CDN 缓存空数据污染后续请求。
     if (liveHeroes.length === 0) {
       res.setHeader('Cache-Control', 'no-store');
     }
@@ -91,7 +46,7 @@ export default async function handler(req, res) {
         hasLive: liveHeroes.length > 0,
         liveCount: liveHeroes.length,
         generatedAt: new Date().toISOString(),
-        source: liveHeroes.length > 0 ? 'dltv' : source,
+        source: liveHeroes.length > 0 ? 'hawk' : 'none',
       },
     });
   } catch (error) {
@@ -100,12 +55,11 @@ export default async function handler(req, res) {
       error: error instanceof Error ? error.message : 'Unknown error',
       live: null,
       liveMatches: [],
-      debug: null,
       meta: {
         hasLive: false,
         liveCount: 0,
         generatedAt: new Date().toISOString(),
-        source: 'dltv',
+        source: 'none',
       },
     });
   }
