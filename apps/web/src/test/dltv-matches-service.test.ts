@@ -108,14 +108,14 @@ describe('dltv-matches-service (Part 1a speedups)', () => {
     expect(liveResult.live).toEqual([{ id: 'l1' }]);
   });
 
-  it('times out a cold miss after 4s and returns empty payload with source=failed', async () => {
+  it('times out a cold miss after 8s and returns empty payload with source=failed', async () => {
     vi.useFakeTimers();
     const { getDltvLive } = await importService();
     mockRead.mockResolvedValue(null);
     const neverResolving = (async () => new Promise(() => {})) as unknown as typeof fetch;
 
     const promise = getDltvLive({ fetchImpl: neverResolving });
-    await vi.advanceTimersByTimeAsync(4000);
+    await vi.advanceTimersByTimeAsync(8000);
 
     const result = await promise;
     expect(result).toEqual({ live: [], source: 'failed' });
@@ -143,7 +143,7 @@ describe('dltv-matches-service (Part 1a speedups)', () => {
 
     await getDltvLive({ fetchImpl });
 
-    expect(mockLock).toHaveBeenCalledWith('live', 4000);
+    expect(mockLock).toHaveBeenCalledWith('live', 8000);
   });
 
   it('serves a second cold request from in-memory payload without refetching (warm within same instance)', async () => {
