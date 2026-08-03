@@ -41,6 +41,8 @@ export function SafeImg({ src, alt = '', className, title, fallback }: SafeImgPr
       alt={alt}
       title={title}
       className={className}
+      loading="lazy"
+      decoding="async"
       onError={() => {
         if (isProxy && !retried) {
           setRetried(true);
