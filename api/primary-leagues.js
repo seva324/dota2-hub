@@ -37,7 +37,7 @@ async function fetchHomeHtml(fetchImpl = fetch) {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)',
           Accept: 'text/html,application/xhtml+xml,text/plain',
-          ...(attempt.type === 'jina' ? { 'X-Return-Format': 'html' } : {}),
+          ...(attempt.type === 'jina' ? { 'X-Return-Format': 'html', 'X-No-Cache': 'true' } : {}),
         },
         signal: timeout.signal,
       });
