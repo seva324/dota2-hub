@@ -26,15 +26,28 @@ const store = new Map<string, CacheEntry>();
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
+/** 空结果判定：空数组 / 空对象 / { upcoming: [], teams: [] } 这类空容器。 */
+function isEmptyPayload(payload: unknown): boolean {
+  if (Array.isArray(payload)) return payload.length === 0;
+  if (payload && typeof payload === 'object') {
+    const values = Object.values(payload as Record<string, unknown>);
+    if (values.length === 0) return true;
+    return values.every((v) => Array.isArray(v) && v.length === 0);
+  }
+  return false;
+}
+
 /**
  * 带共享缓存的 fetch。
  * @param url 请求 URL（作为缓存键的一部分）
  * @param options.ttlMs 缓存有效期；默认 60s。传 0 表示不缓存（只做并发去重）。
+ * @param options.cacheEmpty 空结果（空数组）是否写入缓存；默认 true。
+ *   抓取失败返回空时前端缓存会把空数据顶住 60s，传 false 让空结果直接穿透重试。
  * @param options.fetchImpl 测试注入
  */
 export async function apiFetch<T = unknown>(
   url: string,
-  options: { ttlMs?: number; fetchImpl?: FetchLike } = {},
+  options: { ttlMs?: number; cacheEmpty?: boolean; fetchImpl?: FetchLike } = {},
 ): Promise<T> {
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -55,7 +68,7 @@ export async function apiFetch<T = unknown>(
     const res = await fetchImpl(url);
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
     const payload = (await res.json()) as T;
-    if (cacheable) {
+    if (cacheable && (options.cacheEmpty !== false || !isEmptyPayload(payload))) {
       store.set(url, { payload, at: Date.now() });
     }
     return payload;

@@ -79,6 +79,11 @@ export default async function handler(req, res) {
     const liveHeroes = liveMatches.map((match) => toLiveHeroPayload(match, req));
     const live = liveHeroes[0] || null;
 
+    // 抓取失败/无 live 时不缓存空响应，避免 CDN 把空数据缓存污染后续请求。
+    if (liveHeroes.length === 0) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+
     return res.status(200).json({
       live: live || null,
       liveMatches: liveHeroes,

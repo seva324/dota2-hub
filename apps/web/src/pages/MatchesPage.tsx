@@ -129,20 +129,22 @@ function TeamWithLogo({ name, logo, winner, alignRight }: {
 
 /**
  * 居中队伍区：队名+LOGO | VS/比分 | LOGO+队名。
- * 左右队等宽容器(内容右/左对齐)，VS/比分严格居中，队名超宽省略。
+ * 左右队等宽伸缩（min-w-0 + truncate），VS/比分严格居中，队名超宽省略。
+ * 移动端作为整行 flex 填充，桌面端在 1fr_auto_1fr 网格的中间列。
  */
-function TeamMatchup({ left, right, center }: {
+function TeamMatchup({ left, right, center, className = '' }: {
   left: { name: string; logo?: string | null; winner?: boolean };
   right: { name: string; logo?: string | null; winner?: boolean };
   center: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center">
-      <div className="flex w-48 items-center justify-end">
+    <div className={`flex min-w-0 items-center justify-center gap-2 ${className}`}>
+      <div className="flex min-w-0 flex-1 items-center justify-end">
         <TeamWithLogo name={left.name} logo={left.logo} winner={left.winner} />
       </div>
-      <div className="flex w-24 shrink-0 items-center justify-center">{center}</div>
-      <div className="flex w-48 items-center">
+      <div className="flex shrink-0 items-center justify-center px-0.5">{center}</div>
+      <div className="flex min-w-0 flex-1 items-center">
         <TeamWithLogo name={right.name} logo={right.logo} winner={right.winner} alignRight />
       </div>
     </div>
@@ -155,26 +157,35 @@ function UpcomingRow({ match, onOpen }: {
 }) {
   const left = match.radiant_team_name || 'TBD';
   const right = match.dire_team_name || 'TBD';
+  const tournamentName = match.tournament_name_cn || match.tournament_name || '';
   return (
     <button
       type="button"
       onClick={() => onOpen?.(match.series_id ?? match.id ?? '', [{ slug: slugFromMatchUrl(match.match_url) }])}
-      className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.04]"
+      className="grid w-full grid-cols-1 gap-y-2 px-5 py-4 text-left transition-colors hover:bg-white/[0.04] md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4"
     >
-      {/* 左信息列：时间 + 赛事名 */}
-      <div className="flex min-w-0 items-center gap-4">
-        <div className="w-20 shrink-0">
-          <div className="text-sm font-bold tabular-nums text-white">{formatMatchTime(match.start_time)}</div>
-          <div className="text-[10px] text-slate-500">{formatCountdown(match.start_time)}</div>
+      {/* 移动端 meta 行：时间 + BO3 + View Match */}
+      <div className="flex items-center justify-between gap-2 md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="text-sm font-bold tabular-nums text-white">{formatMatchTime(match.start_time)}</span>
+          <span className="truncate text-[10px] text-slate-500">{formatCountdown(match.start_time)}</span>
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-slate-200">{match.tournament_name_cn || match.tournament_name || ''}</div>
-          <div className="truncate text-[11px] text-slate-500">Upcoming</div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-[11px]" style={{ color: '#71717a' }}>{formatBestOf(match.series_type)}</span>
+          <span className="whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ color: '#d4d4d8', backgroundColor: '#2a2d35', border: '1px solid rgba(255,255,255,0.08)' }}>
+            View Match
+          </span>
         </div>
       </div>
+      {/* 移动端赛事名行 */}
+      <div className="flex min-w-0 items-center gap-2 md:hidden">
+        <span className="truncate text-[11px] text-slate-500">{tournamentName}</span>
+        <span className="shrink-0 text-[10px] text-slate-600">Upcoming</span>
+      </div>
 
-      {/* 中间列：队伍整体居中 */}
+      {/* 队伍匹配（桌面中间列） */}
       <TeamMatchup
+        className="md:order-2"
         left={{ name: left, logo: match.radiant_team_logo }}
         right={{ name: right, logo: match.dire_team_logo }}
         center={(
@@ -184,8 +195,20 @@ function UpcomingRow({ match, onOpen }: {
         )}
       />
 
-      {/* 右信息列：赛制 + 按钮 */}
-      <div className="flex items-center justify-end gap-4">
+      {/* 桌面左信息列 */}
+      <div className="hidden min-w-0 items-center gap-4 md:order-1 md:flex">
+        <div className="w-20 shrink-0">
+          <div className="text-sm font-bold tabular-nums text-white">{formatMatchTime(match.start_time)}</div>
+          <div className="text-[10px] text-slate-500">{formatCountdown(match.start_time)}</div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-semibold text-slate-200">{tournamentName}</div>
+          <div className="truncate text-[11px] text-slate-500">Upcoming</div>
+        </div>
+      </div>
+
+      {/* 桌面右信息列 */}
+      <div className="hidden items-center justify-end gap-4 md:order-3 md:flex">
         <div className="w-10 text-center text-[11px]" style={{ color: '#71717a' }}>
           {formatBestOf(match.series_type)}
         </div>
@@ -205,25 +228,32 @@ function CompletedRow({ match, onOpen }: {
 }) {
   const radiantWon = (match.radiant_score ?? 0) > (match.dire_score ?? 0);
   const direWon = (match.dire_score ?? 0) > (match.radiant_score ?? 0);
+  const tournamentName = match.tournament_name || '';
   return (
     <button
       type="button"
       onClick={() => onOpen?.(match.match_id, [{ slug: slugFromMatchUrl(match.match_url) }])}
-      className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.04]"
+      className="grid w-full grid-cols-1 gap-y-2 px-5 py-4 text-left transition-colors hover:bg-white/[0.04] md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4"
     >
-      {/* 左信息列：COMPLETED 标签 + 赛事名 */}
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
-          COMPLETED
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-slate-200">{match.tournament_name || ''}</div>
-          <div className="truncate text-[11px] text-slate-500">Completed</div>
+      {/* 移动端 meta 行：COMPLETED + 赛事名（左），BO3 + View Match（右） */}
+      <div className="flex items-center justify-between gap-2 md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
+            COMPLETED
+          </span>
+          <span className="truncate text-[11px] text-slate-500">{tournamentName}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-[11px]" style={{ color: '#71717a' }}>{formatBestOf(match.series_type)}</span>
+          <span className="whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ color: '#d4d4d8', backgroundColor: '#2a2d35', border: '1px solid rgba(255,255,255,0.08)' }}>
+            View Match
+          </span>
         </div>
       </div>
 
-      {/* 中间列：队伍整体居中 */}
+      {/* 队伍匹配（桌面中间列） */}
       <TeamMatchup
+        className="md:order-2"
         left={{ name: match.radiant_team_name, logo: match.radiant_team_logo, winner: radiantWon }}
         right={{ name: match.dire_team_name, logo: match.dire_team_logo, winner: direWon }}
         center={(
@@ -235,8 +265,19 @@ function CompletedRow({ match, onOpen }: {
         )}
       />
 
-      {/* 右信息列：赛制 + 时间 + 按钮 */}
-      <div className="flex items-center justify-end gap-4">
+      {/* 桌面左信息列：COMPLETED 标签 + 赛事名 */}
+      <div className="hidden min-w-0 items-center gap-3 md:order-1 md:flex">
+        <span className="shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
+          COMPLETED
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-semibold text-slate-200">{tournamentName}</div>
+          <div className="truncate text-[11px] text-slate-500">Completed</div>
+        </div>
+      </div>
+
+      {/* 桌面右信息列：赛制 + 时间 + 按钮 */}
+      <div className="hidden items-center justify-end gap-4 md:order-3 md:flex">
         <div className="w-16 text-center">
           <div className="text-[11px]" style={{ color: '#71717a' }}>{formatBestOf(match.series_type)}</div>
           <div className="text-[10px] text-slate-500">{formatTimeAgo(match.start_time)}</div>
@@ -345,8 +386,8 @@ export function MatchesPage({
     try {
       const [live, upcoming, matches] = await Promise.all([
         apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>(LIVE_API_URL, { ttlMs: 0 }),
-        apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL),
-        apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL),
+        apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL, { cacheEmpty: false }),
+        apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL, { cacheEmpty: false }),
       ]);
 
       const liveMatches = Array.isArray(live?.liveMatches)

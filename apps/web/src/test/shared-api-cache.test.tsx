@@ -43,7 +43,20 @@ function createFetchStub() {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url === '/api/upcoming?limit=20&days=7') {
-      return { ok: true, json: async () => ({ upcoming: [] }) } as Response;
+      return {
+        ok: true,
+        json: async () => ({
+          upcoming: [{
+            id: '1',
+            series_id: '1',
+            start_time: Math.floor(Date.now() / 1000) + 3600,
+            radiant_team_name: 'Team A',
+            dire_team_name: 'Team B',
+            series_type: 'BO3',
+            tournament_name: 'Test League',
+          }],
+        }),
+      } as Response;
     }
     if (url === '/api/live-hero') {
       return { ok: true, json: async () => ({ liveMatches: [] }) } as Response;
