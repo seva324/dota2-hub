@@ -139,12 +139,12 @@ function TeamMatchup({ left, right, center, className = '' }: {
   className?: string;
 }) {
   return (
-    <div className={`flex min-w-0 items-center justify-center gap-2 ${className}`}>
-      <div className="flex min-w-0 flex-1 items-center justify-end">
+    <div className={`flex items-center gap-1 md:gap-0 ${className}`}>
+      <div className="flex min-w-0 flex-1 items-center justify-end md:w-48 md:flex-none">
         <TeamWithLogo name={left.name} logo={left.logo} winner={left.winner} />
       </div>
-      <div className="flex shrink-0 items-center justify-center px-0.5">{center}</div>
-      <div className="flex min-w-0 flex-1 items-center">
+      <div className="flex shrink-0 items-center justify-center px-0.5 md:w-24 md:px-0">{center}</div>
+      <div className="flex min-w-0 flex-1 items-center md:w-48 md:flex-none">
         <TeamWithLogo name={right.name} logo={right.logo} winner={right.winner} alignRight />
       </div>
     </div>

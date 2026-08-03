@@ -242,26 +242,80 @@ function GameBlock({
   const firstPlayers = game.players.filter((p) => p.teamId === firstTeamId);
   const secondPlayers = game.players.filter((p) => p.teamId === secondTeamId);
 
+  // 对战栏队伍块：移动端（两行布局）与桌面端（原单行布局）共用同一套响应式 class。
+  const renderBarTeam = (side: 'left' | 'right') => {
+    const isLeft = side === 'left';
+    const name = isLeft ? firstTeamName : secondTeamName;
+    const logo = isLeft ? firstLogo : secondLogo;
+    const win = isLeft ? winnerIsFirst : !winnerIsFirst;
+    const logoEl = (
+      <SafeImg
+        src={logo}
+        alt={name || ''}
+        className="size-7 shrink-0 object-contain md:size-10"
+        fallback={<TeamLogoFallback name={name || (isLeft ? 'A' : 'B')} size={28} />}
+      />
+    );
+    const textEl = (
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className={`${isLeft ? '' : 'text-right'} text-[10px] font-bold uppercase tracking-wide text-slate-400`}>
+          {win ? <span style={{ color: design.pip }}>Victory</span> : 'Defeat'}
+        </span>
+        <span className={`truncate text-sm font-black uppercase text-white md:text-base ${isLeft ? '' : 'text-right'}`}>{name}</span>
+      </div>
+    );
+    return (
+      <div className={`flex min-w-0 flex-1 items-center gap-1.5 md:gap-3 ${isLeft ? '' : 'justify-end'}`}>
+        {isLeft ? <>{logoEl}{textEl}</> : <>{textEl}{logoEl}</>}
+      </div>
+    );
+  };
+
   return (
     <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.02]">
       {/* 对战栏 */}
       <div className="relative border-b border-white/[0.06] bg-white/[0.03] px-4 py-3">
-        <div className="mx-auto flex max-w-[900px] items-center justify-center">
-          {/* 左队 */}
-          <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-            <SafeImg
-              src={firstLogo}
-              alt={firstTeamName || ''}
-              className="size-8 shrink-0 object-contain md:size-10"
-              fallback={<TeamLogoFallback name={firstTeamName || 'A'} size={32} />}
-            />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                {winnerIsFirst ? <span style={{ color: design.pip }}>Victory</span> : 'Defeat'}
-              </span>
-              <span className="truncate text-sm font-black uppercase text-white md:text-base">{firstTeamName}</span>
-            </div>
+        {/* 移动端：两行布局（第N场 + Game Time 在顶部，对战行在下方）。原单行右上角绝对定位
+            "第 N 场"在 402px 视口会压到右队 logo，移动端改为流式顶部行。 */}
+        <div className="mx-auto max-w-[900px] md:hidden">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold text-slate-500">第 {game.gameNo} 场</span>
+            <span
+              className="flex items-center gap-1 rounded-[6px] px-2 py-0.5 font-mono text-xs font-black leading-none text-black"
+              style={{ backgroundColor: design.pip }}
+            >
+              {formatDuration(game.duration)}
+              <span className="text-[8px] font-bold uppercase leading-none tracking-widest">Game Time</span>
+            </span>
           </div>
+          <div className="flex items-center justify-center gap-1.5">
+            {renderBarTeam('left')}
+            <div className="flex shrink-0 items-center gap-0.5">
+              <div className="flex w-7 flex-col items-center">
+                <span className={`text-xl font-black tabular-nums leading-none ${winnerIsFirst ? 'text-white' : 'text-slate-500'}`}>
+                  {firstKills ?? '—'}
+                </span>
+                <div className="mt-1 h-1.5">
+                  <Pips count={leftPips} />
+                </div>
+              </div>
+              <span className="text-sm font-bold text-slate-500">:</span>
+              <div className="flex w-7 flex-col items-center">
+                <span className={`text-xl font-black tabular-nums leading-none ${winnerIsFirst ? 'text-slate-500' : 'text-white'}`}>
+                  {secondKills ?? '—'}
+                </span>
+                <div className="mt-1 h-1.5">
+                  <Pips count={rightPips} />
+                </div>
+              </div>
+            </div>
+            {renderBarTeam('right')}
+          </div>
+        </div>
+
+        {/* 桌面端：原单行布局（Game Time 夹在两个比分中间） */}
+        <div className="mx-auto hidden max-w-[900px] items-center justify-center md:flex">
+          {renderBarTeam('left')}
 
           {/* 中：比分 + pip + 时间 */}
           <div className="flex shrink-0 items-center gap-2 px-2 md:gap-3 md:px-4">
@@ -296,25 +350,11 @@ function GameBlock({
             </div>
           </div>
 
-          {/* 右队 */}
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 md:gap-3">
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                {winnerIsFirst ? 'Defeat' : <span style={{ color: design.pip }}>Victory</span>}
-              </span>
-              <span className="truncate text-right text-sm font-black uppercase text-white md:text-base">{secondTeamName}</span>
-            </div>
-            <SafeImg
-              src={secondLogo}
-              alt={secondTeamName || ''}
-              className="size-8 shrink-0 object-contain md:size-10"
-              fallback={<TeamLogoFallback name={secondTeamName || 'B'} size={32} />}
-            />
-          </div>
+          {renderBarTeam('right')}
         </div>
 
-        {/* 右上角：第几场 */}
-        <div className="absolute right-4 top-3 text-[11px] font-semibold text-slate-500">第 {game.gameNo} 场</div>
+        {/* 桌面端：右上角第几场（桌面宽度下 900px 居中区不贴页边，不会压到右队 logo） */}
+        <div className="absolute right-4 top-3 hidden text-[11px] font-semibold text-slate-500 md:block">第 {game.gameNo} 场</div>
       </div>
 
       {/* 选手两列：移动端堆叠时每队上方加队名分隔，桌面端并排 */}

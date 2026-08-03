@@ -78,6 +78,24 @@ describe('asset image proxy helpers', () => {
     ])
   })
 
+  it('routes DLTV hero and item uploads through the same-origin asset proxy', () => {
+    expect(
+      toChinaReachableAssetUrl('https://dltv.org/uploads/heroes/PkZYTU6NzNS4cgfnTYAjVfUznSSCyxI3.jpg')
+    ).toBe('/api/asset-image?url=https%3A%2F%2Fdltv.org%2Fuploads%2Fheroes%2FPkZYTU6NzNS4cgfnTYAjVfUznSSCyxI3.jpg')
+    expect(
+      toChinaReachableAssetUrl('https://dltv.org/uploads/items/hZ1dpxCGsslmPsyXhv99XG4FDWNe4s6a.png')
+    ).toBe('/api/asset-image?url=https%3A%2F%2Fdltv.org%2Fuploads%2Fitems%2FhZ1dpxCGsslmPsyXhv99XG4FDWNe4s6a.png')
+  })
+
+  it('keeps the s3 fallback candidate for DLTV hero and item uploads', () => {
+    expect(
+      getAssetImageFetchCandidates('https://dltv.org/uploads/heroes/PkZYTU6NzNS4cgfnTYAjVfUznSSCyxI3.jpg')
+    ).toEqual([
+      'https://dltv.org/uploads/heroes/PkZYTU6NzNS4cgfnTYAjVfUznSSCyxI3.jpg',
+      'https://s3.dltv.org/uploads/heroes/PkZYTU6NzNS4cgfnTYAjVfUznSSCyxI3.jpg',
+    ])
+  })
+
   it('keeps curated GitHub raw team logos as a direct fetch candidate', () => {
     const teamLiquidUrl = getCuratedTeamLogoGithubUrl('Team Liquid')
     expect(
