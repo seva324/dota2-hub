@@ -58,7 +58,8 @@ mkdir -p "$(dirname "$log_file")"
 
 node_cmd="node"
 if [[ -n "$resolved_env_file" ]]; then
-  node_cmd="node --env-file=$(printf '%q' "$resolved_env_file")"
+  # unset 旧环境变量，避免 shell profile 注入的失效 TELEGRAM token 覆盖 .env 里的正确值
+  node_cmd="unset TELEGRAM_BOT_TOKEN TG_BOT_TOKEN; node --env-file=$(printf '%q' "$resolved_env_file")"
 fi
 
 runner_cmd="cd $(printf '%q' "$ROOT_DIR") && ${node_cmd} scripts/ops/hourly-cron-refresh.mjs --endpoints=$(printf '%q' "$endpoint") --interval-min=$(printf '%q' "$interval_min") --min-interval-min=$(printf '%q' "$min_interval_min") --timeout-ms=$(printf '%q' "$timeout_ms") --log=$(printf '%q' "$log_file")"

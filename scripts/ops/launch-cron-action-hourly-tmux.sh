@@ -62,7 +62,7 @@ if [[ "$action" == "sync-news" ]]; then
   local_flag="--local=1"
 fi
 
-runner_cmd="cd $(printf '%q' "$ROOT_DIR") && while true; do stamp=\$(date -u +%Y%m%dT%H%M%SZ); printf '\n===== %s cron %s start =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"$action\" >> $(printf '%q' "$log_file"); node --env-file=.env.local scripts/ops/run-cron-action-once.mjs --action=$action --base=$base --timeout-ms=$timeout_ms --notify=$notify $local_flag $only_source_flag --log=$json_log >> $(printf '%q' "$log_file") 2>&1; status=\$?; printf '===== %s cron %s exit:%s =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"$action\" \"\$status\" >> $(printf '%q' "$log_file"); sleep $interval_sec; done"
+runner_cmd="cd $(printf '%q' "$ROOT_DIR") && while true; do stamp=\$(date -u +%Y%m%dT%H%M%SZ); printf '\n===== %s cron %s start =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"$action\" >> $(printf '%q' "$log_file"); unset TELEGRAM_BOT_TOKEN TG_BOT_TOKEN; node --env-file=.env.local scripts/ops/run-cron-action-once.mjs --action=$action --base=$base --timeout-ms=$timeout_ms --notify=$notify $local_flag $only_source_flag --log=$json_log >> $(printf '%q' "$log_file") 2>&1; status=\$?; printf '===== %s cron %s exit:%s =====\n' \"\$(date '+%Y-%m-%d %H:%M:%S %Z')\" \"$action\" \"\$status\" >> $(printf '%q' "$log_file"); sleep $interval_sec; done"
 
 tmux kill-session -t "$session" 2>/dev/null || true
 tmux new-session -d -s "$session" "bash -lc $(printf '%q' "$runner_cmd")"
