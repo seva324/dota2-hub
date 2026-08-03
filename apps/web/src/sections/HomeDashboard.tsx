@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
@@ -17,6 +17,9 @@ import type { RouteState } from '@/lib/hashRouter';
 
 const nowTs = () => Math.floor(Date.now() / 1000);
 const LIVE_REFRESH_INTERVAL_MS = 30_000;
+// 冷启动/抓取失败时 API 可能间歇返回空：连续 2 次空轮询才清空 live 卡片，
+// 避免"加载出来又没了"的闪烁。与 HeroSection 的容忍逻辑对齐。
+const LIVE_EMPTY_GRACE_POLLS = 2;
 // 与比赛页共用同一份缓存：URL 必须完全一致才能命中（精确键）。
 // live-hero 是实时数据，30s 轮询不缓存（ttl 0），只做并发去重。
 const UPCOMING_API_URL = '/api/upcoming?limit=20&days=7';
@@ -767,6 +770,7 @@ interface HomeDashboardProps {
 
 export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardProps) {
   const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(null);
+  const emptyLivePollsRef = useRef(0);
 
   const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
@@ -905,6 +909,13 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
           : data?.live
             ? [data.live]
             : [];
+        if (liveMatches.length === 0) {
+          // 间歇空响应（冷启动/抓取失败）不立即清空，保留现有卡片
+          emptyLivePollsRef.current += 1;
+          if (emptyLivePollsRef.current < LIVE_EMPTY_GRACE_POLLS) return;
+        } else {
+          emptyLivePollsRef.current = 0;
+        }
         setLiveHeroes(liveMatches);
       } catch { /* 保留现有数据 */ }
     };

@@ -2,7 +2,7 @@ import { getDltvLive } from '../lib/server/dltv-matches-service.js';
 import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
-const LIVE_HERO_CACHE_CONTROL = 'public, max-age=10, s-maxage=10, stale-while-revalidate=30';
+const LIVE_HERO_CACHE_CONTROL = 'public, max-age=30, s-maxage=30, stale-while-revalidate=60';
 const LIVE_HERO_NO_STORE_CACHE_CONTROL = 'no-store';
 
 function shouldBypassSharedCache(query) {
