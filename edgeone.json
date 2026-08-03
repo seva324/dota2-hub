@@ -75,7 +75,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=15, s-maxage=15, stale-while-revalidate=30"
+          "value": "public, max-age=30, s-maxage=30, stale-while-revalidate=60"
         }
       ]
     },
@@ -180,7 +180,7 @@
     },
     {
       "source": "/api/live-hero*",
-      "cacheTtl": 15
+      "cacheTtl": 30
     },
     {
       "source": "/api/upcoming*",
