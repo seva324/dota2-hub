@@ -1,9 +1,9 @@
 /**
  * Team Ranking API
- * Data: dltv.org/ranking (live scrape + in-memory hot cache)
+ * Data: dltv.org/ranking (persisted to Neon, refreshed every 24h)
  */
 
-import { getDltvTeamRanking } from '../lib/server/dltv-ranking-service.js';
+import { getRanking, RANKING_KEY_TEAM } from '../lib/server/rankings-service.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 function resolvePlayerPhoto(photo, req) {
@@ -20,14 +20,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await getDltvTeamRanking();
+    const result = await getRanking(RANKING_KEY_TEAM);
     if (result.teams.length === 0) {
       return res.status(503).json({ error: 'Ranking temporarily unavailable', teams: [] });
     }
     const teams = result.teams.map((team) => ({
       ...team,
       logo: getMirroredAssetUrl(team.logo, req),
-      players: team.players.map((player) => ({
+      players: (team.players || []).map((player) => ({
         ...player,
         photo: resolvePlayerPhoto(player.photo, req),
       })),

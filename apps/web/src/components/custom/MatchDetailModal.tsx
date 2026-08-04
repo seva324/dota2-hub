@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Users, TrendingUp, FileText, Backpack, ChevronDown, X, Swords, Shield, Landmark, Skull, Trophy, BarChart3, Target } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getHeroImageUrl, toCnAssetUrl } from '@/lib/assetUrls';
+import { getHeroImageUrl, getItemImageUrl, toCnAssetUrl } from '@/lib/assetUrls';
+import { itemsById } from '@/lib/items-map';
 import { MatchGraphs } from './MatchGraphs';
 import { MatchDetailPage } from './MatchDetailPage';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -23,7 +24,6 @@ import {
 
 let proPlayersMap: Record<number, { name: string; team_name: string; realname: string }> = {};
 let heroesData: Record<number, HeroInfo> = {};
-let cachedItemsMap: Record<number, ItemInfo> = {};
 
 fetch('/api/pro-players')
   .then((res) => res.json())
@@ -126,36 +126,6 @@ function itemAbbr(name: string): string {
     .toUpperCase();
 }
 
-function normalizeItemImg(img: string): string {
-  if (!img) return '';
-  if (img.startsWith('http://') || img.startsWith('https://')) return toCnAssetUrl(img);
-  if (img.startsWith('/apps/')) return toCnAssetUrl(`https://cdn.cloudflare.steamstatic.com${img}`);
-  return img;
-}
-
-async function fetchItemsMap(): Promise<Record<number, ItemInfo>> {
-  if (Object.keys(cachedItemsMap).length > 0) {
-    return cachedItemsMap;
-  }
-
-  const res = await fetch('https://api.opendota.com/api/constants/items');
-  const raw: Record<string, { id?: number; dname?: string; img?: string }> = await res.json();
-  const byId: Record<number, ItemInfo> = {};
-
-  Object.values(raw).forEach((item) => {
-    if (typeof item.id === 'number' && item.id > 0) {
-      byId[item.id] = {
-        id: item.id,
-        name: item.dname || `Item ${item.id}`,
-        img: normalizeItemImg(item.img || ''),
-      };
-    }
-  });
-
-  cachedItemsMap = byId;
-  return byId;
-}
-
 function getPlayerDisplayName(player: Player): string {
   const proInfo = player.account_id ? proPlayersMap[player.account_id] : null;
   if (player.name && player.name !== 'Unknown') return player.name;
@@ -247,13 +217,22 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [itemsMap, setItemsMap] = useState<Record<number, ItemInfo>>(cachedItemsMap);
   const [isMobile, setIsMobile] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<number | string | null>(matchId);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const matchContentRef = useRef<HTMLDivElement>(null);
   const [matchDataState, setMatchDataState] = useState<'loading' | 'ready'>('loading');
   const isPrototypeMode = usePrototypeMode() || fullPage;
+
+  // 物品 id → { name, img } 映射来自本地生成的 items-map（不再每次打开整包拉 opendota constants）
+  const itemsMap = useMemo<Record<number, ItemInfo>>(() => {
+    const map: Record<number, ItemInfo> = {};
+    for (const [idStr, entry] of Object.entries(itemsById)) {
+      const id = Number(idStr);
+      map[id] = { id, name: entry.name, img: getItemImageUrl(entry.key) };
+    }
+    return map;
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
@@ -262,13 +241,6 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
     media.addEventListener?.('change', update);
     return () => media.removeEventListener?.('change', update);
   }, []);
-
-  useEffect(() => {
-    if (!open || Object.keys(itemsMap).length > 0) return;
-    fetchItemsMap()
-      .then((items) => setItemsMap(items))
-      .catch(() => {});
-  }, [open, itemsMap]);
 
   useEffect(() => {
     if (open) {
@@ -1860,7 +1832,7 @@ function ItemStrip({
       </div>
       <div className={`${compactMobile ? 'w-8 h-8 mt-0' : 'w-10 h-10 mt-0'} relative flex-shrink-0 self-center`}>
         <img
-          src={`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`}
+          src={toCnAssetUrl(`https://www.opendota.com/assets/images/dota2/scepter_${hasScepter ? 1 : 0}.png`)}
           alt="Aghanim's Scepter"
           className={`${compactMobile ? 'w-5 h-5' : 'w-7 h-7'} absolute right-0 top-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain rotate-[7deg] z-10`}
           title={hasScepter ? 'A杖: 已拥有' : 'A杖: 未拥有'}
@@ -1868,7 +1840,7 @@ function ItemStrip({
           referrerPolicy="no-referrer"
         />
         <img
-          src={`https://www.opendota.com/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`}
+          src={toCnAssetUrl(`https://www.opendota.com/assets/images/dota2/shard_${hasShard ? 1 : 0}.png`)}
           alt="Aghanim's Shard"
           className={`${compactMobile ? 'w-5 h-5' : 'w-7 h-7'} absolute left-0 bottom-0 rounded border border-slate-700 bg-slate-900/85 p-0.5 object-contain -rotate-[7deg]`}
           title={hasShard ? '魔晶: 已拥有' : '魔晶: 未拥有'}

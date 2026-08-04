@@ -6,6 +6,7 @@ import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
 import { warmDltvCaches } from '../lib/server/dltv-warm.js';
+import { syncRankingsToDb } from '../lib/server/rankings-service.js';
 
 let cronActionGateReady = false;
 const inMemoryCronActionGate = new Map();
@@ -281,10 +282,15 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
       }),
     };
   }
+  if (action === 'sync-ranking') {
+    // 战队/赛事排行持久化到 Neon；内部按 24h 过期门控，过期才真正抓取 dltv。
+    return { action, result: await syncRankingsToDb() };
+  }
   if (action === 'all') {
     const opendota = await runSyncOpenDota();
     const liquipedia = await runSyncLiquipedia();
     const news = await syncNewsToDb();
+    const rankings = await syncRankingsToDb();
     const db = getDb();
     const playerProfiles = db ? await warmPlayerProfileCache(db) : { skipped: true, reason: 'db_unavailable' };
     const teamFlyouts = db ? await warmTeamFlyoutCache(db) : { skipped: true, reason: 'db_unavailable' };
@@ -294,6 +300,7 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
         opendota,
         liquipedia,
         news,
+        rankings,
         playerProfiles,
         teamFlyouts,
       },

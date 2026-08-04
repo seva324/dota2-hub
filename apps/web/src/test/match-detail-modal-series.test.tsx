@@ -77,9 +77,10 @@ describe('MatchDetailModal fallback placeholders', () => {
     const ameEntries = await screen.findAllByText('Ame');
     expect(ameEntries.length).toBeGreaterThanOrEqual(1);
 
-    // Item cells should show labeled placeholders via SafeImg fallback
-    // Fallback players have items [50, 63, 116, 145, 147, 160] — title attr shows "Item NNN"
-    const itemTitles = screen.getAllByTitle(/Item \d+/);
+    // Item cells should show tooltips via SafeImg — fallback players have
+    // items [50, 63, 116, 145, 147, 160], which now resolve to real item names
+    // from the local items-map instead of "Item NNN" placeholders.
+    const itemTitles = screen.getAllByTitle(/相位鞋|动力鞋|黑皇杖|狂战斧|幻影斧|斯嘉蒂之眼/);
     expect(itemTitles.length).toBeGreaterThanOrEqual(1);
   });
 });

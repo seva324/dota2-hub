@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1785685179.2364135,
+  "generatedAt": "2026-08-04T17:22:15.639Z",
   "mappings": {
     "https://cdn.steamusercontent.com/ugc/17978647420055481693/620A32467F56A14CC576DC9AA5F387991418DA54/": "/images/mirror/teams/10000167.png",
     "https://cdn.steamusercontent.com/ugc/17272900032158337289/64ACF9C1BEAE9F933992075409A5D9A179E9BFA2/": "/images/mirror/teams/10000177.png",
@@ -825,6 +825,1935 @@
     "https://dltv.org/uploads/players/medium/Zyz6XRlgwQB93t0pVGNA1QmAupN0z161.png": "/images/mirror/players/d0afa2bb082339f3975a.webp",
     "https://dltv.org/uploads/players/medium/qMLvYA57KtHd6Cm45QH4ybyYkfqRMdhx.png": "/images/mirror/players/1baf84f8504d41731f53.webp",
     "https://dltv.org/uploads/players/medium/YC99836W15zsNYkbhSd3DWsUrZcFcCGa.png": "/images/mirror/players/5e4759cb1998560db66a.webp",
-    "https://dltv.org/uploads/players/0zeDUhhzQ0yQzOBQ8tuBh2oHRwfdGCO5.png.webp": "/images/mirror/players/0684878afb4964e7db2e.webp"
-  }
+    "https://dltv.org/uploads/players/0zeDUhhzQ0yQzOBQ8tuBh2oHRwfdGCO5.png.webp": "/images/mirror/players/0684878afb4964e7db2e.webp",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/abyssal_blade.png": "/images/mirror/items/abyssal_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aegis.png": "/images/mirror/items/aegis.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aeon_disk.png": "/images/mirror/items/aeon_disk.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aether_lens.png": "/images/mirror/items/aether_lens.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ultimate_scepter_2.png": "/images/mirror/items/ultimate_scepter_2.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ultimate_scepter_roshan.png": "/images/mirror/items/ultimate_scepter_roshan.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ultimate_scepter.png": "/images/mirror/items/ultimate_scepter.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aghanims_shard.png": "/images/mirror/items/aghanims_shard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/aghanims_shard_roshan.png": "/images/mirror/items/aghanims_shard_roshan.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_alert.png": "/images/mirror/items/enhancement_alert.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ancient_guardian.png": "/images/mirror/items/ancient_guardian.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/courier.png": "/images/mirror/items/courier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/apex.png": "/images/mirror/items/apex.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/arcane_blink.png": "/images/mirror/items/arcane_blink.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/arcane_boots.png": "/images/mirror/items/arcane_boots.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/arcane_ring.png": "/images/mirror/items/arcane_ring.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/force_field.png": "/images/mirror/items/force_field.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/armlet.png": "/images/mirror/items/armlet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ascetic_cap.png": "/images/mirror/items/ascetic_cap.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ash_legion_shield.png": "/images/mirror/items/ash_legion_shield.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/assault.png": "/images/mirror/items/assault.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_audacious.png": "/images/mirror/items/enhancement_audacious.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/avianas_feather.png": "/images/mirror/items/avianas_feather.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/furion_gold_bag.png": "/images/mirror/items/furion_gold_bag.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ballista.png": "/images/mirror/items/ballista.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/boots_of_elves.png": "/images/mirror/items/boots_of_elves.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bfury.png": "/images/mirror/items/bfury.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ofrenda.png": "/images/mirror/items/ofrenda.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/belt_of_strength.png": "/images/mirror/items/belt_of_strength.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/black_grimoire.png": "/images/mirror/items/black_grimoire.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/black_king_bar.png": "/images/mirror/items/black_king_bar.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blade_mail.png": "/images/mirror/items/blade_mail.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blade_of_alacrity.png": "/images/mirror/items/blade_of_alacrity.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blades_of_attack.png": "/images/mirror/items/blades_of_attack.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/black_powder_bag.png": "/images/mirror/items/black_powder_bag.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blink.png": "/images/mirror/items/blink.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blitz_knuckles.png": "/images/mirror/items/blitz_knuckles.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/royale_with_cheese.png": "/images/mirror/items/royale_with_cheese.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blood_grenade.png": "/images/mirror/items/blood_grenade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bloodstone.png": "/images/mirror/items/bloodstone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bloodthorn.png": "/images/mirror/items/bloodthorn.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/book_of_shadows.png": "/images/mirror/items/book_of_shadows.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/demonicon.png": "/images/mirror/items/demonicon.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/boots_of_bearing.png": "/images/mirror/items/boots_of_bearing.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/boots.png": "/images/mirror/items/boots.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/travel_boots.png": "/images/mirror/items/travel_boots.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/travel_boots_2.png": "/images/mirror/items/travel_boots_2.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bottle.png": "/images/mirror/items/bottle.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_boundless.png": "/images/mirror/items/enhancement_boundless.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bracer.png": "/images/mirror/items/bracer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_brawny.png": "/images/mirror/items/enhancement_brawny.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/misericorde.png": "/images/mirror/items/misericorde.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/broadsword.png": "/images/mirror/items/broadsword.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/broom_handle.png": "/images/mirror/items/broom_handle.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/buckler.png": "/images/mirror/items/buckler.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bullwhip.png": "/images/mirror/items/bullwhip.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/butterfly.png": "/images/mirror/items/butterfly.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ceremonial_robe.png": "/images/mirror/items/ceremonial_robe.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/chainmail.png": "/images/mirror/items/chainmail.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/chasm_stone.png": "/images/mirror/items/chasm_stone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/cheese.png": "/images/mirror/items/cheese.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/chipped_vest.png": "/images/mirror/items/chipped_vest.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/circlet.png": "/images/mirror/items/circlet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/clarity.png": "/images/mirror/items/clarity.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/claymore.png": "/images/mirror/items/claymore.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/cloak.png": "/images/mirror/items/cloak.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/cloak_of_flames.png": "/images/mirror/items/cloak_of_flames.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/clumsy_net.png": "/images/mirror/items/clumsy_net.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/conjurers_catalyst.png": "/images/mirror/items/conjurers_catalyst.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/consecrated_wraps.png": "/images/mirror/items/consecrated_wraps.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/cornucopia.png": "/images/mirror/items/cornucopia.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/craggy_coat.png": "/images/mirror/items/craggy_coat.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/crellas_crozier.png": "/images/mirror/items/crellas_crozier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/crimson_guard.png": "/images/mirror/items/crimson_guard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/crippling_crossbow.png": "/images/mirror/items/crippling_crossbow.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/crown.png": "/images/mirror/items/crown.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_crude.png": "/images/mirror/items/enhancement_crude.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/lesser_crit.png": "/images/mirror/items/lesser_crit.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/greater_crit.png": "/images/mirror/items/greater_crit.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dagger_of_ristul.png": "/images/mirror/items/dagger_of_ristul.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dagon_5.png": "/images/mirror/items/dagon_5.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dandelion_amulet.png": "/images/mirror/items/dandelion_amulet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/defiant_shell.png": "/images/mirror/items/defiant_shell.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/demon_edge.png": "/images/mirror/items/demon_edge.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/desolator.png": "/images/mirror/items/desolator.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dezun_bloodrite.png": "/images/mirror/items/dezun_bloodrite.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/diadem.png": "/images/mirror/items/diadem.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/diffusal_blade.png": "/images/mirror/items/diffusal_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/divine_regalia_broken.png": "/images/mirror/items/divine_regalia_broken.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/disperser.png": "/images/mirror/items/disperser.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/rapier.png": "/images/mirror/items/rapier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/divine_regalia.png": "/images/mirror/items/divine_regalia.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_dominant.png": "/images/mirror/items/enhancement_dominant.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dormant_curio.png": "/images/mirror/items/dormant_curio.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/doubloon.png": "/images/mirror/items/doubloon.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dragon_lance.png": "/images/mirror/items/dragon_lance.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dragon_scale.png": "/images/mirror/items/dragon_scale.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ancient_janggo.png": "/images/mirror/items/ancient_janggo.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/duelist_gloves.png": "/images/mirror/items/duelist_gloves.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/dust.png": "/images/mirror/items/dust.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/eagle.png": "/images/mirror/items/eagle.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/echo_sabre.png": "/images/mirror/items/echo_sabre.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/eldwurms_edda.png": "/images/mirror/items/eldwurms_edda.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/elixer.png": "/images/mirror/items/elixer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/elven_tunic.png": "/images/mirror/items/elven_tunic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enchanted_mango.png": "/images/mirror/items/enchanted_mango.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enchanted_quiver.png": "/images/mirror/items/enchanted_quiver.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enchanters_bauble.png": "/images/mirror/items/enchanters_bauble.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/energy_booster.png": "/images/mirror/items/energy_booster.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/essence_distiller.png": "/images/mirror/items/essence_distiller.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/essence_ring.png": "/images/mirror/items/essence_ring.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/eternal_shroud.png": "/images/mirror/items/eternal_shroud.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ethereal_blade.png": "/images/mirror/items/ethereal_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/cyclone.png": "/images/mirror/items/cyclone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_evolved.png": "/images/mirror/items/enhancement_evolved.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ex_machina.png": "/images/mirror/items/ex_machina.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/skadi.png": "/images/mirror/items/skadi.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/eye_of_the_vizier.png": "/images/mirror/items/eye_of_the_vizier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/faded_broach.png": "/images/mirror/items/faded_broach.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/paintball.png": "/images/mirror/items/paintball.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/faerie_fire.png": "/images/mirror/items/faerie_fire.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mysterious_hat.png": "/images/mirror/items/mysterious_hat.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/falcon_blade.png": "/images/mirror/items/falcon_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/fallen_sky.png": "/images/mirror/items/fallen_sky.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_feverish.png": "/images/mirror/items/enhancement_feverish.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_fierce.png": "/images/mirror/items/enhancement_fierce.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/flayers_bota.png": "/images/mirror/items/flayers_bota.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_fleetfooted.png": "/images/mirror/items/enhancement_fleetfooted.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/flicker.png": "/images/mirror/items/flicker.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/fluffy_hat.png": "/images/mirror/items/fluffy_hat.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/flying_courier.png": "/images/mirror/items/flying_courier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/foragers_kit.png": "/images/mirror/items/foragers_kit.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/force_boots.png": "/images/mirror/items/force_boots.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/force_staff.png": "/images/mirror/items/force_staff.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ofrenda_pledge.png": "/images/mirror/items/ofrenda_pledge.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/fusion_rune.png": "/images/mirror/items/fusion_rune.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gale_guard.png": "/images/mirror/items/gale_guard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gauntlets.png": "/images/mirror/items/gauntlets.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gem.png": "/images/mirror/items/gem.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ghost.png": "/images/mirror/items/ghost.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/giant_maul.png": "/images/mirror/items/giant_maul.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/giants_ring.png": "/images/mirror/items/giants_ring.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gungir.png": "/images/mirror/items/gungir.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/glimmer_cape.png": "/images/mirror/items/glimmer_cape.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gloves.png": "/images/mirror/items/gloves.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gossamer_cape.png": "/images/mirror/items/gossamer_cape.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/great_famango.png": "/images/mirror/items/great_famango.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/greater_faerie_fire.png": "/images/mirror/items/greater_faerie_fire.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/greater_famango.png": "/images/mirror/items/greater_famango.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_greedy.png": "/images/mirror/items/enhancement_greedy.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/grisgris.png": "/images/mirror/items/grisgris.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/grove_bow.png": "/images/mirror/items/grove_bow.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/guardian_greaves.png": "/images/mirror/items/guardian_greaves.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/gunpowder_gauntlets.png": "/images/mirror/items/gunpowder_gauntlets.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/hand_of_midas.png": "/images/mirror/items/hand_of_midas.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/harmonizer.png": "/images/mirror/items/harmonizer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/harpoon.png": "/images/mirror/items/harpoon.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/havoc_hammer.png": "/images/mirror/items/havoc_hammer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/headdress.png": "/images/mirror/items/headdress.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/famango.png": "/images/mirror/items/famango.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/flask.png": "/images/mirror/items/flask.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/heart.png": "/images/mirror/items/heart.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/heavens_halberd.png": "/images/mirror/items/heavens_halberd.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/helm_of_iron_will.png": "/images/mirror/items/helm_of_iron_will.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/helm_of_the_dominator.png": "/images/mirror/items/helm_of_the_dominator.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/helm_of_the_overlord.png": "/images/mirror/items/helm_of_the_overlord.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/helm_of_the_undying.png": "/images/mirror/items/helm_of_the_undying.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/holy_locket.png": "/images/mirror/items/holy_locket.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/hood_of_defiance.png": "/images/mirror/items/hood_of_defiance.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_hulking.png": "/images/mirror/items/enhancement_hulking.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/hurricane_pike.png": "/images/mirror/items/hurricane_pike.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/hydras_breath.png": "/images/mirror/items/hydras_breath.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/hyperstone.png": "/images/mirror/items/hyperstone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/idol_of_screeauk.png": "/images/mirror/items/idol_of_screeauk.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/illusionsts_cape.png": "/images/mirror/items/illusionsts_cape.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/imp_claw.png": "/images/mirror/items/imp_claw.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/infused_raindrop.png": "/images/mirror/items/infused_raindrop.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/branches.png": "/images/mirror/items/branches.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/iron_talon.png": "/images/mirror/items/iron_talon.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/foragers_stats.png": "/images/mirror/items/foragers_stats.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ironwood_tree.png": "/images/mirror/items/ironwood_tree.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/bottomless_chalice.png": "/images/mirror/items/bottomless_chalice.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/caster_rapier.png": "/images/mirror/items/caster_rapier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/greater_mango.png": "/images/mirror/items/greater_mango.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/horizon.png": "/images/mirror/items/horizon.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mechanical_arm.png": "/images/mirror/items/mechanical_arm.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/miniboss_minion_summoner.png": "/images/mirror/items/miniboss_minion_summoner.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/super_blink.png": "/images/mirror/items/super_blink.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/javelin.png": "/images/mirror/items/javelin.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/jidi_pollen_bag.png": "/images/mirror/items/jidi_pollen_bag.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/kaya.png": "/images/mirror/items/kaya.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/kaya_and_sange.png": "/images/mirror/items/kaya_and_sange.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/keen_optic.png": "/images/mirror/items/keen_optic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_keen_eyed.png": "/images/mirror/items/enhancement_keen_eyed.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/angels_demise.png": "/images/mirror/items/angels_demise.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/kobold_cup.png": "/images/mirror/items/kobold_cup.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/lance_of_pursuit.png": "/images/mirror/items/lance_of_pursuit.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tidehunter_fish.png": "/images/mirror/items/tidehunter_fish.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/light_collector.png": "/images/mirror/items/light_collector.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/sphere.png": "/images/mirror/items/sphere.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/lotus_orb.png": "/images/mirror/items/lotus_orb.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/madstone_bundle.png": "/images/mirror/items/madstone_bundle.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/maelstrom.png": "/images/mirror/items/maelstrom.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mage_slayer.png": "/images/mirror/items/mage_slayer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/panic_button.png": "/images/mirror/items/panic_button.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/magic_stick.png": "/images/mirror/items/magic_stick.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/magic_wand.png": "/images/mirror/items/magic_wand.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/magnifying_monocle.png": "/images/mirror/items/magnifying_monocle.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mana_draught.png": "/images/mirror/items/mana_draught.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mango_tree.png": "/images/mirror/items/mango_tree.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_manic.png": "/images/mirror/items/enhancement_manic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/manta.png": "/images/mirror/items/manta.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mantle.png": "/images/mirror/items/mantle.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/martyrs_plate.png": "/images/mirror/items/martyrs_plate.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mask_of_madness.png": "/images/mirror/items/mask_of_madness.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/medallion_of_courage.png": "/images/mirror/items/medallion_of_courage.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mekansm.png": "/images/mirror/items/mekansm.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/muertas_gun.png": "/images/mirror/items/muertas_gun.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/metamorphic_mandible.png": "/images/mirror/items/metamorphic_mandible.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/meteor_hammer.png": "/images/mirror/items/meteor_hammer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mind_breaker.png": "/images/mirror/items/mind_breaker.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/minotaur_horn.png": "/images/mirror/items/minotaur_horn.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mirror_shield.png": "/images/mirror/items/mirror_shield.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mithril_hammer.png": "/images/mirror/items/mithril_hammer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mjollnir.png": "/images/mirror/items/mjollnir.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/monkey_king_bar.png": "/images/mirror/items/monkey_king_bar.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/moon_shard.png": "/images/mirror/items/moon_shard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/lifesteal.png": "/images/mirror/items/lifesteal.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mystic_staff.png": "/images/mirror/items/mystic_staff.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_mystical.png": "/images/mirror/items/enhancement_mystical.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/nemesis_curse.png": "/images/mirror/items/nemesis_curse.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/nether_shawl.png": "/images/mirror/items/nether_shawl.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_nimble.png": "/images/mirror/items/enhancement_nimble.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ninja_gear.png": "/images/mirror/items/ninja_gear.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/null_talisman.png": "/images/mirror/items/null_talisman.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/nullifier.png": "/images/mirror/items/nullifier.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/oblivion_staff.png": "/images/mirror/items/oblivion_staff.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ward_dispenser.png": "/images/mirror/items/ward_dispenser.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ward_observer.png": "/images/mirror/items/ward_observer.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/occult_bracelet.png": "/images/mirror/items/occult_bracelet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ocean_heart.png": "/images/mirror/items/ocean_heart.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/octarine_core.png": "/images/mirror/items/octarine_core.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ogre_axe.png": "/images/mirror/items/ogre_axe.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ogre_seal_totem.png": "/images/mirror/items/ogre_seal_totem.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/blight_stone.png": "/images/mirror/items/blight_stone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/orb_of_corrosion.png": "/images/mirror/items/orb_of_corrosion.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/orb_of_destruction.png": "/images/mirror/items/orb_of_destruction.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/orb_of_frost.png": "/images/mirror/items/orb_of_frost.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/orb_of_venom.png": "/images/mirror/items/orb_of_venom.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/orchid.png": "/images/mirror/items/orchid.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/outworld_staff.png": "/images/mirror/items/outworld_staff.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/overwhelming_blink.png": "/images/mirror/items/overwhelming_blink.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/paladin_sword.png": "/images/mirror/items/paladin_sword.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/devastator.png": "/images/mirror/items/devastator.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/partisans_brand.png": "/images/mirror/items/partisans_brand.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pavise.png": "/images/mirror/items/pavise.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/penta_edged_sword.png": "/images/mirror/items/penta_edged_sword.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pers.png": "/images/mirror/items/pers.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/phase_boots.png": "/images/mirror/items/phase_boots.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/philosophers_stone.png": "/images/mirror/items/philosophers_stone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/phoenix_ash.png": "/images/mirror/items/phoenix_ash.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/phylactery.png": "/images/mirror/items/phylactery.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/unstable_wand.png": "/images/mirror/items/unstable_wand.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pipe.png": "/images/mirror/items/pipe.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pirate_hat.png": "/images/mirror/items/pirate_hat.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/platemail.png": "/images/mirror/items/platemail.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pocket_roshan.png": "/images/mirror/items/pocket_roshan.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pocket_tower.png": "/images/mirror/items/pocket_tower.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/point_booster.png": "/images/mirror/items/point_booster.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/polliwog_charm.png": "/images/mirror/items/polliwog_charm.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/poor_mans_shield.png": "/images/mirror/items/poor_mans_shield.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/possessed_mask.png": "/images/mirror/items/possessed_mask.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/power_treads.png": "/images/mirror/items/power_treads.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/princes_knife.png": "/images/mirror/items/princes_knife.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/prophets_pendulum.png": "/images/mirror/items/prophets_pendulum.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/psychic_headband.png": "/images/mirror/items/psychic_headband.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pupils_gift.png": "/images/mirror/items/pupils_gift.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pyrrhic_cloak.png": "/images/mirror/items/pyrrhic_cloak.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/quarterstaff.png": "/images/mirror/items/quarterstaff.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/quelling_blade.png": "/images/mirror/items/quelling_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_quickened.png": "/images/mirror/items/enhancement_quickened.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/quickening_charm.png": "/images/mirror/items/quickening_charm.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/quicksilver_amulet.png": "/images/mirror/items/quicksilver_amulet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/radiance.png": "/images/mirror/items/radiance.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/rattlecage.png": "/images/mirror/items/rattlecage.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/reaver.png": "/images/mirror/items/reaver.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/refresher.png": "/images/mirror/items/refresher.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/refresher_shard.png": "/images/mirror/items/refresher_shard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/repair_kit.png": "/images/mirror/items/repair_kit.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_restorative.png": "/images/mirror/items/enhancement_restorative.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/revenants_brooch.png": "/images/mirror/items/revenants_brooch.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/riftshadow_prism.png": "/images/mirror/items/riftshadow_prism.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ring_of_aquila.png": "/images/mirror/items/ring_of_aquila.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ring_of_basilius.png": "/images/mirror/items/ring_of_basilius.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ring_of_health.png": "/images/mirror/items/ring_of_health.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ring_of_protection.png": "/images/mirror/items/ring_of_protection.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ring_of_regen.png": "/images/mirror/items/ring_of_regen.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ring_of_tarrasque.png": "/images/mirror/items/ring_of_tarrasque.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/rippers_lash.png": "/images/mirror/items/rippers_lash.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter7.png": "/images/mirror/items/river_painter7.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter.png": "/images/mirror/items/river_painter.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter2.png": "/images/mirror/items/river_painter2.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter5.png": "/images/mirror/items/river_painter5.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter4.png": "/images/mirror/items/river_painter4.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter6.png": "/images/mirror/items/river_painter6.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/river_painter3.png": "/images/mirror/items/river_painter3.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/robe.png": "/images/mirror/items/robe.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/rod_of_atos.png": "/images/mirror/items/rod_of_atos.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/roshans_banner.png": "/images/mirror/items/roshans_banner.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/royal_jelly.png": "/images/mirror/items/royal_jelly.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/relic.png": "/images/mirror/items/relic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/safety_bubble.png": "/images/mirror/items/safety_bubble.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/sobi_mask.png": "/images/mirror/items/sobi_mask.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/sange.png": "/images/mirror/items/sange.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/sange_and_yasha.png": "/images/mirror/items/sange_and_yasha.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/satanic.png": "/images/mirror/items/satanic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ofrenda_shovel.png": "/images/mirror/items/ofrenda_shovel.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/sheepstick.png": "/images/mirror/items/sheepstick.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/searing_signet.png": "/images/mirror/items/searing_signet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/seeds_of_serenity.png": "/images/mirror/items/seeds_of_serenity.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/seer_stone.png": "/images/mirror/items/seer_stone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ward_sentry.png": "/images/mirror/items/ward_sentry.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/serrated_shiv.png": "/images/mirror/items/serrated_shiv.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/shadow_amulet.png": "/images/mirror/items/shadow_amulet.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/invis_sword.png": "/images/mirror/items/invis_sword.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/shawl.png": "/images/mirror/items/shawl.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/shivas_guard.png": "/images/mirror/items/shivas_guard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/silver_edge.png": "/images/mirror/items/silver_edge.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/sisters_shroud.png": "/images/mirror/items/sisters_shroud.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/basher.png": "/images/mirror/items/basher.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/slippers.png": "/images/mirror/items/slippers.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/smoke_of_deceit.png": "/images/mirror/items/smoke_of_deceit.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/solar_crest.png": "/images/mirror/items/solar_crest.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/soul_booster.png": "/images/mirror/items/soul_booster.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/soul_ring.png": "/images/mirror/items/soul_ring.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/spark_of_courage.png": "/images/mirror/items/spark_of_courage.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/specialists_array.png": "/images/mirror/items/specialists_array.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/spell_prism.png": "/images/mirror/items/spell_prism.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/spellslinger.png": "/images/mirror/items/spellslinger.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/spider_legs.png": "/images/mirror/items/spider_legs.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/spirit_vessel.png": "/images/mirror/items/spirit_vessel.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/splintmail.png": "/images/mirror/items/splintmail.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/staff_of_wizardry.png": "/images/mirror/items/staff_of_wizardry.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/stonefeather_satchel.png": "/images/mirror/items/stonefeather_satchel.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/stormcrafter.png": "/images/mirror/items/stormcrafter.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/stout_shield.png": "/images/mirror/items/stout_shield.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/desolator_2.png": "/images/mirror/items/desolator_2.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/swift_blink.png": "/images/mirror/items/swift_blink.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/talisman_of_evasion.png": "/images/mirror/items/talisman_of_evasion.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tango.png": "/images/mirror/items/tango.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tango_single.png": "/images/mirror/items/tango_single.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/spy_gadget.png": "/images/mirror/items/spy_gadget.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/the_leveller.png": "/images/mirror/items/the_leveller.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_thick.png": "/images/mirror/items/enhancement_thick.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/third_eye.png": "/images/mirror/items/third_eye.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tiara_of_selemene.png": "/images/mirror/items/tiara_of_selemene.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tier1_token.png": "/images/mirror/items/tier1_token.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tier2_token.png": "/images/mirror/items/tier2_token.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tier3_token.png": "/images/mirror/items/tier3_token.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tier4_token.png": "/images/mirror/items/tier4_token.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tier5_token.png": "/images/mirror/items/tier5_token.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_timeless.png": "/images/mirror/items/enhancement_timeless.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/timeless_relic.png": "/images/mirror/items/timeless_relic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/titan_sliver.png": "/images/mirror/items/titan_sliver.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_titanic.png": "/images/mirror/items/enhancement_titanic.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/mutation_tombstone.png": "/images/mirror/items/mutation_tombstone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tome_of_aghanim.png": "/images/mirror/items/tome_of_aghanim.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tome_of_knowledge.png": "/images/mirror/items/tome_of_knowledge.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/foragers_mana.png": "/images/mirror/items/foragers_mana.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_tough.png": "/images/mirror/items/enhancement_tough.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tpscroll.png": "/images/mirror/items/tpscroll.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/tranquil_boots.png": "/images/mirror/items/tranquil_boots.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/trickster_cloak.png": "/images/mirror/items/trickster_cloak.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/trident.png": "/images/mirror/items/trident.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/trusty_shovel.png": "/images/mirror/items/trusty_shovel.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/pogo_stick.png": "/images/mirror/items/pogo_stick.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ultimate_orb.png": "/images/mirror/items/ultimate_orb.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_curious.png": "/images/mirror/items/enhancement_curious.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/unrelenting_eye.png": "/images/mirror/items/unrelenting_eye.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/unwavering_condition.png": "/images/mirror/items/unwavering_condition.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/urn_of_shadows.png": "/images/mirror/items/urn_of_shadows.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/vambrace.png": "/images/mirror/items/vambrace.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/vampire_fangs.png": "/images/mirror/items/vampire_fangs.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_vampiric.png": "/images/mirror/items/enhancement_vampiric.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/vanguard.png": "/images/mirror/items/vanguard.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_vast.png": "/images/mirror/items/enhancement_vast.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/veil_of_discord.png": "/images/mirror/items/veil_of_discord.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/vindicators_axe.png": "/images/mirror/items/vindicators_axe.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_vital.png": "/images/mirror/items/enhancement_vital.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/foragers_health.png": "/images/mirror/items/foragers_health.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/vitality_booster.png": "/images/mirror/items/vitality_booster.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/vladmir.png": "/images/mirror/items/vladmir.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/void_stone.png": "/images/mirror/items/void_stone.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/voodoo_mask.png": "/images/mirror/items/voodoo_mask.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/weighted_dice.png": "/images/mirror/items/weighted_dice.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/whisper_of_the_dread.png": "/images/mirror/items/whisper_of_the_dread.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/wind_lace.png": "/images/mirror/items/wind_lace.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/wind_waker.png": "/images/mirror/items/wind_waker.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/enhancement_wise.png": "/images/mirror/items/enhancement_wise.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/witch_blade.png": "/images/mirror/items/witch_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/heavy_blade.png": "/images/mirror/items/heavy_blade.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/witless_shako.png": "/images/mirror/items/witless_shako.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/wizard_hat.png": "/images/mirror/items/wizard_hat.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/woodland_striders.png": "/images/mirror/items/woodland_striders.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/wraith_band.png": "/images/mirror/items/wraith_band.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/wraith_pact.png": "/images/mirror/items/wraith_pact.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/yasha.png": "/images/mirror/items/yasha.png",
+    "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/yasha_and_kaya.png": "/images/mirror/items/yasha_and_kaya.png",
+    "https://s3.dltv.org/uploads/players/medium/pFKsdt46dSsZrUOA1wibrqBNUuYoXUc7.png": "/images/mirror/players/206642367.png"
+  },
+  "items": [
+    {
+      "kind": "players",
+      "id": "9403474",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/5oQ0XCp7aqrvWr0yzeoL7bb5M5FvFe5H.png",
+      "mirroredPath": "/images/mirror/players/9403474.webp"
+    },
+    {
+      "kind": "players",
+      "id": "10366616",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/3InYCTJr6XspF1vp1v2nlGofeV30ltMW.png",
+      "mirroredPath": "/images/mirror/players/10366616.webp"
+    },
+    {
+      "kind": "players",
+      "id": "16497807",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/MfLBzSgRbQbpxJ9MP47cdbf0RW106K1M.png",
+      "mirroredPath": "/images/mirror/players/16497807.webp"
+    },
+    {
+      "kind": "players",
+      "id": "25907144",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/IM1GZq8cxGT6e4hEFs4OayiPRdSCuWsv.png",
+      "mirroredPath": "/images/mirror/players/25907144.webp"
+    },
+    {
+      "kind": "players",
+      "id": "27626073",
+      "sourceUrl": "https://dltv.org/images/opengraph.png",
+      "mirroredPath": "/images/mirror/players/27626073.webp"
+    },
+    {
+      "kind": "players",
+      "id": "34505203",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/tis5Z0B3lZlvhvILdHNaDNIp2Q25yxNm.png",
+      "mirroredPath": "/images/mirror/players/34505203.webp"
+    },
+    {
+      "kind": "players",
+      "id": "56351509",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/8JYR84vmUPkdvhKMhsZRhZoYY50oP3gj.png",
+      "mirroredPath": "/images/mirror/players/56351509.webp"
+    },
+    {
+      "kind": "players",
+      "id": "72393079",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JGoB5XAEsLIEBs0sGKGhJQBTDgQi8f6n.png.webp",
+      "mirroredPath": "/images/mirror/players/72393079.webp"
+    },
+    {
+      "kind": "players",
+      "id": "73401082",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lCqAq3vKuDGk3FdPLhGxsxoFITpDkO69.png",
+      "mirroredPath": "/images/mirror/players/73401082.webp"
+    },
+    {
+      "kind": "players",
+      "id": "76904792",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/qEJUmMoa9ucSmyWZF05NSoIB7L0upTE9.png",
+      "mirroredPath": "/images/mirror/players/76904792.webp"
+    },
+    {
+      "kind": "players",
+      "id": "77490514",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/hjbuuXIs5cC0TTcUpMv3Nl9Cet7WBZFq.png",
+      "mirroredPath": "/images/mirror/players/77490514.webp"
+    },
+    {
+      "kind": "players",
+      "id": "81306398",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/YbXPWcss4ekISU08waf93n1cCvAwn0bQ.png",
+      "mirroredPath": "/images/mirror/players/81306398.webp"
+    },
+    {
+      "kind": "players",
+      "id": "81475303",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/DrUJmVLlVnEFs8ljNkCE9NxgtiSqiHud.png.webp",
+      "mirroredPath": "/images/mirror/players/81475303.webp"
+    },
+    {
+      "kind": "players",
+      "id": "82305760",
+      "sourceUrl": "https://dltv.org/images/opengraph.png",
+      "mirroredPath": "/images/mirror/players/27626073.webp"
+    },
+    {
+      "kind": "players",
+      "id": "82305765",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/uVdzRTV4VVi9qzoNeYRzbSXm6HUKZ4KZ.png",
+      "mirroredPath": "/images/mirror/players/82305765.webp"
+    },
+    {
+      "kind": "players",
+      "id": "85696663",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/1SMBrqOOAYr2AoSCPr8y5VB4MZMfJK8m.png",
+      "mirroredPath": "/images/mirror/players/85696663.webp"
+    },
+    {
+      "kind": "players",
+      "id": "85937380",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/N2XGY0cz0ie5tyJXVl1r8W7Yj38yfzgw.png",
+      "mirroredPath": "/images/mirror/players/85937380.webp"
+    },
+    {
+      "kind": "players",
+      "id": "86692726",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/PxIlVd6LCii9R8wlfT9l93zVcXJkMkMV.png",
+      "mirroredPath": "/images/mirror/players/86692726.webp"
+    },
+    {
+      "kind": "players",
+      "id": "86698277",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/VVOerlJXKTnHBQFRH0q9u23wIS2v7BzW.png",
+      "mirroredPath": "/images/mirror/players/86698277.webp"
+    },
+    {
+      "kind": "players",
+      "id": "86822085",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/LPP5NffrN6FpUnOezhlGGPS2135fR6St.png",
+      "mirroredPath": "/images/mirror/players/86822085.webp"
+    },
+    {
+      "kind": "players",
+      "id": "87063175",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/rE71oOonYMcvODlyltPhbHkYLmDgXMoU.png",
+      "mirroredPath": "/images/mirror/players/87063175.webp"
+    },
+    {
+      "kind": "players",
+      "id": "90423751",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/N78gapGfRNA1pNlbwXn3CPzgXHW0BHX8.png",
+      "mirroredPath": "/images/mirror/players/90423751.webp"
+    },
+    {
+      "kind": "players",
+      "id": "91730177",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/2UcNhGnjJtGyYNi2JwQCCyRBF2RENZOE.png",
+      "mirroredPath": "/images/mirror/players/91730177.webp"
+    },
+    {
+      "kind": "players",
+      "id": "92487440",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/2hvXbUtV8QIsJgDnsTMSioWJvQFqkG1G.webp",
+      "mirroredPath": "/images/mirror/players/92487440.webp"
+    },
+    {
+      "kind": "players",
+      "id": "93526520",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/s1P5KOXB94u98zzab8hixUnlpRsoWehD.png",
+      "mirroredPath": "/images/mirror/players/93526520.webp"
+    },
+    {
+      "kind": "players",
+      "id": "93618577",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/WJvCtyVt6AKOXcRzN93Dc42MERPABmw3.png",
+      "mirroredPath": "/images/mirror/players/93618577.webp"
+    },
+    {
+      "kind": "players",
+      "id": "93817671",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/sn4D73yFjNlBUhRLZ6Jo85BNgHNXatGn.png",
+      "mirroredPath": "/images/mirror/players/93817671.webp"
+    },
+    {
+      "kind": "players",
+      "id": "94155156",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/nviDVhGh9Vc0eDj2ATxzCWWSYTkY6LEL.png",
+      "mirroredPath": "/images/mirror/players/94155156.webp"
+    },
+    {
+      "kind": "players",
+      "id": "94296097",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/AtsZHT080XKHhnK1RIfhdjB0Vp7rZUBM.png",
+      "mirroredPath": "/images/mirror/players/94296097.webp"
+    },
+    {
+      "kind": "players",
+      "id": "96183976",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/aUimTAQBKCHwuQ9W9xKsEs9ABwyMp3Iu.png",
+      "mirroredPath": "/images/mirror/players/96183976.webp"
+    },
+    {
+      "kind": "players",
+      "id": "97590558",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/2PnegwDyLCxoaxzYmGTUZEQ7EjjUMxxx.png",
+      "mirroredPath": "/images/mirror/players/97590558.webp"
+    },
+    {
+      "kind": "players",
+      "id": "97658618",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JpapJnuCdJysCiVA0Ukj36erHAZx0RvH.png",
+      "mirroredPath": "/images/mirror/players/97658618.webp"
+    },
+    {
+      "kind": "players",
+      "id": "98885811",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/nsDQTKoae8wdgw1OUQIi3cwHKCJNZ8Fc.png",
+      "mirroredPath": "/images/mirror/players/98885811.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100058342",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/OEjLKfPVoMaHGiM7uJzGney76BfxQg51.png",
+      "mirroredPath": "/images/mirror/players/100058342.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100471531",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/hcqoQGadRnJl3XF0vT6GbDKrZMky8yWn.png",
+      "mirroredPath": "/images/mirror/players/100471531.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100594231",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/yjrqf9CZLUyf6rOZgTXvLD4Mzq0pxU3Z.png",
+      "mirroredPath": "/images/mirror/players/100594231.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100598959",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/26lQbZiWLvS2pVyzeHRWMiya9tnk0kA3.png",
+      "mirroredPath": "/images/mirror/players/100598959.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100616105",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Je37ctwROpN0CyYjsOcDTNnhirkRDTAg.png",
+      "mirroredPath": "/images/mirror/players/100616105.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100708765",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/33XoxyVCwVAzNcDbx223htdmMgoZC8WW.png",
+      "mirroredPath": "/images/mirror/players/100708765.webp"
+    },
+    {
+      "kind": "players",
+      "id": "100758751",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Ux520VM1NesfkFCtsNnZd14Cs4BnW0kp.png",
+      "mirroredPath": "/images/mirror/players/100758751.webp"
+    },
+    {
+      "kind": "players",
+      "id": "101259972",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/WrvkUNV8d3fZWtGEkeRmaOl9zRslWVo2.png",
+      "mirroredPath": "/images/mirror/players/101259972.webp"
+    },
+    {
+      "kind": "players",
+      "id": "101356886",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/UKuaRpfFeJPC5aeZ5Yvqig2l0uYh76ye.png",
+      "mirroredPath": "/images/mirror/players/101356886.webp"
+    },
+    {
+      "kind": "players",
+      "id": "101695162",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/0zeDUhhzQ0yQzOBQ8tuBh2oHRwfdGCO5.png",
+      "mirroredPath": "/images/mirror/players/101695162.webp"
+    },
+    {
+      "kind": "players",
+      "id": "101779337",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/vKpymRS396nsz4AB0WPOEkttnvfWS9rG.png",
+      "mirroredPath": "/images/mirror/players/101779337.webp"
+    },
+    {
+      "kind": "players",
+      "id": "103735745",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/RpbyWEKH2tSZHT2BJLLSyF4NG59XioTm.png",
+      "mirroredPath": "/images/mirror/players/103735745.webp"
+    },
+    {
+      "kind": "players",
+      "id": "103812784",
+      "sourceUrl": "https://dltv.org/images/opengraph.png",
+      "mirroredPath": "/images/mirror/players/27626073.webp"
+    },
+    {
+      "kind": "players",
+      "id": "104334048",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/eZ44eeJaio6Zph4IpX0vBYRKNiFhibNA.png",
+      "mirroredPath": "/images/mirror/players/104334048.webp"
+    },
+    {
+      "kind": "players",
+      "id": "104512126",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/fvMmty3OVTvSpa4NbVt0irn1KPG8we7Q.png",
+      "mirroredPath": "/images/mirror/players/104512126.webp"
+    },
+    {
+      "kind": "players",
+      "id": "105045291",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/HZD7o6Z2K05eCbUfOtC58YxN71qIT112.png",
+      "mirroredPath": "/images/mirror/players/105045291.webp"
+    },
+    {
+      "kind": "players",
+      "id": "106305042",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JwjUCfZvisJRdp4BKirTZrbjhCTnJ6NX.png",
+      "mirroredPath": "/images/mirror/players/106305042.webp"
+    },
+    {
+      "kind": "players",
+      "id": "106573901",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Acrng6urXiIx7yh3tOe5d4WmDv3CvK8f.png",
+      "mirroredPath": "/images/mirror/players/106573901.webp"
+    },
+    {
+      "kind": "players",
+      "id": "108221389",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/50ndwB73tvxSNOGPHW8rDsA7y1mR6ldy.png",
+      "mirroredPath": "/images/mirror/players/108221389.webp"
+    },
+    {
+      "kind": "players",
+      "id": "108958769",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/9DpbjbSoT65dDqVNBCDGqzg9G9mH0gMy.png",
+      "mirroredPath": "/images/mirror/players/108958769.webp"
+    },
+    {
+      "kind": "players",
+      "id": "110759067",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/rCSaMSIP2rDIlauVJqB8j5zhiH5CJT81.png",
+      "mirroredPath": "/images/mirror/players/110759067.webp"
+    },
+    {
+      "kind": "players",
+      "id": "111030315",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/M9c3H3ogyaJ2ucHHsGlPqX0dXYMjWcS8.png",
+      "mirroredPath": "/images/mirror/players/111030315.webp"
+    },
+    {
+      "kind": "players",
+      "id": "111114687",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Qp6ZzLXkz2kbuYoc41PoIdetd6RW7SFa.png",
+      "mirroredPath": "/images/mirror/players/111114687.webp"
+    },
+    {
+      "kind": "players",
+      "id": "111620041",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/tjv0rikm8zQkIuGFdqH4pxXzl4dHhv7L.png",
+      "mirroredPath": "/images/mirror/players/111620041.webp"
+    },
+    {
+      "kind": "players",
+      "id": "112426916",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/EWzBd6lFV2sL2bT7hohHtVBiG6neAAGo.png",
+      "mirroredPath": "/images/mirror/players/112426916.webp"
+    },
+    {
+      "kind": "players",
+      "id": "113457795",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/6oysX5kBpSMmXIheZ4dbNfDDC4tHgg27.png",
+      "mirroredPath": "/images/mirror/players/113457795.webp"
+    },
+    {
+      "kind": "players",
+      "id": "114619230",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ptIQ3O8RaxKLZhaqeXaShzaNUq5HCSgu.png",
+      "mirroredPath": "/images/mirror/players/114619230.webp"
+    },
+    {
+      "kind": "players",
+      "id": "115464954",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/AHQtaiWswUS0eI18d0WLsJkpresAUaOl.png",
+      "mirroredPath": "/images/mirror/players/115464954.webp"
+    },
+    {
+      "kind": "players",
+      "id": "115651292",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/hWYd1pvXaqx1VzGgU0QoWViX4nxe9fA5.png",
+      "mirroredPath": "/images/mirror/players/115651292.webp"
+    },
+    {
+      "kind": "players",
+      "id": "116249155",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/SbKPykU7nTvBmdvHbcAQk8ELsoTjoJDA.png",
+      "mirroredPath": "/images/mirror/players/116249155.webp"
+    },
+    {
+      "kind": "players",
+      "id": "116293223",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/HtOwDEiQLtxAEfdpTzhPabQoMtXSKnl3.png",
+      "mirroredPath": "/images/mirror/players/116293223.webp"
+    },
+    {
+      "kind": "players",
+      "id": "116585378",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/vApRr035nn3oUz0cZopWimso5WtSbu5m.png",
+      "mirroredPath": "/images/mirror/players/116585378.webp"
+    },
+    {
+      "kind": "players",
+      "id": "116865891",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/iYpD622vfvbSTFy3IerXta2VOX19TuuV.png",
+      "mirroredPath": "/images/mirror/players/116865891.webp"
+    },
+    {
+      "kind": "players",
+      "id": "116881520",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/GOWMDQEStIUMGfcEb1m3wDVN7860y3VK.png",
+      "mirroredPath": "/images/mirror/players/116881520.webp"
+    },
+    {
+      "kind": "players",
+      "id": "117514269",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/efc13kDzovi9QUp0rmZtKwKnFWV7Pa1e.png",
+      "mirroredPath": "/images/mirror/players/117514269.webp"
+    },
+    {
+      "kind": "players",
+      "id": "118134220",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/rRweM0pGoHtRnDzQyjucAudNfPUL9GMs.png",
+      "mirroredPath": "/images/mirror/players/118134220.webp"
+    },
+    {
+      "kind": "players",
+      "id": "118559150",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/dH6HoVK1GA7pNz7OYOur7IJSUDAYEDZ8.png",
+      "mirroredPath": "/images/mirror/players/118559150.webp"
+    },
+    {
+      "kind": "players",
+      "id": "120840516",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/wCG3CziDeaaGUyS7MfrC7vSoD3DaI4yE.png",
+      "mirroredPath": "/images/mirror/players/120840516.webp"
+    },
+    {
+      "kind": "players",
+      "id": "122817493",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/PI76JaxvTRZNdSyiCS9IhIxxnLt1f0Kg.png",
+      "mirroredPath": "/images/mirror/players/122817493.webp"
+    },
+    {
+      "kind": "players",
+      "id": "123023873",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/XXXefBfGhdq6jcC4DX1rZWQLxlZia5l9.png",
+      "mirroredPath": "/images/mirror/players/123023873.webp"
+    },
+    {
+      "kind": "players",
+      "id": "123787715",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/knyNCI3axUZE7hmidCmURUhFMSWFqqQY.png",
+      "mirroredPath": "/images/mirror/players/123787715.webp"
+    },
+    {
+      "kind": "players",
+      "id": "124801257",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/0Ni03a4S8kujdgEN6QMdlH61USjUqMjB.png",
+      "mirroredPath": "/images/mirror/players/124801257.webp"
+    },
+    {
+      "kind": "players",
+      "id": "125445069",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JqyO40Sz8tksAfNSRz82Us1IiyypWSyB.png",
+      "mirroredPath": "/images/mirror/players/125445069.webp"
+    },
+    {
+      "kind": "players",
+      "id": "125995177",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/klyWY4CX04whaTjiq1AXL1pVv5iJfHGq.png",
+      "mirroredPath": "/images/mirror/players/125995177.webp"
+    },
+    {
+      "kind": "players",
+      "id": "126212866",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/48KXGWwhesIqxvf52gHdVRORqUaZ0wE7.png",
+      "mirroredPath": "/images/mirror/players/126212866.webp"
+    },
+    {
+      "kind": "players",
+      "id": "126842529",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/xoEysG3QRRdrTXbrq8hyHivVBc4xSt6s.png",
+      "mirroredPath": "/images/mirror/players/126842529.webp"
+    },
+    {
+      "kind": "players",
+      "id": "127530803",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/DHGiLslIAsCTMSxBjGq1Ng750kbXmrWW.png",
+      "mirroredPath": "/images/mirror/players/127530803.webp"
+    },
+    {
+      "kind": "players",
+      "id": "127617979",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/thmhjHqZYaHDesEjgmIbKm3iifeDVOQP.png",
+      "mirroredPath": "/images/mirror/players/127617979.webp"
+    },
+    {
+      "kind": "players",
+      "id": "129958758",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Nh2lo39PUvnrVFlxiN3zPp2GfGZN2wEw.png",
+      "mirroredPath": "/images/mirror/players/129958758.webp"
+    },
+    {
+      "kind": "players",
+      "id": "130991304",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/XCo15lPVq3tD00L0bwdmDwoj1dmPVlgJ.png",
+      "mirroredPath": "/images/mirror/players/130991304.webp"
+    },
+    {
+      "kind": "players",
+      "id": "131303632",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/IRI2DMY4QCDQzIhvLK2CEfyGQv99yyk1.png",
+      "mirroredPath": "/images/mirror/players/131303632.webp"
+    },
+    {
+      "kind": "players",
+      "id": "132309493",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/JjRrSdAP5SHzHiISuGuiPgtoComdd5cJ.png",
+      "mirroredPath": "/images/mirror/players/132309493.webp"
+    },
+    {
+      "kind": "players",
+      "id": "135607261",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/K9lOGsOPOTDeKjrkk04vR1zuhILZZNGc.png",
+      "mirroredPath": "/images/mirror/players/135607261.webp"
+    },
+    {
+      "kind": "players",
+      "id": "136177710",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/E7PTz4b1V5BdSrbMTmtt8t0AWPm390rH.png",
+      "mirroredPath": "/images/mirror/players/136177710.webp"
+    },
+    {
+      "kind": "players",
+      "id": "136829091",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/dsBLllDYzIE6wgezhdfjBBgjbxUD9bkl.png",
+      "mirroredPath": "/images/mirror/players/136829091.webp"
+    },
+    {
+      "kind": "players",
+      "id": "137129583",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ZvbbBzmv4DoCXMvnO4HW6VKwAfCZWqP1.png",
+      "mirroredPath": "/images/mirror/players/137129583.webp"
+    },
+    {
+      "kind": "players",
+      "id": "137193239",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lgN6elg0xXcRGW6Q10RriC2eFsTyQoH9.png",
+      "mirroredPath": "/images/mirror/players/137193239.webp"
+    },
+    {
+      "kind": "players",
+      "id": "137895298",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7fQdtkxXJOtgp5mZullEGPlwUqf4lmiz.png",
+      "mirroredPath": "/images/mirror/players/137895298.webp"
+    },
+    {
+      "kind": "players",
+      "id": "138535219",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/2mb3yor08gKXIdxJgfA72CY5FXI9FMGy.png",
+      "mirroredPath": "/images/mirror/players/138535219.webp"
+    },
+    {
+      "kind": "players",
+      "id": "138543123",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ccCNvdmoeOfExkmDIoRrJNl7rhZXBFey.png",
+      "mirroredPath": "/images/mirror/players/138543123.webp"
+    },
+    {
+      "kind": "players",
+      "id": "138857296",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/v7mUEAJS01H1iBhq77PGn8UXwoAxl9sY.png",
+      "mirroredPath": "/images/mirror/players/138857296.webp"
+    },
+    {
+      "kind": "players",
+      "id": "138880576",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/XzJSKa05u7BOkimFsrAO9PwkmYrywHUH.png",
+      "mirroredPath": "/images/mirror/players/138880576.webp"
+    },
+    {
+      "kind": "players",
+      "id": "139876032",
+      "sourceUrl": "https://dltv.org/images/opengraph.png",
+      "mirroredPath": "/images/mirror/players/27626073.webp"
+    },
+    {
+      "kind": "players",
+      "id": "139937922",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/MkGsESXbZe16kEyHdBperFjrHim26vVQ.png.webp",
+      "mirroredPath": "/images/mirror/players/139937922.webp"
+    },
+    {
+      "kind": "players",
+      "id": "140288368",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/nscvyXJgjaEQPCxYLfgm6fIq12FSNWPK.png",
+      "mirroredPath": "/images/mirror/players/140288368.webp"
+    },
+    {
+      "kind": "players",
+      "id": "140297552",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7CBlz78dECUqf6HWtpB3LUikz4wpcxAJ.png",
+      "mirroredPath": "/images/mirror/players/140297552.webp"
+    },
+    {
+      "kind": "players",
+      "id": "140835095",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/WjQ9FQ4K7R3mvR6nN6tUoWqtFGzkWpnG.png",
+      "mirroredPath": "/images/mirror/players/140835095.webp"
+    },
+    {
+      "kind": "players",
+      "id": "143693439",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/YA2GxscbcUBwQHPvasmVpEAb5UU0CoBR.png",
+      "mirroredPath": "/images/mirror/players/143693439.webp"
+    },
+    {
+      "kind": "players",
+      "id": "145331311",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/9Xb9CL3ppng8XTkNgropQqIF0zEMhn1U.png",
+      "mirroredPath": "/images/mirror/players/145331311.webp"
+    },
+    {
+      "kind": "players",
+      "id": "145957968",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/cDix8oobePzWDPhOJ3rk79l6qXCfGfjO.png",
+      "mirroredPath": "/images/mirror/players/145957968.webp"
+    },
+    {
+      "kind": "players",
+      "id": "146711951",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lgZBrkFsKuYj5mChpgN0FUaPW82gPy2d.png",
+      "mirroredPath": "/images/mirror/players/146711951.webp"
+    },
+    {
+      "kind": "players",
+      "id": "147767183",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/r3lYjzIkBHJtILnr1KuOABKLgxm0uA6r.png",
+      "mirroredPath": "/images/mirror/players/147767183.webp"
+    },
+    {
+      "kind": "players",
+      "id": "148215639",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/nB71zB2OpTYnbLEyvDfkmrxGVrvxPMS7.png",
+      "mirroredPath": "/images/mirror/players/148215639.webp"
+    },
+    {
+      "kind": "players",
+      "id": "148526973",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/1MZPRo9GYF2sSYexFmkg6wEBJWyofgUc.png",
+      "mirroredPath": "/images/mirror/players/148526973.webp"
+    },
+    {
+      "kind": "players",
+      "id": "150961567",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/vWRwOZdivEbZMoU6pKmPTpAUEWtm67a6.png",
+      "mirroredPath": "/images/mirror/players/150961567.webp"
+    },
+    {
+      "kind": "players",
+      "id": "152168157",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7Lqnn58LYwQDS7IRzRzFEWhvkgl83HyU.png",
+      "mirroredPath": "/images/mirror/players/152168157.webp"
+    },
+    {
+      "kind": "players",
+      "id": "152455523",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/7gRgLVGCB0b3bl2Nv1PbLRYSARErPVXe.png",
+      "mirroredPath": "/images/mirror/players/152455523.webp"
+    },
+    {
+      "kind": "players",
+      "id": "152859296",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/AY8ziiT1roN9jf6yfeR29y7RbJpg20br.png",
+      "mirroredPath": "/images/mirror/players/152859296.webp"
+    },
+    {
+      "kind": "players",
+      "id": "152962063",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/L1jBlChBoQDwAzwA5SSi2l6Pl1qEIxq4.png",
+      "mirroredPath": "/images/mirror/players/152962063.webp"
+    },
+    {
+      "kind": "players",
+      "id": "154715080",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lxZBjnJH6G6sbdHR9SeSlI73sCmfe6lx.png",
+      "mirroredPath": "/images/mirror/players/154715080.webp"
+    },
+    {
+      "kind": "players",
+      "id": "154974246",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/aA9cTr9OMaiprqMlznFqKkCoi4q7GX4t.png",
+      "mirroredPath": "/images/mirror/players/154974246.webp"
+    },
+    {
+      "kind": "players",
+      "id": "155162307",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Zidpgyw3U0tMz6jpRJeq8GqxA1VJsZq4.png",
+      "mirroredPath": "/images/mirror/players/155162307.webp"
+    },
+    {
+      "kind": "players",
+      "id": "155447692",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/FEQIWOqYPnD6cNHqzW1GslbYHg4t6qPh.png",
+      "mirroredPath": "/images/mirror/players/155447692.webp"
+    },
+    {
+      "kind": "players",
+      "id": "155494381",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ubod05AxHXm5PVDx8hqwaiPJjUx7yv9A.png",
+      "mirroredPath": "/images/mirror/players/155494381.webp"
+    },
+    {
+      "kind": "players",
+      "id": "156029808",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ZZJyER5LrfsA2PEuPg3v9vGVbs5LkUDG.png",
+      "mirroredPath": "/images/mirror/players/156029808.webp"
+    },
+    {
+      "kind": "players",
+      "id": "156328257",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/5KOJ2yO6h84GNSS86x2w0G5T1QW0N5Hu.png",
+      "mirroredPath": "/images/mirror/players/156328257.webp"
+    },
+    {
+      "kind": "players",
+      "id": "157989498",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/LksKdVXqdTKsKAFWBAwzFcGQg3A267D9.png",
+      "mirroredPath": "/images/mirror/players/157989498.webp"
+    },
+    {
+      "kind": "players",
+      "id": "158072796",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/IW8Sn7JiC8Qt8fowRQ0zL936HjacHs23.png",
+      "mirroredPath": "/images/mirror/players/158072796.webp"
+    },
+    {
+      "kind": "players",
+      "id": "158847773",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/AbMpheo1yyv2sOdw4g0taiEJyT5kMEws.png",
+      "mirroredPath": "/images/mirror/players/158847773.webp"
+    },
+    {
+      "kind": "players",
+      "id": "160119017",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/qN3uxXtn5GAvJ1koRQnDTMQCWNvlIPjx.png",
+      "mirroredPath": "/images/mirror/players/160119017.webp"
+    },
+    {
+      "kind": "players",
+      "id": "164199202",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JQ9DIITl7Gk0EOkZyx2Cq0qs14jWLBX8.png",
+      "mirroredPath": "/images/mirror/players/164199202.webp"
+    },
+    {
+      "kind": "players",
+      "id": "164506534",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/Fa6Jz9dfhm2CWKqKG9KE75kkc1A5JT4L.png",
+      "mirroredPath": "/images/mirror/players/164506534.webp"
+    },
+    {
+      "kind": "players",
+      "id": "164530809",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/p0J4ImRDeGD05AMwh18neJDXmwZXGJXE.png",
+      "mirroredPath": "/images/mirror/players/164530809.webp"
+    },
+    {
+      "kind": "players",
+      "id": "164532005",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/EwNGp5CEebSVdHYSfK8VqiOztWh2NeiQ.png",
+      "mirroredPath": "/images/mirror/players/164532005.webp"
+    },
+    {
+      "kind": "players",
+      "id": "165178538",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/aWwSnXPyuPg6gwt3sA99u7kLc9UnU14V.png",
+      "mirroredPath": "/images/mirror/players/165178538.webp"
+    },
+    {
+      "kind": "players",
+      "id": "165564598",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/XLDkQTke1b0A9Etq3iWPbxVFfcPETabR.png",
+      "mirroredPath": "/images/mirror/players/165564598.webp"
+    },
+    {
+      "kind": "players",
+      "id": "168028715",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/zF6LinVirVgc3ct3eVo9DqvSO0r8NU3O.png",
+      "mirroredPath": "/images/mirror/players/168028715.webp"
+    },
+    {
+      "kind": "players",
+      "id": "169516760",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/b9RX0fbYABkbuq9xVZpbynOzyBFOS73Q.png",
+      "mirroredPath": "/images/mirror/players/169516760.webp"
+    },
+    {
+      "kind": "players",
+      "id": "170809075",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/jT12UGCeDy0dfpYelsS4rndINGrck00F.png",
+      "mirroredPath": "/images/mirror/players/170809075.webp"
+    },
+    {
+      "kind": "players",
+      "id": "171097887",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ibkW9VPhLBfo2hz90fDWkVX84OUshfzA.png",
+      "mirroredPath": "/images/mirror/players/171097887.webp"
+    },
+    {
+      "kind": "players",
+      "id": "171262902",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/zTEhhsVQGmM5ikK6FLJAzaY7ByNUXuT7.png",
+      "mirroredPath": "/images/mirror/players/171262902.webp"
+    },
+    {
+      "kind": "players",
+      "id": "172099728",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/P7Xyms4sKUbpWRVC20ton74LW3UzCiK4.png",
+      "mirroredPath": "/images/mirror/players/172099728.webp"
+    },
+    {
+      "kind": "players",
+      "id": "173378701",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7NIzwG86MgUPv9ZkOceUHBnpcmd6srIu.png",
+      "mirroredPath": "/images/mirror/players/173378701.webp"
+    },
+    {
+      "kind": "players",
+      "id": "173978074",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/9Lbl0rAASPmFvQSY9oASjNr8K5Q80KuV.png",
+      "mirroredPath": "/images/mirror/players/173978074.webp"
+    },
+    {
+      "kind": "players",
+      "id": "175311897",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/eMRleXT2eGq9PL5IPX7k9ZrGlADYRZW7.png",
+      "mirroredPath": "/images/mirror/players/175311897.webp"
+    },
+    {
+      "kind": "players",
+      "id": "177203952",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/FM5EbGSJrCH47GD4gtgoWPQ0HhYk7yw9.png",
+      "mirroredPath": "/images/mirror/players/177203952.webp"
+    },
+    {
+      "kind": "players",
+      "id": "177953305",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/SKGvUkYoOUWYfTS3SjtUClb3CDwV5Mru.png",
+      "mirroredPath": "/images/mirror/players/177953305.webp"
+    },
+    {
+      "kind": "players",
+      "id": "179313961",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/oU6o7LAgiSZ6a4Qb5qZlZlY0DjJTvJ1R.png",
+      "mirroredPath": "/images/mirror/players/179313961.webp"
+    },
+    {
+      "kind": "players",
+      "id": "181716137",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/D3v7aJzPjziUmnWTkDTEdlnj0Yo6u4KH.png",
+      "mirroredPath": "/images/mirror/players/181716137.webp"
+    },
+    {
+      "kind": "players",
+      "id": "183719386",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JWIMNXCtHskayfIeTUxawrXd4lO8H89L.png",
+      "mirroredPath": "/images/mirror/players/183719386.webp"
+    },
+    {
+      "kind": "players",
+      "id": "185001854",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/uvP2gtP8WXriGllm5HeHGItrJxTSfapy.png",
+      "mirroredPath": "/images/mirror/players/185001854.webp"
+    },
+    {
+      "kind": "players",
+      "id": "185059559",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/oueTFY5hCnB8f5dDBB5mECYeiDkSV6kr.png",
+      "mirroredPath": "/images/mirror/players/185059559.webp"
+    },
+    {
+      "kind": "players",
+      "id": "185202677",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/s2fYb6Ny08rJhxH2QIdk51ODygTdV8wJ.png",
+      "mirroredPath": "/images/mirror/players/185202677.webp"
+    },
+    {
+      "kind": "players",
+      "id": "185590374",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lFnk2dht3qYR1wVqbAkPnkHYGgx1WdkS.png",
+      "mirroredPath": "/images/mirror/players/185590374.webp"
+    },
+    {
+      "kind": "players",
+      "id": "185908355",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/UqP5yxzNxPSYMeXThdP3qhwruc2yhcBn.png",
+      "mirroredPath": "/images/mirror/players/185908355.webp"
+    },
+    {
+      "kind": "players",
+      "id": "186837494",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/1JkdG8clG1NR7Thb9dlCZNCC51u1ldvp.png",
+      "mirroredPath": "/images/mirror/players/186837494.webp"
+    },
+    {
+      "kind": "players",
+      "id": "190826739",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/mphArGkwP121FSfTBvM5j1qsmFxmf6TW.png",
+      "mirroredPath": "/images/mirror/players/190826739.webp"
+    },
+    {
+      "kind": "players",
+      "id": "191290281",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/B4gZjxhicw8KaSNBIAcauDhJMvlqjh22.png",
+      "mirroredPath": "/images/mirror/players/191290281.webp"
+    },
+    {
+      "kind": "players",
+      "id": "191362875",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lWhVnNjcAhGr0mHfeAY1trQT5nKn85Vr.png",
+      "mirroredPath": "/images/mirror/players/191362875.webp"
+    },
+    {
+      "kind": "players",
+      "id": "191597529",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/aUAmob30eQqUjbzubXqTlYX86t12nCMf.png",
+      "mirroredPath": "/images/mirror/players/191597529.webp"
+    },
+    {
+      "kind": "players",
+      "id": "193815691",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/U8YMNp4NvxiDclN5oHL0ywC10C957Uc2.png",
+      "mirroredPath": "/images/mirror/players/193815691.webp"
+    },
+    {
+      "kind": "players",
+      "id": "193884241",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/6dt4DcyGXAPhejAnWIhStmqA6JpEgFrW.png",
+      "mirroredPath": "/images/mirror/players/193884241.webp"
+    },
+    {
+      "kind": "players",
+      "id": "195072449",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/VsHlhcJSW7QbqgNHZI8czFwAs3Cfl3x8.png",
+      "mirroredPath": "/images/mirror/players/195072449.webp"
+    },
+    {
+      "kind": "players",
+      "id": "195108598",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/BPLKtC2KhzxBd032SpXkEV9FDLAOZ6hv.png",
+      "mirroredPath": "/images/mirror/players/195108598.webp"
+    },
+    {
+      "kind": "players",
+      "id": "196400041",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/iCpP2hv7MRe5vWhtvsZUetipD2zJ4DUR.png",
+      "mirroredPath": "/images/mirror/players/196400041.webp"
+    },
+    {
+      "kind": "players",
+      "id": "196878136",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Dq8iHtfDwOaQ1MFjCFovyurRnfZwEOrX.png",
+      "mirroredPath": "/images/mirror/players/196878136.webp"
+    },
+    {
+      "kind": "players",
+      "id": "197574429",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7nbZ2fdWNnWTcI57QsWfVJb4fvErTTf6.png",
+      "mirroredPath": "/images/mirror/players/197574429.webp"
+    },
+    {
+      "kind": "players",
+      "id": "201358612",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/pKxMniT4sfLBEsVbcUZmh00g04BGclMk.png",
+      "mirroredPath": "/images/mirror/players/201358612.webp"
+    },
+    {
+      "kind": "players",
+      "id": "203351055",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/oDTkmSh52DT2wwmIHam2aRZbAfGQIqbM.png",
+      "mirroredPath": "/images/mirror/players/203351055.webp"
+    },
+    {
+      "kind": "players",
+      "id": "206097366",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/suUMcfqPebXtwCmuk1RI1byqYdWO7pTd.png",
+      "mirroredPath": "/images/mirror/players/206097366.webp"
+    },
+    {
+      "kind": "players",
+      "id": "206642367",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/pFKsdt46dSsZrUOA1wibrqBNUuYoXUc7.png",
+      "mirroredPath": "/images/mirror/players/206642367.png"
+    },
+    {
+      "kind": "players",
+      "id": "207829314",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/YNSYNsowfLDHapv7Y7VfT3EiHry8z2Ko.png",
+      "mirroredPath": "/images/mirror/players/207829314.webp"
+    },
+    {
+      "kind": "players",
+      "id": "210053851",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lPOT979cWvZSiGr7brhtbZGrvH2HlLnp.png",
+      "mirroredPath": "/images/mirror/players/210053851.webp"
+    },
+    {
+      "kind": "players",
+      "id": "218367241",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/U0kUa3UUdpmRxiyMPNcYkJFUav8LATeo.png",
+      "mirroredPath": "/images/mirror/players/218367241.webp"
+    },
+    {
+      "kind": "players",
+      "id": "219755398",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/KnhNG2VvOmtFX5DpcfQJNs9m9kPB1SNh.png",
+      "mirroredPath": "/images/mirror/players/219755398.webp"
+    },
+    {
+      "kind": "players",
+      "id": "223344914",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/i0Vt7hn066NC6zG01ZyUPsINhzkxC5h2.png",
+      "mirroredPath": "/images/mirror/players/223344914.webp"
+    },
+    {
+      "kind": "players",
+      "id": "223382342",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/o6U6BFc1gJQtRJsrHrPOzX4tzVxW0k5f.png",
+      "mirroredPath": "/images/mirror/players/223382342.webp"
+    },
+    {
+      "kind": "players",
+      "id": "227657377",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Kcfc77eReVSF857EUV4S1tt1qEOeAIa0.png",
+      "mirroredPath": "/images/mirror/players/227657377.webp"
+    },
+    {
+      "kind": "players",
+      "id": "230487729",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/w5z0rojKW3N8ehV5WShfa6ZHofpGoiqY.png",
+      "mirroredPath": "/images/mirror/players/230487729.webp"
+    },
+    {
+      "kind": "players",
+      "id": "230617400",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/HXeigzMwPT9bTpVp4PaAp5GoeeEwd4TJ.png",
+      "mirroredPath": "/images/mirror/players/230617400.webp"
+    },
+    {
+      "kind": "players",
+      "id": "234119750",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/yUqHpbliQpL9OEiZGm8IRAn5AqxcjMWV.png",
+      "mirroredPath": "/images/mirror/players/234119750.webp"
+    },
+    {
+      "kind": "players",
+      "id": "241519559",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7Gnog2ax5seL4FpFo4IXXsOmYdGs8Bcx.png",
+      "mirroredPath": "/images/mirror/players/241519559.webp"
+    },
+    {
+      "kind": "players",
+      "id": "241884166",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/JP188tj7VTuh9vdJ6ctgjvaAvhp3X8tX.png",
+      "mirroredPath": "/images/mirror/players/241884166.webp"
+    },
+    {
+      "kind": "players",
+      "id": "242885483",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/mDCpEaP7Txbq6IkPocRIKbvqEW6yOh0R.png",
+      "mirroredPath": "/images/mirror/players/242885483.webp"
+    },
+    {
+      "kind": "players",
+      "id": "248180032",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/LO4d3O7cbRI0bMm2Nt7FKnW1acPMZ28i.png",
+      "mirroredPath": "/images/mirror/players/248180032.webp"
+    },
+    {
+      "kind": "players",
+      "id": "249835593",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/L0i59DMx6JZPaFJseGKr0TncK56me2HZ.png",
+      "mirroredPath": "/images/mirror/players/249835593.webp"
+    },
+    {
+      "kind": "players",
+      "id": "256156323",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/39YbFQ42rEuvTJBjqBnmIJjkCXOtUtDl.png",
+      "mirroredPath": "/images/mirror/players/256156323.webp"
+    },
+    {
+      "kind": "players",
+      "id": "256444993",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/eQlq6E735JAv6Yzsukxl9nD9RO9xec6r.png",
+      "mirroredPath": "/images/mirror/players/256444993.webp"
+    },
+    {
+      "kind": "players",
+      "id": "257945712",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ZaWuaqUxtET7jLtyTKxrZfeljp5jH5NQ.png",
+      "mirroredPath": "/images/mirror/players/257945712.webp"
+    },
+    {
+      "kind": "players",
+      "id": "262476000",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/QFM2niepakA5BmeFLAy0hzQaUG1mwBWV.png",
+      "mirroredPath": "/images/mirror/players/262476000.webp"
+    },
+    {
+      "kind": "players",
+      "id": "276449590",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Yr1R0rLUnWT4KbsyYyYILMVkeAXOgnk3.png",
+      "mirroredPath": "/images/mirror/players/276449590.webp"
+    },
+    {
+      "kind": "players",
+      "id": "285282252",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/cnoqit0uaHwCgxFsysDooRsaXX5DSslk.png",
+      "mirroredPath": "/images/mirror/players/285282252.webp"
+    },
+    {
+      "kind": "players",
+      "id": "292921272",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/qRC48BY5HZGnS0Tltji32NtN1qy0euOr.png",
+      "mirroredPath": "/images/mirror/players/292921272.webp"
+    },
+    {
+      "kind": "players",
+      "id": "294135421",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Lf9PJuMn8XnTtEafSpsoBMhGuQpU2tWY.png",
+      "mirroredPath": "/images/mirror/players/294135421.webp"
+    },
+    {
+      "kind": "players",
+      "id": "295697470",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/QNTdNG5sQk6Fi4qasopJwk6d7uPtXBYZ.png",
+      "mirroredPath": "/images/mirror/players/295697470.webp"
+    },
+    {
+      "kind": "players",
+      "id": "301750126",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lctfFUiRzWPwGuu6aaaAPEqe3fPU81qu.png",
+      "mirroredPath": "/images/mirror/players/301750126.webp"
+    },
+    {
+      "kind": "players",
+      "id": "302214028",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/27y3VuYw1dAMoRZHGisRyMB3JAzFGMHp.png",
+      "mirroredPath": "/images/mirror/players/302214028.webp"
+    },
+    {
+      "kind": "players",
+      "id": "312436974",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/WgOgZS3Y6dClfBJkHhsHMI4WcV2BUeDO.png",
+      "mirroredPath": "/images/mirror/players/312436974.webp"
+    },
+    {
+      "kind": "players",
+      "id": "315272623",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/RNUsMyALhA24XGN6ZNyalAgd4rUqWuXc.png",
+      "mirroredPath": "/images/mirror/players/315272623.webp"
+    },
+    {
+      "kind": "players",
+      "id": "317880638",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/BMq7PRs5LwQ3eZa2BhJqrBysD7eGJnoc.png",
+      "mirroredPath": "/images/mirror/players/317880638.webp"
+    },
+    {
+      "kind": "players",
+      "id": "320219866",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/3oHVSlJfmvV0lG9rwXRFXR4aOG3u4WyV.png",
+      "mirroredPath": "/images/mirror/players/320219866.webp"
+    },
+    {
+      "kind": "players",
+      "id": "320252024",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/oiKFeUohReTvM72xPy84AhsBI80f1UTP.png",
+      "mirroredPath": "/images/mirror/players/320252024.webp"
+    },
+    {
+      "kind": "players",
+      "id": "321580662",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/zKD0RaFQitXd7AhAWJgOyEeiEbb1B15H.png",
+      "mirroredPath": "/images/mirror/players/321580662.webp"
+    },
+    {
+      "kind": "players",
+      "id": "324277900",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Qwc4BdhAaUR9D7B4hngkyXU3GDiwcVS6.png",
+      "mirroredPath": "/images/mirror/players/324277900.webp"
+    },
+    {
+      "kind": "players",
+      "id": "331855530",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/b36yy8wmDpvZmk7u80ivPYz86ZiOWLTJ.png",
+      "mirroredPath": "/images/mirror/players/331855530.webp"
+    },
+    {
+      "kind": "players",
+      "id": "337575662",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/qaqR1Y6Z5BBKgGmrL5lQB0E1Xiwcr2F9.png",
+      "mirroredPath": "/images/mirror/players/337575662.webp"
+    },
+    {
+      "kind": "players",
+      "id": "340421206",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/medium/uhyLc8SY8YGozTxbP2UyK37tdxsnGaYu.png",
+      "mirroredPath": "/images/mirror/players/340421206.webp"
+    },
+    {
+      "kind": "players",
+      "id": "343084576",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/fEfblhfBsFmaPrCIa4qequ3rcfmvCxQ3.png",
+      "mirroredPath": "/images/mirror/players/343084576.webp"
+    },
+    {
+      "kind": "players",
+      "id": "346412363",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/MxSR7bSfRvVaJXWBgtKk2j7a7ejTtL3I.png",
+      "mirroredPath": "/images/mirror/players/346412363.webp"
+    },
+    {
+      "kind": "players",
+      "id": "349310876",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/YC99836W15zsNYkbhSd3DWsUrZcFcCGa.png",
+      "mirroredPath": "/images/mirror/players/349310876.webp"
+    },
+    {
+      "kind": "players",
+      "id": "352545711",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/HfMpc5nmdYRcydmczgQVUsSxdEoPZ3BQ.png",
+      "mirroredPath": "/images/mirror/players/352545711.webp"
+    },
+    {
+      "kind": "players",
+      "id": "352623024",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Bqr86rmQVmMQFp9MUHOSmNx9YkJnnYV4.png",
+      "mirroredPath": "/images/mirror/players/352623024.webp"
+    },
+    {
+      "kind": "players",
+      "id": "353424606",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/eA6RJPoGOGBMFHyY5jYpJqwRvJ8OYgBT.png",
+      "mirroredPath": "/images/mirror/players/353424606.webp"
+    },
+    {
+      "kind": "players",
+      "id": "355168766",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/yfYPDqInjgfOb1MfJHTpAB65UiunD0qQ.png",
+      "mirroredPath": "/images/mirror/players/355168766.webp"
+    },
+    {
+      "kind": "players",
+      "id": "361748943",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Cew3Vqd6D9EyEjKmF1JtHEIOxe1Kh4Ac.png",
+      "mirroredPath": "/images/mirror/players/361748943.webp"
+    },
+    {
+      "kind": "players",
+      "id": "363739653",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/LatgKYcksoHUjTWvNEZSSSXrzDaxscIZ.png",
+      "mirroredPath": "/images/mirror/players/363739653.webp"
+    },
+    {
+      "kind": "players",
+      "id": "363758022",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/tAqJMxaVaSDJ0OZd0Fgecn6PxgWHBEYt.png",
+      "mirroredPath": "/images/mirror/players/363758022.webp"
+    },
+    {
+      "kind": "players",
+      "id": "375507918",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/tqPpGpGxBJNgpr11qCUs9j4VcoOPhuOD.png",
+      "mirroredPath": "/images/mirror/players/375507918.webp"
+    },
+    {
+      "kind": "players",
+      "id": "383867949",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/7aSoo0Z9m6MTms8k4dBCTGXSgyc78gm2.png",
+      "mirroredPath": "/images/mirror/players/383867949.webp"
+    },
+    {
+      "kind": "players",
+      "id": "389022189",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/wuK2VFh4P9Re1HQKMmoM2xgrzbWe6PZq.png",
+      "mirroredPath": "/images/mirror/players/389022189.webp"
+    },
+    {
+      "kind": "players",
+      "id": "391423488",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/uhDyTuC8IS4w4ZYZrWJQhSaYewwvDif7.webp",
+      "mirroredPath": "/images/mirror/players/391423488.webp"
+    },
+    {
+      "kind": "players",
+      "id": "399862798",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/ZG7dPnJK4xm2oAEP9tcltawWs7li9ccu.png",
+      "mirroredPath": "/images/mirror/players/399862798.webp"
+    },
+    {
+      "kind": "players",
+      "id": "402583877",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/IGB3fRLhYSEq0Hm1ojKHOL4jUC5yGgZE.png",
+      "mirroredPath": "/images/mirror/players/402583877.webp"
+    },
+    {
+      "kind": "players",
+      "id": "417235485",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/mEIBgVrR3jDIFAzheAOxbLRUIqbl1t5F.png.webp",
+      "mirroredPath": "/images/mirror/players/417235485.webp"
+    },
+    {
+      "kind": "players",
+      "id": "417604379",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/NXJ0EFjv0Bav2qTKzx5zUSZE2XeXcu1z.png.webp",
+      "mirroredPath": "/images/mirror/players/417604379.webp"
+    },
+    {
+      "kind": "players",
+      "id": "418942836",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Fxee0hvA6sVBBXCif5kaWWwKOCKYh2Ks.png",
+      "mirroredPath": "/images/mirror/players/418942836.webp"
+    },
+    {
+      "kind": "players",
+      "id": "421515107",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/pxTQCXlclcLQqyA65T2Hi6lLHlF3hhWw.png",
+      "mirroredPath": "/images/mirror/players/421515107.webp"
+    },
+    {
+      "kind": "players",
+      "id": "425588742",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/9pzX4gPTyVsEv50WodjbVs3NS4udL54w.png",
+      "mirroredPath": "/images/mirror/players/425588742.webp"
+    },
+    {
+      "kind": "players",
+      "id": "431770905",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Qx12CYLtTqEAS0suHVz4lox1IrwcaWDy.png",
+      "mirroredPath": "/images/mirror/players/431770905.webp"
+    },
+    {
+      "kind": "players",
+      "id": "435139370",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/H4U1zGZmH6XyKd2PUYRbaRp1zXzcWl1B.png",
+      "mirroredPath": "/images/mirror/players/435139370.webp"
+    },
+    {
+      "kind": "players",
+      "id": "458287006",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/qTBM70iQRSyObZOHbxM61jT5gXQbENyZ.png",
+      "mirroredPath": "/images/mirror/players/458287006.webp"
+    },
+    {
+      "kind": "players",
+      "id": "480412663",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/lBLgqjFmUWyUEp6gF56MvO3ujdJkfFrM.png",
+      "mirroredPath": "/images/mirror/players/480412663.webp"
+    },
+    {
+      "kind": "players",
+      "id": "489696354",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/4jXO0RcAjvRx8NEFJfy2AKlgP48qNhJC.png",
+      "mirroredPath": "/images/mirror/players/489696354.webp"
+    },
+    {
+      "kind": "players",
+      "id": "835864135",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/PrpkANpD5CNamI4xdOF3YmJmCQntGSNi.png",
+      "mirroredPath": "/images/mirror/players/835864135.webp"
+    },
+    {
+      "kind": "players",
+      "id": "847565596",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/68zrpWVk0Yr3qC2nEjoraby7Lm93WBJg.png",
+      "mirroredPath": "/images/mirror/players/847565596.webp"
+    },
+    {
+      "kind": "players",
+      "id": "847851833",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Vy1Ag2tH2t63XasdAH28r0r9grh9a3fR.png",
+      "mirroredPath": "/images/mirror/players/847851833.webp"
+    },
+    {
+      "kind": "players",
+      "id": "858106446",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/5A35cNCF5cotwBE51UupHCamW7hJkKRQ.png",
+      "mirroredPath": "/images/mirror/players/858106446.webp"
+    },
+    {
+      "kind": "players",
+      "id": "861414087",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Jg25u9UVwQGSX3JRRzdMG9sp6meMbsj5.png",
+      "mirroredPath": "/images/mirror/players/861414087.webp"
+    },
+    {
+      "kind": "players",
+      "id": "879017980",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/4g53V6nPwgDnVLEZMnDqVYFhozWRe89Q.png",
+      "mirroredPath": "/images/mirror/players/879017980.webp"
+    },
+    {
+      "kind": "players",
+      "id": "898455820",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/CJ6Qb0BViIFmWVEfLYcwhGBCi2d8O52S.png",
+      "mirroredPath": "/images/mirror/players/898455820.webp"
+    },
+    {
+      "kind": "players",
+      "id": "898754153",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/Lp2N9OlUKwRbYdGbkFsEfuYbejX5KD9Y.png",
+      "mirroredPath": "/images/mirror/players/898754153.webp"
+    },
+    {
+      "kind": "players",
+      "id": "899495504",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/NlzebCzemZGaGSswbJ0jBSfj4K8zfQVn.png",
+      "mirroredPath": "/images/mirror/players/899495504.webp"
+    },
+    {
+      "kind": "players",
+      "id": "904131336",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/8TjRT2jIDhjUbm7zZCBddY3qGYhFuZrD.png",
+      "mirroredPath": "/images/mirror/players/904131336.webp"
+    },
+    {
+      "kind": "players",
+      "id": "910028605",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/z5Til1oRcd0PUppWoIUvTAv7df6kMA6D.png",
+      "mirroredPath": "/images/mirror/players/910028605.webp"
+    },
+    {
+      "kind": "players",
+      "id": "914221413",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/u63Z87WZ3EOaHKUCK2Si7JoYLd7wRllX.png",
+      "mirroredPath": "/images/mirror/players/914221413.webp"
+    },
+    {
+      "kind": "players",
+      "id": "919735867",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/nqbaVdNjaYZbLYx79Y7Wn13duqZiJQ9E.png",
+      "mirroredPath": "/images/mirror/players/919735867.webp"
+    },
+    {
+      "kind": "players",
+      "id": "957204049",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/d1gtBvqkt8tj33Um03vK9sXNLzR7MiDz.png",
+      "mirroredPath": "/images/mirror/players/957204049.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1026694469",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/VYv1nF3fha5LI6rfcg4lIDK4HIM56fak.png",
+      "mirroredPath": "/images/mirror/players/1026694469.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1031547092",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/QMfpShjE9kDOGMY1yFSYZUs9u4isOsnA.png",
+      "mirroredPath": "/images/mirror/players/1031547092.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1044002267",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/kop2niFLOyc0XnmEt8N906042FL0xaYa.png",
+      "mirroredPath": "/images/mirror/players/1044002267.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1048617659",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/mD1zld3ig6n0iF3yttkytdYUJmhyFsAo.png",
+      "mirroredPath": "/images/mirror/players/1048617659.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1052101649",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/aSUrvY8ejPlzFi9ohZRvPRbSAjzrWtIJ.png",
+      "mirroredPath": "/images/mirror/players/1052101649.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1092557725",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/AcequdodLylKQpfaiz7GYFaVIwLUWK12.png",
+      "mirroredPath": "/images/mirror/players/1092557725.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1101855381",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/FoLZ9zpiigZQYSjZwR9204rQVdiWTSOc.png",
+      "mirroredPath": "/images/mirror/players/1101855381.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1153798101",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/sLGR80fYhGnj2vgzFabSYUCWkE2MJWxe.png",
+      "mirroredPath": "/images/mirror/players/1153798101.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1171243748",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/YW36eFkEIGM4wdYldRoaYU8KIf6rovAu.png",
+      "mirroredPath": "/images/mirror/players/1171243748.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1171877280",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/9fH1sJJ8t7sxvwDm4QM83k1FzcdBJIIy.png",
+      "mirroredPath": "/images/mirror/players/1171877280.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1202267677",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/mS4EAUOjTYsKaNuVvYZnwhFGt05wsFG6.png",
+      "mirroredPath": "/images/mirror/players/1202267677.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1657135701",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/YfPhuV7UzeD7xliafR0FULf4DnCpS1a6.png",
+      "mirroredPath": "/images/mirror/players/1657135701.webp"
+    },
+    {
+      "kind": "players",
+      "id": "1675898897",
+      "sourceUrl": "https://s3.dltv.org/uploads/players/vXatLuMG4JAtA4U1jbisFos2pxK4PEtw.png",
+      "mirroredPath": "/images/mirror/players/1675898897.webp"
+    }
+  ]
 }

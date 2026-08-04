@@ -39,6 +39,22 @@ describe('parseHash', () => {
     });
   });
 
+  it('parses a news detail deep link as its own page', () => {
+    expect(parseHash('#/news/hawk-some-story-1')).toEqual({
+      page: 'news',
+      overlay: null,
+      newsId: 'hawk-some-story-1',
+    });
+  });
+
+  it('parses a news detail deep link with encoded id', () => {
+    expect(parseHash('#/news/bo3%20special')).toEqual({
+      page: 'news',
+      overlay: null,
+      newsId: 'bo3 special',
+    });
+  });
+
   it('parses a home match overlay deep link', () => {
     expect(parseHash('#/home/match/90001')).toEqual({
       page: 'home',
@@ -106,9 +122,23 @@ describe('toHash', () => {
     expect(toHash(parsed)).toBe('#/team/Team%20Spirit');
   });
 
+  it('serializes a news detail page', () => {
+    expect(toHash({ page: 'news', overlay: null, newsId: 'hawk-some-story-1' })).toBe('#/news/hawk-some-story-1');
+  });
+
+  it('serializes the news list page', () => {
+    expect(toHash({ page: 'news', overlay: null })).toBe('#/news');
+  });
+
   it('round-trips a match deep link', () => {
     const parsed = parseHash('#/match/7777?slug=midas-club-vs-team-resilience');
     expect(parsed.page).toBe('match');
     expect(toHash(parsed)).toBe('#/match/7777?slug=midas-club-vs-team-resilience');
+  });
+
+  it('round-trips a news detail deep link', () => {
+    const parsed = parseHash('#/news/hawk-some-story-1');
+    expect(parsed).toMatchObject({ page: 'news', newsId: 'hawk-some-story-1' });
+    expect(toHash(parsed)).toBe('#/news/hawk-some-story-1');
   });
 });
