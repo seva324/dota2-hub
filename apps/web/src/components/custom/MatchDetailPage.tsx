@@ -10,6 +10,7 @@ import { MatchGraphs } from '@/components/custom/MatchGraphs';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { getHeroImageUrl } from '@/lib/assetUrls';
 import { resolveTeamLogo } from '@/lib/teams';
+import { deriveMatchDetailModel, type MatchDetail, type Player } from '@/lib/matchDetailModel';
 
 function formatCompact(value: number): string {
   if (!Number.isFinite(value)) return '-';
@@ -17,11 +18,10 @@ function formatCompact(value: number): string {
   return String(Math.round(value));
 }
 
-type MatchDetail = any;
 type HeroInfo = Record<number, { id: number; name: string; img: string; name_cn: string }>;
 
 type Props = {
-  match: MatchDetail;
+  match: MatchDetail | null;
   radiantTeamName: string;
   direTeamName: string;
   radiantTeamRef: { team_id?: string | null; name?: string | null; logo_url?: string | null } | null;
@@ -37,7 +37,7 @@ type Props = {
   onPlayerClick?: (accountId: number) => void;
 };
 
-function getNetWorth(p: any): number {
+function getNetWorth(p: Player): number {
   return p?.net_worth ?? p?.gold_per_min ?? 0;
 }
 
@@ -81,8 +81,7 @@ export function MatchDetailPage({
   const radiantScore = seriesMaps.length > 0 ? radiantSeriesWins : match.radiant_score;
   const direScore = seriesMaps.length > 0 ? direSeriesWins : match.dire_score;
 
-  const radiantPlayers = match.players?.filter((p: any) => p.player_slot < 128) || [];
-  const direPlayers = match.players?.filter((p: any) => p.player_slot >= 128) || [];
+  const { radiantPlayers, direPlayers } = deriveMatchDetailModel(match, []);
 
   const radiantLogo = resolveTeamLogo(
     { teamId: radiantTeamRef?.team_id || undefined, name: radiantTeamRef?.name || undefined },
@@ -197,7 +196,7 @@ export function MatchDetailPage({
                     <span className="text-center">净值</span> <span className="text-center">GPM</span>
                     <span className="text-center">XPM</span> <span className="text-center">伤害</span> <span className="text-center">治疗</span>
                   </div>
-                  {[radiantPlayers, direPlayers].map((team) => team.map((p: any, i: number) => {
+                  {[radiantPlayers, direPlayers].map((team) => team.map((p: Player, i: number) => {
                     const heroImg = p.hero_id ? getHeroImg(p.hero_id, heroesData) : '';
                     const heroName = p.hero_id ? getHeroName(p.hero_id, heroesData) : '';
                     const isRadiant = p.player_slot < 128;
@@ -253,7 +252,7 @@ export function MatchDetailPage({
                       <span className={`text-[10px] font-medium ${idx === 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {idx === 0 ? radiantTeamName : direTeamName}
                       </span>
-                      {team.map((p: any) => {
+                      {team.map((p: Player) => {
                         const heroName = p.hero_id ? getHeroName(p.hero_id, heroesData) : '';
                         return (
                           <div key={p.account_id || p.player_slot} className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400">

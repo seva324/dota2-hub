@@ -1167,9 +1167,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
           open
           onOpenChange={(open) => { if (!open) closeOverlay(); }}
           selectedTeam={{ name: activeTeamName }}
-          teams={[]}
-          matches={[]}
-          upcoming={[]}
           onPlayerClick={handleOpenPlayerByAccountId}
           onTeamSelect={(team) => { if (team.name) handleOpenTeam(team.name); }}
         />

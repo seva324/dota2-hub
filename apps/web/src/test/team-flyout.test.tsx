@@ -147,31 +147,33 @@ describe('TeamFlyout', () => {
         open
         onOpenChange={() => {}}
         selectedTeam={{ team_id: '1', name: 'XG' }}
-        teams={[{ team_id: '1', name: 'XG', tag: 'XG', region: 'China' }]}
-        upcoming={[{
-          match_id: '9101',
-          start_time: NOW + 3600,
-          series_type: 'BO3',
-          radiant_team_id: '1',
-          dire_team_id: '2',
-          radiant_team_name: 'XG',
-          dire_team_name: 'Tundra',
-          tournament_name: 'DreamLeague S23',
-        }]}
-        matches={[{
-          match_id: '9001',
-          start_time: NOW - 3600,
-          series_type: 'BO3',
-          radiant_team_id: '1',
-          dire_team_id: '3',
-          radiant_team_name: 'XG',
-          dire_team_name: 'Yakult Brothers',
-          radiant_score: 2,
-          dire_score: 0,
-          radiant_win: 1,
-          tournament_name: 'DreamLeague S23',
-          team_hero_ids: [1, 2, 3, 4, 5],
-        }]}
+        preloaded={{
+          teams: [{ team_id: '1', name: 'XG', tag: 'XG', region: 'China' }],
+          upcoming: [{
+            match_id: '9101',
+            start_time: NOW + 3600,
+            series_type: 'BO3',
+            radiant_team_id: '1',
+            dire_team_id: '2',
+            radiant_team_name: 'XG',
+            dire_team_name: 'Tundra',
+            tournament_name: 'DreamLeague S23',
+          }],
+          matches: [{
+            match_id: '9001',
+            start_time: NOW - 3600,
+            series_type: 'BO3',
+            radiant_team_id: '1',
+            dire_team_id: '3',
+            radiant_team_name: 'XG',
+            dire_team_name: 'Yakult Brothers',
+            radiant_score: 2,
+            dire_score: 0,
+            radiant_win: 1,
+            tournament_name: 'DreamLeague S23',
+            team_hero_ids: [1, 2, 3, 4, 5],
+          }],
+        }}
       />
     );
 
@@ -233,5 +235,56 @@ describe('TeamFlyout', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/team-flyout?limit=5&offset=5&teamId=1&name=Team+Alpha');
     });
+  }, 15000);
+
+  it('falls back to preloaded props data when the flyout API request fails', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/heroes') return createJsonResponse({});
+      if (url === '/api/team-flyout?limit=5&offset=0&teamId=1&name=Team+Alpha') {
+        return { ok: false, status: 500, json: async () => ({ error: 'server error' }) } as Response;
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <TeamFlyout
+        open
+        onOpenChange={() => {}}
+        selectedTeam={{ team_id: '1', name: 'Team Alpha' }}
+        preloaded={{
+          teams: [{ team_id: '1', name: 'Team Alpha', tag: 'ALP' }],
+          matches: [{
+            match_id: '9001',
+            start_time: NOW - 3600,
+            series_type: 'BO3',
+            radiant_team_id: '1',
+            dire_team_id: '3',
+            radiant_team_name: 'Team Alpha',
+            dire_team_name: 'Opponent',
+            radiant_score: 2,
+            dire_score: 0,
+            radiant_win: 1,
+            tournament_name: 'Cup 1',
+            team_hero_ids: [1, 2, 3, 4, 5],
+          }],
+          upcoming: [{
+            match_id: '9101',
+            start_time: NOW + 3600,
+            series_type: 'BO3',
+            radiant_team_id: '1',
+            dire_team_id: '2',
+            radiant_team_name: 'Team Alpha',
+            dire_team_name: 'Future Opp',
+            tournament_name: 'Cup 2',
+          }],
+        }}
+      />
+    );
+
+    expect(await screen.findByText('Opponent')).toBeInTheDocument();
+    expect(screen.getByText('Future Opp')).toBeInTheDocument();
+    expect(screen.getByText(/Cup 1/)).toBeInTheDocument();
   }, 15000);
 });

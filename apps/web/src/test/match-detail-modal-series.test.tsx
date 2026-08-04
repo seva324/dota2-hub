@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/components/custom/MatchGraphs', () => ({
+  MatchGraphs: () => null,
+}));
+
 function createJsonResponse(payload: unknown) {
   return {
     ok: true,
@@ -124,5 +128,45 @@ describe('MatchDetailModal Series maps', () => {
       expect(screen.getByText(/Match ID 9102/)).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith('/api/match-details?match_id=9102');
     });
+  });
+});
+
+describe('MatchDetailModal full-page adapter', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.resetModules();
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+  });
+
+  it('renders the full-page layout when fullPage is enabled on desktop', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/pro-players' || url === '/api/heroes') {
+        return createJsonResponse({});
+      }
+      if (url === '/api/match-details?match_id=9103') {
+        return createJsonResponse(createMatch(9103, 18, 9));
+      }
+      throw new Error(`Unhandled fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { MatchDetailModal } = await import('@/components/custom/MatchDetailModal');
+
+    render(
+      <MatchDetailModal
+        matchId={9103}
+        open
+        fullPage
+        onOpenChange={vi.fn()}
+        seriesMaps={[
+          { label: '地图 1', matchId: '9103', radiantScore: 18, direScore: 9, duration: 1427 },
+        ]}
+      />
+    );
+
+    expect(await screen.findByText(/Match ID: 9103/)).toBeInTheDocument();
+    expect(document.querySelector('[data-visual-role="match-detail-page"]')).toBeTruthy();
+    expect(document.querySelector('[data-visual-role="match-detail-modal"]')).toBeFalsy();
   });
 });

@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DotaHub · 新闻 NEWS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0d13;
+    --bg-elev: #0e1219;
+    --card: #141926;
+    --card-2: #181f30;
+    --border: rgba(255, 255, 255, 0.07);
+    --border-2: rgba(255, 255, 255, 0.1);
+    --text: #eef2f7;
+    --text-2: #a3abb9;
+    --text-3: #667085;
+    --blue: #2b55e8;
+    --blue-2: #5b7cff;
+    --red: #ff3b30;
+    --cat-blue: #3b82f6;
+    --cat-green: #22c55e;
+    --cat-purple: #a855f7;
+    --cat-rose: #f43f5e;
+    --cat-amber: #f59e0b;
+    --cat-gray: #94a3b8;
+    --radius: 14px;
+    --font-display: 'Anton', 'Arial Narrow', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-body: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+
+  .wrap { width: min(1200px, 100% - 48px); margin: 0 auto; }
+  @media (max-width: 720px) { .wrap { width: min(1200px, 100% - 32px); } }
+
+  /* ---------- top nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10, 13, 19, 0.86);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-in {
+    display: flex; align-items: center; gap: 28px;
+    height: 62px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
+  .brand .mark {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, #f43f3f, #c2261f);
+    position: relative;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+  }
+  .brand .mark::before {
+    content: ""; position: absolute; inset: 5px; border-radius: 5px;
+    border: 3px solid #0a0d13;
+  }
+  .brand .mark::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 6px; height: 6px; border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: #0a0d13;
+  }
+  .nav-links { display: flex; align-items: stretch; height: 100%; gap: 2px; }
+  .nav-links a {
+    display: flex; align-items: center;
+    font-size: 14px; font-weight: 600; color: var(--text-2);
+    padding: 0 15px; border-bottom: 2px solid transparent;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: #fff; }
+  .nav-links a.active { color: #fff; border-bottom-color: var(--red); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .back-link {
+    font-size: 13px; font-weight: 600; color: var(--text-2);
+    border: 1px solid var(--border-2); border-radius: 9px;
+    padding: 7px 13px; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .back-link:hover { color: #fff; border-color: rgba(255,255,255,0.22); }
+
+  @media (max-width: 860px) {
+    .nav-links { display: none; }
+  }
+
+  /* ---------- page head ---------- */
+  .head { padding: 46px 0 8px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.22em;
+    color: var(--text-2); text-transform: uppercase;
+  }
+  .eyebrow-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .updated { font-size: 12px; color: var(--text-3); font-weight: 500; }
+  .updated b.count { color: var(--blue-2); font-weight: 700; }
+  h1.news-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(52px, 8vw, 96px);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #fff;
+    margin-top: 8px;
+  }
+  h1.news-title .accent { color: var(--red); }
+  .head-sub { margin-top: 12px; color: #9aa3b2; font-size: 14.5px; font-weight: 400; }
+
+  /* ---------- filter tabs ---------- */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 30px 0 34px; }
+  .tab {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 600;
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.15s;
+  }
+  .tab .n { font-size: 11px; font-weight: 700; color: var(--text-3); }
+  .tab:hover { color: #fff; border-color: var(--border-2); }
+  .tab.on {
+    color: #fff;
+    border-color: var(--blue);
+    background: rgba(43, 85, 232, 0.18);
+  }
+  .tab.on .n { color: var(--blue-2); }
+
+  /* ---------- featured ---------- */
+  .featured {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    min-height: 400px;
+    display: flex; align-items: flex-end;
+    background: var(--card);
+    margin-bottom: 26px;
+  }
+  .featured .photo { position: absolute; inset: 0; }
+  .featured .photo img, .featured .photo .ph { width: 100%; height: 100%; object-fit: cover; }
+  .featured .photo .ph {
+    background: linear-gradient(135deg, #1c2440, #131a2c 55%, #2a3352);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .featured .scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(10,13,19,0.12) 0%, rgba(10,13,19,0.35) 45%, rgba(10,13,19,0.94) 100%);
+  }
+  .featured .body { position: relative; padding: 30px; max-width: 720px; }
+  .featured .meta { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .featured h2 {
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 800; letter-spacing: -0.015em; line-height: 1.22;
+  }
+  .featured h2 a:hover { color: var(--blue-2); }
+  .featured .ex { margin-top: 12px; color: rgba(238,242,247,0.78); font-size: 14.5px; line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .featured .more {
+    margin-top: 20px; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13.5px; font-weight: 700; color: #fff;
+    background: var(--blue); border-radius: 9px; padding: 10px 18px;
+    transition: background 0.15s;
+  }
+  .featured .more:hover { background: #3a62ff; }
+
+  /* ---------- badges ---------- */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    border-radius: 6px; padding: 4px 9px;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    border: 1px solid var(--border-2);
+  }
+  .badge .tick { width: 6px; height: 6px; border-radius: 2px; }
+  .date { font-size: 12.5px; color: var(--text-3); font-weight: 500; }
+
+  /* ---------- grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--border-2); background: var(--card-2); }
+  .card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--cat, var(--cat-gray));
+    z-index: 2;
+  }
+  .thumb { aspect-ratio: 16 / 9; overflow: hidden; position: relative; background: #0d1120; }
+  .thumb img, .thumb .ph { width: 100%; height: 100%; object-fit: cover; transition: transform 0.35s ease; }
+  .card:hover .thumb img { transform: scale(1.05); }
+  .thumb .ph {
+    background: linear-gradient(135deg, #1b2440, #111728 55%, #26314f);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); letter-spacing: 0.08em;
+    font-size: 20px; color: rgba(255,255,255,0.14);
+  }
+  .thumb .badge { position: absolute; top: 12px; left: 12px; background: rgba(10,13,19,0.78); border-color: rgba(255,255,255,0.1); backdrop-filter: blur(4px); }
+  .card .inner { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+  .card .meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .card h3 { font-size: 16.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.35; }
+  .card h3 a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card h3 a:hover { color: var(--blue-2); }
+  .card .ex {
+    margin-top: 9px; color: var(--text-2); font-size: 13.5px; line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    flex: 1;
+  }
+  .card .src { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12.5px; color: var(--text-3); }
+  .card .src .arrow { transition: transform 0.18s ease; }
+  .card:hover .src .arrow { transform: translateX(3px); color: var(--blue-2); }
+
+  /* ---------- pagination ---------- */
+  .pager { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 42px 0 8px; }
+  .pg {
+    min-width: 38px; height: 38px; padding: 0 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13.5px; font-weight: 600; color: var(--text-2);
+    border: 1px solid var(--border); border-radius: 9px;
+    cursor: pointer; transition: all 0.15s; background: transparent;
+  }
+  .pg:hover { color: #fff; border-color: var(--border-2); }
+  .pg.on { color: #fff; background: var(--blue); border-color: var(--blue); }
+  .pg:disabled { opacity: 0.35; cursor: default; }
+  .pg:disabled:hover { color: var(--text-2); border-color: var(--border); }
+
+  /* ---------- footer ---------- */
+  .foot { margin-top: 54px; border-top: 1px solid var(--border); padding: 26px 0 34px;
+    color: var(--text-3); font-size: 12.5px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .foot .brand-mini { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 700; font-size: 13.5px; }
+  .foot .brand-mini .mark { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(135deg,#f43f3f,#c2261f); }
+  .foot .pill { border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; font-weight: 600; color: var(--blue-2); }
+
+  .note { margin: 8px 0 0; font-size: 12px; color: var(--text-3); }
+  .empty { grid-column: 1 / -1; text-align: center; padding: 60px 0; color: var(--text-3); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="https://dotahub.cn/#/" title="DotaHub 首页">
+      <span class="mark"></span>DotaHub
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="https://dotahub.cn/#/">首页</a>
+      <a href="https://dotahub.cn/#/matches">赛程</a>
+      <a href="https://dotahub.cn/#/tournaments">赛事</a>
+      <a href="https://dotahub.cn/#/teams">战队</a>
+      <a href="https://dotahub.cn/#/players">选手</a>
+      <a class="active" href="https://dotahub.cn/#/news">新闻</a>
+    </nav>
+    <div class="nav-right">
+      <a class="back-link" href="https://dotahub.cn/#/">← 返回 DotaHub</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="head">
+    <div class="eyebrow-row">
+      <div class="eyebrow"><span class="dot"></span> Dota 2 Esports News</div>
+      <span class="updated">更新于 <b id="today">—</b> · <b class="count" id="total-count">0</b> 篇</span>
+    </div>
+    <h1 class="news-title">News<span class="accent">.</span></h1>
+    <p class="head-sub">Dota 2 电竞资讯速递 · 来自 Hawk Live 与 BO3.gg</p>
+
+    <div class="filters" id="filters"></div>
+  </section>
+
+  <section class="featured" id="featured" hidden></section>
+
+  <section class="grid" id="grid"></section>
+  <div class="empty" id="empty" hidden>该分类下暂无资讯</div>
+
+  <nav class="pager" id="pager" aria-label="分页"></nav>
+
+  <p class="note">※ 本地设计预览 · 数据来自 dotahub.cn/api/news · 点击卡片跳转原文</p>
+
+  <footer class="foot">
+    <span class="brand-mini"><span class="mark"></span> DotaHub</span>
+    <span>© 2026 DotaHub.cn · 新闻页布局参考 prototype</span>
+    <span class="pill">Design Preview</span>
+  </footer>
+</main>
+
+<script>
+window.__NEWS__ = [{"id": "hawk-stsmalr1negavestraightforwardanswerwhetherplansretire", "title": "Malr1ne gave a straightforward answer about whether he plans to retire", "summary": "Stanislav “Malr1ne” Potorak reflected on retiring if Team Falcons wins TI15.", "category": "takes", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/malr1ne-commented-replacement-team-falcons-23964.jpg", "url": "https://hawk.live/posts/malr1ne-gave-straightforward-answer-whether-plans-retire", "ts": 1785651360}, {"id": "bo3-eamsecuretwowinsandogdefeatteamfalconsatessenceii", "title": "BetBoom Team Secures Two Wins, OG Defeats Team Falcons at Essence II", "summary": "At Essence II, the latest group stage matches have concluded. BetBoom Team defeated LGD Gaming and GamerLegion with a score of 2:0, taking the lead in Group A. OG split points with 1w Team, and then defeated Team Falcons", "category": "esports", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F557447%2Ftitle_image%2Fwebp-de674f9e082a1360b24648b699e0b590.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/betboom-team-secure-two-wins-and-og-defeat-team-falcons-at-essence-ii", "ts": 1785616380}, {"id": "hawk-klivepostsyatororeachesvalvefollowingdota2mmrreset", "title": "Yatoro Reaches Out to Valve Following the Dota 2 MMR Reset", "summary": "Ilya “Yatoro” Mulyarchuk commented on the Dota 2 MMR reset that occurred with the release of Patch 7.41e for Dota 2.", "category": "drama", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/yatoro-commented-team-spirits-preparation-pgl-wallachia-season-8-24636.jpg", "url": "https://hawk.live/posts/yatoro-reaches-valve-following-dota-2-mmr-reset", "ts": 1785607680}, {"id": "hawk-veposts23savageexpresseddissatisfactionmmrresetdota2", "title": "23savage Expressed Dissatisfaction After an MMR Reset in Dota 2", "summary": "Nuengnar “23savage” Tiramanon reported an issue with matchmaking following an MMR reset in Dota 2.", "category": "takes", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/23savage-criticized-mmr-reset-25209.jpg", "url": "https://hawk.live/posts/23savage-expressed-dissatisfaction-mmr-reset-dota-2", "ts": 1785596760}, {"id": "bo3-newstheinternational2026prizepoolsurpasses21million", "title": "The International 2026 Prize Pool Surpasses $2.1 Million After Compendium Update", "summary": "The prize pool for The International 2026 has seen a major boost following the release of the latest Compendium update, which introduced team and caster bundles. Within just 24 hours, the tournament's prize pool increase", "category": "roster", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F557039%2Ftitle_image%2Fwebp-5488d641b6e9d7558013012ca5fffda0.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/the-international-2026-prize-pool-surpasses-2-1-million", "ts": 1785587639}, {"id": "hawk-postsyatorosurgedtopproscenefollowingdota2mmrreset", "title": "Yatoro Has Surged to the Top of the Pro Scene Following the Dota 2 MMR Reset", "summary": "Ilya “Yatoro” Mulyarchuk has climbed the Dota 2 ladder following the MMR reset with the release of Patch 7.41e.", "category": "takes", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/yatoro-named-best-heroes-patch-741-24397.jpg", "url": "https://hawk.live/posts/yatoro-surged-top-pro-scene-following-dota-2-mmr-reset", "ts": 1785575280}, {"id": "hawk-hawkliveposts1winessenceiischedulestandingsresults", "title": "1win Essence II: Schedule, Standings, Results", "summary": "1win Essence II runs online from July 30 to August 5, 2026. Ten Dota 2 teams will compete for a $200,000 prize pool. The tournament begins with a single round-robin group stage, after which the top eight teams advance to the Double Elimination playoffs.", "category": "esports", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/1win-essence-ii-25199.jpg", "url": "https://hawk.live/posts/1win-essence-ii-schedule-standings-results", "ts": 1785571138}, {"id": "hawk-httpshawklivepostsdmsharedthoughtsdota2patch741e", "title": "DM Shared His Thoughts on Dota 2 Patch 7.41e", "summary": "Dmitry “DM” Dorokhin shared his impressions of the latest Dota 2 update.", "category": "takes", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/dm-comments-team-yandexs-losses-25012.jpg", "url": "https://hawk.live/posts/dm-shared-thoughts-dota-2-patch-741e", "ts": 1785565440}, {"id": "bo3-teamliquidandteamfalconsleadgroupsat1winessenceii", "title": "Team Falcons Secures Second Win, Team Liquid Defeats BetBoom Team at Essence II", "summary": "At Essence II, more group stage matches have concluded. Team Falcons defeated Nigma Galaxy with a score of 2:0, maintaining their lead in Group B. Team Liquid beat BetBoom Team with a score of 2:0, climbing to first plac", "category": "esports", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F556898%2Ftitle_image%2Fwebp-02ebc92905800f108f65ec36d9af18af.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/team-liquid-and-team-falcons-lead-groups-at-1win-essence-ii", "ts": 1785535500}, {"id": "hawk-httpshawklivepostscollapsenamesbestteammatecareer", "title": "Collapse Names the Best Teammate of His Career", "summary": "Magomed “Collapse” Khalilov reflected on which players he considers the best teammates of his career.", "category": "takes", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/team-spirit-made-an-official-statement-about-collapse-24759.jpg", "url": "https://hawk.live/posts/collapse-names-best-teammate-career", "ts": 1785522720}, {"id": "hawk-awklivepostsmalr1nenamesbestmidlanerdota2proscene", "title": "Malr1ne Names the Best Mid Laner on the Dota 2 Pro Scene", "summary": "Stanislav “Malr1ne” Potorak admitted that he doesn’t consider himself the best mid laner in the world, naming his favorite.", "category": "esports", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/team-falcons-announced-replacement-of-malr1ne-explained-reason-23956.jpg", "url": "https://hawk.live/posts/malr1ne-names-best-mid-laner-dota-2-pro-scene", "ts": 1785514800}, {"id": "hawk-livepostsinsanianamesproblematicplayernew1winroster", "title": "Insania Names the Most Problematic Player on the New 1win Roster", "summary": "Aiden “Insania” Sarkoi reflected on the issues plaguing the new 1win Dota 2 roster.", "category": "roster", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/insania-speaks-1wins-problems-25207.jpg", "url": "https://hawk.live/posts/insania-names-problematic-player-new-1win-roster", "ts": 1785507300}, {"id": "hawk-awklivepostsvalvereleasespatch741edota2listchanges", "title": "Valve Releases Patch 7.41e for Dota 2: List of Changes", "summary": "On the night of July 31, Valve released Patch 7.41e for Dota 2, which significantly impacted the meta.", "category": "patch", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/patch-741e-dota-2-25208.jpg", "url": "https://hawk.live/posts/valve-releases-patch-741e-dota-2-list-changes", "ts": 1785492840}, {"id": "hawk-steamspiritsceodiscusseswhethersilentwillreturnteam", "title": "Team Spirit’s CEO Discusses Whether Silent Will Return to the Team", "summary": "Nikita “Cheshir” Chukalin commented on the possibility of Airat “Silent” Gaziev returning to the Dota 2 roster.", "category": "roster", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/yatoro-honestly-explained-why-silent-was-kicked-from-team-spirit-24287.jpg", "url": "https://hawk.live/posts/team-spirits-ceo-discusses-whether-silent-will-return-team", "ts": 1785478560}, {"id": "bo3-o3ggdota2newsdota2resetsimmortalmmrwithpatch741e", "title": "Dota 2 Resets Immortal MMR With Patch 7.41e", "summary": "Valve has introduced a major change to Dota 2 ranked ladder alongside Patch 7.41e, effectively resetting MMR for all Immortal players. Under the new system, every Immortal account has been adjusted to fall between 1 and", "category": "roster", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F556128%2Ftitle_image%2Fwebp-c00a942d10c0b4f2e1177505056e2eed.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/dota-2-resets-immortal-mmr-with-patch-7-41e", "ts": 1785460046}, {"id": "bo3-theinternational2026predictionsfantasysupporterbundles", "title": "Valve Launches The International 2026 Update with Predictions, Fantasy, and Supporter Bundles", "summary": "Valve has released a new Dota 2 update dedicated to The International 2026, introducing a range of event features ahead of the tournament's start. Players can now purchase Supporter Bundles, make tournament predictions,", "category": "roster", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F556109%2Ftitle_image%2Fwebp-1c4e99758987e0ed9f27154d6600cf44.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/valve-launches-the-international-2026-predictions-fantasy-supporter-bundles", "ts": 1785459650}, {"id": "bo3-sbo3ggdota2newsdota2patch741esummerscrubupdate", "title": "Valve Releases Dota 2 Patch 7.41e with Summer Scrub 2026", "summary": "Valve has released Dota 2 Patch 7.41 as part of the annual Summer Scrub 2026 update. Instead of introducing major gameplay reworks, the patch focuses on hundreds of bug fixes, interface improvements, Dota Plus upgrades,", "category": "roster", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F556093%2Ftitle_image%2Fwebp-a6ae2b6a7e5784dddc3a5f12d856b938.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/dota-2-patch-7-41e-summer-scrub-update", "ts": 1785458412}, {"id": "bo3-teamfalconscrushvicigamingonopeningdayofessenceii", "title": "Team Falcons Crush Vici Gaming on Opening Day of Essence II", "summary": "The opening day of Essence II has come to an end. Team Falcons finished at the top of Group B after defeating Vici Gaming, while Vici Gaming remain close behind thanks to two earlier victories. In Group A, MOUZ lead the", "category": "roster", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F556071%2Ftitle_image%2Fwebp-ba33b88c168c316f1d203b129f178685.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/team-falcons-crush-vici-gaming-on-opening-day-of-essence-ii", "ts": 1785448771}, {"id": "hawk-tsheadidentifiesvalvesbiggestmistakedevelopmentdota2", "title": "Team Spirit’s Head Identifies Valve’s Biggest Mistake in the Development of Dota 2", "summary": "Nikita “Cheshir” Chukalin assessed the current state of the Dota 2 esports scene.", "category": "esports", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/cheshir-commented-current-state-dota-2-25205.jpg", "url": "https://hawk.live/posts/team-spirits-head-identifies-valves-biggest-mistake-development-dota-2", "ts": 1785436320}, {"id": "bo3-atusvincerereceivedirectinvitetoeplmastersiplayoffs", "title": "Natus Vincere Receive Direct Invite to EPL Masters I Playoffs", "summary": "Natus Vincere have been announced as the final directly invited team to the EPL Masters I playoffs. With NAVI's addition, all direct playoff invitations for the tournament have now been finalized, completing the lineup o", "category": "esports", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F555871%2Ftitle_image%2Fwebp-48cd79aa4c6d2e5d6dd8ddcaa3054a2f.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/natus-vincere-receive-direct-invite-to-epl-masters-i-playoffs", "ts": 1785435246}, {"id": "bo3-2newsteamspiritceocallsdpccancellationahugemistake", "title": "Team Spirit CEO Calls Valve's DPC Cancellation a \"Huge Mistake\"", "summary": "Team Spirit CEO Nikita \"Cheshir\" Chukalin has criticized Valve's decision to discontinue the Dota Pro Circuit (DPC), calling the move a major mistake that has negatively affected the game's competitive ecosystem. Accordi", "category": "drama", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F555855%2Ftitle_image%2Fwebp-dc8017dcd9b19b8bb11051f62b7197fb.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/team-spirit-ceo-calls-dpc-cancellation-a-huge-mistake", "ts": 1785434887}, {"id": "hawk-livepostsxtremegamingannounceschangedota2teamcoach", "title": "Xtreme Gaming Announces a Change in Its Dota 2 Team Coach", "summary": "The esports organization Xtreme Gaming has announced a change in its Dota 2 team coach.", "category": "roster", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/xtreme-gaming-announces-new-coach-25204.jpg", "url": "https://hawk.live/posts/xtreme-gaming-announces-change-dota-2-team-coach", "ts": 1785428280}, {"id": "bo3-acriticizedteamliquidfollowingtheirfailureatewc2026", "title": "iNSaNiA Criticizes Team Liquid After EWC 2026 Failure", "summary": "Former Team Liquid captain Aydin \"iNSaNiA\" Sarkohi believes that the current roster is not reaching its full potential and may change after the season concludes. He criticized the team's performance at the Esports World", "category": "esports", "source": "BO3.gg", "image": "https://dotahub.cn/api/bo3-image?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F555512%2Ftitle_image%2Fwebp-26641dca45bec4e3ba50f4996d1fb7f0.webp.webp%3Fw%3D960%26h%3D480", "url": "https://bo3.gg/dota2/news/insania-criticized-team-liquid-following-their-failure-at-ewc-2026", "ts": 1785412583}, {"id": "hawk-izedteamliquidspreparationexpressingdisappointmentteam", "title": "INSaNiA Criticized Team Liquid’s Preparation, Expressing His Disappointment in the Team", "summary": "Aiden “INSaNiA” Sarkoy commented on Team Liquid’s performance at the EWC 2026 Dota 2 tournament.", "category": "takes", "source": "Hawk Live", "image": "https://hawk.live/storage/images/posts/insania-spoke-victory-ti13-23605.jpg", "url": "https://hawk.live/posts/insania-criticized-team-liquids-preparation-expressing-disappointment-team", "ts": 1785406500}];
+
+const CATS = {
+  esports:     { label: '赛事', color: '#3b82f6' },
+  tournament:  { label: '赛事', color: '#3b82f6' },
+  patch:       { label: '版本', color: '#22c55e' },
+  gameplay:    { label: '版本', color: '#22c55e' },
+  news:        { label: '资讯', color: '#94a3b8' },
+  transfer:    { label: '转会', color: '#a855f7' },
+  roster:      { label: '阵容', color: '#a855f7' },
+  drama:       { label: '八卦', color: '#f43f5e' },
+  takes:       { label: '观点', color: '#f59e0b' },
+  community:   { label: '社区', color: '#f59e0b' },
+};
+const DEF_CAT = { label: '资讯', color: '#94a3b8' };
+const catInfo = (c) => CATS[String(c || '').toLowerCase()] || DEF_CAT;
+
+const items = (window.__NEWS__ || []).map((it) => ({ ...it, info: catInfo(it.category) }));
+
+const PER_PAGE = 12;
+let filter = 'all';
+let page = 1;
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function badgeHTML(info) {
+  return `<span class="badge"><span class="tick" style="background:${info.color}"></span>${info.label}</span>`;
+}
+
+function thumbHTML(item) {
+  const src = item.image ? ` src="${item.image}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(this.nextElementSibling)"` : '';
+  return `<div class="thumb">${item.image ? `<img${src} /><span class="ph" hidden>DOTA2</span>` : `<span class="ph">DOTA2</span>`}</div>`;
+}
+
+function cardHTML(item) {
+  const cat = item.info;
+  return `
+  <article class="card" style="--cat:${cat.color}">
+    <a href="${item.url}" target="_blank" rel="noopener noreferrer">
+      ${thumbHTML(item)}
+      <div class="inner">
+        <div class="meta">
+          ${badgeHTML(cat)}
+          <span class="date">${fmtDate(item.ts)}</span>
+        </div>
+        <h3><a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a></h3>
+        ${item.summary ? `<p class="ex">${item.summary}</p>` : '<p class="ex"></p>'}
+        <div class="src">
+          <span>${item.source || 'DotaHub'}</span>
+          <span class="arrow">阅读全文 →</span>
+        </div>
+      </div>
+    </a>
+  </article>`;
+}
+
+function featuredHTML(item) {
+  const cat = item.info;
+  return `
+    <div class="photo">${item.image
+      ? `<img src="${item.image}" alt="" referrerpolicy="no-referrer" onerror="this.closest('.featured').querySelector('.scrim').style.background='linear-gradient(180deg, #1a2240, #141a30)'" />`
+      : `<span class="ph">DOTA2</span>`}</div>
+    <div class="scrim"></div>
+    <div class="body">
+      <div class="meta">${badgeHTML(cat)}<span class="date">${fmtDate(item.ts)}</span><span class="date">· ${item.source || 'DotaHub'}</span></div>
+      <h2><a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a></h2>
+      ${item.summary ? `<p class="ex">${item.summary}</p>` : ''}
+      <a class="more" href="${item.url}" target="_blank" rel="noopener noreferrer">阅读全文 <span aria-hidden>→</span></a>
+    </div>`;
+}
+
+function filteredItems() {
+  return filter === 'all' ? items : items.filter((it) => catInfo(it.category).label === filter);
+}
+
+function renderTabs() {
+  const counts = new Map();
+  for (const it of items) {
+    const label = it.info.label;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  const order = ['赛事', '版本', '转会', '阵容', '八卦', '观点', '社区', '资讯'];
+  const cats = [...counts.entries()].sort((a, b) => {
+    const ia = order.indexOf(a[0]), ib = order.indexOf(b[0]);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  const html = [`<button class="tab on" data-f="all">全部 <span class="n">${items.length}</span></button>`]
+    .concat(cats.map(([label, n]) => `<button class="tab" data-f="${label}">${label} <span class="n">${n}</span></button>`))
+    .join('');
+  document.getElementById('filters').innerHTML = html;
+  document.getElementById('filters').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab');
+    if (!btn) return;
+    filter = btn.dataset.f;
+    page = 1;
+    render();
+    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t === btn));
+  });
+}
+
+function render() {
+  const list = filteredItems();
+  const featured = document.getElementById('featured');
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+
+  if (filter === 'all') {
+    const feat = list[0];
+    if (feat) { featured.innerHTML = featuredHTML(feat); featured.hidden = false; }
+    else featured.hidden = true;
+  } else {
+    featured.hidden = true;
+  }
+
+  const start = (page - 1) * PER_PAGE;
+  const slice = (filter === 'all' ? list.slice(1) : list).slice(start, start + PER_PAGE);
+
+  if (slice.length === 0) {
+    empty.hidden = false;
+    grid.innerHTML = '';
+  } else {
+    empty.hidden = true;
+    grid.innerHTML = slice.map(cardHTML).join('');
+  }
+
+  const pages = Math.max(1, Math.ceil((filter === 'all' ? list.length - 1 : list.length) / PER_PAGE));
+  renderPager(pages);
+}
+
+function renderPager(pages) {
+  const el = document.getElementById('pager');
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  const btn = (label, fn, opts = {}) =>
+    `<button class="pg" ${opts.disabled ? 'disabled' : ''} ${opts.on ? 'on' : ''}>${label}</button>`;
+  let html = btn('‹ 上一页', () => {}, { disabled: page === 1 });
+  for (let i = 1; i <= pages; i++) html += btn(String(i), () => {}, { on: i === page });
+  html += btn('下一页 ›', () => {}, { disabled: page === pages });
+  el.innerHTML = html;
+  el.querySelectorAll('.pg').forEach((b, idx) => {
+    b.addEventListener('click', () => {
+      const text = b.textContent;
+      if (text.startsWith('‹')) { if (page > 1) { page--; render(); } }
+      else if (text.startsWith('下一页')) { if (page < pages) { page++; render(); } }
+      else { page = Number(text); render(); }
+    });
+  });
+}
+
+document.getElementById('today').textContent = new Date().toLocaleDateString('zh-CN');
+document.getElementById('total-count').textContent = items.length;
+renderTabs();
+render();
+</script>
+</body>
+</html>

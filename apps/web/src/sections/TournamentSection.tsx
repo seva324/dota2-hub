@@ -3678,9 +3678,7 @@ export function TournamentSection({
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         selectedTeam={flyoutTeam}
-        teams={effectiveTeams}
-        matches={allMatches}
-        upcoming={upcoming}
+        preloaded={{ teams: effectiveTeams, matches: allMatches, upcoming }}
         onTeamSelect={(team) => openTeamFlyout(team)}
         onPlayerClick={openPlayerFlyout}
       />

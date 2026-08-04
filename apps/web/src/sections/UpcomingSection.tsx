@@ -668,9 +668,7 @@ export function UpcomingSection({
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         selectedTeam={flyoutTeam}
-        teams={effectiveTeams}
-        matches={allMatches}
-        upcoming={effectiveUpcoming}
+        preloaded={{ teams: effectiveTeams, matches: allMatches, upcoming: effectiveUpcoming }}
         onTeamSelect={(team) => openTeamFlyout(team)}
         onPlayerClick={openPlayerFlyout}
       />
