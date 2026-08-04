@@ -3001,6 +3001,50 @@ export async function upsertSyncedNewsItems(db, items, options = {}) {
   };
 }
 
+let newsTableReady = false;
+
+async function ensureNewsTable(db) {
+  if (newsTableReady) return;
+  await db`
+    CREATE TABLE IF NOT EXISTS news_articles (
+      id TEXT PRIMARY KEY,
+      source TEXT NOT NULL,
+      url TEXT NOT NULL UNIQUE,
+      category TEXT,
+      image_url TEXT,
+      published_at BIGINT NOT NULL,
+      title_en TEXT NOT NULL,
+      summary_en TEXT,
+      content_en TEXT,
+      content_markdown_en TEXT,
+      title_zh TEXT,
+      summary_zh TEXT,
+      content_zh TEXT,
+      content_markdown_zh TEXT,
+      translation_status TEXT,
+      translation_provider TEXT,
+      title_zh_provider TEXT,
+      summary_zh_provider TEXT,
+      content_zh_provider TEXT,
+      translated_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  // Migration safety net — runs once per process lifetime (DDL on cold start only)
+  await db`ALTER TABLE news_articles DROP COLUMN IF EXISTS content_images`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_status TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS title_zh_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS summary_zh_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS content_zh_provider TEXT`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translated_at TIMESTAMPTZ`;
+  await db`CREATE INDEX IF NOT EXISTS idx_news_articles_published_at ON news_articles(published_at DESC)`;
+
+  newsTableReady = true;
+}
+
 export async function syncNewsToDb(options = {}) {
   const db = getDb();
   if (!db) {
