@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { NewsPage } from '@/pages/NewsPage';
@@ -128,6 +128,57 @@ describe('NewsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('加载新闻失败，请稍后重试')).toBeInTheDocument();
+    });
+  });
+
+  it('opens the editorial detail dialog when clicking a card', async () => {
+    const items = [
+      makeItem({ id: 'a', title: 'Featured Finals', category: 'esports' }),
+      makeItem({ id: 'b', title: 'Second Story', category: 'esports' }),
+      makeItem({ id: 'c', title: 'Takes Column', category: 'takes' }),
+    ];
+    stubFetch(items);
+
+    render(<NewsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Second Story')).toBeInTheDocument();
+    });
+
+    // 点击列表卡片 → 弹出详情
+    fireEvent.click(screen.getByText('Second Story'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /second story/i })).toBeInTheDocument();
+    });
+    // 署名栏、作者卡与相关阅读都在弹窗内
+    expect(within(screen.getByRole('dialog')).getAllByText('DotaHub 编辑部').length).toBeGreaterThanOrEqual(2);
+    expect(within(screen.getByRole('dialog')).getByText('相关阅读')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText('封面图 · 来源 BO3.gg')).toBeInTheDocument();
+  });
+
+  it('switches the detail item when clicking a related card', async () => {
+    const items = [
+      makeItem({ id: 'a', title: 'Featured Finals', category: 'esports' }),
+      makeItem({ id: 'b', title: 'Second Story', category: 'esports' }),
+      makeItem({ id: 'c', title: 'Takes Column', category: 'takes' }),
+    ];
+    stubFetch(items);
+
+    render(<NewsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Second Story')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Second Story'));
+    const dialog = await screen.findByRole('dialog', { name: /second story/i });
+
+    // 相关阅读中点击头条卡片 → 弹窗内容切换为头条
+    fireEvent.click(within(dialog).getByRole('button', { name: /featured finals/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /featured finals/i })).toBeInTheDocument();
     });
   });
 });
