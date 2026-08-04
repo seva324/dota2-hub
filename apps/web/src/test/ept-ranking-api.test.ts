@@ -62,13 +62,13 @@ describe('/api/ept-ranking', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['Cache-Control']).toContain('max-age=300');
-    expect(res.payload).toEqual({
-      teams: [
-        { rank: 1, name: 'Tundra Esports', logo: 'https://cdn.example/tundra.png', points: 14510 },
-        { rank: 2, name: 'Xtreme Gaming', logo: 'https://cdn.example/xg.png', points: 9560 },
-      ],
-      source: 'dltv',
-    });
+    const payload = res.payload as { teams: Array<{ rank: number; name: string; logo: string | null; points: number }>; source: string };
+    expect(payload.source).toBe('dltv');
+    // 解析出的排名/队名/积分保持不变（logo 走镜像/代理包装，不断言精确值）
+    expect(payload.teams.map((t) => ({ rank: t.rank, name: t.name, points: t.points }))).toEqual([
+      { rank: 1, name: 'Tundra Esports', points: 14510 },
+      { rank: 2, name: 'Xtreme Gaming', points: 9560 },
+    ]);
   });
 
   it('returns fallback data when the DLTV fetch fails', async () => {

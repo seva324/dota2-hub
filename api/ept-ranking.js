@@ -1,88 +1,13 @@
 /**
  * EPT Ranking API
- * Scrapes DLTV.org for the current EPT (ESL Pro Tour) ranking.
+ * Data: dltv.org/teams (persisted to Neon, refreshed every 24h).
  * Falls back to hardcoded data when DLTV is unreachable.
  */
 
-const FALLBACK_TEAMS = [
-  { rank: 1, name: 'Tundra Esports', logo: 'https://s3.dltv.org/uploads/teams/small/UA0TkIDfiYKdehswu3gIMyqZWkzsf1xc.png', points: 14510 },
-  { rank: 2, name: 'Team Yandex', logo: 'https://s3.dltv.org/uploads/teams/n6lR8FGHdGnrXE9IDxRI0EEFs6XbyY81.png.webp', points: 10400 },
-  { rank: 3, name: 'Xtreme Gaming', logo: 'https://s3.dltv.org/uploads/teams/GchHJf4tIIk1qWBGeob5QKr1D88q4rH8.png.webp', points: 9560 },
-  { rank: 4, name: 'Aurora', logo: 'https://s3.dltv.org/uploads/teams/small/2fxCLHnhSIGZE2EGlg1y9HI9X1dgxkZk.png', points: 8230 },
-  { rank: 5, name: 'PARIVISION', logo: 'https://s3.dltv.org/uploads/teams/eT2duK11e7GzuuCAYFdxZrSX9CNfUMso.png.webp', points: 8210 },
-  { rank: 6, name: 'Team Spirit', logo: null, points: 6000 },
-  { rank: 7, name: 'Team Falcons', logo: null, points: 4325 },
-  { rank: 8, name: 'Team Liquid', logo: null, points: 4125 },
-  { rank: 9, name: 'MOUZ', logo: null, points: 2760 },
-];
+import { getRanking, RANKING_KEY_EPT } from '../lib/server/rankings-service.js';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
-function parseEptHtml(html) {
-  const teams = [];
-  const rowMatches = html.match(/<a[^>]+class=["'][^"']*table__body-row[^"']*["'][^>]*>[\s\S]*?<\/a>/gi) || [];
-
-  for (const segment of rowMatches) {
-    if (teams.length >= 10) break;
-
-    const rankMatch = segment.match(/cell__num[^>]*>\s*0*(\d+)/);
-    if (!rankMatch) continue;
-    const rank = Number.parseInt(rankMatch[1], 10);
-    if (!rank || rank < 1 || rank > 20) continue;
-
-    const logoMatch = segment.match(/data-theme-dark="([^"]+)"/);
-    const logo = logoMatch ? logoMatch[1].trim() : null;
-
-    const nameMatch = segment.match(/cell__name[^>]*>\s*([^<\n\r]+)/);
-    if (!nameMatch) continue;
-    const name = nameMatch[1].trim();
-    if (!name) continue;
-
-    const pointsMatch = segment.match(/cell__text[^>]*>\s*([\d\s]+)\s*pts/i);
-    const points = pointsMatch ? Number.parseInt(pointsMatch[1].replace(/\s/g, ''), 10) : 0;
-
-    teams.push({ rank, name, logo, points });
-  }
-
-  return teams.sort((left, right) => left.rank - right.rank);
-}
-
-const CACHE_TTL_MS = 300_000;
 const CACHE_CONTROL = 'public, max-age=300, s-maxage=300, stale-while-revalidate=86400';
-
-let memoryCache = null;
-let memoryCacheAt = 0;
-let refreshInFlight = null;
-
-async function refreshEptRanking(now) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  let response;
-  try {
-    response = await fetch('https://dltv.org/teams', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; DotaHub/1.0; +https://dotahub.cn)',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-
-  if (!response.ok) {
-    throw new Error(`DLTV returned HTTP ${response.status}`);
-  }
-
-  const html = await response.text();
-  const teams = parseEptHtml(html);
-  if (teams.length === 0) {
-    throw new Error('No teams parsed from DLTV HTML');
-  }
-
-  memoryCache = teams.slice(0, 10);
-  memoryCacheAt = now;
-  return memoryCache;
-}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -93,36 +18,21 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const forceRefresh = String(req.query?.refresh || '') === '1';
-  const now = Date.now();
-
-  if (memoryCache && !forceRefresh) {
-    const cacheFresh = now - memoryCacheAt < CACHE_TTL_MS;
-    // stale-while-revalidate：有缓存先返回(可能过期)，过期时后台刷新
-    if (!cacheFresh && !refreshInFlight) {
-      refreshInFlight = refreshEptRanking(now)
-        .catch((error) => {
-          console.error('[EPT Ranking] Background refresh failed:', error instanceof Error ? error.message : error);
-        })
-        .finally(() => {
-          refreshInFlight = null;
-        });
-    }
-    res.setHeader('Cache-Control', CACHE_CONTROL);
-    return res.status(200).json({ teams: memoryCache, source: cacheFresh ? 'cache' : 'stale' });
-  }
-
   try {
-    const teams = await refreshEptRanking(now);
+    const result = await getRanking(RANKING_KEY_EPT);
+    const teams = result.teams.map((team) => ({
+      ...team,
+      logo: getMirroredAssetUrl(team.logo, req),
+    }));
     res.setHeader('Cache-Control', CACHE_CONTROL);
-    return res.status(200).json({ teams, source: 'dltv' });
+    return res.status(200).json({
+      teams,
+      source: result.source,
+      updatedAt: result.refreshedAt || undefined,
+    });
   } catch (error) {
-    console.error('[EPT Ranking] Scrape failed, using fallback:', error instanceof Error ? error.message : error);
+    console.error('[EPT Ranking] Error:', error instanceof Error ? error.message : String(error));
     res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
-    if (memoryCache) {
-      return res.status(200).json({ teams: memoryCache, source: 'stale' });
-    }
-    return res.status(200).json({ teams: FALLBACK_TEAMS, source: 'fallback' });
+    return res.status(200).json({ teams: [], source: 'error', error: 'Internal error' });
   }
 }
-

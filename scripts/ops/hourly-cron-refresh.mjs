@@ -90,6 +90,7 @@ function parseEndpoints(args) {
     { name: 'sync-news-hawk', url: `${base}/api/cron?action=sync-news&onlySource=hawk` },
     { name: 'sync-news-bo3', url: `${base}/api/cron?action=sync-news&onlySource=bo3` },
     { name: 'sync-news-cyberscore', url: `${base}/api/cron?action=sync-news&onlySource=cyberscore` },
+    { name: 'sync-ranking', url: `${base}/api/cron?action=sync-ranking` },
   ];
 }
 
