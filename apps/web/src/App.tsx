@@ -7,6 +7,7 @@ import { MatchesPage } from '@/pages/MatchesPage';
 import { SeriesMatchPage } from '@/pages/SeriesMatchPage';
 import { TeamsPage } from '@/pages/TeamsPage';
 import { NewsPage } from '@/pages/NewsPage';
+import { NewsDetailPage } from '@/pages/NewsDetailPage';
 import { TournamentsPage } from '@/pages/TournamentsPage';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { useHashRoute } from '@/hooks/useHashRoute';
@@ -135,6 +136,11 @@ function App() {
             matchId={route.matchId}
             slug={route.slug}
             onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
+          />
+        ) : page === 'news' && route.newsId ? (
+          <NewsDetailPage
+            newsId={route.newsId}
+            onBack={() => navigate({ page: 'news', overlay: null }, { replace: false })}
           />
         ) : page === 'news' ? (
           <NewsPage />

@@ -497,7 +497,11 @@ function getNewsCategory(category?: string): string {
   return newsCategoryLabels[String(category || '').toLowerCase()] || '新闻';
 }
 
-function LatestNewsSection({ items, onMore }: { items: NewsItem[]; onMore?: () => void }) {
+function LatestNewsSection({ items, onMore, onOpenItem }: {
+  items: NewsItem[];
+  onMore?: () => void;
+  onOpenItem?: (item: NewsItem) => void;
+}) {
   const featured = items[0];
   const rest = items.slice(1, 4);
   return (
@@ -505,11 +509,10 @@ function LatestNewsSection({ items, onMore }: { items: NewsItem[]; onMore?: () =
       <SectionHeader title="Latest News" linkLabel="View All News" onClick={onMore} />
       <div className="grid gap-4 lg:grid-cols-2">
         {featured && (
-          <a
-            href={featured.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative flex min-h-[220px] flex-col justify-end overflow-hidden rounded-xl p-5 transition-transform hover:-translate-y-0.5"
+          <button
+            type="button"
+            onClick={() => onOpenItem?.(featured)}
+            className="group relative flex min-h-[220px] w-full flex-col justify-end overflow-hidden rounded-xl p-5 text-left transition-transform hover:-translate-y-0.5"
             style={{ backgroundColor: design.card }}
           >
             {featured.image_url && (
@@ -528,16 +531,15 @@ function LatestNewsSection({ items, onMore }: { items: NewsItem[]; onMore?: () =
               <span className="text-[11px]" style={{ color: '#a1a1aa' }}>{formatNewsDate(featured.published_at)}</span>
             </div>
             <h3 className="relative z-10 text-lg font-bold leading-snug text-white group-hover:opacity-90">{featured.title}</h3>
-          </a>
+          </button>
         )}
         <div className="flex flex-col justify-between gap-2">
           {rest.map((item) => (
-            <a
+            <button
               key={item.id}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
+              type="button"
+              onClick={() => onOpenItem?.(item)}
+              className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
             >
               <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10" style={{ backgroundColor: '#2a2d35' }}>
                 <SafeImg
@@ -553,7 +555,7 @@ function LatestNewsSection({ items, onMore }: { items: NewsItem[]; onMore?: () =
                 </span>
                 <span className="mt-0.5 block line-clamp-2 text-sm font-medium text-white group-hover:opacity-90">{item.title}</span>
               </div>
-            </a>
+            </button>
           ))}
         </div>
       </div>
@@ -1139,7 +1141,8 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         {/* Latest News */}
         <LatestNewsSection
           items={news}
-          onMore={() => navigate({ page: 'home', overlay: null })}
+          onMore={() => navigate({ page: 'news', overlay: null })}
+          onOpenItem={(item) => navigate({ page: 'news', overlay: null, newsId: item.id })}
         />
 
         {/* Rankings */}

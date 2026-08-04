@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Newspaper } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
-import { NewsDetailDialog, NewsThumb, type NewsItem } from '@/components/custom/NewsDetailDialog';
+import { NewsThumb, type NewsItem } from '@/components/custom/NewsArticle';
 import { apiFetch } from '@/lib/api-cache';
+import { useHashRoute } from '@/hooks/useHashRoute';
 import { CATEGORY_ORDER, categoryInfo } from '@/lib/newsCategory';
 
 const EMPTY_NEWS: NewsItem[] = [];
@@ -167,12 +168,16 @@ function NewsSkeleton() {
 }
 
 export function NewsPage() {
+  const { navigate } = useHashRoute();
   const [news, setNews] = useState<NewsItem[]>(EMPTY_NEWS);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<NewsItem | null>(null);
+
+  const openDetail = (item: NewsItem) => {
+    navigate({ page: 'news', overlay: null, newsId: item.id }, { replace: false });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -288,12 +293,12 @@ export function NewsPage() {
         </div>
       ) : (
         <>
-          {featured && <FeaturedCard item={featured} onOpen={() => setSelected(featured)} />}
+          {featured && <FeaturedCard item={featured} onOpen={() => openDetail(featured)} />}
 
           {pageItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {pageItems.map((item) => (
-                <NewsCard key={item.id} item={item} onOpen={() => setSelected(item)} />
+                <NewsCard key={item.id} item={item} onOpen={() => openDetail(item)} />
               ))}
             </div>
           ) : (
@@ -342,14 +347,6 @@ export function NewsPage() {
           )}
         </>
       )}
-
-      {/* 详情弹窗 */}
-      <NewsDetailDialog
-        item={selected}
-        pool={news}
-        onOpenChange={(open) => !open && setSelected(null)}
-        onSelect={setSelected}
-      />
     </div>
   );
 }
