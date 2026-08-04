@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Newspaper, Flame, ExternalLink } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Newspaper, Flame } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiFetch } from '@/lib/api-cache';
+import { NewsDetailDialog, type NewsItem } from '@/components/custom/NewsDetailDialog';
 import {
   Dialog,
   DialogContent,
@@ -10,20 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
-interface NewsItem {
-  id: string;
-  title: string;
-  summary?: string;
-  content?: string;
-  content_markdown?: string;
-  content_images?: string[];
-  source: string;
-  url: string;
-  image_url?: string;
-  published_at: number;
-  category: string;
-}
 
 const EMPTY_NEWS: NewsItem[] = [];
 
@@ -93,115 +80,6 @@ function NewsSectionSkeleton() {
   );
 }
 
-function normalizeUrl(url?: string) {
-  if (!url) return '';
-  return url.replace(/&amp;/g, '&');
-}
-
-function parseInlineMarkdown(text: string) {
-  const nodes: React.ReactNode[] = [];
-  const pattern = /(\[[^\]]+\]\((https?:\/\/[^)\s]+)\))|(https?:\/\/[^\s]+)/g;
-  let last = 0;
-  let match;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > last) {
-      nodes.push(text.slice(last, match.index));
-    }
-
-    if (match[1] && match[2]) {
-      const label = match[1].match(/^\[([^\]]+)\]/)?.[1] || match[2];
-      nodes.push(
-        <a
-          key={`${match.index}-${match[2]}`}
-          href={normalizeUrl(match[2])}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-amber-400 hover:text-amber-300 underline"
-        >
-          {label}
-        </a>
-      );
-    } else if (match[3]) {
-      const url = normalizeUrl(match[3]);
-      nodes.push(
-        <a
-          key={`${match.index}-${url}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-amber-400 hover:text-amber-300 underline break-all"
-        >
-          {url}
-        </a>
-      );
-    }
-
-    last = pattern.lastIndex;
-  }
-
-  if (last < text.length) {
-    nodes.push(text.slice(last));
-  }
-
-  return nodes;
-}
-
-function extractImageUrlsFromText(text: string) {
-  const matches = text.match(/https?:\/\/[^\s)]+?\.(?:png|jpe?g|webp|gif|avif)(?:\?[^\s)]*)?/gi) || [];
-  return Array.from(new Set(matches.map(normalizeUrl))).slice(0, 6);
-}
-
-function renderRichContent(rawText: string) {
-  const text = rawText || '';
-  const lines = text.split('\n');
-  const blocks: React.ReactNode[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) {
-      blocks.push(<div key={`sp-${i}`} className="h-2" />);
-      continue;
-    }
-
-    const imageMatch = line.match(/^!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)$/i);
-    if (imageMatch) {
-      const imageUrl = normalizeUrl(imageMatch[1]);
-      blocks.push(
-        <img
-          key={`img-${i}-${imageUrl}`}
-          src={imageUrl}
-          alt="news-content"
-          className="w-full rounded-md object-cover my-3"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
-        />
-      );
-      continue;
-    }
-
-    const bullet = line.match(/^[-*]\s+(.+)/);
-    if (bullet) {
-      blocks.push(
-        <p key={`li-${i}`} className="pl-4">
-          <span className="mr-2">•</span>
-          {parseInlineMarkdown(bullet[1])}
-        </p>
-      );
-      continue;
-    }
-
-    blocks.push(
-      <p key={`p-${i}`}>
-        {parseInlineMarkdown(line)}
-      </p>
-    );
-  }
-
-  return blocks;
-}
-
 export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [showAllNews, setShowAllNews] = useState(false);
@@ -255,18 +133,6 @@ export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
     const date = new Date(timestamp * 1000);
     return date.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
-
-  const currentContent = useMemo(() => {
-    if (!selectedNews) return '';
-    return selectedNews.content_markdown || selectedNews.content || selectedNews.summary || '';
-  }, [selectedNews]);
-
-  const derivedContentImages = useMemo(() => {
-    if (!selectedNews) return [];
-    const fromField = selectedNews.content_images || [];
-    const fromContent = extractImageUrlsFromText(currentContent);
-    return Array.from(new Set([...fromField, ...fromContent])).slice(0, 6);
-  }, [selectedNews, currentContent]);
 
   const openNewsDetail = (item: NewsItem) => {
     setShowAllNews(false);
@@ -394,64 +260,12 @@ export function NewsSection({ news = EMPTY_NEWS }: { news?: NewsItem[] }) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(selectedNews)} onOpenChange={(open) => !open && setSelectedNews(null)}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col border-slate-700 bg-slate-900 text-slate-100 p-0">
-          {selectedNews && (
-            <>
-              <DialogHeader className="px-6 pt-6 pb-2 border-b border-slate-800">
-                <DialogTitle className="text-xl text-white pr-8">{selectedNews.title}</DialogTitle>
-                <DialogDescription className="text-slate-400">
-                  {selectedNews.source} · {formatDateTime(selectedNews.published_at)}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-                {selectedNews.image_url && (
-                  <img
-                    src={selectedNews.image_url}
-                    alt={selectedNews.title}
-                    className="w-full max-h-80 rounded-md object-cover mb-4"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/patch-update.jpg';
-                    }}
-                  />
-                )}
-
-                {derivedContentImages.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    {derivedContentImages.slice(0, 4).map((img) => (
-                      <img
-                        key={img}
-                        src={img}
-                        alt="news-inline"
-                        className="w-full max-h-52 rounded-md object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <div className="space-y-3 text-sm leading-7 text-slate-200">
-                  {currentContent ? renderRichContent(currentContent) : <p>正文暂不可用，点击下方原文查看完整内容。</p>}
-                </div>
-
-                <div className="pt-4">
-                  <a
-                    href={selectedNews.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300"
-                  >
-                    查看原文 <ExternalLink className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <NewsDetailDialog
+        item={selectedNews}
+        pool={effectiveNews}
+        onOpenChange={(open) => !open && setSelectedNews(null)}
+        onSelect={setSelectedNews}
+      />
     </section>
   );
 }

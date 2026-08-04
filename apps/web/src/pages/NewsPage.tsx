@@ -1,28 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Newspaper } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { NewsDetailDialog, NewsThumb, type NewsItem } from '@/components/custom/NewsDetailDialog';
 import { apiFetch } from '@/lib/api-cache';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-
-interface NewsItem {
-  id: string;
-  title: string;
-  summary?: string;
-  content?: string;
-  content_markdown?: string;
-  content_images?: string[];
-  source: string;
-  url: string;
-  image_url?: string;
-  published_at: number;
-  category: string;
-}
+import { CATEGORY_ORDER, categoryInfo } from '@/lib/newsCategory';
 
 const EMPTY_NEWS: NewsItem[] = [];
 
@@ -37,164 +18,10 @@ const design = {
   text3: '#71717a',
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  esports: '#3b82f6',
-  tournament: '#3b82f6',
-  patch: '#22c55e',
-  gameplay: '#22c55e',
-  news: '#94a3b8',
-  transfer: '#a855f7',
-  roster: '#a855f7',
-  drama: '#f43f5e',
-  takes: '#f59e0b',
-  community: '#f59e0b',
-  default: '#94a3b8',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  esports: '赛事',
-  tournament: '赛事',
-  patch: '版本',
-  gameplay: '版本',
-  news: '资讯',
-  transfer: '转会',
-  roster: '阵容',
-  drama: '八卦',
-  takes: '观点',
-  community: '社区',
-  default: '资讯',
-};
-
-const CATEGORY_ORDER = ['赛事', '版本', '转会', '阵容', '八卦', '观点', '社区', '资讯'];
-
-function categoryInfo(category?: string): { label: string; color: string } {
-  const key = String(category || '').toLowerCase();
-  return {
-    label: CATEGORY_LABELS[key] || CATEGORY_LABELS.default,
-    color: CATEGORY_COLORS[key] || CATEGORY_COLORS.default,
-  };
-}
-
-function normalizeUrl(url?: string) {
-  if (!url) return '';
-  return url.replace(/&amp;/g, '&');
-}
-
-function extractImageUrlsFromText(text: string) {
-  const matches = text.match(/https?:\/\/[^\s)]+?\.(?:png|jpe?g|webp|gif|avif)(?:\?[^\s)]*)?/gi) || [];
-  return Array.from(new Set(matches.map(normalizeUrl))).slice(0, 6);
-}
-
 function formatNewsDate(timestamp: number) {
   if (!timestamp) return '';
   const date = new Date(timestamp * 1000);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function formatDateTime(timestamp: number) {
-  const date = new Date(timestamp * 1000);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function parseInlineMarkdown(text: string) {
-  const nodes: React.ReactNode[] = [];
-  const pattern = /(\[[^\]]+\]\((https?:\/\/[^)\s]+)\))|(https?:\/\/[^\s]+)/g;
-  let last = 0;
-  let match;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > last) {
-      nodes.push(text.slice(last, match.index));
-    }
-
-    if (match[1] && match[2]) {
-      const label = match[1].match(/^\[([^\]]+)\]/)?.[1] || match[2];
-      nodes.push(
-        <a
-          key={`${match.index}-${match[2]}`}
-          href={normalizeUrl(match[2])}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#5b7cff] underline hover:text-[#7d97ff]"
-        >
-          {label}
-        </a>
-      );
-    } else if (match[3]) {
-      const url = normalizeUrl(match[3]);
-      nodes.push(
-        <a
-          key={`${match.index}-${url}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="break-all text-[#5b7cff] underline hover:text-[#7d97ff]"
-        >
-          {url}
-        </a>
-      );
-    }
-
-    last = pattern.lastIndex;
-  }
-
-  if (last < text.length) {
-    nodes.push(text.slice(last));
-  }
-
-  return nodes;
-}
-
-function renderRichContent(rawText: string) {
-  const text = rawText || '';
-  const lines = text.split('\n');
-  const blocks: React.ReactNode[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) {
-      blocks.push(<div key={`sp-${i}`} className="h-2" />);
-      continue;
-    }
-
-    const imageMatch = line.match(/^!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)$/i);
-    if (imageMatch) {
-      const imageUrl = normalizeUrl(imageMatch[1]);
-      blocks.push(
-        <img
-          key={`img-${i}-${imageUrl}`}
-          src={imageUrl}
-          alt="news-content"
-          className="my-3 w-full rounded-md object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
-        />
-      );
-      continue;
-    }
-
-    const bullet = line.match(/^[-*]\s+(.+)/);
-    if (bullet) {
-      blocks.push(
-        <p key={`li-${i}`} className="pl-4">
-          <span className="mr-2">•</span>
-          {parseInlineMarkdown(bullet[1])}
-        </p>
-      );
-      continue;
-    }
-
-    blocks.push(<p key={`p-${i}`}>{parseInlineMarkdown(line)}</p>);
-  }
-
-  return blocks;
 }
 
 function CategoryBadge({ category }: { category?: string }) {
@@ -210,34 +37,26 @@ function CategoryBadge({ category }: { category?: string }) {
   );
 }
 
-function NewsThumb({ item, className }: { item: NewsItem; className?: string }) {
-  const info = categoryInfo(item.category);
-  return (
-    <SafeImg
-      src={item.image_url}
-      alt={item.title}
-      className={className}
-      fallback={(
-        <div
-          className={`flex items-center justify-center ${className ?? ''}`}
-          style={{ background: 'linear-gradient(135deg, #1b2440, #111728 55%, #26314f)' }}
-        >
-          <span
-            className="text-[20px] uppercase tracking-widest"
-            style={{ fontFamily: "'Anton', sans-serif", color: `${info.color}55` }}
-          >
-            Dota 2
-          </span>
-        </div>
-      )}
-    />
-  );
+function useOpenOnClick(onOpen: () => void, label: string) {
+  return {
+    role: 'button' as const,
+    tabIndex: 0,
+    'aria-label': label,
+    onClick: onOpen,
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onOpen();
+      }
+    },
+  };
 }
 
-function FeaturedCard({ item }: { item: NewsItem }) {
+function FeaturedCard({ item, onOpen }: { item: NewsItem; onOpen: () => void }) {
   return (
     <article
-      className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.06]"
+      {...useOpenOnClick(onOpen, `阅读全文：${item.title}`)}
+      className="relative mb-6 cursor-pointer overflow-hidden rounded-2xl border border-white/[0.06]"
       style={{ backgroundColor: design.card, minHeight: 400 }}
     >
       {item.image_url ? (
@@ -268,34 +87,35 @@ function FeaturedCard({ item }: { item: NewsItem }) {
           </span>
         </div>
         <h2 className="max-w-2xl text-2xl font-extrabold leading-snug tracking-tight text-white lg:text-3xl">
-          <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-[#5b7cff]">
-            {item.title}
-          </a>
+          {item.title}
         </h2>
         {item.summary && (
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[rgba(238,242,247,0.78)] line-clamp-2">
             {item.summary}
           </p>
         )}
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
           className="mt-5 inline-flex w-fit items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: design.blue }}
         >
           阅读全文 <ArrowRight className="size-4" />
-        </a>
+        </button>
       </div>
     </article>
   );
 }
 
-function NewsCard({ item }: { item: NewsItem }) {
+function NewsCard({ item, onOpen }: { item: NewsItem; onOpen: () => void }) {
   const info = categoryInfo(item.category);
   return (
     <article
-      className="group flex flex-col overflow-hidden rounded-xl border border-white/[0.06] transition-all hover:-translate-y-0.5 hover:border-white/[0.12]"
+      {...useOpenOnClick(onOpen, `阅读全文：${item.title}`)}
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-white/[0.06] transition-all hover:-translate-y-0.5 hover:border-white/[0.12]"
       style={{ backgroundColor: design.card }}
     >
       <div className="h-[3px] w-full" style={{ backgroundColor: info.color }} />
@@ -312,10 +132,8 @@ function NewsCard({ item }: { item: NewsItem }) {
             {formatNewsDate(item.published_at)}
           </span>
         </div>
-        <h3 className="text-[16.5px] font-bold leading-snug tracking-tight text-white line-clamp-2">
-          <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-[#5b7cff]">
-            {item.title}
-          </a>
+        <h3 className="text-[16.5px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-[#5b7cff]">
+          {item.title}
         </h3>
         {item.summary && (
           <p className="mt-2 flex-1 text-[13.5px] leading-relaxed text-[#a1a1aa] line-clamp-2">{item.summary}</p>
@@ -411,14 +229,6 @@ export function NewsPage() {
   const safePage = Math.min(page, pages);
   const pageItems = listSource.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
-  const currentContent = selected?.content_markdown || selected?.content || selected?.summary || '';
-  const derivedContentImages = useMemo(() => {
-    if (!selected) return [];
-    const fromField = selected.content_images || [];
-    const fromContent = extractImageUrlsFromText(currentContent);
-    return Array.from(new Set([...fromField, ...fromContent])).slice(0, 6);
-  }, [selected, currentContent]);
-
   const selectFilter = (key: string) => {
     setFilter(key);
     setPage(1);
@@ -478,12 +288,12 @@ export function NewsPage() {
         </div>
       ) : (
         <>
-          {featured && <FeaturedCard item={featured} />}
+          {featured && <FeaturedCard item={featured} onOpen={() => setSelected(featured)} />}
 
           {pageItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {pageItems.map((item) => (
-                <NewsCard key={item.id} item={item} />
+                <NewsCard key={item.id} item={item} onOpen={() => setSelected(item)} />
               ))}
             </div>
           ) : (
@@ -534,60 +344,12 @@ export function NewsPage() {
       )}
 
       {/* 详情弹窗 */}
-      <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="flex h-[90vh] w-[95vw] max-w-4xl flex-col border-slate-700 bg-slate-900 p-0 text-slate-100">
-          {selected && (
-            <>
-              <DialogHeader className="border-b border-slate-800 px-6 pb-3 pt-6">
-                <DialogTitle className="pr-8 text-xl text-white">{selected.title}</DialogTitle>
-                <DialogDescription className="text-slate-400">
-                  {selected.source} · {formatDateTime(selected.published_at)}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-                {selected.image_url && (
-                  <img
-                    src={selected.image_url}
-                    alt={selected.title}
-                    className="mb-4 max-h-80 w-full rounded-md object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                )}
-                {derivedContentImages.length > 0 && (
-                  <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {derivedContentImages.slice(0, 4).map((img) => (
-                      <img
-                        key={img}
-                        src={img}
-                        alt="news-inline"
-                        className="max-h-52 w-full rounded-md object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                <div className="space-y-3 text-sm leading-7 text-slate-200">
-                  {currentContent ? renderRichContent(currentContent) : <p>正文暂不可用，点击下方原文查看完整内容。</p>}
-                </div>
-                <div className="pt-4">
-                  <a
-                    href={selected.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 font-semibold text-[#5b7cff] hover:text-[#7d97ff]"
-                  >
-                    查看原文 <ArrowRight className="size-4" />
-                  </a>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <NewsDetailDialog
+        item={selected}
+        pool={news}
+        onOpenChange={(open) => !open && setSelected(null)}
+        onSelect={setSelected}
+      />
     </div>
   );
 }
