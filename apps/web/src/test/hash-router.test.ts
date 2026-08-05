@@ -44,6 +44,18 @@ describe('parseHash', () => {
       page: 'live',
       overlay: null,
       seriesId: '98859',
+      slug: undefined,
+      champ: undefined,
+    });
+  });
+
+  it('parses a live deep link with hawk slug and champ', () => {
+    expect(parseHash('#/live/98859?slug=team-resilience-vs-rune-eaters&champ=games-of-the-future-2026-playoffs')).toEqual({
+      page: 'live',
+      overlay: null,
+      seriesId: '98859',
+      slug: 'team-resilience-vs-rune-eaters',
+      champ: 'games-of-the-future-2026-playoffs',
     });
   });
 
@@ -124,6 +136,14 @@ describe('toHash', () => {
   it('round-trips a live detail deep link', () => {
     const parsed = parseHash('#/live/98859');
     expect(toHash(parsed)).toBe('#/live/98859');
+  });
+
+  it('serializes a live detail deep link with hawk slug and champ', () => {
+    expect(toHash({ page: 'live', overlay: null, seriesId: '98859', slug: 'team-a-vs-team-b', champ: 'league' })).toBe(
+      '#/live/98859?slug=team-a-vs-team-b&champ=league',
+    );
+    const parsed = parseHash('#/live/98859?slug=team-a-vs-team-b&champ=league');
+    expect(toHash(parsed)).toBe('#/live/98859?slug=team-a-vs-team-b&champ=league');
   });
 
   it('serializes a home match overlay', () => {

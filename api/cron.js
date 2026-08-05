@@ -7,6 +7,7 @@ import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
 import { warmDltvCaches } from '../lib/server/dltv-warm.js';
 import { syncRankingsToDb } from '../lib/server/rankings-service.js';
+import { persistLiveHeroSnapshots } from '../lib/server/live-hero-service.js';
 
 let cronActionGateReady = false;
 const inMemoryCronActionGate = new Map();
@@ -285,6 +286,13 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
   if (action === 'sync-ranking') {
     // 战队/赛事排行持久化到 Neon；内部按 24h 过期门控，过期才真正抓取 dltv。
     return { action, result: await syncRankingsToDb() };
+  }
+  if (action === 'persist-live-hero') {
+    // 低频持久化（~5min 调度）：抓 hawk → upsert hero_live_scores（含开始/结束 notify）。
+    // 高频 live-hero 请求路径已去 Neon（CDN + 回源抓页），此 action 只维护监控快照。
+    const db = getDb();
+    if (!db) throw new Error('Database not available');
+    return { action, result: await persistLiveHeroSnapshots(db) };
   }
   if (action === 'all') {
     const opendota = await runSyncOpenDota();

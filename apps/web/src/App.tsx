@@ -118,10 +118,10 @@ function App() {
           <TournamentsPage />
         ) : page === 'matches' ? (
           <MatchesPage
-            onOpenMatch={(matchId, maps, seriesId) => {
+            onOpenMatch={(matchId, maps, seriesId, hawkSlug, hawkChamp) => {
               if (seriesId) {
-                // live 卡片：带 hawk seriesId 打开 live detail 全屏页
-                navigate({ page: 'live', overlay: null, seriesId: String(seriesId) }, { replace: false });
+                // live 卡片：带 hawk seriesId + slug/champ 打开 live detail 全屏页
+                navigate({ page: 'live', overlay: null, seriesId: String(seriesId), slug: hawkSlug, champ: hawkChamp }, { replace: false });
                 return;
               }
               const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
@@ -146,6 +146,8 @@ function App() {
         ) : page === 'live' && route.seriesId ? (
           <LiveMatchDetailPage
             seriesId={route.seriesId}
+            slug={route.slug}
+            champ={route.champ}
             onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
           />
         ) : page === 'news' && route.newsId ? (

@@ -10,6 +10,7 @@ const upsertLiquipediaTournamentMetadataMock = vi.fn();
 const syncNewsToDbMock = vi.fn();
 const translateNewsBackfillMock = vi.fn();
 const warmDltvCachesMock = vi.fn();
+const persistLiveHeroSnapshotsMock = vi.fn();
 
 vi.mock('@neondatabase/serverless', () => ({
   neon: neonMock,
@@ -39,6 +40,10 @@ vi.mock('../../../../api/news.js', () => ({
 
 vi.mock('../../../../lib/server/dltv-warm.js', () => ({
   warmDltvCaches: warmDltvCachesMock,
+}));
+
+vi.mock('../../../../lib/server/live-hero-service.js', () => ({
+  persistLiveHeroSnapshots: persistLiveHeroSnapshotsMock,
 }));
 
 function createRes() {
@@ -94,6 +99,8 @@ describe('/api/cron incremental refresh actions', () => {
       matchPages: { total: 10, skippedFresh: 5, warmed: 5 },
       dbAvailable: true,
     });
+    persistLiveHeroSnapshotsMock.mockReset();
+    persistLiveHeroSnapshotsMock.mockResolvedValue({ live: null, liveSnapshots: [], ended: [], missed: [] });
   });
 
   it('routes warm-dltv to the scheduled DLTV warmer', async () => {
@@ -109,6 +116,21 @@ describe('/api/cron incremental refresh actions', () => {
     expect(res.statusCode).toBe(200);
     expect(warmDltvCachesMock).toHaveBeenCalledTimes(1);
     expect(res.payload).toMatchObject({ ok: true, action: 'warm-dltv', result: { lists: { live: 1 } } });
+  });
+
+  it('routes persist-live-hero to the low-frequency live snapshot persister', async () => {
+    const { default: handler } = await import('../../../../api/cron.js');
+    const req = {
+      method: 'POST',
+      query: { action: 'persist-live-hero' },
+    };
+    const res = createRes();
+
+    await handler(req as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect(persistLiveHeroSnapshotsMock).toHaveBeenCalledTimes(1);
+    expect(res.payload).toMatchObject({ ok: true, action: 'persist-live-hero' });
   });
 
   it('passes incremental windows to the derived-data refresh alias', async () => {

@@ -91,7 +91,7 @@ describe('/api/live-hero', () => {
 
     expect(getLiveHeroPayloads).toHaveBeenCalledWith(
       null,
-      expect.objectContaining({ forceRefresh: true, maxAgeSeconds: 180, req }),
+      expect.objectContaining({ forceRefresh: true, req }),
     );
     expect((res.payload as any).live).toBeNull();
     expect((res.payload as any).liveMatches).toEqual([]);
