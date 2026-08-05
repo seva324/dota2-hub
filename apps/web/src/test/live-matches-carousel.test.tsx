@@ -52,4 +52,19 @@ describe('LiveMatchesCarousel', () => {
     render(<LiveMatchesCarousel liveHeroes={[]} />);
     expect(screen.queryByText('LIVE')).not.toBeInTheDocument();
   });
+
+  it('shows the net worth badge on team2 when team2 leads (team1NetWorthLead is null)', () => {
+    const team2Lead = {
+      ...LIVE,
+      leagueName: 'Games of the Future',
+      teams: [
+        { side: 'team1' as const, name: 'BetBoom Team', logo: null },
+        { side: 'team2' as const, name: '1win Team', logo: null },
+      ],
+      liveMap: { ...LIVE.liveMap, team1Score: 2, team2Score: 7, team1NetWorthLead: null, team2NetWorthLead: 2191 },
+    };
+    render(<LiveMatchesCarousel liveHeroes={[team2Lead as any]} />);
+    // 1win（team2）领先 2191 → badge "+2.2k" 应显示
+    expect(screen.getByText((content) => content.includes('+2.2k'))).toBeInTheDocument();
+  });
 });
