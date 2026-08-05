@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Loader2, User } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
+import { UpcomingMatchView } from '@/components/custom/UpcomingMatchView';
 import { apiFetch } from '@/lib/api-cache';
 import type {
   MatchPagePayload,
@@ -420,6 +421,18 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
           setAttempt((n) => n + 1);
           return;
         }
+        // upcoming：未开赛无地图，但有赛前数据（status===0 或任一队有阵容）且开赛时间在未来 → 渲染预告视图。
+        const isUpcomingData =
+          (data?.status === 0 ||
+            (data?.teams?.radiant?.players?.length ?? 0) > 0 ||
+            (data?.teams?.dire?.players?.length ?? 0) > 0) &&
+          (data?.startTime == null || data.startTime > Math.floor(Date.now() / 1000));
+        if (isUpcomingData) {
+          setRetrying(false);
+          setAttempt(0);
+          setPayload(data);
+          return;
+        }
         setError('该系列赛暂无比赛数据');
         return;
       }
@@ -481,6 +494,20 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
   const second = payload.teams.dire;
   const firstTeamId = first.id;
   const secondTeamId = second.id;
+
+  // 未开赛（upcoming）：maps 为空但带赛前数据且开赛时间在未来 → 预告视图。
+  const isUpcoming =
+    payload.maps.length === 0 &&
+    (payload.status === 0 || first.players.length > 0 || second.players.length > 0) &&
+    (payload.startTime == null || payload.startTime > Math.floor(Date.now() / 1000));
+
+  if (isUpcoming) {
+    return (
+      <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 lg:px-6" style={{ backgroundColor: '#0f1115' }}>
+        <UpcomingMatchView payload={payload} onBack={onBack} />
+      </div>
+    );
+  }
 
   // 倒叙 + 每场累计胜场（pip）
   const chrono = [...payload.maps];

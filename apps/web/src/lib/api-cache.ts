@@ -37,6 +37,11 @@ function isEmptyPayload(payload: unknown): boolean {
   return false;
 }
 
+/** 可重试的瞬态响应（如 match-page 冷启动超时）：不写缓存，避免重试被缓存顶住。 */
+function isRetryablePayload(payload: unknown): boolean {
+  return !!payload && typeof payload === 'object' && (payload as { source?: unknown }).source === 'timeout';
+}
+
 /**
  * 带共享缓存的 fetch。
  * @param url 请求 URL（作为缓存键的一部分）
@@ -68,7 +73,7 @@ export async function apiFetch<T = unknown>(
     const res = options.signal ? await fetchImpl(url, { signal: options.signal }) : await fetchImpl(url);
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
     const payload = (await res.json()) as T;
-    if (cacheable && (options.cacheEmpty !== false || !isEmptyPayload(payload))) {
+    if (cacheable && !isRetryablePayload(payload) && (options.cacheEmpty !== false || !isEmptyPayload(payload))) {
       store.set(url, { payload, at: Date.now() });
     }
     return payload;
