@@ -7,7 +7,7 @@ import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import type { LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { Button } from '@/components/ui/button';
 import { slugFromMatchUrl } from '@/lib/matchUrl';
-import { apiFetch } from '@/lib/api-cache';
+import { apiFetch, getCachedValue } from '@/lib/api-cache';
 
 const design = {
   blue: '#2b55e8',
@@ -19,12 +19,20 @@ const LIVE_REFRESH_INTERVAL_MS = 30_000;
 // 冷启动/抓取失败时 API 可能间歇返回空：连续 2 次空轮询才清空 live 卡片，
 // 避免"加载出来又没了"的闪烁。与 HeroSection 的容忍逻辑对齐。
 const LIVE_EMPTY_GRACE_POLLS = 2;
+// live 短缓存：小于轮询间隔，轮询仍每次真刷新比分；从详情页返回时 20s 内
+// 命中缓存立即显示，不闪空、不重拉。与首页共用同一份缓存（同 URL 精确键）。
+const LIVE_CACHE_TTL_MS = 20_000;
 
 // 与首页共用同一份缓存：URL 必须完全一致才能命中（精确键）。
-// live-hero 是实时数据，30s 轮询不缓存（ttl 0），只做并发去重。
 const UPCOMING_API_URL = '/api/upcoming?limit=20&days=7';
 const RESULTS_API_URL = '/api/matches?limit=40';
 const LIVE_API_URL = '/api/live-hero';
+
+type LiveHeroApi = { liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload };
+
+function normalizeLiveHeroes(data: LiveHeroApi | undefined): LiveHeroPayload[] {
+  return Array.isArray(data?.liveMatches) ? data.liveMatches : data?.live ? [data.live] : [];
+}
 
 interface UpcomingMatch {
   id?: string | number;
@@ -329,10 +337,18 @@ export function MatchesPage({
     duration?: number;
   }>, seriesId?: string, slug?: string, champ?: string) => void;
 }) {
-  const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
+  const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>(() =>
+    normalizeLiveHeroes(getCachedValue<LiveHeroApi>(LIVE_API_URL)));
   const emptyLivePollsRef = useRef(0);
-  const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
-  const [finished, setFinished] = useState<FinishedMatch[]>([]);
+  const [upcoming, setUpcoming] = useState<UpcomingMatch[]>(() => {
+    const cached = getCachedValue<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL);
+    return Array.isArray(cached?.upcoming) ? cached.upcoming : [];
+  });
+  const [finished, setFinished] = useState<FinishedMatch[]>(() => {
+    const cached = getCachedValue<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL);
+    const list = Array.isArray(cached) ? cached : (cached?.matches || []);
+    return list.filter((m) => m.radiant_team_name && m.dire_team_name);
+  });
   const [upcomingExpanded, setUpcomingExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
   const [dateFilter, setDateFilter] = useState<string>('today');
@@ -383,24 +399,31 @@ export function MatchesPage({
   const tournamentOptions = Array.from(new Set(finished.map((m) => m.tournament_name).filter(Boolean))) as string[];
 
   const loadData = useCallback(async () => {
-    try {
-      const [live, upcoming, matches] = await Promise.all([
-        apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>(LIVE_API_URL, { ttlMs: 0 }),
-        apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL, { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
-        apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL, { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
-      ]);
+    // 各段独立加载：live 失败/挂起不影响 upcoming 与 completed 渲染，
+    // 避免"信息不见了"整页空白。live 有 20s 短缓存，返回页面时直接命中。
+    const [liveResult, upcomingResult, matchesResult] = await Promise.allSettled([
+      apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: LIVE_CACHE_TTL_MS }),
+      apiFetch<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL, { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
+      apiFetch<FinishedMatch[] | { matches: FinishedMatch[] }>(RESULTS_API_URL, { ttlMs: 5 * 60 * 1000, cacheEmpty: false }),
+    ]);
 
-      const liveMatches = Array.isArray(live?.liveMatches)
-        ? live.liveMatches
-        : live?.live
-          ? [live.live]
-          : [];
-      setLiveHeroes(liveMatches);
-      setUpcoming(Array.isArray(upcoming?.upcoming) ? upcoming.upcoming : []);
-      const finishedList: FinishedMatch[] = Array.isArray(matches) ? matches : (matches.matches || []);
+    if (liveResult.status === 'fulfilled') {
+      setLiveHeroes(normalizeLiveHeroes(liveResult.value));
+    } else {
+      console.warn('[MatchesPage] live-hero failed, keeping existing cards:', liveResult.reason);
+    }
+    if (upcomingResult.status === 'fulfilled') {
+      setUpcoming(Array.isArray(upcomingResult.value?.upcoming) ? upcomingResult.value.upcoming : []);
+    } else {
+      console.warn('[MatchesPage] upcoming failed, keeping existing rows:', upcomingResult.reason);
+    }
+    if (matchesResult.status === 'fulfilled') {
+      const finishedList: FinishedMatch[] = Array.isArray(matchesResult.value)
+        ? matchesResult.value
+        : (matchesResult.value.matches || []);
       setFinished(finishedList.filter((m) => m.radiant_team_name && m.dire_team_name));
-    } catch (e) {
-      console.error('[MatchesPage] Failed to load data:', e);
+    } else {
+      console.warn('[MatchesPage] matches failed, keeping existing rows:', matchesResult.reason);
     }
   }, []);
 
@@ -413,14 +436,11 @@ export function MatchesPage({
     let cancelled = false;
     const refreshLive = async () => {
       try {
-        // 与 loadData 同用 ttl 0：只做并发去重，30s 轮询每次真正刷新比分。
-        const data = await apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>(LIVE_API_URL, { ttlMs: 0 });
+        // 短缓存（20s < 30s 轮询间隔）：轮询照常每次真刷新比分；
+        // 若轮询中途被中断（如切页），缓存里仍是新鲜比分，返回时直接命中。
+        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: LIVE_CACHE_TTL_MS });
         if (cancelled) return;
-        const liveMatches = Array.isArray(data?.liveMatches)
-          ? data.liveMatches
-          : data?.live
-            ? [data.live]
-            : [];
+        const liveMatches = normalizeLiveHeroes(data);
         if (liveMatches.length === 0) {
           // 间歇空响应（冷启动/抓取失败）不立即清空，保留现有卡片
           emptyLivePollsRef.current += 1;

@@ -1,9 +1,9 @@
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HomeDashboard } from '@/sections/HomeDashboard';
 import { MatchesPage } from '@/pages/MatchesPage';
-import { apiFetch, __resetApiCache } from '@/lib/api-cache';
+import { apiFetch, getCachedValue, __resetApiCache } from '@/lib/api-cache';
 import type { RouteState } from '@/lib/hashRouter';
 
 vi.mock('@/components/custom/MatchDetailModal', () => ({
@@ -93,24 +93,45 @@ describe('shared api-cache across home and matches pages', () => {
 
   const countCalls = (url: string) => fetchMock.mock.calls.filter(([input]) => String(input) === url).length;
 
-  it('home → matches navigation reuses upcoming/results from cache without re-fetching', async () => {
+  it('home → matches navigation reuses cached payloads (incl. short-lived live) without re-fetching', async () => {
     const { unmount } = renderHome();
     // 等首屏把共享端点拉起来
     await waitFor(() => expect(countCalls('/api/matches?limit=40')).toBe(1));
     expect(countCalls('/api/upcoming?limit=20&days=7')).toBe(1);
 
-    const homeCalls = { upcoming: countCalls('/api/upcoming?limit=20&days=7'), matches: countCalls('/api/matches?limit=40') };
+    const homeCalls = {
+      upcoming: countCalls('/api/upcoming?limit=20&days=7'),
+      matches: countCalls('/api/matches?limit=40'),
+      live: countCalls('/api/live-hero'),
+    };
 
     // 卸载首页，挂载比赛页（与真实 hash 路由切换一致：旧组件卸载 + 新组件挂载）
     unmount();
 
     render(<MatchesPage onOpenMatch={vi.fn()} />);
-    // 等比赛页把它的 live-hero 初始请求发出去并完成
-    await waitFor(() => expect(countCalls('/api/live-hero')).toBeGreaterThanOrEqual(2));
+    // 同步初始化从共享缓存读首帧数据：无需等网络就渲染出比赛行
+    await waitFor(() => expect(screen.getByText('Midas Club')).toBeTruthy());
 
-    // 共享端点不应重新请求（缓存命中），live-hero 是实时数据必须重新拉
+    // 共享端点全部命中缓存，0 重新请求：upcoming/results 5min TTL，
+    // live 也有 20s 短缓存（返回页面时立即显示旧比分，后台再刷新）。
     expect(countCalls('/api/upcoming?limit=20&days=7')).toBe(homeCalls.upcoming);
     expect(countCalls('/api/matches?limit=40')).toBe(homeCalls.matches);
+    expect(countCalls('/api/live-hero')).toBe(homeCalls.live);
+  });
+
+  it('matches page keeps upcoming/completed rendered when live-hero request fails', async () => {
+    // 回归：曾因 Promise.all + 单个 catch，live(ttl 0) 失败时整页 setState 全部丢弃，
+    // 从详情页返回后 matches 信息"不见了"。现在各段独立加载，互不影响。
+    const failingLive = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === '/api/live-hero') throw new Error('live down');
+      return createFetchStub()(input);
+    });
+    vi.stubGlobal('fetch', failingLive);
+
+    render(<MatchesPage onOpenMatch={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Midas Club')).toBeTruthy());
+    expect(screen.getByText('Team A')).toBeTruthy();
   });
 
   it('single-flight dedupes concurrent apiFetch calls to the same URL', async () => {
@@ -138,5 +159,21 @@ describe('shared api-cache across home and matches pages', () => {
     await apiFetch('/api/match-page?series_id=1', { ttlMs: 5 * 60 * 1000, cacheEmpty: false, fetchImpl: fetcher });
     await apiFetch('/api/match-page?series_id=1', { ttlMs: 5 * 60 * 1000, cacheEmpty: false, fetchImpl: fetcher });
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('getCachedValue reads cached payload synchronously (page remount first paint)', async () => {
+    // 页面切换 = 旧组件卸载 + 新组件挂载。挂载时 useState 初始化同步读缓存，
+    // 首帧直接渲染旧数据（不闪空），异步 apiFetch 再后台刷新。
+    const fetcher = vi.fn(async () => ({ ok: true, json: async () => ({ value: 7 }) }) as Response);
+    await apiFetch('/api/sync-read', { ttlMs: 60_000, fetchImpl: fetcher });
+    expect(getCachedValue('/api/sync-read')).toEqual({ value: 7 });
+
+    // ttl 0 不写缓存 → 同步读不到
+    await apiFetch('/api/sync-read-0', { ttlMs: 0, fetchImpl: fetcher });
+    expect(getCachedValue('/api/sync-read-0')).toBeUndefined();
+
+    // 缓存被清空后同步读不到
+    __resetApiCache();
+    expect(getCachedValue('/api/sync-read')).toBeUndefined();
   });
 });

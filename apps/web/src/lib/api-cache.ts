@@ -17,6 +17,7 @@ const DEFAULT_TTL_MS = 60_000;
 interface CacheEntry {
   payload: unknown;
   at: number;
+  ttlMs: number;
 }
 
 /** 正在途的 fetch 按 URL 去重。 */
@@ -74,7 +75,7 @@ export async function apiFetch<T = unknown>(
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
     const payload = (await res.json()) as T;
     if (cacheable && !isRetryablePayload(payload) && (options.cacheEmpty !== false || !isEmptyPayload(payload))) {
-      store.set(url, { payload, at: Date.now() });
+      store.set(url, { payload, at: Date.now(), ttlMs });
     }
     return payload;
   })().catch((error) => {
@@ -88,6 +89,18 @@ export async function apiFetch<T = unknown>(
   } finally {
     inflight.delete(url);
   }
+}
+
+/**
+ * 同步读取某 URL 在 TTL 内的缓存 payload（无缓存或已过期 → undefined）。
+ * 组件在 useState 初始化里调用它，切换页面重挂载时首帧直接渲染旧数据，
+ * 再靠异步 apiFetch 后台刷新，用户看不到"先空后满"的重新加载。
+ */
+export function getCachedValue<T = unknown>(url: string): T | undefined {
+  const cached = store.get(url);
+  if (!cached) return undefined;
+  if (Date.now() - cached.at >= cached.ttlMs) return undefined;
+  return cached.payload as T;
 }
 
 /** 测试用：清空缓存与在途请求，避免跨测试串数据。 */
