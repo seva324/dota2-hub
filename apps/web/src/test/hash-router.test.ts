@@ -39,6 +39,22 @@ describe('parseHash', () => {
     });
   });
 
+  it('parses a live detail deep link as its own page', () => {
+    expect(parseHash('#/live/98859')).toEqual({
+      page: 'live',
+      overlay: null,
+      seriesId: '98859',
+    });
+  });
+
+  it('parses a live deep link with encoded id', () => {
+    expect(parseHash('#/live/team%20series%201')).toEqual({
+      page: 'live',
+      overlay: null,
+      seriesId: 'team series 1',
+    });
+  });
+
   it('parses a news detail deep link as its own page', () => {
     expect(parseHash('#/news/hawk-some-story-1')).toEqual({
       page: 'news',
@@ -99,6 +115,15 @@ describe('toHash', () => {
     expect(toHash({ page: 'match', overlay: null, matchId: '7777', slug: 'midas-club-vs-team-resilience' })).toBe(
       '#/match/7777?slug=midas-club-vs-team-resilience',
     );
+  });
+
+  it('serializes the live detail page', () => {
+    expect(toHash({ page: 'live', overlay: null, seriesId: '98859' })).toBe('#/live/98859');
+  });
+
+  it('round-trips a live detail deep link', () => {
+    const parsed = parseHash('#/live/98859');
+    expect(toHash(parsed)).toBe('#/live/98859');
   });
 
   it('serializes a home match overlay', () => {

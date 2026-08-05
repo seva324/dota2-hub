@@ -19,7 +19,7 @@ export function LiveMatchesCarousel({ liveHeroes, onOpenMatch }: {
     radiantScore?: number;
     direScore?: number;
     duration?: number;
-  }>) => void;
+  }>, seriesId?: string) => void;
 }) {
   const [api, setApi] = useState<CarouselApi | null>(null);
   const [selected, setSelected] = useState(0);
@@ -79,7 +79,7 @@ export function LiveMatchesCarousel({ liveHeroes, onOpenMatch }: {
                       direScore: m.team2Score ?? undefined,
                       duration: m.gameTime ?? undefined,
                     }));
-                  onOpenMatch?.(liveMap?.matchId ?? hero.maps?.[0]?.matchId ?? '', maps);
+                  onOpenMatch?.(liveMap?.matchId ?? hero.maps?.[0]?.matchId ?? '', maps, hero.sourceSeriesId ?? undefined);
                 }}
               />
             </CarouselItem>

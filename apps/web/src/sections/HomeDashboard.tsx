@@ -1010,6 +1010,15 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     openOverlay({ type: 'match', matchId: String(numericId) });
   };
 
+  // live 卡片：带 hawk sourceSeriesId 打开 live detail 全屏页；无则回退旧直播弹窗
+  const handleOpenLive = (hero: LiveHeroPayload) => {
+    if (hero.sourceSeriesId) {
+      navigate({ page: 'live', overlay: null, seriesId: String(hero.sourceSeriesId) }, { replace: false });
+      return;
+    }
+    handleOpenMatch(hero.liveMap?.matchId ?? hero.maps?.[0]?.matchId ?? '', buildSeriesMaps(hero));
+  };
+
   const handleOpenTeam = (teamName: string) => {
     openOverlay({ type: 'team', teamName });
   };
@@ -1103,7 +1112,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
                 <LiveMatchCard
                   key={`${hero.leagueName}-${hero.teams?.[0]?.name}-${hero.teams?.[1]?.name}`}
                   hero={hero}
-                  onOpen={() => handleOpenMatch(hero.liveMap?.matchId ?? hero.maps?.[0]?.matchId ?? '', buildSeriesMaps(hero))}
+                  onOpen={() => handleOpenLive(hero)}
                 />
               ))}
             </div>

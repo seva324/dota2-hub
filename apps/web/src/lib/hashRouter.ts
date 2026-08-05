@@ -1,4 +1,4 @@
-export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match';
+export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match' | 'live';
 
 export type OverlayState =
   | { type: 'match'; matchId: string }
@@ -12,6 +12,8 @@ export interface RouteState {
   matchId?: string;
   /** 仅 page==='match'：DLTV 详情页 slug（/matches/<id>/<slug>），用于让 maps 非空 */
   slug?: string;
+  /** 仅 page==='live'：hawk.live 系列赛 ID */
+  seriesId?: string;
   /** 仅 page==='news'：单条新闻详情 ID */
   newsId?: string;
 }
@@ -57,6 +59,10 @@ export function parseHash(hash: string): RouteState {
         slug: query.get('slug') ?? undefined,
       };
     }
+    case 'live': {
+      if (!second) return { page: 'home', overlay: null };
+      return { page: 'live', overlay: null, seriesId: decodeURIComponent(second) };
+    }
     case 'team': {
       if (!second) return { page: 'home', overlay: null };
       return { page: 'home', overlay: { type: 'team', teamName: decodeURIComponent(second) } };
@@ -78,6 +84,9 @@ export function toHash(route: RouteState): string {
   if (route.page === 'match' && route.matchId) {
     const base = `#/match/${encodeURIComponent(route.matchId)}`;
     return route.slug ? `${base}?slug=${encodeURIComponent(route.slug)}` : base;
+  }
+  if (route.page === 'live' && route.seriesId) {
+    return `#/live/${encodeURIComponent(route.seriesId)}`;
   }
   if (route.overlay) {
     switch (route.overlay.type) {
