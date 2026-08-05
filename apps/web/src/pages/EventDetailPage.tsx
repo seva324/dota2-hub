@@ -232,6 +232,7 @@ function HeroSection({ payload }: { payload: EventDetailPayload }) {
 /* ------------------------------------------------------------------ */
 
 function AboutSection({ paragraphs }: { paragraphs?: string[] }) {
+  const [expanded, setExpanded] = useState(false);
   if (!paragraphs || paragraphs.length === 0) return null;
   return (
     <section>
@@ -240,7 +241,30 @@ function AboutSection({ paragraphs }: { paragraphs?: string[] }) {
         赛事简介
       </h2>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <p className="whitespace-pre-line text-[15px] leading-7 text-slate-300">{paragraphs.join('\n')}</p>
+        <div className={`whitespace-pre-line text-[15px] leading-7 text-slate-300 ${expanded ? '' : 'max-h-64 overflow-hidden'}`}>
+          <p>{paragraphs.join('\n')}</p>
+        </div>
+        {!expanded ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
+            style={{ color: design.blue }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+            展开赛事详情
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
+            style={{ color: design.blue }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg>
+            收起
+          </button>
+        )}
       </div>
     </section>
   );
@@ -284,26 +308,47 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
   const liveMatches = (payload.matches?.matches || []).filter((m) => m.isLive);
   const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive);
   const finished = payload.matches?.finishedMatches || [];
-  const hasAny = liveMatches.length > 0 || upcomingMatches.length > 0 || finished.length > 0;
-  if (!hasAny) return null;
+  const [finishedVisible, setFinishedVisible] = useState(10);
+  const hasLive = liveMatches.length > 0;
+  const hasUpcoming = upcomingMatches.length > 0;
+  const hasFinished = finished.length > 0;
+  if (!hasLive && !hasUpcoming && !hasFinished) return null;
 
   return (
-    <section className="space-y-8">
-      <div>
-        <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-          <Zap className="size-5" style={{ color: design.red }} />
-          关联比赛
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {liveMatches.map((m) => <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live />)}
-          {upcomingMatches.map((m) => <MatchCard key={`${m.left}-${m.right}`} match={m} />)}
-        </div>
-      </div>
-      {finished.length > 0 ? (
+    <section className="space-y-10">
+      {hasLive ? (
         <div>
-          <h3 className="mb-3 text-base font-bold text-slate-200">已结束比赛</h3>
+          <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
+            <Zap className="size-5" style={{ color: design.red }} />
+            关联直播
+            <span className="text-sm font-bold text-slate-500">Live Now</span>
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {liveMatches.map((m) => <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live />)}
+          </div>
+        </div>
+      ) : null}
+      {hasUpcoming ? (
+        <div>
+          <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
+            <Zap className="size-5" style={{ color: design.blue }} />
+            即将开赛
+            <span className="text-sm font-bold text-slate-500">Upcoming</span>
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {upcomingMatches.map((m) => <MatchCard key={`${m.left}-${m.right}`} match={m} />)}
+          </div>
+        </div>
+      ) : null}
+      {hasFinished ? (
+        <div>
+          <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
+            <TrendingUp className="size-5 text-slate-400" />
+            已结束比赛
+            <span className="text-sm font-bold text-slate-500">Finished</span>
+          </h2>
           <div className="overflow-hidden rounded-2xl border border-white/10">
-            {finished.slice(0, 8).map((m, index) => (
+            {finished.slice(0, finishedVisible).map((m, index) => (
               <div
                 key={`${m.left}-${m.right}-${index}`}
                 className="flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.02] px-4 py-2.5 last:border-b-0"
@@ -316,6 +361,15 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
               </div>
             ))}
           </div>
+          {finishedVisible < finished.length ? (
+            <button
+              type="button"
+              onClick={() => setFinishedVisible((v) => v + 10)}
+              className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/[0.06]"
+            >
+              加载更多比赛（剩余 {finished.length - finishedVisible} 场）
+            </button>
+          ) : null}
         </div>
       ) : null}
     </section>
@@ -533,6 +587,25 @@ function ParticipantsSection({ participants }: { participants?: Participant[] })
 }
 
 /* ------------------------------------------------------------------ */
+/* 区块：赛事数据                                                       */
+/* ------------------------------------------------------------------ */
+
+function StatsSection() {
+  return (
+    <section>
+      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
+        <TrendingUp className="size-5" style={{ color: design.blue }} />
+        赛事数据
+        <span className="text-sm font-bold text-slate-500">Event Stats</span>
+      </h2>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-10 text-center">
+        <p className="text-sm text-slate-400">该赛事暂未发布聚合统计数据。</p>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* 页面主体                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -607,6 +680,7 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
           <GroupStageSection groups={payload.groups} />
           <PlayoffsSection rounds={payload.playoffRounds} />
           <PrizePoolSection prizes={payload.prizePool} />
+          <StatsSection />
           <ParticipantsSection participants={payload.participants} />
           {payload.source ? (
             <p className="text-center text-[11px] text-slate-600">数据来源 DLTV · {payload.source}</p>

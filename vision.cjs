@@ -22,7 +22,7 @@ try { require("dotenv").config({ path: path.resolve(__dirname, ".env") }); } cat
 
 const BASE_URL = process.env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com/compatible-mode/v1";
 const API_KEY = process.env.DASHSCOPE_API_KEY || "sk-xxx";
-const MODEL = process.env.VISION_MODEL || "qwen3.7-flash-2026-07-15";
+const MODEL = process.env.VISION_MODEL || "qwen3.7-plus-2026-05-26";
 
 function parseArgs() {
   const argv = process.argv.slice(2);
