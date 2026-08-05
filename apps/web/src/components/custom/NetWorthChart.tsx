@@ -6,7 +6,7 @@ const design = {
   zero: 'rgba(255,255,255,0.22)',
   grid: 'rgba(255,255,255,0.06)',
   line: 'rgba(255,255,255,0.85)',
-  label: '#7a8ba1',
+  label: '#8ea1b7',
 };
 
 const W = 620;
@@ -36,7 +36,7 @@ function formatAxis(v: number): string {
 /** 经济优势曲线：states 快照 → 净财富优势折线（0 轴上方 = radiant 领先），带纵轴经济刻度。 */
 export function NetWorthChart({ states }: { states: LiveState[] }) {
   if (!states.length) {
-    return <div className="py-8 text-center text-xs" style={{ color: '#7a8ba1' }}>暂无经济数据</div>;
+    return <div className="py-8 text-center text-xs" style={{ color: '#8ea1b7' }}>暂无经济数据</div>;
   }
 
   const maxT = states.reduce((max, s) => Math.max(max, s.gameTime), 0) || 1;
@@ -66,6 +66,9 @@ export function NetWorthChart({ states }: { states: LiveState[] }) {
     </g>
   ));
 
+  const zeroPct = `${((midY / H) * 100).toFixed(2)}%`;
+  const leadColor = last.radiantNetWorthAdvantage >= 0 ? design.radiant : design.dire;
+
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-[11px] font-semibold">
@@ -76,20 +79,20 @@ export function NetWorthChart({ states }: { states: LiveState[] }) {
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="净财富优势曲线">
         <defs>
-          <linearGradient id="nw-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={design.radiant} stopOpacity="0.55" />
-            <stop offset="50%" stopColor={design.radiant} stopOpacity="0.08" />
-            <stop offset="50%" stopColor={design.dire} stopOpacity="0.08" />
-            <stop offset="100%" stopColor={design.dire} stopOpacity="0.55" />
+          <linearGradient id="nw-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={H}>
+            <stop offset="0%" stopColor={design.radiant} stopOpacity="0.5" />
+            <stop offset={zeroPct} stopColor={design.radiant} stopOpacity="0.03" />
+            <stop offset={zeroPct} stopColor={design.dire} stopOpacity="0.03" />
+            <stop offset="100%" stopColor={design.dire} stopOpacity="0.5" />
           </linearGradient>
         </defs>
 
         {gridLines}
         {areaPath && <path d={areaPath} fill="url(#nw-grad)" />}
-        {points.length > 1 && <polyline points={points.join(' ')} fill="none" stroke={design.line} strokeWidth="1.6" strokeLinejoin="round" />}
+        {points.length > 1 && <polyline points={points.join(' ')} fill="none" stroke={design.line} strokeWidth="1.8" strokeLinejoin="round" />}
 
         {/* 当前点 */}
-        <circle cx={x(last.gameTime)} cy={y(last.radiantNetWorthAdvantage)} r="3.5" fill={last.radiantNetWorthAdvantage >= 0 ? design.radiant : design.dire} stroke="#fff" strokeWidth="1" />
+        <circle cx={x(last.gameTime)} cy={y(last.radiantNetWorthAdvantage)} r="4.5" fill={leadColor} stroke="#fff" strokeWidth="1.5" />
 
         {/* 首末时间刻度 */}
         <text x={PL} y={H - 4} fontSize="9" fill={design.label}>{formatTime(0)}</text>

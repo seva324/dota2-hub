@@ -7,7 +7,7 @@ const design = {
   radiant: '#34d399',
   dire: '#ff3b30',
   surface: '#111a27',
-  faint: '#7a8ba1',
+  faint: '#8ea1b7',
   fg: '#eaf2fb',
   border: 'rgba(148,178,214,0.14)',
   gold: '#facc15',
@@ -39,7 +39,7 @@ function TeamCell({ team, side, lose }: {
       </span>
       <span className="min-w-0">
         <span className="block truncate text-xs font-bold" style={{ color: lose ? design.faint : design.fg }}>{name}</span>
-        <span className="block text-[9px] font-bold uppercase tracking-wider" style={{ color: side === 'Radiant' ? design.radiant : design.dire, opacity: lose ? 0.5 : 1 }}>
+        <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: side === 'Radiant' ? design.radiant : design.dire, opacity: lose ? 0.5 : 1 }}>
           {side}
         </span>
       </span>
@@ -93,7 +93,7 @@ export function MapHistoryCards({ maps, team1, team2 }: {
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
               <TeamCell team={radiant} side="Radiant" lose={radiantLose} />
 
-              <div className="flex items-baseline gap-1.5 font-black text-lg" style={{ fontFamily: "'Exo2', sans-serif" }}>
+              <div className="flex items-baseline gap-1.5 font-black text-lg tabular-nums" style={{ fontFamily: "'Exo2', sans-serif" }}>
                 <span style={{ color: radiantLose ? design.faint : '#fff' }}>{radiantScore ?? '—'}</span>
                 <span className="text-xs font-bold" style={{ color: design.faint }}>:</span>
                 <span style={{ color: direLose ? design.faint : '#fff' }}>{direScore ?? '—'}</span>
