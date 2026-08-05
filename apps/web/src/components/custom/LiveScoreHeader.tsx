@@ -11,7 +11,7 @@ const design = {
   pip: '#facc15',
   gold: '#facc15',
   text: '#93a4b8',
-  faint: '#7a8ba1',
+  faint: '#8ea1b7',
   border: 'rgba(148,178,214,0.14)',
 };
 
@@ -130,7 +130,7 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap }: {
               {map.status === 'live' && (
                 <span className="size-1.5 animate-pulse rounded-full" style={{ backgroundColor: design.dire }} />
               )}
-              {finishedScore && <span className="text-[10px] font-semibold" style={{ color: isActive ? 'rgba(250,204,21,0.75)' : design.faint }}>{finishedScore}</span>}
+              {finishedScore && <span className="text-[10px] font-semibold tabular-nums" style={{ color: isActive ? 'rgba(250,204,21,0.75)' : design.text }}>{finishedScore}</span>}
             </button>
           );
         })}
@@ -143,7 +143,7 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap }: {
         {/* 中央比分 */}
         <div className="flex flex-col items-center px-2">
           <span className="mb-1 text-[11px] text-slate-500">{formatDate(payload.startAt)}</span>
-          <div className="flex items-baseline gap-2 font-black leading-none text-white" style={{ fontFamily: "'Exo2', sans-serif" }}>
+          <div className="flex items-baseline gap-2 font-black leading-none text-white tabular-nums" style={{ fontFamily: "'Exo2', sans-serif" }}>
             <span className="text-4xl md:text-5xl">{radiantScore ?? '—'}</span>
             <span className="text-xl font-bold text-slate-500">:</span>
             <span className="text-4xl md:text-5xl">{direScore ?? '—'}</span>
@@ -173,10 +173,11 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap }: {
       {isLive && (
         <div
           className="mt-4 flex items-center gap-3 rounded-xl px-3.5 py-2.5"
-          style={{ backgroundColor: 'rgba(255,59,48,0.14)', border: '1px solid rgba(255,59,48,0.28)' }}
+          style={{ backgroundColor: design.surface, border: `1px solid ${design.border}` }}
         >
+          <span className="size-1.5 animate-pulse rounded-full" style={{ backgroundColor: design.dire, boxShadow: `0 0 8px ${design.dire}88` }} />
           <span className="text-xs font-bold text-white">第 {activeMap.number} 局 · 进行中</span>
-          <span className="text-[13px] font-bold text-white" style={{ fontFamily: "'Exo2', sans-serif", letterSpacing: '0.03em' }}>
+          <span className="text-[13px] font-bold text-white tabular-nums" style={{ fontFamily: "'Exo2', sans-serif", letterSpacing: '0.03em' }}>
             {formatClock(activeMap.gameTime)}
           </span>
           {leadTeam != null && leadAbs != null && (
