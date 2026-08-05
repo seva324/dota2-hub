@@ -12,7 +12,7 @@ import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/Tour
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { slugFromMatchUrl } from '@/lib/matchUrl';
-import { apiFetch } from '@/lib/api-cache';
+import { apiFetch, getCachedValue } from '@/lib/api-cache';
 import type { RouteState } from '@/lib/hashRouter';
 
 const nowTs = () => Math.floor(Date.now() / 1000);
@@ -20,14 +20,20 @@ const LIVE_REFRESH_INTERVAL_MS = 30_000;
 // 冷启动/抓取失败时 API 可能间歇返回空：连续 2 次空轮询才清空 live 卡片，
 // 避免"加载出来又没了"的闪烁。与 HeroSection 的容忍逻辑对齐。
 const LIVE_EMPTY_GRACE_POLLS = 2;
+// live 短缓存：小于轮询间隔，轮询仍每次真刷新比分；从详情页返回时 20s 内
+// 命中缓存立即显示，不闪空、不重拉。与比赛页共用同一份缓存（同 URL 精确键）。
+const LIVE_CACHE_TTL_MS = 20_000;
 // 与比赛页共用同一份缓存：URL 必须完全一致才能命中（精确键）。
-// live-hero 是实时数据，30s 轮询不缓存（ttl 0），只做并发去重。
 const UPCOMING_API_URL = '/api/upcoming?limit=20&days=7';
 const RESULTS_API_URL = '/api/matches?limit=40';
 const LIVE_API_URL = '/api/live-hero';
 
 /** live-hero API 响应：liveMatches 数组（常规）或 live 单场（旧格式兼容）。 */
 type LiveHeroApi = { liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload };
+
+function normalizeLiveHeroes(data: LiveHeroApi | undefined): LiveHeroPayload[] {
+  return Array.isArray(data?.liveMatches) ? data.liveMatches : data?.live ? [data.live] : [];
+}
 
 const teamLogoMap: Record<string, string> = {
   XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
@@ -776,9 +782,21 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
   const [playerModel, setPlayerModel] = useState<PlayerFlyoutModel | null>(null);
   const emptyLivePollsRef = useRef(0);
 
-  const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
-  const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
-  const [results, setResults] = useState<FinishedSeries[]>([]);
+  // useState 延迟初始化从共享缓存同步读取：从详情页返回时首帧即有数据，
+  // 不闪空态/fallback；随后 useEffect 异步刷新（命中 TTL 内缓存则 0 网络请求）。
+  const [upcoming, setUpcoming] = useState<UpcomingMatch[]>(() => {
+    const cached = getCachedValue<{ upcoming: UpcomingMatch[] }>(UPCOMING_API_URL);
+    return Array.isArray(cached?.upcoming) ? cached.upcoming : [];
+  });
+  const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>(() =>
+    normalizeLiveHeroes(getCachedValue<LiveHeroApi>(LIVE_API_URL)));
+  const [results, setResults] = useState<FinishedSeries[]>(() => {
+    const cached = getCachedValue<FinishedSeries[] | { matches: FinishedSeries[] }>(RESULTS_API_URL);
+    const list = Array.isArray(cached) ? cached : (cached?.matches || []);
+    return list
+      .filter((m) => m.radiant_team_name && m.dire_team_name)
+      .sort((a, b) => (b.start_time ?? 0) - (a.start_time ?? 0));
+  });
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<Array<{
     id: string;
@@ -788,25 +806,26 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     published_at: number;
     category?: string;
     source?: string;
-  }>>([]);
-  const [rankings, setRankings] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>([]);
+  }>>(() => (getCachedValue<NewsItem[]>('/api/news?limit=4') ?? []).slice(0, 4));
+  const [rankings, setRankings] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>(() => {
+    const cached = getCachedValue<{ teams?: Array<{ rank: number; name: string; logo: string | null; points: number }> }>('/api/ept-ranking');
+    return Array.isArray(cached?.teams) ? cached.teams.slice(0, 5) : [];
+  });
   const [topPlayers, setTopPlayers] = useState<TopPlayer[]>(hotPlayersSeed);
-  const [primaryLeagues, setPrimaryLeagues] = useState<PrimaryLeague[]>([]);
+  const [primaryLeagues, setPrimaryLeagues] = useState<PrimaryLeague[]>(() => {
+    const cached = getCachedValue<{ tournaments?: PrimaryLeague[] }>('/api/primary-leagues');
+    return Array.isArray(cached?.tournaments) ? cached.tournaments : [];
+  });
 
   useEffect(() => {
     let cancelled = false;
 
     const loadLive = async () => {
       try {
-        // live-hero 是实时数据：ttl 0 不缓存，只做并发去重（single-flight）。
-        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: 0 });
+        // live 有 20s 短缓存：首次/过期后真请求；返回页面时直接命中缓存立即显示。
+        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: LIVE_CACHE_TTL_MS });
         if (cancelled) return;
-        const liveMatches = Array.isArray(data?.liveMatches)
-          ? data.liveMatches
-          : data?.live
-            ? [data.live]
-            : [];
-        setLiveHeroes(liveMatches);
+        setLiveHeroes(normalizeLiveHeroes(data));
       } catch { /* 保留现有数据 */ }
     };
 
@@ -904,14 +923,11 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     let cancelled = false;
     const refreshLive = async () => {
       try {
-        // 与 loadLive 同用 ttl 0：只做并发去重，30s 轮询每次真正刷新比分。
-        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: 0 });
+        // 短缓存（20s < 30s 轮询间隔）：轮询照常每次真刷新比分；
+        // 若轮询中途被中断（如切页），缓存里仍是新鲜比分，返回时直接命中。
+        const data = await apiFetch<LiveHeroApi>(LIVE_API_URL, { ttlMs: LIVE_CACHE_TTL_MS });
         if (cancelled) return;
-        const liveMatches = Array.isArray(data?.liveMatches)
-          ? data.liveMatches
-          : data?.live
-            ? [data.live]
-            : [];
+        const liveMatches = normalizeLiveHeroes(data);
         if (liveMatches.length === 0) {
           // 间歇空响应（冷启动/抓取失败）不立即清空，保留现有卡片
           emptyLivePollsRef.current += 1;
