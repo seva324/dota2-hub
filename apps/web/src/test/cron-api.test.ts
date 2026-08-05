@@ -10,6 +10,7 @@ const upsertLiquipediaTournamentMetadataMock = vi.fn();
 const syncNewsToDbMock = vi.fn();
 const translateNewsBackfillMock = vi.fn();
 const warmDltvCachesMock = vi.fn();
+const refreshEventsCacheMock = vi.fn();
 const persistLiveHeroSnapshotsMock = vi.fn();
 
 vi.mock('@neondatabase/serverless', () => ({
@@ -40,6 +41,10 @@ vi.mock('../../../../api/news.js', () => ({
 
 vi.mock('../../../../lib/server/dltv-warm.js', () => ({
   warmDltvCaches: warmDltvCachesMock,
+}));
+
+vi.mock('../../../../api/events.js', () => ({
+  refreshEventsCache: refreshEventsCacheMock,
 }));
 
 vi.mock('../../../../lib/server/live-hero-service.js', () => ({
@@ -86,6 +91,8 @@ describe('/api/cron incremental refresh actions', () => {
     syncNewsToDbMock.mockReset();
     translateNewsBackfillMock.mockReset();
     warmDltvCachesMock.mockReset();
+    refreshEventsCacheMock.mockReset();
+    refreshEventsCacheMock.mockResolvedValue({ ok: true, ongoing: 2, upcoming: 5, finished: 3 });
 
     warmPlayerProfileCacheMock.mockResolvedValue({ selected: 12, refreshed: 12, failed: 0, mode: 'incremental' });
     warmTeamFlyoutCacheMock.mockResolvedValue({ selected: 8, refreshed: 8, failed: 0, mode: 'incremental' });
@@ -103,7 +110,7 @@ describe('/api/cron incremental refresh actions', () => {
     persistLiveHeroSnapshotsMock.mockResolvedValue({ live: null, liveSnapshots: [], ended: [], missed: [] });
   });
 
-  it('routes warm-dltv to the scheduled DLTV warmer', async () => {
+  it('routes warm-dltv to the scheduled DLTV warmer and warms events to Neon', async () => {
     const { default: handler } = await import('../../../../api/cron.js');
     const req = {
       method: 'POST',
@@ -115,7 +122,12 @@ describe('/api/cron incremental refresh actions', () => {
 
     expect(res.statusCode).toBe(200);
     expect(warmDltvCachesMock).toHaveBeenCalledTimes(1);
-    expect(res.payload).toMatchObject({ ok: true, action: 'warm-dltv', result: { lists: { live: 1 } } });
+    expect(refreshEventsCacheMock).toHaveBeenCalledTimes(1);
+    expect(res.payload).toMatchObject({
+      ok: true,
+      action: 'warm-dltv',
+      result: { lists: { live: 1 }, events: { ok: true, ongoing: 2 } },
+    });
   });
 
   it('routes persist-live-hero to the low-frequency live snapshot persister', async () => {

@@ -442,9 +442,6 @@ export function TournamentsPage() {
             Tournaments
           </span>
         </h1>
-        <p className="relative mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-slate-200">
-          从正在进行的高强度对决，到即将开幕的顶级盛宴，再到已经载入史册的冠军荣耀——全球 Dota 2 赛事一站尽览。
-        </p>
         <div className="relative mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
           <span className="inline-flex items-center gap-2 text-slate-300">
             <span className="size-1.5 rounded-full" style={{ backgroundColor: design.red }} />
