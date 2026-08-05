@@ -20,7 +20,7 @@ import { readDltvCache, writeDltvCache, tryAcquireDltvCacheLock } from '../lib/s
 import { parseDltvEventDetailPage } from '../lib/server/dltv-event-detail-parser.js';
 
 const DLTV_EVENT_BASE = 'https://dltv.org/events/';
-const CACHE_CONTROL = 'public, max-age=120, s-maxage=120, stale-while-revalidate=240';
+const CACHE_CONTROL = 'public, max-age=0, s-maxage=0, must-revalidate';
 const NEON_CACHE_PREFIX = 'dltv:event-detail:v2:';
 const NEON_TTL_MS = 15 * 60 * 1000;
 const NEON_STALE_MAX_MS = 6 * 60 * 60 * 1000;

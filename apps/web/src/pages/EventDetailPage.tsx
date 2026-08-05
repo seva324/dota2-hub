@@ -558,7 +558,9 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
     setLoading(true);
     setError('');
     setPayload(null);
-    apiFetch<EventDetailPayload>(`/api/event-detail?slug=${encodeURIComponent(slug)}`, {
+    // cache-buster：按 5 分钟桶翻转，绕开 CDN 对精确 URL 的陈旧缓存（详情数据易变）。
+    const cacheBucket = Math.floor(Date.now() / (5 * 60 * 1000));
+    apiFetch<EventDetailPayload>(`/api/event-detail?slug=${encodeURIComponent(slug)}&_cb=${cacheBucket}`, {
       ttlMs: 5 * 60 * 1000,
       cacheEmpty: false,
     })
