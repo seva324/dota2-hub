@@ -1,10 +1,12 @@
 /**
  * Match Page API
  * 单个 DLTV 系列赛详情（#/match/<seriesId> 深链的数据源）。
- * 数据全部来自 dltv.org 比赛详情页内嵌的 series_item JSON。
+ * 赛程元数据来自 dltv.org 比赛详情页内嵌的 series_item JSON；
+ * 两队统计对比来自 /api/v1/series/{id}/lineups/teams（warm cron 预热到 Neon）。
  */
 
 import { getDltvMatchPage } from '../lib/server/dltv-match-page-service.js';
+import { getDltvSeriesStats } from '../lib/server/dltv-series-stats.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 // match-page 现在由预热 cron 写 Neon（6h 缓存），数据更静态；CDN 边缘缓存加长到 6h，
@@ -60,6 +62,110 @@ function mapPlayer(row, playersMeta, req) {
   };
 }
 
+/** 赛前阵容里的选手（带位置 + 高亮数据 + 签名英雄），图片走 /api/asset-image 代理。 */
+function mapLineupPlayer(player, req) {
+  if (!player) return null;
+  return {
+    id: player.id ?? null,
+    steamId: player.steamId ?? null,
+    name: player.name ?? null,
+    image: proxyUrl(player.image, req),
+    rank: player.rank ?? null,
+    role: player.role ?? null,
+    roleLabel: player.roleLabel ?? null,
+    winRate: player.winRate ?? null,
+    maps: player.maps ?? null,
+    kda: player.kda ?? null,
+    avgGpm: player.avgGpm ?? null,
+    avgXpm: player.avgXpm ?? null,
+    avgDmg: player.avgDmg ?? null,
+    topHeroes: (player.topHeroes || []).map((hero) => ({
+      heroId: hero.heroId ?? null,
+      heroTitle: hero.heroTitle ?? null,
+      heroImage: proxyUrl(hero.heroImage ?? hero.heroIcon, req),
+      maps: hero.maps ?? null,
+      wins: hero.wins ?? null,
+      winRate: hero.winRate ?? null,
+    })),
+  };
+}
+
+function mapEvent(event, req) {
+  if (!event) return null;
+  return {
+    name: event.name ?? null,
+    tag: event.tag ?? null,
+    countryId: event.countryId ?? null,
+    country: event.country
+      ? {
+          name: event.country.name ?? null,
+          code: event.country.code ?? null,
+          emoji: event.country.emoji ?? null,
+          flag: proxyUrl(event.country.flag, req),
+        }
+      : null,
+    startDate: event.startDate ?? null,
+    endDate: event.endDate ?? null,
+    tier: event.tier ?? null,
+    prizePool: event.prizePool ?? null,
+    twitchLink: event.twitchLink ?? null,
+    bracketsLink: event.bracketsLink ?? null,
+    image: proxyUrl(event.image, req),
+  };
+}
+
+function mapStreams(streams) {
+  return (streams || []).map((stream) => ({
+    platform: stream.platform ?? null,
+    url: stream.url ?? null,
+    channelTitle: stream.channelTitle ?? null,
+    isLive: Boolean(stream.isLive),
+  }));
+}
+
+/** 单条统计行（队伍总览或按英雄）。 */
+function mapStatRow(row) {
+  if (!row) return null;
+  return {
+    maps: row.maps ?? null,
+    wins: row.wins ?? null,
+    winRate: row.winRate ?? null,
+    fbRate: row.fbRate ?? null,
+    f10Rate: row.f10Rate ?? null,
+    winFbRate: row.winFbRate ?? null,
+    winF10Rate: row.winF10Rate ?? null,
+    avgKills: row.avgKills ?? null,
+    avgDeaths: row.avgDeaths ?? null,
+    avgAssists: row.avgAssists ?? null,
+    avgTime: row.avgTime ?? null,
+  };
+}
+
+/** 把某队的统计（总体 + 签名英雄）映射进 payload，hero 名称/图从 stats.heroes 字典解析。 */
+function mapTeamStats(stats, teamId, req) {
+  const team = stats?.teams?.[String(teamId)];
+  if (!team) return null;
+  const heroMeta = stats.heroes || {};
+  return {
+    overall: mapStatRow(team.overall),
+    heroes: (team.heroes || [])
+      .map((row) => {
+        const hero = heroMeta[String(row.heroId)] || {};
+        return {
+          heroId: row.heroId,
+          heroTitle: hero.title ?? null,
+          heroImage: proxyUrl(hero.image ?? null, req),
+          maps: row.maps,
+          wins: row.wins,
+          winRate: row.winRate,
+        };
+      })
+      .filter((hero) => hero.heroId != null)
+      .sort((a, b) => (b.maps ?? 0) - (a.maps ?? 0))
+      .slice(0, 5),
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -77,7 +183,13 @@ export default async function handler(req, res) {
   const slug = String(req.query.slug || '').trim() || undefined;
 
   try {
-    const { series, source } = await getDltvMatchPage({ seriesId, slug });
+    // 元数据（series_item）与统计（lineups/teams）并行拉取；统计是 best-effort，
+    // 失败（null）时 payload 照常返回，视图隐藏对比区块。
+    const [{ series, source }, statsResult] = await Promise.all([
+      getDltvMatchPage({ seriesId, slug }),
+      getDltvSeriesStats({ seriesId }),
+    ]);
+    const stats = statsResult?.stats || null;
 
     // 真冷启动抓取超时/失败 → 返回 200 + source:'timeout'，绝不 404：
     // 前端看到 timeout 会自动重试，且底层抓取仍在后台跑，重试大概率命中内存缓存。
@@ -96,6 +208,12 @@ export default async function handler(req, res) {
       startTime: series.startTime,
       radiantWins: series.radiantWins,
       direWins: series.direWins,
+      // 赛前（upcoming）区块：未开赛时 maps 为空，前端据此渲染详情页。
+      status: series.status ?? null,
+      stage: series.stage ?? null,
+      eventFormat: series.eventFormat ?? null,
+      event: mapEvent(series.event, req),
+      streams: mapStreams(series.streams),
       teams: {
         radiant: {
           id: series.radiantTeam?.id ?? null,
@@ -103,6 +221,13 @@ export default async function handler(req, res) {
           tag: series.radiantTeam?.tag ?? null,
           logo: proxyUrl(series.radiantTeam?.logo, req),
           logoDark: proxyUrl(series.radiantTeam?.logoDark, req),
+          rank: series.radiantTeam?.rank ?? null,
+          winRate: series.radiantTeam?.winRate ?? null,
+          fbRate: series.radiantTeam?.fbRate ?? null,
+          f10Rate: series.radiantTeam?.f10Rate ?? null,
+          mapsTotal: series.radiantTeam?.mapsTotal ?? null,
+          players: (series.radiantTeam?.players || []).map((player) => mapLineupPlayer(player, req)).filter(Boolean),
+          stats: mapTeamStats(stats, series.radiantTeam?.id, req),
         },
         dire: {
           id: series.direTeam?.id ?? null,
@@ -110,6 +235,13 @@ export default async function handler(req, res) {
           tag: series.direTeam?.tag ?? null,
           logo: proxyUrl(series.direTeam?.logo, req),
           logoDark: proxyUrl(series.direTeam?.logoDark, req),
+          rank: series.direTeam?.rank ?? null,
+          winRate: series.direTeam?.winRate ?? null,
+          fbRate: series.direTeam?.fbRate ?? null,
+          f10Rate: series.direTeam?.f10Rate ?? null,
+          mapsTotal: series.direTeam?.mapsTotal ?? null,
+          players: (series.direTeam?.players || []).map((player) => mapLineupPlayer(player, req)).filter(Boolean),
+          stats: mapTeamStats(stats, series.direTeam?.id, req),
         },
       },
       maps: (() => {

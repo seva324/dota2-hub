@@ -130,4 +130,13 @@ describe('shared api-cache across home and matches pages', () => {
     await apiFetch('/api/live-test', { ttlMs: 0, fetchImpl: fetcher });
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+
+  it('does not cache retryable timeout payloads so auto-retry re-fetches', async () => {
+    // 回归：match-page 冷启动超时返回 source:'timeout'，若被缓存，SeriesMatchPage 的
+    // 2.5s 自动重试会命中旧缓存，永远拿不到后台抓取完成后的数据。
+    const fetcher = vi.fn(async () => ({ ok: true, json: async () => ({ seriesId: 1, source: 'timeout', maps: [] }) }) as Response);
+    await apiFetch('/api/match-page?series_id=1', { ttlMs: 5 * 60 * 1000, cacheEmpty: false, fetchImpl: fetcher });
+    await apiFetch('/api/match-page?series_id=1', { ttlMs: 5 * 60 * 1000, cacheEmpty: false, fetchImpl: fetcher });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
 });

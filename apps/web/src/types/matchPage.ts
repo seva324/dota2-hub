@@ -1,9 +1,98 @@
+export interface SeriesCountryInfo {
+  name: string | null;
+  code: string | null;
+  emoji: string | null;
+  flag: string | null;
+}
+
+export interface SeriesTeamStatRow {
+  maps: number | null;
+  wins: number | null;
+  winRate: number | null;
+  fbRate: number | null;
+  f10Rate: number | null;
+  winFbRate: number | null;
+  winF10Rate: number | null;
+  avgKills: number | null;
+  avgDeaths: number | null;
+  avgAssists: number | null;
+  avgTime: number | null;
+}
+
+export interface SeriesHeroStat {
+  heroId: number | null;
+  heroTitle: string | null;
+  heroImage: string | null;
+  maps: number | null;
+  wins: number | null;
+  winRate: number | null;
+}
+
+export interface SeriesTeamStats {
+  overall: SeriesTeamStatRow | null;
+  heroes: SeriesHeroStat[];
+}
+
 export interface SeriesTeamInfo {
   id: number | null;
   name: string | null;
   tag: string | null;
   logo: string | null;
   logoDark: string | null;
+  rank: number | null;
+  winRate: string | null;
+  fbRate: string | null;
+  f10Rate: string | null;
+  mapsTotal: number | null;
+  players: SeriesLineupPlayer[];
+  stats: SeriesTeamStats | null;
+}
+
+export interface SeriesTopHero {
+  heroId: number | null;
+  heroTitle: string | null;
+  heroImage: string | null;
+  maps: number | null;
+  wins: number | null;
+  winRate: string | null;
+}
+
+export interface SeriesLineupPlayer {
+  id: number | null;
+  steamId: string | null;
+  name: string | null;
+  image: string | null;
+  rank: number | null;
+  role: number | null;
+  roleLabel: string | null;
+  winRate: string | null;
+  maps: number | null;
+  kda: string | null;
+  avgGpm: string | null;
+  avgXpm: string | null;
+  avgDmg: string | null;
+  topHeroes: SeriesTopHero[];
+}
+
+export interface SeriesEventInfo {
+  name: string | null;
+  tag: string | null;
+  countryId: number | null;
+  country: SeriesCountryInfo | null;
+  startDate: string | null;
+  endDate: string | null;
+  tier: number | null;
+  prizePool: number | null;
+  twitchLink: string | null;
+  bracketsLink: string | null;
+  image: string | null;
+}
+
+export interface SeriesStream {
+  platform: string | null;
+  url: string | null;
+  channelTitle: string | null;
+  isLive: boolean;
 }
 
 export interface SeriesPlayerRow {
@@ -63,6 +152,11 @@ export interface MatchPagePayload {
   startTime: number | null;
   radiantWins: number;
   direWins: number;
+  status?: number | null;
+  stage?: string | null;
+  eventFormat?: string | null;
+  event?: SeriesEventInfo | null;
+  streams?: SeriesStream[];
   source?: 'cache' | 'stale' | 'dltv' | 'timeout';
   teams: {
     radiant: SeriesTeamInfo;

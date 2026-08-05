@@ -120,6 +120,7 @@ function mergePlayerModel(fallback: PlayerFlyoutModel, incoming: PlayerFlyoutMod
 interface UpcomingMatch {
   id?: string | number;
   match_id?: string | number;
+  series_id?: string | number | null;
   start_time: number;
   series_type?: string | null;
   radiant_team_id?: string | null;
@@ -130,6 +131,7 @@ interface UpcomingMatch {
   dire_team_logo?: string | null;
   tournament_name?: string | null;
   tournament_name_cn?: string | null;
+  match_url?: string | null;
 }
 
 interface FinishedSeries {
@@ -1038,7 +1040,11 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     return scheduleUpcoming.map((match) => ({
       match,
       isLive: match.start_time <= nowTs(),
-      onClick: () => handleOpenMatch(match.match_id || match.id || ''),
+      onClick: () => handleOpenMatch(
+        match.series_id ?? match.match_id ?? match.id ?? '',
+        [],
+        slugFromMatchUrl(match.match_url),
+      ),
     }));
   }, [scheduleUpcoming]);
 
