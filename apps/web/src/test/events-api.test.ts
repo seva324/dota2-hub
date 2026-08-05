@@ -6,6 +6,10 @@ vi.mock('../../../../lib/server/dltv-events-page-parser.js', () => ({
   parseDltvEventsPageRaw: parseDltvEventsPageRawMock,
 }));
 
+vi.mock('../../../../lib/db.js', () => ({
+  getDb: () => null,
+}));
+
 function createRes() {
   const headers: Record<string, string> = {};
   return {
@@ -171,5 +175,39 @@ describe('/api/events cache + single-flight', () => {
     expect(resB.statusCode).toBe(200);
     // 两个并发冷请求共享同一次 build（build 内部抓取两页），不会重复抓 4 次。
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('groups derived completed entries into finished instead of upcoming', async () => {
+    const completedEntries = [
+      {
+        title: '1win Essence II',
+        sourceUrl: 'https://dltv.org/events/1win-essence-ii',
+        status: 'completed',
+        startTime: 1785340800,
+        endTime: 1785859200,
+        live: false,
+        image: null,
+        locationFlagUrl: null,
+      },
+    ];
+    parseDltvEventsPageRawMock.mockImplementation((raw: unknown, kind: string) => (
+      kind === 'ongoing' ? completedEntries : FINISHED_ENTRIES
+    ));
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => 'x'.repeat(600),
+    })) as typeof fetch;
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: handler } = await import('../../../../api/events.js');
+    const res = createRes();
+    await handler({ method: 'GET', query: {} } as never, res as never);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.payload as any).events.upcoming).toEqual([]);
+    expect((res.payload as any).events.finished).toHaveLength(2);
+    expect((res.payload as any).events.finished.some(
+      (entry: { title: string }) => entry.title === '1win Essence II',
+    )).toBe(true);
   });
 });

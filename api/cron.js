@@ -6,6 +6,7 @@ import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
 import { warmDltvCaches } from '../lib/server/dltv-warm.js';
+import { refreshEventsCache } from './events.js';
 import { syncRankingsToDb } from '../lib/server/rankings-service.js';
 import { persistLiveHeroSnapshots } from '../lib/server/live-hero-service.js';
 
@@ -269,7 +270,16 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
   if (action === 'warm-dltv') {
     // 定时预热：列表 → Redis hot-cache，match-page → Neon。把 DLTV 抓取从用户
     // 请求路径收敛到 cron，避免突发抓取触发反爬。min interval 由调度/调用方控制。
-    return { action, result: await warmDltvCaches({ fetchImpl: undefined }) };
+    const result = await warmDltvCaches({ fetchImpl: undefined });
+    // 顺带预热 tournaments 目录到 Neon：同一轮抓取窗口内完成，失败不影响 match-page。
+    let events = { skipped: true };
+    try {
+      events = await refreshEventsCache();
+    } catch (error) {
+      console.error('[cron] warm events failed:', error instanceof Error ? error.message : String(error));
+      events = { ok: false };
+    }
+    return { action, result: { ...result, events } };
   }
   if (action === 'sync-news') {
     return { action, result: await syncNewsToDb(buildSyncNewsOptions(raw)) };
