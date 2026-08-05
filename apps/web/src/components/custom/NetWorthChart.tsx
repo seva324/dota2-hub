@@ -1,7 +1,7 @@
 import type { LiveState } from '@/types/liveDetail';
 
 const design = {
-  radiant: '#2b55e8',
+  radiant: '#34d399',
   dire: '#ff3b30',
   zero: 'rgba(255,255,255,0.22)',
   grid: 'rgba(255,255,255,0.06)',

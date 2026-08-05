@@ -1,7 +1,7 @@
 import type { LiveBuildingState } from '@/types/liveDetail';
 
 const design = {
-  radiant: '#2b55e8',
+  radiant: '#34d399',
   dire: '#ff3b30',
   dead: '#2a2d35',
   lane: 'rgba(255,255,255,0.14)',

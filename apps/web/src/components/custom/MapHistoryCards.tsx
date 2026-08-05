@@ -1,15 +1,16 @@
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
+import { resolveTeamLogo } from '@/lib/teams';
 import type { LiveMap, LiveTeam } from '@/types/liveDetail';
 
 const design = {
-  blue: '#2b55e8',
-  red: '#ff3b30',
+  radiant: '#34d399',
+  dire: '#ff3b30',
   surface: '#111a27',
   faint: '#7a8ba1',
   fg: '#eaf2fb',
   border: 'rgba(148,178,214,0.14)',
-  green: '#4ade80',
+  gold: '#facc15',
 };
 
 function formatClock(sec: number | null | undefined): string {
@@ -24,7 +25,29 @@ function formatNetWorth(v: number): string {
   return `+${abs >= 1000 ? `${(abs / 1000).toFixed(1)}k` : String(Math.round(abs))}`;
 }
 
-/** 已结束地图历史卡：比分/时长/领先/获胜方；输方队名与比分置灰，不展示 Match ID。 */
+function TeamCell({ team, side, lose }: {
+  team: LiveTeam;
+  side: 'Radiant' | 'Dire';
+  lose: boolean;
+}) {
+  const name = team.name || 'TBD';
+  const logo = resolveTeamLogo({ name, teamId: team.id }, [], team.logoUrl);
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${design.border}` }}>
+        <SafeImg src={logo || ''} alt={name} className="h-full w-full object-contain p-0.5" fallback={<TeamLogoFallback name={name} size={20} />} />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-xs font-bold" style={{ color: lose ? design.faint : design.fg }}>{name}</span>
+        <span className="block text-[9px] font-bold uppercase tracking-wider" style={{ color: side === 'Radiant' ? design.radiant : design.dire, opacity: lose ? 0.5 : 1 }}>
+          {side}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** 已结束地图历史卡：比分/时长/领先/获胜方；天辉在左、夜魇在右，输方置灰，不展示 Match ID。队标镜像优先。 */
 export function MapHistoryCards({ maps, team1, team2 }: {
   maps: LiveMap[];
   team1: LiveTeam;
@@ -38,12 +61,17 @@ export function MapHistoryCards({ maps, team1, team2 }: {
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {finished.map((m) => {
-        const t1Side = m.isTeam1Radiant ? 'Radiant' : 'Dire';
-        const t2Side = m.isTeam1Radiant ? 'Dire' : 'Radiant';
-        const t1Lose = m.winner !== 'team1';
-        const t2Lose = m.winner !== 'team2';
-        const wTeam = m.winner === 'team1' ? team1 : team2;
-        const wSide = m.isTeam1Radiant ? (m.winner === 'team1' ? 'Radiant' : 'Dire') : (m.winner === 'team1' ? 'Dire' : 'Radiant');
+        const isTeam1Radiant = m.isTeam1Radiant;
+        const radiant = isTeam1Radiant ? team1 : team2;
+        const dire = isTeam1Radiant ? team2 : team1;
+        const radiantSideKey = isTeam1Radiant ? 'team1' : 'team2';
+        const direSideKey = isTeam1Radiant ? 'team2' : 'team1';
+        const radiantScore = isTeam1Radiant ? m.team1Score : m.team2Score;
+        const direScore = isTeam1Radiant ? m.team2Score : m.team1Score;
+        const radiantLose = m.winner !== radiantSideKey;
+        const direLose = m.winner !== direSideKey;
+        const wTeam = m.winner === radiantSideKey ? radiant : dire;
+        const wSide = m.winner === radiantSideKey ? 'Radiant' : 'Dire';
         const lead = m.team1NetWorthLead != null
           ? `${formatNetWorth(Math.abs(m.team1NetWorthLead))} ${team1.name}`
           : m.team2NetWorthLead != null
@@ -63,34 +91,16 @@ export function MapHistoryCards({ maps, team1, team2 }: {
             </div>
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${design.border}` }}>
-                  <SafeImg src={team1.logoUrl} alt={team1.name || '1'} className="h-full w-full object-contain p-0.5" fallback={<TeamLogoFallback name={team1.name || '1'} size={20} />} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-bold" style={{ color: t1Lose ? design.faint : design.fg }}>{team1.name || 'TBD'}</span>
-                  <span className="block text-[9px] font-bold uppercase tracking-wider" style={{ color: t1Side === 'Radiant' ? design.blue : design.red, opacity: t1Lose ? 0.5 : 1 }}>
-                    {t1Side}
-                  </span>
-                </span>
-              </div>
+              <TeamCell team={radiant} side="Radiant" lose={radiantLose} />
 
               <div className="flex items-baseline gap-1.5 font-black text-lg" style={{ fontFamily: "'Exo2', sans-serif" }}>
-                <span style={{ color: t1Lose ? design.faint : '#fff' }}>{m.team1Score ?? '—'}</span>
+                <span style={{ color: radiantLose ? design.faint : '#fff' }}>{radiantScore ?? '—'}</span>
                 <span className="text-xs font-bold" style={{ color: design.faint }}>:</span>
-                <span style={{ color: t2Lose ? design.faint : '#fff' }}>{m.team2Score ?? '—'}</span>
+                <span style={{ color: direLose ? design.faint : '#fff' }}>{direScore ?? '—'}</span>
               </div>
 
               <div className="flex min-w-0 flex-row-reverse items-center gap-2 text-right">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: `1px solid ${design.border}` }}>
-                  <SafeImg src={team2.logoUrl} alt={team2.name || '2'} className="h-full w-full object-contain p-0.5" fallback={<TeamLogoFallback name={team2.name || '2'} size={20} />} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-bold" style={{ color: t2Lose ? design.faint : design.fg }}>{team2.name || 'TBD'}</span>
-                  <span className="block text-[9px] font-bold uppercase tracking-wider" style={{ color: t2Side === 'Radiant' ? design.blue : design.red, opacity: t2Lose ? 0.5 : 1 }}>
-                    {t2Side}
-                  </span>
-                </span>
+                <TeamCell team={dire} side="Dire" lose={direLose} />
               </div>
             </div>
 
@@ -100,8 +110,8 @@ export function MapHistoryCards({ maps, team1, team2 }: {
                 {lead && <span>领先 {lead}</span>}
               </span>
               <span className="mt-1 flex items-center gap-2 text-[10px]">
-                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: design.green }}>
-                  <span className="size-1.5 rounded-full" style={{ backgroundColor: design.green, boxShadow: `0 0 8px ${design.green}88` }} />
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: design.gold }}>
+                  <span className="size-1.5 rounded-full" style={{ backgroundColor: design.gold, boxShadow: `0 0 8px ${design.gold}88` }} />
                   {wTeam.name || 'TBD'} 获胜
                 </span>
                 <span style={{ color: design.faint }}>· {wSide}</span>
