@@ -4,14 +4,44 @@
  */
 
 import { parseDltvPrimaryLeagues } from '../lib/server/dltv-tournaments-parser.js';
+import { getDb } from '../lib/db.js';
+import { readDltvCache, writeDltvCache } from '../lib/server/dltv-neon-cache.js';
 
 const DLTV_HOME_URL = 'https://dltv.org';
 const CACHE_CONTROL = 'public, max-age=180, s-maxage=180, stale-while-revalidate=300';
+
+// Neon 持久缓存：跨实例共享，冷启动（无内存缓存）时不必直抓 dltv.org。
+const NEON_CACHE_KEY = 'dltv:primary-leagues:full';
+// 新鲜窗口：carousel 变化慢，15min 内直接复用。
+const NEON_TTL_MS = 15 * 60 * 1000;
+// stale 兜底上限：超过 6h 不再直接返回旧 carousel，走一次同步抓取（失败仍有内存兜底）。
+const NEON_STALE_MAX_MS = 6 * 60 * 60 * 1000;
 
 let memoryCache = null;
 let memoryCacheAt = 0;
 let refreshInFlight = null;
 const CACHE_TTL_MS = 180_000;
+
+/** 读 Neon 持久缓存（仅 db 可用时）。 */
+async function readNeonPrimaryLeagues() {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const entry = await readDltvCache(db, NEON_CACHE_KEY);
+    if (!entry?.payload) return null;
+    return { payload: entry.payload, refreshedAt: entry.refreshedAt };
+  } catch (error) {
+    console.error('[Primary Leagues API] neon cache read failed:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}
+
+/** 写 Neon 持久缓存（fire-and-forget；writeDltvCache 内部吞错，db 缺失时静默跳过）。 */
+function persistNeonPrimaryLeagues(payload) {
+  const db = getDb();
+  if (!db || !payload) return;
+  writeDltvCache(db, NEON_CACHE_KEY, { payload });
+}
 
 function buildTimeoutSignal(timeoutMs) {
   const controller = new AbortController();
@@ -62,6 +92,7 @@ async function refreshPrimaryLeagues(now) {
 
   memoryCache = tournaments;
   memoryCacheAt = now;
+  persistNeonPrimaryLeagues({ tournaments, fetchedAt: new Date().toISOString() });
   return tournaments;
 }
 
@@ -93,6 +124,33 @@ export default async function handler(req, res) {
     return res.status(200).json({ tournaments: memoryCache, source: cacheFresh ? 'cache' : 'stale' });
   }
 
+  // Neon 持久缓存兜底：跨实例共享，EdgeOne 冷启动（内存空）时不必直抓 dltv.org。
+  if (!forceRefresh && memoryCache == null) {
+    const neonEntry = await readNeonPrimaryLeagues();
+    if (neonEntry?.payload) {
+      const age = now - neonEntry.refreshedAt;
+      memoryCache = neonEntry.payload.tournaments;
+      memoryCacheAt = neonEntry.refreshedAt;
+      if (age < NEON_TTL_MS) {
+        return res.status(200).json({ tournaments: memoryCache, source: 'cache' });
+      }
+      if (age < NEON_STALE_MAX_MS) {
+        // 后台刷新（fire-and-forget），成功会写回 Neon。
+        if (!refreshInFlight) {
+          refreshInFlight = refreshPrimaryLeagues(now)
+            .catch((error) => {
+              console.error('[Primary Leagues API] Background refresh failed:', error instanceof Error ? error.message : String(error));
+            })
+            .finally(() => {
+              refreshInFlight = null;
+            });
+        }
+        return res.status(200).json({ tournaments: memoryCache, source: 'stale' });
+      }
+      // 超过 stale 上限：继续走同步抓取；失败时下面 catch 仍有 memoryCache 兜底。
+    }
+  }
+
   try {
     const tournaments = await refreshPrimaryLeagues(now);
     return res.status(200).json({ tournaments, source: 'dltv' });
@@ -100,4 +158,14 @@ export default async function handler(req, res) {
     console.error('[Primary Leagues API] Error:', error instanceof Error ? error.message : String(error));
     return res.status(200).json({ tournaments: memoryCache || [], source: 'error' });
   }
+}
+
+/** 供 cron 预热：抓首页解析 primary leagues 并写入 Neon（无内存缓存，只落库，跨实例共享）。 */
+export async function refreshPrimaryLeaguesCache({ fetchImpl = fetch } = {}) {
+  const { raw } = await fetchHomeHtml(fetchImpl);
+  if (!raw) return { ok: false, count: 0 };
+  const tournaments = parseDltvPrimaryLeagues(raw);
+  if (tournaments.length === 0) return { ok: false, count: 0 };
+  persistNeonPrimaryLeagues({ tournaments, fetchedAt: new Date().toISOString() });
+  return { ok: true, count: tournaments.length };
 }
