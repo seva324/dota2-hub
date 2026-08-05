@@ -14,7 +14,7 @@ const design = {
   bg: '#0f1115',
 };
 
-const POLL_INTERVAL_MS = 20_000;
+const POLL_INTERVAL_MS = 15_000;
 
 function formatBestOf(value: number | null): string {
   return Number.isFinite(value) && (value as number) > 0 ? `BO${value}` : 'BO3';
@@ -29,9 +29,11 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-/** Live 比赛详情全屏页：20s 轮询 /api/live-detail，展示比分/经济曲线/建筑/BP。 */
-export function LiveMatchDetailPage({ seriesId, onBack }: {
+/** Live 比赛详情全屏页：15s 轮询 /api/live-detail，展示比分/经济曲线/建筑/BP。 */
+export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
   seriesId: string;
+  slug?: string;
+  champ?: string;
   onBack: () => void;
 }) {
   const [payload, setPayload] = useState<LiveDetailPayload | null>(null);
@@ -47,7 +49,10 @@ export function LiveMatchDetailPage({ seriesId, onBack }: {
 
   const load = useCallback(async () => {
     try {
-      const data = await apiFetch<LiveDetailPayload>(`/api/live-detail?series_id=${encodeURIComponent(seriesId)}`, {
+      const params = new URLSearchParams({ series_id: seriesId });
+      if (slug) params.set('slug', slug);
+      if (champ) params.set('champ', champ);
+      const data = await apiFetch<LiveDetailPayload>(`/api/live-detail?${params.toString()}`, {
         ttlMs: 0,
         cacheEmpty: false,
       });
@@ -78,7 +83,7 @@ export function LiveMatchDetailPage({ seriesId, onBack }: {
       // 网络错误保留现有数据，轮询继续
       setError(e instanceof Error ? e.message : '加载失败');
     }
-  }, [seriesId]);
+  }, [seriesId, slug, champ]);
 
   useEffect(() => {
     load();

@@ -1013,7 +1013,13 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
   // live 卡片：带 hawk sourceSeriesId 打开 live detail 全屏页；无则回退旧直播弹窗
   const handleOpenLive = (hero: LiveHeroPayload) => {
     if (hero.sourceSeriesId) {
-      navigate({ page: 'live', overlay: null, seriesId: String(hero.sourceSeriesId) }, { replace: false });
+      navigate({
+        page: 'live',
+        overlay: null,
+        seriesId: String(hero.sourceSeriesId),
+        slug: hero.sourceSeriesSlug ?? undefined,
+        champ: hero.sourceChampionshipSlug ?? undefined,
+      }, { replace: false });
       return;
     }
     handleOpenMatch(hero.liveMap?.matchId ?? hero.maps?.[0]?.matchId ?? '', buildSeriesMaps(hero));

@@ -10,10 +10,12 @@ export interface RouteState {
   overlay: OverlayState | null;
   /** 仅 page==='match'：DLTV 系列赛 ID */
   matchId?: string;
-  /** 仅 page==='match'：DLTV 详情页 slug（/matches/<id>/<slug>），用于让 maps 非空 */
+  /** 仅 page==='match'：DLTV 详情页 slug（/matches/<id>/<slug>）；仅 page==='live'：hawk.live 系列赛 slug（构造 detail URL） */
   slug?: string;
   /** 仅 page==='live'：hawk.live 系列赛 ID */
   seriesId?: string;
+  /** 仅 page==='live'：hawk.live 赛事 slug，配合 slug 构造 detail URL（避免回源抓首页匹配） */
+  champ?: string;
   /** 仅 page==='news'：单条新闻详情 ID */
   newsId?: string;
 }
@@ -61,7 +63,14 @@ export function parseHash(hash: string): RouteState {
     }
     case 'live': {
       if (!second) return { page: 'home', overlay: null };
-      return { page: 'live', overlay: null, seriesId: decodeURIComponent(second) };
+      const query = new URLSearchParams(queryString || '');
+      return {
+        page: 'live',
+        overlay: null,
+        seriesId: decodeURIComponent(second),
+        slug: query.get('slug') ?? undefined,
+        champ: query.get('champ') ?? undefined,
+      };
     }
     case 'team': {
       if (!second) return { page: 'home', overlay: null };
@@ -86,7 +95,14 @@ export function toHash(route: RouteState): string {
     return route.slug ? `${base}?slug=${encodeURIComponent(route.slug)}` : base;
   }
   if (route.page === 'live' && route.seriesId) {
-    return `#/live/${encodeURIComponent(route.seriesId)}`;
+    const base = `#/live/${encodeURIComponent(route.seriesId)}`;
+    if (route.slug || route.champ) {
+      const params = new URLSearchParams();
+      if (route.slug) params.set('slug', route.slug);
+      if (route.champ) params.set('champ', route.champ);
+      return `${base}?${params.toString()}`;
+    }
+    return base;
   }
   if (route.overlay) {
     switch (route.overlay.type) {

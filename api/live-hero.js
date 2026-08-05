@@ -23,10 +23,10 @@ export default async function handler(req, res) {
     const forceRefresh = String(req.query?.refresh || '') === '1';
     const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 20));
 
-    // HAWK live 链路（与小程序一致）：热缓存（Neon）30s 新鲜 + Neon hero_live_scores 持久化。
+    // HAWK live 链路（与小程序一致）：CDN 30s 缓存挡高频轮询，回源时直接抓 hawk.live。
+    // 请求路径零 Neon（hero_live_scores 持久化交给低频 persist-live-hero cron）。
     // 传 req 让 hydratePayloadTeamLogos 走 curated/mirror/代理 解析 LOGO。
     const payloads = await getLiveHeroPayloads(db, {
-      maxAgeSeconds: 180,
       limit,
       forceRefresh,
       req,
