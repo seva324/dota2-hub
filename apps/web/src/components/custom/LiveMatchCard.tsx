@@ -39,6 +39,7 @@ export interface LiveHeroPayload {
     team1Score?: number | null;
     team2Score?: number | null;
     team1NetWorthLead?: number | null;
+    team2NetWorthLead?: number | null;
     team1TotalGold?: number | null;
     team2TotalGold?: number | null;
   } | null;
@@ -149,10 +150,16 @@ export function LiveMatchCard({ hero, onOpen }: {
   const kills1 = liveMap?.team1Score ?? '—';
   const kills2 = liveMap?.team2Score ?? '—';
 
-  // 经济领先：正值 = 队伍1领先；无数据则不渲染（badge 槽位固定高度保持对齐）
-  const netWorthLead = liveMap?.team1NetWorthLead ?? null;
-  const hasNetWorth = netWorthLead != null && Number.isFinite(netWorthLead);
-  const netWorthAbs = hasNetWorth ? Math.abs(netWorthLead!) : null;
+  // 经济领先：数据格式为"领先方对应字段为正值、落后方为 null"（summarizeSeriesDetail）
+  // 或"team1NetWorthLead 带符号"（live-detail 解析）。统一按"领先方字段 > 0"判断。
+  const team1Lead = liveMap?.team1NetWorthLead;
+  const team2Lead = liveMap?.team2NetWorthLead;
+  const leader = (
+    team1Lead != null && Number.isFinite(team1Lead) && team1Lead > 0 ? 1
+    : team2Lead != null && Number.isFinite(team2Lead) && team2Lead > 0 ? 2
+    : null
+  );
+  const netWorthAbs = leader === 1 ? Math.abs(team1Lead!) : leader === 2 ? Math.abs(team2Lead!) : null;
 
   return (
     <button
@@ -176,7 +183,7 @@ export function LiveMatchCard({ hero, onOpen }: {
           name={team1}
           logo={hero.teams?.[0]?.logo}
           alignDown
-          badge={hasNetWorth && netWorthLead! > 0 ? <NetWorthBadge value={netWorthAbs!} /> : null}
+          badge={leader === 1 ? <NetWorthBadge value={netWorthAbs!} /> : null}
         />
         {/* 当前局击杀：首要、大字号、固定列宽 */}
         <div className="flex w-16 shrink-0 flex-col items-center justify-center">
@@ -190,7 +197,7 @@ export function LiveMatchCard({ hero, onOpen }: {
           name={team2}
           logo={hero.teams?.[1]?.logo}
           alignDown
-          badge={hasNetWorth && netWorthLead! < 0 ? <NetWorthBadge value={netWorthAbs!} /> : null}
+          badge={leader === 2 ? <NetWorthBadge value={netWorthAbs!} /> : null}
         />
       </div>
 
