@@ -29,26 +29,6 @@ export default async function handler(req, res) {
   try {
     const db = getDb();
     const forceRefresh = String(req.query?.refresh || '') === '1';
-
-    // debug=1：返回缓存/DB 诊断，定位生产缓存不命中的根因
-    if (String(req.query?.debug || '') === '1') {
-      const { ensureHawkLiveDetailCacheTable, readHawkLiveDetailCache } = await import('../lib/server/hawk-live-detail-cache.js');
-      const diag = { dbAvailable: !!db };
-      if (db) {
-        try {
-          await ensureHawkLiveDetailCacheTable(db);
-          diag.tableEnsured = true;
-          const cached = await readHawkLiveDetailCache(db, seriesId);
-          diag.cachedRowFound = !!cached;
-          diag.cachedHasPayload = !!cached?.payload;
-          diag.cachedAgeMs = cached ? Date.now() - cached.refreshedAt : null;
-        } catch (error) {
-          diag.diagnosticError = error instanceof Error ? error.message : String(error);
-        }
-      }
-      return res.status(200).json({ debug: diag });
-    }
-
     const result = await getLiveDetail(db, { seriesId, forceRefresh });
 
     if (!result || result.source === 'not_found') {
