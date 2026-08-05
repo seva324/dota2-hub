@@ -116,7 +116,15 @@
       ]
     },
     {
-      "source": "/api/events*",
+      "source": "/api/event-detail*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=0, must-revalidate"
+        }
+      ]
+    },
+    {"source": "/api/events*",
       "headers": [
         {
           "key": "Cache-Control",
@@ -182,6 +190,10 @@
     {
       "source": "/api/team-ranking*",
       "cacheTtl": 600
+    },
+    {
+      "source": "/api/event-detail*",
+      "cacheTtl": 0
     },
     {
       "source": "/api/events*",
