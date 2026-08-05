@@ -327,7 +327,7 @@ export function MatchesPage({
     radiantScore?: number;
     direScore?: number;
     duration?: number;
-  }>) => void;
+  }>, seriesId?: string) => void;
 }) {
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
   const emptyLivePollsRef = useRef(0);

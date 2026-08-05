@@ -5,6 +5,7 @@ import { Footer } from '@/sections/Footer';
 import { TopLevelPlaceholder } from '@/pages/TopLevelPlaceholder';
 import { MatchesPage } from '@/pages/MatchesPage';
 import { SeriesMatchPage } from '@/pages/SeriesMatchPage';
+import { LiveMatchDetailPage } from '@/pages/LiveMatchDetailPage';
 import { TeamsPage } from '@/pages/TeamsPage';
 import { NewsPage } from '@/pages/NewsPage';
 import { NewsDetailPage } from '@/pages/NewsDetailPage';
@@ -117,7 +118,12 @@ function App() {
           <TournamentsPage />
         ) : page === 'matches' ? (
           <MatchesPage
-            onOpenMatch={(matchId, maps) => {
+            onOpenMatch={(matchId, maps, seriesId) => {
+              if (seriesId) {
+                // live 卡片：带 hawk seriesId 打开 live detail 全屏页
+                navigate({ page: 'live', overlay: null, seriesId: String(seriesId) }, { replace: false });
+                return;
+              }
               const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
               if (!Number.isFinite(numericId)) return;
               const firstMap = Array.isArray(maps) && maps.length > 0 ? maps[0] : null;
@@ -135,6 +141,11 @@ function App() {
           <SeriesMatchPage
             matchId={route.matchId}
             slug={route.slug}
+            onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
+          />
+        ) : page === 'live' && route.seriesId ? (
+          <LiveMatchDetailPage
+            seriesId={route.seriesId}
             onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
           />
         ) : page === 'news' && route.newsId ? (

@@ -32,6 +32,11 @@ const PAGE_META: Record<Exclude<TopLevelPage, 'home'>, { title: string; badge: s
     badge: 'Match',
     description: '比赛详情页面加载失败，现在先回到首页。',
   },
+  live: {
+    title: '直播详情',
+    badge: 'Live',
+    description: '直播详情页面加载失败，现在先回到首页。',
+  },
 };
 
 export function TopLevelPlaceholder({ page, onBack }: { page: Exclude<TopLevelPage, 'home'>; onBack: () => void }) {

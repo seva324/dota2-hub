@@ -6,6 +6,8 @@ export interface LiveHeroPayload {
   source?: string;
   sourceUrl?: string | null;
   sourceSeriesId?: string | null;
+  sourceSeriesSlug?: string | null;
+  sourceChampionshipSlug?: string | null;
   leagueName: string;
   stage?: string | null;
   bestOf?: string | number | null;
