@@ -40,6 +40,7 @@
     "ops:post-reddit-xhs": "node --env-file=.env.vercel scripts/post-reddit-to-xhs.mjs"
   },
   "dependencies": {
+    "@fontpkg/alibaba-puhuiti-3-0": "^0.0.0",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/client": "^7.7.0",
     "better-sqlite3": "^12.6.2",

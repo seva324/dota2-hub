@@ -35,34 +35,12 @@ function normalizeLiveHeroes(data: LiveHeroApi | undefined): LiveHeroPayload[] {
   return Array.isArray(data?.liveMatches) ? data.liveMatches : data?.live ? [data.live] : [];
 }
 
-const teamLogoMap: Record<string, string> = {
-  XG: '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-  'Team Spirit': '/images/mirror/teams/team-spirit-white.svg',
-  Falcons: '/images/mirror/teams/team-falcons-ranking-dark.webp',
-  Tundra: '/images/mirror/teams/tundra-esports-white.svg',
-  Liquid: '/images/mirror/teams/team-liquid-white.svg',
-  Aurora: '/images/mirror/teams/aurora-ranking-dark.png',
-  YB: '/images/mirror/teams/yakult-brothers.webp',
-  'Yakult Brothers': '/images/mirror/teams/yakult-brothers.webp',
-  GG: '/images/mirror/teams/gaimin-gladiators.webp',
-  Spirit: '/images/mirror/teams/team-spirit-white.svg',
-  'Xtreme Gaming': '/images/mirror/teams/xtreme-gaming-ranking-dark.webp',
-  'Team Falcons': '/images/mirror/teams/team-falcons-ranking-dark.webp',
-  'Tundra Esports': '/images/mirror/teams/tundra-esports-white.svg',
-};
-
 const design = {
   bg: '#0f1115',
   card: '#1a1d24',
   blue: '#2b55e8',
   red: '#ff3b30',
 };
-
-function resolveTeamLogo(name?: string | null, explicitLogo?: string | null): string {
-  if (explicitLogo) return explicitLogo;
-  if (name && teamLogoMap[name]) return teamLogoMap[name];
-  return '';
-}
 
 function formatCSTTime(timestamp: number): string {
   const date = new Date(timestamp * 1000);
@@ -78,21 +56,6 @@ function formatBestOf(value?: string | number | null): string {
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? `BO${parsed}` : normalized;
 }
-
-const hotPlayersSeed: TopPlayer[] = [
-  { name: 'Ame', accountId: 898754153, teamName: 'XG', nationality: 'CN' },
-  { name: 'Yatoro', accountId: 321580662, teamName: 'Team Spirit', nationality: 'UA' },
-  { name: '23savage', accountId: 185437126, teamName: 'Aurora', nationality: 'TH' },
-  { name: 'Collapse', accountId: 302214028, teamName: 'Team Spirit', nationality: 'RU' },
-];
-
-const topTeamsSeed = [
-  { rank: 1, name: 'Team Spirit', logo: teamLogoMap['Team Spirit'] || null, points: 1987 },
-  { rank: 2, name: 'XG', logo: teamLogoMap.XG || null, points: 1899 },
-  { rank: 3, name: 'Team Falcons', logo: teamLogoMap['Team Falcons'] || null, points: 1880 },
-  { rank: 4, name: 'Team Liquid', logo: teamLogoMap.Liquid || null, points: 1790 },
-  { rank: 5, name: 'Tundra Esports', logo: teamLogoMap['Tundra Esports'] || null, points: 1750 },
-];
 
 function formatTimeAgo(timestamp: number): string {
   const diff = Math.max(0, nowTs() - timestamp);
@@ -572,203 +535,7 @@ function LatestNewsSection({ items, onMore, onOpenItem }: {
 }
 
 /* ------------------------------------------------------------------ */
-/* Rankings                                                             */
-/* ------------------------------------------------------------------ */
 
-function RankingsSection({ teams, onMore }: {
-  teams: Array<{ rank: number; name: string; logo: string | null; points: number }>;
-  onMore?: () => void;
-}) {
-  return (
-    <section>
-      <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-extrabold tracking-tight text-white">Rankings</h2>
-          {/* Teams / Players tabs（与原型一致，Teams 蓝下划线选中） */}
-          <div className="flex items-center gap-4">
-            <button type="button" className="border-b-2 pb-0.5 text-sm font-semibold" style={{ color: '#fff', borderColor: design.blue }}>
-              Teams
-            </button>
-            <button type="button" className="pb-0.5 text-sm font-semibold text-slate-500 hover:text-slate-300">
-              Players
-            </button>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onMore}
-          className="text-sm font-semibold transition-opacity hover:opacity-80"
-          style={{ color: design.blue }}
-        >
-          View Full Rankings <span aria-hidden>→</span>
-        </button>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {teams.slice(0, 5).map((team) => (
-          <button
-            key={String(team.rank)}
-            type="button"
-            onClick={onMore}
-            className="group relative flex flex-col rounded-xl p-4 text-left transition-transform hover:-translate-y-0.5"
-            style={{ backgroundColor: design.card }}
-          >
-            <span className="absolute left-4 top-3 text-[11px] font-bold" style={{ color: '#71717a' }}>#{team.rank}</span>
-            <div className="mt-4 flex items-center gap-2.5">
-              <SafeImg
-                src={resolveTeamLogo(team.name, team.logo)}
-                alt={team.name}
-                className="h-10 w-10 shrink-0 object-contain"
-                fallback={<TeamLogoFallback name={team.name} size={40} />}
-              />
-              <div className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-white group-hover:opacity-90">{team.name}</span>
-                <span className="mt-0.5 block text-xs tabular-nums" style={{ color: '#71717a' }}>{team.points.toLocaleString()} PTS</span>
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Top Players / Top Teams                                              */
-/* ------------------------------------------------------------------ */
-
-interface TopPlayer {
-  name: string;
-  accountId: number;
-  teamName?: string | null;
-  nationality?: string | null;
-  avatarUrl?: string | null;
-}
-
-function TopPlayersTeamsSection({ players, teams, onMore }: {
-  players: TopPlayer[];
-  teams: Array<{ rank: number; name: string; logo: string | null; points: number }>;
-  onMore?: () => void;
-}) {
-  return (
-    <section className="grid gap-4 lg:grid-cols-2">
-      <div>
-        <SectionHeader title="Top Players" linkLabel="View All Players" onClick={onMore} />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {players.slice(0, 4).map((player) => (
-            <button
-              key={player.accountId}
-              type="button"
-              onClick={onMore}
-              className="group flex flex-col items-center rounded-xl p-4 text-center transition-transform hover:-translate-y-0.5"
-              style={{ backgroundColor: design.card }}
-            >
-              <div className="flex size-12 items-center justify-center overflow-hidden rounded-full border border-white/10" style={{ backgroundColor: '#2a2d35' }}>
-                <SafeImg
-                  src={player.avatarUrl || ''}
-                  alt={player.name}
-                  className="h-full w-full object-cover"
-                  fallback={<span className="text-sm font-bold text-white">{player.name[0].toUpperCase()}</span>}
-                />
-              </div>
-              <span className="mt-2.5 truncate text-sm font-semibold text-white group-hover:opacity-90">{player.name}</span>
-              <span className="mt-0.5 truncate text-[11px] font-medium text-amber-300/90">{player.teamName || 'PRO'}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <SectionHeader title="Top Teams" linkLabel="View All Teams" onClick={onMore} />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {teams.slice(0, 5).map((team) => (
-            <button
-              key={String(team.rank)}
-              type="button"
-              onClick={onMore}
-              className="group flex items-center gap-3 rounded-xl p-3.5 text-left transition-transform hover:-translate-y-0.5"
-              style={{ backgroundColor: design.card }}
-            >
-              <SafeImg
-                src={resolveTeamLogo(team.name, team.logo)}
-                alt={team.name}
-                className="h-9 w-9 shrink-0 object-contain"
-                fallback={<TeamLogoFallback name={team.name} size={36} />}
-              />
-              <div className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-white group-hover:opacity-90">{team.name}</span>
-                <span className="block text-[11px] tabular-nums" style={{ color: '#71717a' }}>{team.points.toLocaleString()} PTS</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Upcoming Events                                                      */
-/* ------------------------------------------------------------------ */
-
-function formatEventMonth(timestamp: number): string {
-  const date = new Date(timestamp * 1000);
-  return date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-}
-
-function UpcomingEventsSection({ matches, onMore }: {
-  matches: UpcomingMatch[];
-  onMore?: () => void;
-}) {
-  // 按赛事聚合，取最早开始时间
-  const events = new Map<string, { name: string; start: number; count: number }>();
-  for (const match of matches) {
-    const name = match.tournament_name_cn || match.tournament_name || 'Upcoming';
-    const existing = events.get(name);
-    if (existing) {
-      existing.start = Math.min(existing.start, match.start_time);
-      existing.count += 1;
-    } else {
-      events.set(name, { name, start: match.start_time, count: 1 });
-    }
-  }
-  const eventList = [...events.values()]
-    .sort((a, b) => a.start - b.start)
-    .slice(0, 4);
-
-  if (eventList.length === 0) return <EmptyState label="暂无赛事安排" />;
-
-  return (
-    <section>
-      <SectionHeader title="Upcoming Events" linkLabel="View Calendar" onClick={onMore} />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {eventList.map((event) => (
-          <button
-            key={event.name}
-            type="button"
-            onClick={onMore}
-            className="group flex items-center gap-4 rounded-xl p-4 text-left transition-transform hover:-translate-y-0.5"
-            style={{ backgroundColor: design.card }}
-          >
-            <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-lg" style={{ backgroundColor: '#2a2d35' }}>
-              <span className="text-sm font-black text-white">{formatEventMonth(event.start)}</span>
-              <span className="text-xs font-bold" style={{ color: '#71717a' }}>
-                {new Date(event.start * 1000).getDate()}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-white group-hover:opacity-90">{event.name}</span>
-              <span className="mt-0.5 block text-[11px]" style={{ color: '#71717a' }}>
-                {event.count} 场比赛
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* 主组件                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -807,11 +574,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     category?: string;
     source?: string;
   }>>(() => (getCachedValue<NewsItem[]>('/api/news?limit=4') ?? []).slice(0, 4));
-  const [rankings, setRankings] = useState<Array<{ rank: number; name: string; logo: string | null; points: number }>>(() => {
-    const cached = getCachedValue<{ teams?: Array<{ rank: number; name: string; logo: string | null; points: number }> }>('/api/ept-ranking');
-    return Array.isArray(cached?.teams) ? cached.teams.slice(0, 5) : [];
-  });
-  const [topPlayers, setTopPlayers] = useState<TopPlayer[]>(hotPlayersSeed);
   const [primaryLeagues, setPrimaryLeagues] = useState<PrimaryLeague[]>(() => {
     const cached = getCachedValue<{ tournaments?: PrimaryLeague[] }>('/api/primary-leagues');
     return Array.isArray(cached?.tournaments) ? cached.tournaments : [];
@@ -864,14 +626,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
       } catch { /* 保留空态 */ }
     };
 
-    const loadRankings = async () => {
-      try {
-        const data = await apiFetch<{ teams?: Array<{ rank: number; name: string; logo: string | null; points: number }> }>('/api/ept-ranking', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
-        if (cancelled) return;
-        setRankings(Array.isArray(data?.teams) ? data.teams.slice(0, 5) : []);
-      } catch { /* 保留空态 */ }
-    };
-
     const loadLeagues = async () => {
       try {
         const data = await apiFetch<{ tournaments?: PrimaryLeague[] }>('/api/primary-leagues', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
@@ -880,40 +634,12 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
       } catch { /* 保留空态 */ }
     };
 
-    const loadTopPlayers = async () => {
-      // Top players: enrich seeds from pro-players API (avatar, team, name)
-      const playerRequests = hotPlayersSeed.map(async (seed) => {
-        try {
-          const payload = await apiFetch<{
-            name?: string;
-            team_name?: string;
-            country_code?: string;
-            avatar_url?: string | null;
-          }>(`/api/pro-players?account_id=${seed.accountId}`, { ttlMs: 60 * 60 * 1000, cacheEmpty: false });
-          if (!payload || typeof payload !== 'object') return seed;
-          return {
-            name: payload.name || seed.name,
-            accountId: seed.accountId,
-            teamName: payload.team_name || seed.teamName,
-            nationality: payload.country_code ? String(payload.country_code).toUpperCase() : seed.nationality,
-            avatarUrl: payload.avatar_url || null,
-          } satisfies TopPlayer;
-        } catch {
-          return seed;
-        }
-      });
-      const results = await Promise.all(playerRequests);
-      if (!cancelled) setTopPlayers(results);
-    };
-
     // 各自独立 fetch → 渐进渲染：快端点先填充，慢端点(如 news)后填充
     void loadLive();
     void loadUpcoming();
     void loadResults();
     void loadNews();
-    void loadRankings();
     void loadLeagues();
-    void loadTopPlayers();
 
     return () => { cancelled = true; };
   }, []);
@@ -1180,25 +906,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
           items={news}
           onMore={() => navigate({ page: 'news', overlay: null })}
           onOpenItem={(item) => navigate({ page: 'news', overlay: null, newsId: item.id })}
-        />
-
-        {/* Rankings */}
-        <RankingsSection
-          teams={rankings.length > 0 ? rankings : topTeamsSeed}
-          onMore={() => navigate({ page: 'home', overlay: null })}
-        />
-
-        {/* Top Players / Top Teams */}
-        <TopPlayersTeamsSection
-          players={topPlayers}
-          teams={rankings.length > 0 ? rankings : topTeamsSeed}
-          onMore={() => navigate({ page: 'home', overlay: null })}
-        />
-
-        {/* Upcoming Events */}
-        <UpcomingEventsSection
-          matches={upcoming}
-          onMore={() => navigate({ page: 'matches', overlay: null })}
         />
       </div>
 

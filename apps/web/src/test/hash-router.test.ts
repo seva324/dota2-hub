@@ -39,6 +39,23 @@ describe('parseHash', () => {
     });
   });
 
+  it('parses an event deep link as its own page', () => {
+    expect(parseHash('#/event/1win-essence-2')).toEqual({
+      page: 'event',
+      overlay: null,
+      eventSlug: '1win-essence-2',
+    });
+  });
+
+  it('round-trips an event route through toHash', () => {
+    expect(toHash({ page: 'event', overlay: null, eventSlug: '1win-essence-2' })).toBe('#/event/1win-essence-2');
+    expect(parseHash(toHash({ page: 'event', overlay: null, eventSlug: 'pgl wallachia s8' }))).toEqual({
+      page: 'event',
+      overlay: null,
+      eventSlug: 'pgl wallachia s8',
+    });
+  });
+
   it('parses a live detail deep link as its own page', () => {
     expect(parseHash('#/live/98859')).toEqual({
       page: 'live',

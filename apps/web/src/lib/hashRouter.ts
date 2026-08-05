@@ -1,4 +1,4 @@
-export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match' | 'live';
+export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match' | 'live' | 'event';
 
 export type OverlayState =
   | { type: 'match'; matchId: string }
@@ -18,6 +18,8 @@ export interface RouteState {
   champ?: string;
   /** 仅 page==='news'：单条新闻详情 ID */
   newsId?: string;
+  /** 仅 page==='event'：DLTV 赛事 slug（/events/<slug>） */
+  eventSlug?: string;
 }
 
 const TOP_LEVEL_PAGES: TopLevelPage[] = ['home', 'tournaments', 'matches', 'teams', 'players', 'news'];
@@ -51,6 +53,14 @@ export function parseHash(hash: string): RouteState {
   }
 
   switch (first) {
+    case 'event': {
+      if (!second) return { page: 'home', overlay: null };
+      return {
+        page: 'event',
+        overlay: null,
+        eventSlug: decodeURIComponent(second),
+      };
+    }
     case 'match': {
       if (!second) return { page: 'home', overlay: null };
       const query = new URLSearchParams(queryString || '');
@@ -87,6 +97,9 @@ export function parseHash(hash: string): RouteState {
 }
 
 export function toHash(route: RouteState): string {
+  if (route.page === 'event' && route.eventSlug) {
+    return `#/event/${encodeURIComponent(route.eventSlug)}`;
+  }
   if (route.page === 'news' && route.newsId) {
     return `#/news/${encodeURIComponent(route.newsId)}`;
   }

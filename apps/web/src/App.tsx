@@ -10,6 +10,7 @@ import { TeamsPage } from '@/pages/TeamsPage';
 import { NewsPage } from '@/pages/NewsPage';
 import { NewsDetailPage } from '@/pages/NewsDetailPage';
 import { TournamentsPage } from '@/pages/TournamentsPage';
+import { EventDetailPage } from '@/pages/EventDetailPage';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import type { TopLevelPage, RouteState } from '@/lib/hashRouter';
@@ -116,6 +117,11 @@ function App() {
           <HomeDashboard route={route} navigate={navigate} closeOverlay={closeOverlay} />
         ) : page === 'tournaments' ? (
           <TournamentsPage />
+        ) : page === 'event' && route.eventSlug ? (
+          <EventDetailPage
+            slug={route.eventSlug}
+            onBack={() => navigate({ page: 'tournaments', overlay: null }, { replace: false })}
+          />
         ) : page === 'matches' ? (
           <MatchesPage
             onOpenMatch={(matchId, maps, seriesId, hawkSlug, hawkChamp) => {
