@@ -11,6 +11,7 @@ const syncNewsToDbMock = vi.fn();
 const translateNewsBackfillMock = vi.fn();
 const warmDltvCachesMock = vi.fn();
 const refreshEventsCacheMock = vi.fn();
+const refreshPrimaryLeaguesCacheMock = vi.fn();
 const persistLiveHeroSnapshotsMock = vi.fn();
 
 vi.mock('@neondatabase/serverless', () => ({
@@ -45,6 +46,10 @@ vi.mock('../../../../lib/server/dltv-warm.js', () => ({
 
 vi.mock('../../../../api/events.js', () => ({
   refreshEventsCache: refreshEventsCacheMock,
+}));
+
+vi.mock('../../../../api/primary-leagues.js', () => ({
+  refreshPrimaryLeaguesCache: refreshPrimaryLeaguesCacheMock,
 }));
 
 vi.mock('../../../../lib/server/live-hero-service.js', () => ({
@@ -93,6 +98,8 @@ describe('/api/cron incremental refresh actions', () => {
     warmDltvCachesMock.mockReset();
     refreshEventsCacheMock.mockReset();
     refreshEventsCacheMock.mockResolvedValue({ ok: true, ongoing: 2, upcoming: 5, finished: 3 });
+    refreshPrimaryLeaguesCacheMock.mockReset();
+    refreshPrimaryLeaguesCacheMock.mockResolvedValue({ ok: true, count: 6 });
 
     warmPlayerProfileCacheMock.mockResolvedValue({ selected: 12, refreshed: 12, failed: 0, mode: 'incremental' });
     warmTeamFlyoutCacheMock.mockResolvedValue({ selected: 8, refreshed: 8, failed: 0, mode: 'incremental' });
@@ -123,10 +130,11 @@ describe('/api/cron incremental refresh actions', () => {
     expect(res.statusCode).toBe(200);
     expect(warmDltvCachesMock).toHaveBeenCalledTimes(1);
     expect(refreshEventsCacheMock).toHaveBeenCalledTimes(1);
+    expect(refreshPrimaryLeaguesCacheMock).toHaveBeenCalledTimes(1);
     expect(res.payload).toMatchObject({
       ok: true,
       action: 'warm-dltv',
-      result: { lists: { live: 1 }, events: { ok: true, ongoing: 2 } },
+      result: { lists: { live: 1 }, events: { ok: true, ongoing: 2 }, primaryLeagues: { ok: true, count: 6 } },
     });
   });
 
