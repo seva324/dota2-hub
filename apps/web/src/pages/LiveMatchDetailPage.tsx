@@ -4,14 +4,17 @@ import { LiveScoreHeader } from '@/components/custom/LiveScoreHeader';
 import { NetWorthChart } from '@/components/custom/NetWorthChart';
 import { BuildingMap } from '@/components/custom/BuildingMap';
 import { LiveLineup } from '@/components/custom/LiveLineup';
+import { MapHistoryCards } from '@/components/custom/MapHistoryCards';
 import { apiFetch } from '@/lib/api-cache';
 import type { LiveDetailPayload, LiveMap } from '@/types/liveDetail';
 
 const design = {
   blue: '#2b55e8',
   red: '#ff3b30',
-  card: '#1a1d24',
-  bg: '#0f1115',
+  card: '#0d141e',
+  bg: '#05090d',
+  border: 'rgba(148,178,214,0.14)',
+  faint: '#7a8ba1',
 };
 
 const POLL_INTERVAL_MS = 15_000;
@@ -22,14 +25,17 @@ function formatBestOf(value: number | null): string {
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl p-4" style={{ backgroundColor: design.card }}>
-      <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">{title}</h2>
+    <section className="rounded-2xl p-4" style={{ backgroundColor: design.card, border: `1px solid ${design.border}` }}>
+      <h2 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em]" style={{ fontFamily: "'Exo2', sans-serif", color: '#eaf2fb' }}>
+        {title}
+      </h2>
+      <div className="h-0.5 w-8 rounded bg-[#ff3b30] mb-3" />
       {children}
     </section>
   );
 }
 
-/** Live 比赛详情全屏页：15s 轮询 /api/live-detail，展示比分/经济曲线/建筑/BP。 */
+/** Live 比赛详情全屏页：15s 轮询 /api/live-detail，展示比分/经济曲线/建筑/BP/已结束地图。 */
 export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
   seriesId: string;
   slug?: string;
@@ -40,7 +46,6 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
   const [error, setError] = useState<string | null>(null);
   const [activeMapNumber, setActiveMapNumber] = useState<number | null>(null);
   const activeMapNumberRef = useRef<number | null>(null);
-  const loadedRef = useRef(false);
 
   const selectMap = useCallback((number: number) => {
     activeMapNumberRef.current = number;
@@ -58,7 +63,6 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
       });
       // timeout/not_found 响应无 maps：静默保留上一帧，避免用残缺 payload 渲染崩溃
       if (!data?.seriesId || !Array.isArray(data?.maps)) {
-        loadedRef.current = true;
         return;
       }
       setPayload((prev) => {
@@ -117,7 +121,6 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
     ? payload.maps
     : [{ matchId: null, number: 1, isTeam1Radiant: true, status: 'upcoming', winner: null, team1Score: null, team2Score: null, gameTime: null, team1NetWorthLead: null, team2NetWorthLead: null, buildingState: null, picks: [], states: [], odds: [] } as LiveMap];
   const activeMap = maps.find((m) => m.number === activeMapNumber) ?? maps[maps.length - 1] ?? maps[0];
-  const live = activeMap.status === 'live';
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 lg:px-6" style={{ backgroundColor: design.bg }}>
@@ -128,14 +131,10 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
             <ArrowLeft className="size-4" /> 返回赛程
           </button>
           <div className="flex min-w-0 items-center gap-2">
+            {activeMap.status === 'live' && <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#ff3b30]" />}
             <span className="truncate text-sm font-semibold text-slate-200">
               {payload.championship?.name || 'Live Match'} · {formatBestOf(payload.bestOf)}
             </span>
-            {live && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: design.red }}>
-                <span className="size-1.5 animate-pulse rounded-full bg-white" /> LIVE
-              </span>
-            )}
           </div>
         </div>
 
@@ -163,8 +162,18 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
           />
         </SectionCard>
 
+        <SectionCard title="已结束地图 · Finished Maps">
+          <MapHistoryCards
+            maps={payload.maps}
+            team1={payload.team1}
+            team2={payload.team2}
+          />
+        </SectionCard>
+
         {payload.cached === false && (
-          <p className="text-center text-[10px] text-slate-600">数据来源 hawk.live · {payload.fetchedAt ? new Date(payload.fetchedAt).toLocaleTimeString() : ''}</p>
+          <p className="text-center text-[10px]" style={{ color: design.faint }}>
+            数据来源 hawk.live · {payload.fetchedAt ? new Date(payload.fetchedAt).toLocaleTimeString() : ''}
+          </p>
         )}
       </div>
     </div>
