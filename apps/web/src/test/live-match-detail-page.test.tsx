@@ -110,7 +110,8 @@ describe('LiveMatchDetailPage', () => {
     const map2Tab = screen.getByRole('button', { name: 'Map 2' });
     fireEvent.click(map2Tab);
 
-    expect(await screen.findByText('阵容 · Map 2')).toBeTruthy();
+    expect(await screen.findByText('阵容 · Picks')).toBeTruthy();
+    expect(screen.getByText('Map 2 · 选人')).toBeTruthy();
   });
 
   it('does not crash when the API returns a timeout payload without maps', async () => {

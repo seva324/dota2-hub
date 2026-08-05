@@ -65,10 +65,18 @@ function isAlive(state: LiveBuildingState | null, side: 'radiant' | 'dire', lane
   return !!(laneStr && laneStr[idx] === '1');
 }
 
-/** 建筑状态地图：三路塔/泉水/T4 存活点亮，被摧毁置灰 */
-export function BuildingMap({ buildingState }: { buildingState: LiveBuildingState | null }) {
+/** 建筑状态地图：三路塔/泉水/T4 存活点亮，被摧毁置灰，天辉/夜魇队名标注。 */
+export function BuildingMap({ buildingState, radiantName, direName }: {
+  buildingState: LiveBuildingState | null;
+  radiantName?: string;
+  direName?: string;
+}) {
   return (
-    <div className="flex justify-center py-2">
+    <div className="flex flex-col items-center gap-2 py-1">
+      <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: design.radiant }}>
+        <span className="size-2 rounded-full" style={{ backgroundColor: design.radiant, boxShadow: `0 0 8px ${design.radiant}55` }} />
+        {radiantName || 'Radiant'}（Radiant）
+      </span>
       <svg viewBox="0 0 220 220" className="h-auto w-full max-w-[280px]" role="img" aria-label="建筑状态地图">
         {/* 背景网格 */}
         <rect width="220" height="220" fill="#10141a" rx="12" />
@@ -88,6 +96,10 @@ export function BuildingMap({ buildingState }: { buildingState: LiveBuildingStat
           );
         })}
       </svg>
+      <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: design.dire }}>
+        <span className="size-2 rounded-full" style={{ backgroundColor: design.dire, boxShadow: `0 0 8px ${design.dire}55` }} />
+        {direName || 'Dire'}（Dire）
+      </span>
     </div>
   );
 }
