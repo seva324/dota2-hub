@@ -3,7 +3,7 @@ import { getHeroImageUrl } from '@/lib/assetUrls';
 import type { LivePick } from '@/types/liveDetail';
 
 const design = {
-  radiant: '#2b55e8',
+  radiant: '#34d399',
   dire: '#ff3b30',
   slot: '#14181f',
   border: 'rgba(255,255,255,0.06)',

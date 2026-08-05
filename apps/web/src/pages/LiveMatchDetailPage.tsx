@@ -9,7 +9,7 @@ import { apiFetch } from '@/lib/api-cache';
 import type { LiveDetailPayload, LiveMap } from '@/types/liveDetail';
 
 const design = {
-  blue: '#2b55e8',
+  radiant: '#34d399',
   red: '#ff3b30',
   card: '#0d141e',
   bg: '#05090d',
