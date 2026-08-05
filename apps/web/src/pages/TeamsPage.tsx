@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, Users } from 'lucide-react';
+import { ChevronDown, RefreshCw, Users } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
@@ -25,6 +25,9 @@ interface RankingTeam {
 }
 
 const RANK_FONT = { fontFamily: "'Anton', 'Arial Narrow', sans-serif" };
+
+const INITIAL_VISIBLE_TEAMS = 10;
+const EXPAND_STEP_TEAMS = 10;
 
 const MEDALS = {
   gold: { color: '#F5C96B', label: 'CHAMPION' },
@@ -196,6 +199,7 @@ export function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ teamName: string; player: RankingPlayer } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_TEAMS);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -221,8 +225,10 @@ export function TeamsPage() {
     return () => controller.abort();
   }, [load]);
 
-  const podium = teams.slice(0, 3);
-  const rest = teams.slice(3);
+  const visibleTeams = teams.slice(0, visibleCount);
+  const podium = visibleTeams.slice(0, 3);
+  const rest = visibleTeams.slice(3);
+  const hasMore = teams.length > visibleCount;
 
   return (
     <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-16 pt-24 lg:px-6">
@@ -306,6 +312,18 @@ export function TeamsPage() {
               <TeamRow key={team.rank} team={team} onSelectPlayer={(teamName, player) => setSelected({ teamName, player })} />
             ))}
           </ul>
+          {hasMore && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((count) => count + EXPAND_STEP_TEAMS)}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <ChevronDown className="size-4" />
+                展开更多（剩余 {teams.length - visibleCount} 支）
+              </button>
+            </div>
+          )}
         </div>
       )}
 
