@@ -14,7 +14,7 @@ const design = {
   card: '#0d141e',
   bg: '#05090d',
   border: 'rgba(148,178,214,0.14)',
-  faint: '#7a8ba1',
+  faint: '#8ea1b7',
 };
 
 const POLL_INTERVAL_MS = 15_000;
@@ -23,13 +23,16 @@ function formatBestOf(value: number | null): string {
   return Number.isFinite(value) && (value as number) > 0 ? `BO${value}` : 'BO3';
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl p-4" style={{ backgroundColor: design.card, border: `1px solid ${design.border}` }}>
-      <h2 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em]" style={{ fontFamily: "'Exo2', sans-serif", color: '#eaf2fb' }}>
-        {title}
-      </h2>
-      <div className="h-0.5 w-8 rounded bg-[#ff3b30] mb-3" />
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ fontFamily: "'Exo2', sans-serif", color: '#eaf2fb' }}>
+          {title}
+        </h2>
+        {sub && <span className="shrink-0 text-[11px]" style={{ color: design.faint }}>{sub}</span>}
+      </div>
+      <div className="mb-3 h-0.5 w-8 rounded bg-[#ff3b30]" />
       {children}
     </section>
   );
@@ -121,6 +124,10 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
     ? payload.maps
     : [{ matchId: null, number: 1, isTeam1Radiant: true, status: 'upcoming', winner: null, team1Score: null, team2Score: null, gameTime: null, team1NetWorthLead: null, team2NetWorthLead: null, buildingState: null, picks: [], states: [], odds: [] } as LiveMap];
   const activeMap = maps.find((m) => m.number === activeMapNumber) ?? maps[maps.length - 1] ?? maps[0];
+  const radiantTeam = activeMap.isTeam1Radiant ? payload.team1 : payload.team2;
+  const direTeam = activeMap.isTeam1Radiant ? payload.team2 : payload.team1;
+  const radiantName = radiantTeam.name || 'TBD';
+  const direName = direTeam.name || 'TBD';
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 lg:px-6" style={{ backgroundColor: design.bg }}>
@@ -144,16 +151,16 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
           onSelectMap={selectMap}
         />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <SectionCard title="经济曲线">
-            <NetWorthChart states={activeMap.states} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+          <SectionCard title="经济曲线 · Net Worth" sub={`Map ${activeMap.number}`}>
+            <NetWorthChart states={activeMap.states} radiantName={radiantName} direName={direName} />
           </SectionCard>
-          <SectionCard title="建筑状态">
-            <BuildingMap buildingState={activeMap.buildingState} />
+          <SectionCard title="建筑状态 · Buildings" sub={`Map ${activeMap.number}`}>
+            <BuildingMap buildingState={activeMap.buildingState} radiantName={radiantName} direName={direName} />
           </SectionCard>
         </div>
 
-        <SectionCard title={`阵容 · Map ${activeMap.number}`}>
+        <SectionCard title="阵容 · Picks" sub={`Map ${activeMap.number} · 选人`}>
           <LiveLineup
             picks={activeMap.picks}
             team1Name={payload.team1.name || 'TBD'}
@@ -162,7 +169,7 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
           />
         </SectionCard>
 
-        <SectionCard title="已结束地图 · Finished Maps">
+        <SectionCard title="已结束地图 · Finished Maps" sub="来自 hawk.live 系列赛数据">
           <MapHistoryCards
             maps={payload.maps}
             team1={payload.team1}
