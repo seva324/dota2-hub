@@ -130,13 +130,31 @@ function TournamentSlide({ tournament }: { tournament: PrimaryLeague }) {
 
           {tournament.eventUrl && (
             <a
-              href={tournament.eventUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={(() => {
+                try {
+                  const { pathname } = new URL(tournament.eventUrl);
+                  const parts = pathname.split('/').filter(Boolean);
+                  const eventIndex = parts.indexOf('events');
+                  const slug = eventIndex >= 0 ? parts[eventIndex + 1] : null;
+                  return slug ? `#/event/${encodeURIComponent(slug)}` : tournament.eventUrl;
+                } catch {
+                  return tournament.eventUrl;
+                }
+              })()}
+              {...(() => {
+                try {
+                  const { pathname } = new URL(tournament.eventUrl);
+                  const parts = pathname.split('/').filter(Boolean);
+                  const internal = parts.indexOf('events') >= 0;
+                  return internal ? {} : { target: '_blank', rel: 'noopener noreferrer' };
+                } catch {
+                  return { target: '_blank', rel: 'noopener noreferrer' };
+                }
+              })()}
             >
               <Button size="lg" className="mt-8 w-fit rounded-lg px-6 text-sm font-semibold text-white hover:opacity-90" style={{ backgroundColor: design.blue }}>
                 <Play className="size-4 fill-white" />
-                Explore Tournament
+                查看赛事详情
               </Button>
             </a>
           )}

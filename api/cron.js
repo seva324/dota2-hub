@@ -6,6 +6,7 @@ import { warmPlayerProfileCache } from '../lib/server/player-profile-cache.js';
 import { warmTeamFlyoutCache } from '../lib/server/team-flyout-cache.js';
 import { backfillDltvTeamLogos } from '../lib/server/dltv-team-logo-backfill.js';
 import { warmDltvCaches } from '../lib/server/dltv-warm.js';
+import { refreshEventDetailCache } from './event-detail.js';
 import { refreshEventsCache } from './events.js';
 import { refreshPrimaryLeaguesCache } from './primary-leagues.js';
 import { syncRankingsToDb } from '../lib/server/rankings-service.js';
@@ -288,7 +289,23 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
       console.error('[cron] warm primary leagues failed:', error instanceof Error ? error.message : String(error));
       primaryLeagues = { ok: false };
     }
-    return { action, result: { ...result, events, primaryLeagues } };
+    // 顺带预热赛事详情页：从 events 目录取 ongoing/upcoming 的 slug，逐个写 Neon。
+    // best-effort，失败不影响主流程；Neon 锁防多实例并发抓同 slug。
+    let eventDetails = { warmed: 0, failed: 0 };
+    try {
+      const warmSlugs = (events.warmUrls || [])
+        .map((url) => String(url || '').match(/\/events\/([^/?#]+)/)?.[1])
+        .filter(Boolean);
+      for (const slug of warmSlugs) {
+        const result = await refreshEventDetailCache({ slug });
+        if (result.ok) eventDetails.warmed += 1;
+        else eventDetails.failed += 1;
+      }
+    } catch (error) {
+      console.error('[cron] warm event details failed:', error instanceof Error ? error.message : String(error));
+      eventDetails = { warmed: 0, failed: 0, error: true };
+    }
+    return { action, result: { ...result, events, primaryLeagues, eventDetails } };
   }
   if (action === 'sync-news') {
     return { action, result: await syncNewsToDb(buildSyncNewsOptions(raw)) };

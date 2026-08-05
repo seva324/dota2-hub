@@ -4,6 +4,21 @@ import { SafeImg } from '@/components/custom/SafeImg';
 import { EmptyState } from '@/components/custom/EmptyState';
 import { apiFetch } from '@/lib/api-cache';
 
+/** 从 DLTV 赛事 URL（/events/<slug>）提取详情页 slug；提取失败返回 null。 */
+function eventSlugFromUrl(sourceUrl?: string | null): string | null {
+  if (!sourceUrl) return null;
+  try {
+    const { pathname } = new URL(sourceUrl);
+    const parts = pathname.split('/').filter(Boolean);
+    const eventIndex = parts.indexOf('events');
+    if (eventIndex < 0) return null;
+    const segments = parts.slice(eventIndex + 1);
+    return segments[segments.length - 1] || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 赛事目录页（Apple HK 产品风，深色电竞主题）
  * 数据：/api/events（dltv.org/events + /events/finished）
@@ -128,11 +143,12 @@ function RegionFlag({ entry, className }: { entry: EventEntry; className?: strin
 
 function PosterCard({ entry }: { entry: EventEntry }) {
   const tone = tierTone(entry.tier);
+  const slug = eventSlugFromUrl(entry.sourceUrl);
   return (
     <a
-      href={entry.sourceUrl || undefined}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={slug ? `#/event/${encodeURIComponent(slug)}` : (entry.sourceUrl || undefined)}
+      target={slug ? undefined : '_blank'}
+      rel={slug ? undefined : 'noopener noreferrer'}
       className="group relative block w-[280px] shrink-0 overflow-hidden rounded-2xl border border-white/10 transition-all duration-300 hover:border-white/25 hover:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.7)] sm:w-[320px]"
     >
       <div className="relative aspect-[16/9] w-full">
@@ -195,11 +211,12 @@ function PosterCard({ entry }: { entry: EventEntry }) {
 /* ------------------------------------------------------------------ */
 
 function UpcomingCard({ entry }: { entry: EventEntry }) {
+  const slug = eventSlugFromUrl(entry.sourceUrl);
   return (
     <a
-      href={entry.sourceUrl || undefined}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={slug ? `#/event/${encodeURIComponent(slug)}` : (entry.sourceUrl || undefined)}
+      target={slug ? undefined : '_blank'}
+      rel={slug ? undefined : 'noopener noreferrer'}
       className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#1a1d24] transition-all duration-300 hover:border-white/25 hover:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.7)]"
     >
       <div className="relative aspect-[16/9] w-full overflow-hidden">
@@ -265,9 +282,7 @@ function FinishedRow({ entry }: { entry: EventEntry }) {
   const tone = tierTone(entry.tier);
   return (
     <a
-      href={entry.sourceUrl || undefined}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={entry.sourceUrl ? `#/event/${encodeURIComponent(eventSlugFromUrl(entry.sourceUrl) || '')}` : undefined}
       className="group grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-4 px-4 py-3 transition-colors hover:bg-white/[0.03] sm:px-5"
     >
       <span className="text-xs font-medium tabular-nums text-slate-500">{formatShortDate(entry.startTime)}</span>

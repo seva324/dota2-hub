@@ -418,5 +418,11 @@ export async function refreshEventsCache({ fetchImpl = fetch } = {}) {
     ongoing: payload?.events?.ongoing?.length || 0,
     upcoming: payload?.events?.upcoming?.length || 0,
     finished: payload?.events?.finished?.length || 0,
+    // 供赛事详情预热：当前进行/即将开始的赛事详情页 URL（取 12 个，控制预热预算）。
+    warmUrls: [...new Set(
+      (payload?.events?.ongoing || []).concat(payload?.events?.upcoming || [])
+        .map((entry) => entry.sourceUrl)
+        .filter((url) => url && /\/events\/[^/]+/.test(url))
+    )].slice(0, 12),
   };
 }

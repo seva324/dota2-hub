@@ -12,6 +12,7 @@ const translateNewsBackfillMock = vi.fn();
 const warmDltvCachesMock = vi.fn();
 const refreshEventsCacheMock = vi.fn();
 const refreshPrimaryLeaguesCacheMock = vi.fn();
+const refreshEventDetailCacheMock = vi.fn();
 const persistLiveHeroSnapshotsMock = vi.fn();
 
 vi.mock('@neondatabase/serverless', () => ({
@@ -50,6 +51,10 @@ vi.mock('../../../../api/events.js', () => ({
 
 vi.mock('../../../../api/primary-leagues.js', () => ({
   refreshPrimaryLeaguesCache: refreshPrimaryLeaguesCacheMock,
+}));
+
+vi.mock('../../../../api/event-detail.js', () => ({
+  refreshEventDetailCache: refreshEventDetailCacheMock,
 }));
 
 vi.mock('../../../../lib/server/live-hero-service.js', () => ({
@@ -97,9 +102,11 @@ describe('/api/cron incremental refresh actions', () => {
     translateNewsBackfillMock.mockReset();
     warmDltvCachesMock.mockReset();
     refreshEventsCacheMock.mockReset();
-    refreshEventsCacheMock.mockResolvedValue({ ok: true, ongoing: 2, upcoming: 5, finished: 3 });
+    refreshEventsCacheMock.mockResolvedValue({ ok: true, ongoing: 2, upcoming: 5, finished: 3, warmUrls: ['https://dltv.org/events/pgl-wallachia-s7', 'https://dltv.org/events/esl-one-birmingham-2026'] });
     refreshPrimaryLeaguesCacheMock.mockReset();
     refreshPrimaryLeaguesCacheMock.mockResolvedValue({ ok: true, count: 6 });
+    refreshEventDetailCacheMock.mockReset();
+    refreshEventDetailCacheMock.mockResolvedValue({ ok: true });
 
     warmPlayerProfileCacheMock.mockResolvedValue({ selected: 12, refreshed: 12, failed: 0, mode: 'incremental' });
     warmTeamFlyoutCacheMock.mockResolvedValue({ selected: 8, refreshed: 8, failed: 0, mode: 'incremental' });
@@ -131,10 +138,13 @@ describe('/api/cron incremental refresh actions', () => {
     expect(warmDltvCachesMock).toHaveBeenCalledTimes(1);
     expect(refreshEventsCacheMock).toHaveBeenCalledTimes(1);
     expect(refreshPrimaryLeaguesCacheMock).toHaveBeenCalledTimes(1);
+    // 详情预热：从 events 返回的 warmUrls 逐个调 refreshEventDetailCache。
+    expect(refreshEventDetailCacheMock).toHaveBeenCalledTimes(2);
+    expect(refreshEventDetailCacheMock).toHaveBeenCalledWith({ slug: 'pgl-wallachia-s7' });
     expect(res.payload).toMatchObject({
       ok: true,
       action: 'warm-dltv',
-      result: { lists: { live: 1 }, events: { ok: true, ongoing: 2 }, primaryLeagues: { ok: true, count: 6 } },
+      result: { lists: { live: 1 }, events: { ok: true, ongoing: 2 }, primaryLeagues: { ok: true, count: 6 }, eventDetails: { warmed: 2, failed: 0 } },
     });
   });
 

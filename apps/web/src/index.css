@@ -34,6 +34,22 @@
   src: url('/fonts/Exo2-Black.woff') format('woff');
 }
 
+@font-face {
+  font-family: 'Alibaba PuHuiTi';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/AlibabaPuHuiTi-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Alibaba PuHuiTi';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/AlibabaPuHuiTi-Bold.woff2') format('woff2');
+}
+
 @layer base {
   :root {
     /* Visual-parity design tokens v1
@@ -78,7 +94,7 @@
   
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Exo2', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Exo2', 'Alibaba PuHuiTi', system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
