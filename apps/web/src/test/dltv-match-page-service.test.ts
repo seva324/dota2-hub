@@ -24,10 +24,12 @@ function makeShellHtml() {
   return `<html><script>function render() { return series_item.bets.filter((b) => b.betting_platform_id == platform.id); }</script></html>`;
 }
 
-/** 真实详情页：内嵌 `series_item = {...}` JSON。 */
-function makeRealHtml(overrides: { maps?: unknown[] } = {}) {
+/** 真实详情页：内嵌 `series_item = {...}` JSON。默认是已结束的完整比赛。 */
+function makeRealHtml(overrides: { maps?: unknown[]; status?: number; endedAt?: string | null } = {}) {
   const seriesItem = {
     id: 427573,
+    status: overrides.status ?? 2,
+    ended_at: overrides.endedAt !== undefined ? overrides.endedAt : '2026-08-01T12:00:00.000Z',
     first_team: { id: 1, title: 'OG', tag: 'OG', slug: 'og', image: '/img/og.png', image_dark: null },
     second_team: { id: 2, title: 'Nigma Galaxy', tag: 'NGX', slug: 'nigma-galaxy', image: '/img/ngx.png', image_dark: null },
     event: { id: 9, title: 'ESL One', slug: 'esl-one' },
@@ -168,15 +170,46 @@ describe('dltv match page service', () => {
   it('serves a fresh Neon cache payload without fetching', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     readDltvMatchPageCache.mockResolvedValue({
-      payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
+      payload: { seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } },
       refreshedAt: Date.now(),
     });
     const fetchImpl = vi.fn();
     const { series, source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
 
-    expect(series).toEqual({ seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } });
+    expect(series).toEqual({ seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } });
     expect(source).toBe('cache');
     expect(fetchImpl).not.toHaveBeenCalled();
+    expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
+  });
+
+  it('ignores a fresh-but-unfinished Neon snapshot and cold-fetches (no stale pre-match ghost)', async () => {
+    // 回归：比赛开始前被抓取的空快照（status=0/无 endedAt）曾长期污染 6h 长缓存，
+    // 导致比赛结束后用户仍看到"暂无比赛数据"。修复后此类快照必须当 miss，落冷抓并覆盖。
+    const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
+    readDltvMatchPageCache.mockResolvedValue({
+      payload: { seriesId: 427573, status: 0, endedAt: null, radiantTeam: { id: 1, name: 'OG' }, maps: [] },
+      refreshedAt: Date.now(),
+    });
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
+
+    const { series, source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
+
+    expect(source).toBe('dltv');
+    expect(series?.maps.some((map) => map.available)).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    // 冷抓拿到已结束的完整数据后写回 Neon，覆盖脏快照。
+    expect(writeDltvMatchPageCache).toHaveBeenCalledWith(fakeDb, 427573, expect.any(Object));
+  });
+
+  it('does not write unfinished snapshots into the Neon long cache', async () => {
+    // 赛前/进行中抓到的快照只进内存短缓存，绝不进 Neon 6h——这是空快照污染缓存的源头。
+    const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
+    const upcomingHtml = makeRealHtml({ status: 0, endedAt: null, maps: [] });
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(upcomingHtml));
+
+    const { source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
+
+    expect(source).toBe('dltv');
     expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
   });
 
@@ -213,7 +246,7 @@ describe('dltv match page service', () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     // 即使 Neon 有新鲜缓存，forceRefresh 也要绕过它直接抓取（预热 cron 用）。
     readDltvMatchPageCache.mockResolvedValue({
-      payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
+      payload: { seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } },
       refreshedAt: Date.now(),
     });
     const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
@@ -228,7 +261,7 @@ describe('dltv match page service', () => {
   it('returns stale payload immediately while a background refresh rewrites the Neon cache', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     readDltvMatchPageCache.mockResolvedValue({
-      payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
+      payload: { seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } },
       refreshedAt: Date.now() - 7 * 60 * 60 * 1000, // 过期 > DB_CACHE_TTL_MS (6h)
     });
     const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
@@ -236,7 +269,7 @@ describe('dltv match page service', () => {
     const { series, source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
 
     expect(source).toBe('stale');
-    expect(series).toEqual({ seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } });
+    expect(series).toEqual({ seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } });
     // 后台刷新已发起抓取
     expect(fetchImpl).toHaveBeenCalled();
     await vi.waitFor(() => expect(writeDltvMatchPageCache).toHaveBeenCalled());
@@ -260,7 +293,7 @@ describe('dltv match page service', () => {
   it('falls back to stale when a background refresh fails', async () => {
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     readDltvMatchPageCache.mockResolvedValue({
-      payload: { seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } },
+      payload: { seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } },
       refreshedAt: Date.now() - 7 * 60 * 60 * 1000,
     });
     const fetchImpl = vi.fn().mockRejectedValue(new Error('network down'));
@@ -268,7 +301,7 @@ describe('dltv match page service', () => {
     const { series, source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
 
     expect(source).toBe('stale');
-    expect(series).toEqual({ seriesId: 427573, radiantTeam: { id: 1, name: 'OG' } });
+    expect(series).toEqual({ seriesId: 427573, status: 2, endedAt: 1782979200, radiantTeam: { id: 1, name: 'OG' } });
     // 等后台刷新 settle，确认旧数据未被覆盖
     await new Promise((r) => setTimeout(r, 0));
     expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
