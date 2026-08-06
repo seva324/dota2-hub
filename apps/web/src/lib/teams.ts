@@ -183,10 +183,20 @@ export function resolveTeamLogo(
   });
   if (rowCuratedMirror) return rowCuratedMirror;
 
+  // 本地镜像（按队名/缩写兜底）优先于远端 DLTV/hawk logo
+  const compact = normalizeCompact(teamName);
+  if (compact && TEAM_LOGO_FALLBACKS[compact]) {
+    return TEAM_LOGO_FALLBACKS[compact];
+  }
+  if (row) {
+    const rowNameCompact = normalizeCompact(row?.name ?? row?.name_cn);
+    const rowTagCompact = normalizeCompact(row?.tag);
+    const rowFallback = TEAM_LOGO_FALLBACKS[rowNameCompact] || TEAM_LOGO_FALLBACKS[rowTagCompact];
+    if (rowFallback) return rowFallback;
+  }
+
   if (row?.logo_url) return String(row.logo_url);
   if (explicitLogo) return String(explicitLogo);
 
-  const compact = normalizeCompact(teamName);
-  if (!compact) return '';
-  return TEAM_LOGO_FALLBACKS[compact] || '';
+  return '';
 }

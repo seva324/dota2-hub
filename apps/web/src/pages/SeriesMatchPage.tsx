@@ -4,6 +4,7 @@ import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { UpcomingMatchView } from '@/components/custom/UpcomingMatchView';
 import { apiFetch } from '@/lib/api-cache';
+import { resolveTeamLogo } from '@/lib/teams';
 import type {
   MatchPagePayload,
   SeriesMapBlock,
@@ -494,6 +495,8 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
   const second = payload.teams.dire;
   const firstTeamId = first.id;
   const secondTeamId = second.id;
+  const firstLogo = resolveTeamLogo({ teamId: first.id, name: first.name }, [], first.logo);
+  const secondLogo = resolveTeamLogo({ teamId: second.id, name: second.name }, [], second.logo);
 
   // 未开赛（upcoming）：maps 为空但带赛前数据且开赛时间在未来 → 预告视图。
   const isUpcoming =
@@ -543,7 +546,7 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
         <div className="flex items-center justify-center gap-6 rounded-2xl border border-white/8 bg-white/[0.03] px-6 py-5">
           <div className="flex flex-col items-center gap-1">
             <SafeImg
-              src={first.logo}
+              src={firstLogo}
               alt={first.name || ''}
               className="size-12 object-contain"
               fallback={<TeamLogoFallback name={first.name || 'A'} size={48} />}
@@ -557,7 +560,7 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
           </div>
           <div className="flex flex-col items-center gap-1">
             <SafeImg
-              src={second.logo}
+              src={secondLogo}
               alt={second.name || ''}
               className="size-12 object-contain"
               fallback={<TeamLogoFallback name={second.name || 'B'} size={48} />}
@@ -575,8 +578,8 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
             secondTeamId={secondTeamId}
             firstTeamName={first.name}
             secondTeamName={second.name}
-            firstLogo={first.logo}
-            secondLogo={second.logo}
+            firstLogo={firstLogo}
+            secondLogo={secondLogo}
             leftPips={leftPips}
             rightPips={rightPips}
           />

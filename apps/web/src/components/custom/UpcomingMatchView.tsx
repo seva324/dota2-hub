@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, BarChart3, Calendar, ExternalLink, Trophy } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
+import { resolveTeamLogo } from '@/lib/teams';
 import type { MatchPagePayload, SeriesLineupPlayer, SeriesTeamInfo } from '@/types/matchPage';
 
 const design = {
@@ -76,15 +77,16 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function TeamStatBlock({ team, align }: { team: SeriesTeamInfo; align: 'left' | 'right' }) {
+  const logo = resolveTeamLogo({ teamId: team.id, name: team.name }, [], team.logo);
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
       <SafeImg
-        src={team.logo}
+        src={logo}
         alt={team.name || ''}
         className="size-12 object-contain sm:size-16"
         fallback={<TeamLogoFallback name={team.name || (align === 'left' ? 'A' : 'B')} size={56} />}
       />
-      <span className={`w-full truncate text-center text-sm font-black uppercase text-white sm:text-lg ${align === 'right' ? 'text-right' : 'text-left'}`}>
+      <span className="w-full truncate text-center text-sm font-black uppercase text-white sm:text-lg">
         {team.name}
       </span>
       {team.rank != null && (
@@ -151,11 +153,12 @@ function PlayerCard({ player }: { player: SeriesLineupPlayer }) {
 }
 
 function LineupColumn({ team }: { team: SeriesTeamInfo }) {
+  const logo = resolveTeamLogo({ teamId: team.id, name: team.name }, [], team.logo);
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <SafeImg
-          src={team.logo}
+          src={logo}
           alt={team.name || ''}
           className="size-5 shrink-0 object-contain"
           fallback={<TeamLogoFallback name={team.name || 'T'} size={20} />}

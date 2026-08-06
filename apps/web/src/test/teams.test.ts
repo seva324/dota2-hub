@@ -25,4 +25,21 @@ describe('resolveTeamLogo', () => {
     expect(resolveTeamLogo('Zero Tenacity', [], 'https://dltv.org/images/desktop/empty/team.svg'))
       .toBe(getCuratedTeamLogoMirrorPath('Zero Tenacity'));
   });
+
+  it('prefers the local name-based mirror fallback over DLTV explicit logos', () => {
+    // PSG.LGD 只有镜像 fallback（无 curated/override），DLTV logo 不应抢先
+    expect(resolveTeamLogo({ teamId: '5014799', name: 'PSG.LGD' }, [], 'https://hawk.live/storage/teams/lgd.png'))
+      .toBe('/images/mirror/teams/5014799.png');
+    // 行数据带远端 logo_url + tag 命中时，本地镜像 fallback 同样优先
+    expect(resolveTeamLogo(
+      { teamId: '5014799', name: 'LGD Gaming' },
+      [{ team_id: '5014799', name: 'LGD Gaming', tag: 'LGD', logo_url: 'https://s3.dltv.org/uploads/teams/lgd.png' }],
+      'https://hawk.live/storage/teams/lgd.png',
+    )).toBe('/images/mirror/teams/5014799.png');
+  });
+
+  it('falls back to the explicit DLTV logo when no local mirror exists', () => {
+    expect(resolveTeamLogo({ teamId: '10781', name: 'RE Arise' }, [], 'https://hawk.live/storage/teams/10781.png'))
+      .toBe('https://hawk.live/storage/teams/10781.png');
+  });
 });

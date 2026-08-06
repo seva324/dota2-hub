@@ -193,8 +193,11 @@ const teamLogoMap: Record<string, string> = {
 };
 
 function getTeamLogoSrc(teamName: string, logoUrl?: string | null): string | undefined {
+  // 本地镜像优先，DLTV logo 仅作兜底
+  const mirror = teamLogoMap[teamName];
+  if (mirror) return mirror;
   if (logoUrl) return logoUrl;
-  return teamLogoMap[teamName];
+  return undefined;
 }
 
 interface MatchDetailModalProps {
@@ -516,7 +519,10 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     className={`inline-flex items-center gap-2 text-lg md:text-2xl font-bold ${match.radiant_win ? 'text-green-400' : 'text-red-400'} hover:underline underline-offset-4`}
                     onClick={() => { if (radiantTeamRef?.name) onTeamClick?.(radiantTeamRef); }}
                   >
-                    {radiantTeamRef?.logo_url ? <img src={radiantTeamRef.logo_url} alt={radiantTeamName} className="h-8 w-8 md:h-10 md:w-10 object-contain shrink-0" /> : null}
+                    {(() => {
+                      const logoSrc = getTeamLogoSrc(radiantTeamName, radiantTeamRef?.logo_url);
+                      return logoSrc ? <img src={logoSrc} alt={radiantTeamName} className="h-8 w-8 md:h-10 md:w-10 object-contain shrink-0" /> : null;
+                    })()}
                     {radiantTeamName}
                   </button>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -530,7 +536,10 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     onClick={() => { if (direTeamRef?.name) onTeamClick?.(direTeamRef); }}
                   >
                     {direTeamName}
-                    {direTeamRef?.logo_url ? <img src={direTeamRef.logo_url} alt={direTeamName} className="h-8 w-8 md:h-10 md:w-10 object-contain shrink-0" /> : null}
+                    {(() => {
+                      const logoSrc = getTeamLogoSrc(direTeamName, direTeamRef?.logo_url);
+                      return logoSrc ? <img src={logoSrc} alt={direTeamName} className="h-8 w-8 md:h-10 md:w-10 object-contain shrink-0" /> : null;
+                    })()}
                   </button>
                 </div>
                 <div className="text-[11px] text-slate-400">
