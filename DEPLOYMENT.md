@@ -5,8 +5,8 @@
 - 生产站点 `https://dotahub.cn` 部署在 **EdgeOne Pages**（项目 Provider=Github，通过 GitHub 仓库集成）。
 - **已弃用 Vercel**：仓库历史里的 `vercel[bot]` deployments 是旧部署方式，不再使用；`~/.vercel/project.json` 与 `vercel.json` 仅为遗留文件。
 - Provider=Github 的 EdgeOne 项目**拒绝 CLI 直传**（`edgeone pages deploy` 会报 `Project exists but has Provider 'Github'... does not support direct folder or zip file deployment`）。
-- 因此**部署依赖 EdgeOne 控制台的 Git 集成**（push 到 main 自动构建，或在控制台手动触发构建）。
-- ⚠️ 已知问题（2026-08-06）：GitHub push 后**生产未自动更新**（控制台 Git 集成未触发自动构建）。若 push 后生产仍是旧版本，需在 EdgeOne 控制台手动触发构建/部署，并检查集成的自动部署配置。
+- 因此**部署 = EdgeOne 控制台 Git 集成自动触发**：push main 后约 **2 分钟**自动构建部署，无需手动操作。
+- 验证：push 后等 ~2 分钟，对比 `https://dotahub.cn/` 的 `assets/index-*.js` 与本地 `apps/web/dist/assets/`。
 
 ## What the workflow does
 
@@ -57,9 +57,8 @@
 
 ### 部署到生产（Provider=Github 项目）
 
-1. push 到 `main` 后，等待 EdgeOne 控制台 Git 集成自动构建；若未自动更新：
-2. 登录 EdgeOne 控制台 → Pages 项目 `dota2-hub` → 手动触发构建/部署（或检查 Git 集成的自动部署设置）。
-3. 验证：`https://dotahub.cn/` 的 bundle 文件名是否与本地 `apps/web/dist/assets/index-*.js` 一致。
+1. push 到 `main` 后，EdgeOne 控制台 Git 集成**自动构建部署**（约 2 分钟）。
+2. 验证：等 ~2 分钟后，对比 `https://dotahub.cn/` 的 bundle 文件名与本地 `apps/web/dist/assets/index-*.js`；若不一致可稍等重试，仍不一致再到 EdgeOne 控制台检查构建日志。
 
 ### 仅跑 CI（不部署）
 
