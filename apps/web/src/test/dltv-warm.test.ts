@@ -156,4 +156,27 @@ describe('dltv warm cron', () => {
     expect(result.upcomingMatchPages.warmed).toBe(0);
     expect(mocks.getDltvMatchPage).not.toHaveBeenCalled();
   });
+
+  it('stops warming when the hard deadline has passed', async () => {
+    mocks.getDltvLive.mockResolvedValue({ live: [] });
+    mocks.getDltvUpcoming.mockResolvedValue({
+      upcoming: [{ seriesId: 427409, matchUrl: 'https://dltv.org/matches/427409/x-vs-y' }],
+    });
+    mocks.getDltvResults.mockResolvedValue({
+      results: [{ seriesId: 427573, matchUrl: 'https://dltv.org/matches/427573/og-vs-nigma' }],
+    });
+    mocks.getDltvMatchPage.mockResolvedValue({ series: { seriesId: 427409 }, source: 'dltv' });
+
+    // deadline 已过期：match-page / stats 全部跳过（列表抓取仍完成），
+    // 保证函数能在平台 60s 上限内返回响应。
+    const result = await warmDltvCaches({ deadline: Date.now() - 1_000 });
+
+    expect(result.matchPages.warmed).toBe(0);
+    expect(result.matchPages.budgetHit).toBe(true);
+    expect(result.upcomingMatchPages.warmed).toBe(0);
+    expect(result.upcomingMatchPages.budgetHit).toBe(true);
+    expect(result.seriesStats.warmed).toBe(0);
+    expect(mocks.getDltvMatchPage).not.toHaveBeenCalled();
+    expect(mocks.getDltvSeriesStats).not.toHaveBeenCalled();
+  });
 });

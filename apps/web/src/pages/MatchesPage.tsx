@@ -161,7 +161,7 @@ function TeamMatchup({ left, right, center, className = '' }: {
 
 function UpcomingRow({ match, onOpen }: {
   match: UpcomingMatch;
-  onOpen?: (id: string | number, maps?: Array<{ slug?: string }>) => void;
+  onOpen?: (id: string | number, maps?: Array<{ slug?: string }>, seriesId?: string | number | null) => void;
 }) {
   const left = match.radiant_team_name || 'TBD';
   const right = match.dire_team_name || 'TBD';
@@ -169,7 +169,7 @@ function UpcomingRow({ match, onOpen }: {
   return (
     <button
       type="button"
-      onClick={() => onOpen?.(match.series_id ?? match.id ?? '', [{ slug: slugFromMatchUrl(match.match_url) }])}
+      onClick={() => onOpen?.(match.series_id ?? match.id ?? '', [{ slug: slugFromMatchUrl(match.match_url) }], match.series_id)}
       className="grid w-full grid-cols-1 gap-y-2 px-5 py-4 text-left transition-colors hover:bg-white/[0.04] md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4"
     >
       {/* 移动端 meta 行：时间 + BO3 + View Match */}
@@ -232,7 +232,7 @@ function UpcomingRow({ match, onOpen }: {
 
 function CompletedRow({ match, onOpen }: {
   match: FinishedMatch;
-  onOpen?: (id: string | number, maps?: Array<{ slug?: string }>) => void;
+  onOpen?: (id: string | number, maps?: Array<{ slug?: string }>, seriesId?: string | number | null) => void;
 }) {
   const radiantWon = (match.radiant_score ?? 0) > (match.dire_score ?? 0);
   const direWon = (match.dire_score ?? 0) > (match.radiant_score ?? 0);
@@ -240,7 +240,7 @@ function CompletedRow({ match, onOpen }: {
   return (
     <button
       type="button"
-      onClick={() => onOpen?.(match.match_id, [{ slug: slugFromMatchUrl(match.match_url) }])}
+      onClick={() => onOpen?.(match.match_id, [{ slug: slugFromMatchUrl(match.match_url) }], match.series_id)}
       className="grid w-full grid-cols-1 gap-y-2 px-5 py-4 text-left transition-colors hover:bg-white/[0.04] md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4"
     >
       {/* 移动端 meta 行：COMPLETED + 赛事名（左），BO3 + View Match（右） */}
@@ -335,7 +335,7 @@ export function MatchesPage({
     radiantScore?: number;
     direScore?: number;
     duration?: number;
-  }>, seriesId?: string, slug?: string, champ?: string) => void;
+  }>, seriesId?: string | number | null, slug?: string, champ?: string) => void;
 }) {
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>(() =>
     normalizeLiveHeroes(getCachedValue<LiveHeroApi>(LIVE_API_URL)));
@@ -501,7 +501,7 @@ export function MatchesPage({
             <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
               <div className="divide-y divide-white/[0.04]">
                 {displayedUpcoming.map((match) => (
-                  <UpcomingRow key={String(match.series_id ?? match.id ?? match.start_time)} match={match} onOpen={(id, maps) => onOpenMatch?.(id, maps)} />
+                  <UpcomingRow key={String(match.series_id ?? match.id ?? match.start_time)} match={match} onOpen={(id, maps, seriesId) => onOpenMatch?.(id, maps, seriesId)} />
                 ))}
               </div>
               {filteredUpcoming.length > upcomingLimit && (
@@ -577,7 +577,7 @@ export function MatchesPage({
             <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03]">
               <div className="divide-y divide-white/[0.04]">
                 {filteredFinished.slice(0, visibleCount).map((match) => (
-                  <CompletedRow key={String(match.match_id)} match={match} onOpen={(id, maps) => onOpenMatch?.(id, maps)} />
+                  <CompletedRow key={String(match.match_id)} match={match} onOpen={(id, maps, seriesId) => onOpenMatch?.(id, maps, seriesId)} />
                 ))}
               </div>
               {visibleCount < filteredFinished.length && (

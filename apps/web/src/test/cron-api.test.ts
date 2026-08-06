@@ -57,6 +57,10 @@ vi.mock('../../../../api/event-detail.js', () => ({
   refreshEventDetailCache: refreshEventDetailCacheMock,
 }));
 
+vi.mock('../../../../api/team-detail.js', () => ({
+  warmTeamDetail: vi.fn(async () => ({ ok: true, slug: 'team-falcons' })),
+}));
+
 vi.mock('../../../../lib/server/live-hero-service.js', () => ({
   persistLiveHeroSnapshots: persistLiveHeroSnapshotsMock,
 }));

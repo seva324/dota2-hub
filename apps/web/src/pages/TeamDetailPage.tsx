@@ -77,8 +77,10 @@ type TeamData = {
     roleKey?: string;
     rank?: number | null;
     flag?: string;
+    flagCode?: string;
     country?: string;
     photo?: string;
+    realName?: string;
     isCoach?: boolean;
     sig?: Array<{ name: string; img?: string }>;
   }>;
@@ -354,7 +356,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
               <div className="container section-nav-inner">
                 <a href="#next-match">Upcoming</a>
                 <a href="#stats">数据总览</a>
-                <a href="#h2h">对标记录</a>
+                <a href="#h2h">最近交手</a>
                 <a href="#heroes">常用英雄</a>
                 <a href="#squad">成员</a>
                 <a href="#matches">Results</a>
@@ -438,9 +440,9 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
               )}
             </section>
 
-            {/* ===== 对标记录 ===== */}
+            {/* ===== 最近交手 ===== */}
             <section className="section" id="h2h">
-              <h2 className="section-title">对标记录 <small>近 5 个系列赛 · 胜率与交手</small></h2>
+              <h2 className="section-title">最近交手 <small>近 3 个月 · 地图胜率与交手记录</small></h2>
               <div className="h2h-grid">
                 {D.h2h && D.h2h.length ? D.h2h.slice(0, 5).map((h) => {
                   const won = h.mapsWon > h.mapsLost;
@@ -528,7 +530,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   {D.squad.map((p, i) => (
                     <div className="squad-card" key={`${p.playerId ?? p.nick}-${i}`}>
                       <div className="ph">
-                        <span className="role-badge">{p.role || 'Player'}</span>
+                        <span className={`role-badge ${p.isCoach ? 'coach' : ''}`}>{p.role || 'Player'}</span>
                         {p.photo ? (
                           <img src={p.photo} alt={`${p.nick} 照片`} />
                         ) : (
@@ -539,12 +541,17 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                       </div>
                       <div className="info">
                         <div className="nick">
-                          {p.flag && FLAG_FILES[p.flag] && <img src={`${FLAG_BASE}${FLAG_FILES[p.flag]}`} alt="" />}
+                          {p.flag ? (
+                            <img src={p.flag} alt="" />
+                          ) : p.flagCode && FLAG_FILES[p.flagCode] ? (
+                            <img src={`${FLAG_BASE}${FLAG_FILES[p.flagCode]}`} alt="" />
+                          ) : null}
                           {p.nick}
+                          {p.isCoach ? <span className="coach-tag">Coach</span> : null}
                         </div>
-                        <div className="full">{p.role || '—'}</div>
+                        <div className="full">{p.realName || p.role || '—'}</div>
                         <div className="rank-line">
-                          <span>{p.country || 'Dota 2'} · 天梯分 {p.rank || '—'}</span>
+                          <span>{p.realName ? `${p.realName} · ` : ''}天梯排名 {p.rank || '—'}</span>
                         </div>
                         {p.sig && p.sig.length > 0 && (
                           <div className="sig-row">

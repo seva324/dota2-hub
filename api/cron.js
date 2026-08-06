@@ -9,6 +9,7 @@ import { warmDltvCaches } from '../lib/server/dltv-warm.js';
 import { refreshEventDetailCache } from './event-detail.js';
 import { refreshEventsCache } from './events.js';
 import { refreshPrimaryLeaguesCache } from './primary-leagues.js';
+import { warmTeamDetail } from './team-detail.js';
 import { syncRankingsToDb } from '../lib/server/rankings-service.js';
 import { persistLiveHeroSnapshots } from '../lib/server/live-hero-service.js';
 
@@ -46,6 +47,23 @@ function pickBoolean(value, fallback = false) {
   if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
   if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   return fallback;
+}
+
+// warm-dltv 全流程硬性预算：EdgeOne 函数 maxDuration=60s，必须在平台杀掉函数前
+// 返回 200；未完成部分由下一轮（10min 后）继续收敛。
+const WARM_TOTAL_BUDGET_MS = 50_000;
+// 单个赛事详情页预热上限（DLTV 抓页可能慢，不能让它独占剩余预算）。
+const WARM_EVENT_FETCH_MS = 8_000;
+
+/** Promise.race 限时：超时 reject，调用方自行兜底（平台会回收残留的抓取）。 */
+function withTimeout(promise, ms) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
 }
 
 function readHeader(req, key) {
@@ -270,24 +288,36 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
     return { action, result: await backfillDltvTeamLogos(db, { dryRun: Boolean(raw?.dryRun === true || raw?.dryRun === 'true') }) };
   }
   if (action === 'warm-dltv') {
-    // 定时预热：列表 → Redis hot-cache，match-page → Neon。把 DLTV 抓取从用户
+    // 定时预热：列表 → hot-cache，match-page → Neon。把 DLTV 抓取从用户
     // 请求路径收敛到 cron，避免突发抓取触发反爬。min interval 由调度/调用方控制。
-    const result = await warmDltvCaches({ fetchImpl: undefined });
+    // 整个流程共享同一个硬性 deadline：match-page 优先，赛事目录/详情等增强
+    // 数据各有限时，保证在平台杀掉函数前返回 200；剩余工作下一轮继续收敛。
+    const deadline = Date.now() + WARM_TOTAL_BUDGET_MS;
+    const remainingMs = () => Math.max(0, deadline - Date.now());
+    const result = await warmDltvCaches({ fetchImpl: undefined, deadline });
     // 顺带预热 tournaments 目录 + 首页 tournaments carousel 到 Neon：
-    // 同一轮抓取窗口内完成，失败不影响 match-page。
+    // 各自限时，超预算直接跳，失败不影响 match-page。
     let events = { skipped: true };
     let primaryLeagues = { skipped: true };
-    try {
-      events = await refreshEventsCache();
-    } catch (error) {
-      console.error('[cron] warm events failed:', error instanceof Error ? error.message : String(error));
-      events = { ok: false };
+    if (remainingMs() > 10_000) {
+      try {
+        events = await withTimeout(refreshEventsCache(), Math.min(remainingMs() - 2_000, 12_000));
+      } catch (error) {
+        console.error('[cron] warm events failed:', error instanceof Error ? error.message : String(error));
+        events = { ok: false };
+      }
+    } else {
+      events = { skipped: true, reason: 'deadline' };
     }
-    try {
-      primaryLeagues = await refreshPrimaryLeaguesCache();
-    } catch (error) {
-      console.error('[cron] warm primary leagues failed:', error instanceof Error ? error.message : String(error));
-      primaryLeagues = { ok: false };
+    if (remainingMs() > 6_000) {
+      try {
+        primaryLeagues = await withTimeout(refreshPrimaryLeaguesCache(), Math.min(remainingMs() - 2_000, 8_000));
+      } catch (error) {
+        console.error('[cron] warm primary leagues failed:', error instanceof Error ? error.message : String(error));
+        primaryLeagues = { ok: false };
+      }
+    } else {
+      primaryLeagues = { skipped: true, reason: 'deadline' };
     }
     // 顺带预热赛事详情页：从 events 目录取 ongoing/upcoming 的 slug，逐个写 Neon。
     // best-effort，失败不影响主流程；Neon 锁防多实例并发抓同 slug。
@@ -296,16 +326,59 @@ async function runAction(action, refreshOptions = buildRefreshOptions(), raw = {
       const warmSlugs = (events.warmUrls || [])
         .map((url) => String(url || '').match(/\/events\/([^/?#]+)/)?.[1])
         .filter(Boolean);
+      let warmed = 0;
+      let failed = 0;
       for (const slug of warmSlugs) {
-        const result = await refreshEventDetailCache({ slug });
-        if (result.ok) eventDetails.warmed += 1;
-        else eventDetails.failed += 1;
+        if (remainingMs() < WARM_EVENT_FETCH_MS + 2_000) break;
+        try {
+          const detailResult = await withTimeout(refreshEventDetailCache({ slug }), WARM_EVENT_FETCH_MS);
+          if (detailResult.ok) warmed += 1;
+          else failed += 1;
+        } catch {
+          failed += 1;
+        }
       }
+      eventDetails = { warmed, failed };
     } catch (error) {
       console.error('[cron] warm event details failed:', error instanceof Error ? error.message : String(error));
       eventDetails = { warmed: 0, failed: 0, error: true };
     }
-    return { action, result: { ...result, events, primaryLeagues, eventDetails } };
+    // 顺带预热热门战队详情页到 Neon：用户点战队页免直连 DLTV。
+    // best-effort，失败不影响主流程；Neon 锁防多实例并发抓同队。
+    const POPULAR_TEAMS = [
+      { slug: 'team-falcons', name: 'Team Falcons', tag: 'Falcons' },
+      { slug: 'team-liquid', name: 'Team Liquid', tag: 'Liquid' },
+      { slug: 'team-spirit', name: 'Team Spirit', tag: 'TS' },
+      { slug: 'og', name: 'OG', tag: 'OG' },
+      { slug: '1win-team', name: '1win Team', tag: '1win' },
+      { slug: 'betboom-team', name: 'BetBoom Team', tag: 'BetBoom' },
+      { slug: 'xtreme-gaming', name: 'Xtreme Gaming', tag: 'XG' },
+      { slug: 'parivision', name: 'PARIVISION', tag: 'PARIVISION' },
+    ];
+    let teamDetails = { warmed: 0, failed: 0, skipped: 0 };
+    try {
+      let warmed = 0;
+      let failed = 0;
+      let skipped = 0;
+      for (const team of POPULAR_TEAMS) {
+        if (remainingMs() < WARM_EVENT_FETCH_MS + 2_000) {
+          skipped += POPULAR_TEAMS.length - warmed - failed - skipped;
+          break;
+        }
+        try {
+          const teamResult = await withTimeout(warmTeamDetail(team), WARM_EVENT_FETCH_MS);
+          if (teamResult.ok) warmed += 1;
+          else failed += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+      teamDetails = { warmed, failed, skipped };
+    } catch (error) {
+      console.error('[cron] warm team details failed:', error instanceof Error ? error.message : String(error));
+      teamDetails = { warmed: 0, failed: 0, error: true };
+    }
+    return { action, result: { ...result, events, primaryLeagues, eventDetails, teamDetails } };
   }
   if (action === 'sync-news') {
     return { action, result: await syncNewsToDb(buildSyncNewsOptions(raw)) };

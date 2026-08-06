@@ -133,22 +133,27 @@ function App() {
         ) : page === 'matches' ? (
           <MatchesPage
             onOpenMatch={(matchId, maps, seriesId, hawkSlug, hawkChamp) => {
+              const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
+              if (!Number.isFinite(numericId)) return;
+              const firstMap = Array.isArray(maps) && maps.length > 0 ? maps[0] : null;
+              const slug = typeof firstMap?.slug === 'string' && firstMap.slug ? firstMap.slug : '';
+              if (seriesId && slug) {
+                // 已结束 / 未开始的 DLTV 系列赛：带 seriesId + slug 走比赛详情页
+                navigate({ page: 'match', overlay: null, matchId: String(seriesId), slug }, { replace: false });
+                return;
+              }
+              if (slug) {
+                // 有 DLTV slug 但无 seriesId：用 matchId 作为系列赛 ID
+                navigate({ page: 'match', overlay: null, matchId: String(numericId), slug }, { replace: false });
+                return;
+              }
               if (seriesId) {
                 // live 卡片：带 hawk seriesId + slug/champ 打开 live detail 全屏页
                 navigate({ page: 'live', overlay: null, seriesId: String(seriesId), slug: hawkSlug, champ: hawkChamp }, { replace: false });
                 return;
               }
-              const numericId = typeof matchId === 'string' ? Number(matchId) : matchId;
-              if (!Number.isFinite(numericId)) return;
-              const firstMap = Array.isArray(maps) && maps.length > 0 ? maps[0] : null;
-              const slug = typeof firstMap?.slug === 'string' && firstMap.slug ? firstMap.slug : '';
-              if (slug) {
-                // 已结束 / 未开始的系列赛：带 DLTV slug，走新比赛详情页
-                navigate({ page: 'match', overlay: null, matchId: String(numericId), slug }, { replace: false });
-              } else {
-                // 直播：OpenDota matchId（无 DLTV slug），保留弹窗
-                navigate({ page: 'matches', overlay: { type: 'match', matchId: String(numericId) } }, { replace: false });
-              }
+              // 直播：OpenDota matchId（无 DLTV slug），保留弹窗
+              navigate({ page: 'matches', overlay: { type: 'match', matchId: String(numericId) } }, { replace: false });
             }}
           />
         ) : page === 'match' && route.matchId ? (

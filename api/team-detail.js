@@ -7,11 +7,20 @@
 
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { getDltvUpcoming } from '../lib/server/dltv-matches-service.js';
+import { getDb } from '../lib/db.js';
+import { readDltvCache, writeDltvCache } from '../lib/server/dltv-neon-cache.js';
 
 const DLTV_API_BASE = 'https://dltv.org/api/v1';
 const FETCH_TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX_AGE_MS = 30 * 60 * 1000;
+// Neon 持久缓存：跨实例共享，EdgeOne 冷启动（内存空）时不必直连 dltv.org。
+const NEON_CACHE_TTL_MS = 15 * 60 * 1000;
+const NEON_STALE_MAX_MS = 6 * 60 * 60 * 1000;
+
+function neonCacheKey(slug) {
+  return `dltv:team-detail:${String(slug || '').trim().toLowerCase()}`;
+}
 
 const memoryCache = new Map();
 let inFlight = null;
@@ -75,8 +84,6 @@ function normalizeTeamName(value) {
 
 // —— 归一化 recent_maps：最近比赛 + 对标 + 常用英雄 ——
 function normalizeRecentMaps(maps, heroes, teamSlug) {
-  const teamId = null; // 由调用方注入
-  void teamId;
   const recentMatches = [];
   const seen = new Map();
   const pickCounts = new Map();
@@ -84,60 +91,57 @@ function normalizeRecentMaps(maps, heroes, teamSlug) {
   const pickWin = new Map();
   const pickTotal = new Map();
 
+  // 从 recent_maps 的 series 里定位本队（first_team/second_team 不按阵营，仅用于队名/logo）
+  const locateTeam = (series) => {
+    const ft = series?.first_team || {};
+    const st = series?.second_team || {};
+    if (String(ft.slug || '').toLowerCase() === teamSlug.toLowerCase()) return { team: ft, isFirst: true };
+    if (String(st.slug || '').toLowerCase() === teamSlug.toLowerCase()) return { team: st, isFirst: false };
+    return null;
+  };
+
   for (const m of maps || []) {
     const series = m.series || {};
-    const isFalconsSide = (team) => {
-      const slug = String(team?.slug || '').toLowerCase();
-      return slug === teamSlug.toLowerCase();
-    };
-    const firstTeam = series.first_team || {};
-    const secondTeam = series.second_team || {};
-    const isRadiant = isFalconsSide(firstTeam);
-    const isDire = isFalconsSide(secondTeam);
-    if (!isRadiant && !isDire) continue;
-    const opp = isRadiant ? secondTeam : firstTeam;
-    const won = m.winner === (isRadiant ? 'radiant' : 'dire');
-    const myScore = isRadiant ? m.radiant_score : m.dire_score;
-    const oppScore = isRadiant ? m.dire_score : m.radiant_score;
+    const located = locateTeam(series);
+    if (!located) continue;
+    const myTeamId = located.isFirst ? series.first_team_id : series.second_team_id;
+    const opp = located.isFirst ? series.second_team || {} : series.first_team || {};
 
-    // 使用英雄（本队 picks）
-    const myPicks = (isRadiant ? m.radiant_picks : m.dire_picks) || [];
-    const oppPicks = (isRadiant ? m.dire_picks : m.radiant_picks) || [];
-    const myBans = (isRadiant ? m.radiant_bans : m.dire_bans) || [];
-    const oppBans = (isRadiant ? m.dire_bans : m.radiant_bans) || [];
+    // 胜负判定：map_results[].is_winner 按 team_id 聚合（map.winner 在该数据源不可靠）。
+    // 与 dltv-series-parser 约定一致：按队伍 ID 判定，不按 radiant/dire 阵营（队伍可换边）。
+    const myResults = (m.map_results || []).filter((r) => String(r.team_id) === String(myTeamId));
+    const won = myResults.some((r) => Number(r.is_winner) === 1);
+    const myScore = myResults.find((r) => r.score != null)?.score;
+    const oppResults = (m.map_results || []).filter((r) => String(r.team_id) !== String(myTeamId));
+    const oppScore = oppResults.find((r) => r.score != null)?.score;
+
+    // 本队英雄：从本队 map_results 的 hero_id 提取（准确对应上场英雄）
+    const myHeroIds = [...new Set(myResults.map((r) => r.hero_id).filter((v) => v != null))];
+    const oppHeroIds = [...new Set(oppResults.map((r) => r.hero_id).filter((v) => v != null))];
     const heroName = (id) => heroes?.[String(id)]?.title || heroes?.[id]?.title || null;
-    const toHeroId = (entry) => {
-      if (entry === null || entry === undefined) return null;
-      if (typeof entry === 'object') return entry.hero_id ?? entry.heroId ?? null;
-      return entry;
-    };
 
-    for (const entry of myPicks) {
-      const hid = toHeroId(entry);
-      if (hid === null || hid === undefined) continue;
+    for (const hid of myHeroIds) {
       const name = heroName(hid);
       if (!name) continue;
       pickCounts.set(name, (pickCounts.get(name) || 0) + 1);
       pickTotal.set(name, (pickTotal.get(name) || 0) + 1);
       if (won) pickWin.set(name, (pickWin.get(name) || 0) + 1);
     }
-    for (const entry of oppPicks) {
-      const hid = toHeroId(entry);
-      if (hid === null || hid === undefined) continue;
+    for (const hid of oppHeroIds) {
       const name = heroName(hid);
       if (!name) continue;
       banCounts.set(name, (banCounts.get(name) || 0) + 1);
     }
-    // 禁用：两队的 bans 都会统计（本队 ban + 对手 ban 都算禁用率）
-    for (const entry of [...myBans, ...oppBans]) {
-      const hid = toHeroId(entry);
-      if (hid === null || hid === undefined) continue;
+    // 禁用：两队的 bans 都算（本队 ban + 对手 ban）
+    for (const entry of [...(m.radiant_bans || []), ...(m.dire_bans || [])]) {
+      const hid = typeof entry === 'object' ? (entry.hero_id ?? entry.heroId) : entry;
+      if (hid == null) continue;
       const name = heroName(hid);
       if (!name) continue;
       banCounts.set(name, (banCounts.get(name) || 0) + 1);
     }
 
-    const heroNames = myPicks.map((entry) => heroName(toHeroId(entry))).filter(Boolean);
+    const heroNames = myHeroIds.map(heroName).filter(Boolean);
     const slug = opp.slug || 'opponent';
     const rec = seen.get(slug) || {
       opponent: opp.title || 'Opponent',
@@ -258,6 +262,202 @@ function slugFromName(name) {
   return normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+// —— 战队页 HTML 缓存（squad + achievements 从页面解析） ——
+const TEAM_PAGE_CACHE_TTL_MS = 5 * 60 * 1000;
+const pageCache = new Map();
+
+async function fetchTeamPageHtml(teamSlug, fetchImpl = fetch) {
+  const cached = pageCache.get(teamSlug);
+  if (cached && Date.now() - cached.at < TEAM_PAGE_CACHE_TTL_MS) return cached.html;
+  const url = `https://dltv.org/teams/${encodeURIComponent(teamSlug)}`;
+  try {
+    const res = await fetchImpl(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)', Accept: 'text/html' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) return cached?.html || '';
+    const html = await res.text();
+    pageCache.set(teamSlug, { html, at: Date.now() });
+    return html;
+  } catch (error) {
+    console.error('[TeamDetail] team page fetch failed:', error instanceof Error ? error.message : String(error));
+    return cached?.html || '';
+  }
+}
+
+const SQUAD_ROLE_LABEL = { 1: 'Core', 2: 'Mid', 3: 'Offlane', 4: 'Support', 5: 'Full Support' };
+
+/** 从战队页 HTML 解析 Active squad（昵称/真名/照片/国旗/天梯分/角色/教练）。 */
+function parseSquadHtml(html) {
+  const squadStart = html.indexOf('<section class="squad">');
+  if (squadStart < 0) return [];
+  const squadHtml = html.slice(squadStart, html.indexOf('</section>', squadStart) + 10);
+  const players = [];
+  const itemRe = /<a href="https:\/\/dltv\.org\/players\/([^"]+)" class="squad__box-item">([\s\S]*?)<\/a>/g;
+  for (const m of squadHtml.matchAll(itemRe)) {
+    const item = m[2];
+    // 昵称：flag 后第一个 <span>
+    const nickMatch = item.match(/<div class="flag"[^>]*>[\s\S]*?<\/div>\s*<span>([\s\S]*?)<\/span>/);
+    const nick = nickMatch ? nickMatch[1].trim() : item.match(/<span>([\s\S]*?)<\/span>/)?.[1]?.trim() || '';
+    // 真名：name 区块第二个 div
+    const real = item.match(/<\/span>\s*<\/div>\s*<div>([\s\S]*?)<\/div>/)?.[1]?.trim() || '';
+    const photo = item.match(/data-theme-light="([^"]+)"/)?.[1] || '';
+    // 国旗：直接取 DLTV 完整 URL（不依赖前端映射表）
+    const flagUrl = item.match(/background-image: url\('([^']*flags\/4x3\/[^']+)'\)/)?.[1] || '';
+    const flagCode = flagUrl.match(/flags\/4x3\/([a-z]+)\.svg/)?.[1] || '';
+    const rankRaw = item.match(/rank__num">(\d+)</)?.[1];
+    const roleBg = item.match(/role__bg-(\d+)/)?.[1];
+    const isCoach = /class="coach"/.test(item);
+    const playerIdRaw = item.match(/data-player-id="(\d+)"/)?.[1];
+    if (!nick) continue;
+    players.push({
+      nick,
+      realName: real,
+      photo: photo ? `https://dltv.org${String(photo).startsWith('/') ? '' : '/'}${photo}` : '',
+      flag: flagUrl ? `https://dltv.org${flagUrl.startsWith('/') ? '' : '/'}${flagUrl}` : '',
+      flagCode,
+      rank: rankRaw ? Number(rankRaw) : null,
+      roleKey: roleBg || '',
+      role: roleBg ? (SQUAD_ROLE_LABEL[Number(roleBg)] || `位置 ${roleBg}`) : isCoach ? 'Coach' : '',
+      isCoach,
+      playerId: playerIdRaw ? Number(playerIdRaw) : null,
+      slug: m[1] || '',
+    });
+  }
+  return players;
+}
+
+/** 从战队页 HTML 解析成就（赛事名/奖牌/年份/链接/图标）。 */
+function parseAchievementsHtml(html) {
+  const achStart = html.indexOf('<div class="achievements">');
+  if (achStart < 0) return [];
+  // 区块结束：swiper-wrapper 容器的 4 层闭合 div 或下一个 section
+  const wrapperStart = html.indexOf('swiper-wrapper', achStart);
+  if (wrapperStart < 0) return [];
+  const nextSection = html.indexOf('<section', wrapperStart);
+  const endMark = nextSection > 0 ? nextSection : achStart + 12000;
+  const wrapperHtml = html.slice(wrapperStart, endMark);
+  const achievements = [];
+  const slideRe = /<div class="swiper-slide">([\s\S]*?)<\/a>\s*<\/div>/g;
+  for (const m of wrapperHtml.matchAll(slideRe)) {
+    const item = m[1];
+    const slug = item.match(/href="https:\/\/dltv\.org\/events\/([^"]+)"/)?.[1];
+    const name = item.match(/data-tippy-content="([^"]+)"/)?.[1];
+    const cup = item.match(/cup (gold|silver|bronze)/)?.[1];
+    const year = item.match(/<small>([\s\S]*?)<\/small>/)?.[1]?.trim();
+    const img = item.match(/data-theme-light="([^"]+)"/)?.[1];
+    if (!name) continue;
+    achievements.push({
+      name,
+      slug: slug || '',
+      cup: cup || '',
+      year: year || '',
+      img: img ? `https://dltv.org${String(img).startsWith('/') ? '' : '/'}${img}` : '',
+    });
+  }
+  return achievements;
+}
+
+/** 从战队页 HTML 解析 Hero Draft Statistics（First Pick/Ban 高亮 + Top-5 Picks/Bans 表）。 */
+function parseDraftStatsHtml(html) {
+  const draftStart = html.indexOf('draft__statistics');
+  if (draftStart < 0) return null;
+  const block = html.slice(draftStart, draftStart + 20000);
+
+  const firstOf = (label) => {
+    const re = new RegExp(`draft__statistics-first__title">\\s*<small>${label}</small>\\s*<strong>([\\s\\S]*?)<\\/strong>\\s*<span>([\\s\\S]*?)<\\/span>`);
+    const m = block.match(re);
+    const imgM = block.match(new RegExp(`draft__statistics-first__hero[^>]*>\\s*<i style="background-image: url\\('([^']+)'\\)`));
+    return m ? { name: m[1].trim(), note: m[2].trim(), img: imgM?.[1] || '' } : null;
+  };
+
+  const tableOf = (heading) => {
+    const idx = block.indexOf(heading);
+    if (idx < 0) return [];
+    const bodyStart = block.indexOf('table__body', idx);
+    const nextTable = block.indexOf('<div class="table">', bodyStart + 10);
+    const tableBlock = block.slice(bodyStart, nextTable > 0 ? nextTable : bodyStart + 5000);
+    const rows = [];
+    const rowRe = /<div class="table__body-row[^"]*">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/g;
+    for (const m of tableBlock.matchAll(rowRe)) {
+      const hero = m[1].match(/cell__hero-title">\s*<span>([\s\S]*?)<\/span>/)?.[1]?.trim();
+      const img = m[1].match(/background-image: url\('([^']+)'\)/)?.[1];
+      const texts = [...m[1].matchAll(/cell__text">([\s\S]*?)<\/div>/g)].map((x) => x[1].trim());
+      if (hero) rows.push({ hero, img: img || '', texts });
+    }
+    return rows;
+  };
+
+  const picks = tableOf('Top-5 Team Picks').slice(0, 5).map((r) => ({
+    name: r.hero,
+    img: r.img ? `https://dltv.org${r.img.startsWith('/') ? '' : '/'}${r.img}` : '',
+    maps: Number(r.texts[0] || 0),
+    rate: r.texts[1] || '',
+    wins: Number(r.texts[2] || 0),
+    losses: Number(r.texts[3] || 0),
+  }));
+  const bans = tableOf('Top-5 Team Bans').slice(0, 5).map((r) => ({
+    name: r.hero,
+    img: r.img ? `https://dltv.org${r.img.startsWith('/') ? '' : '/'}${r.img}` : '',
+    rate: r.texts[0] || '',
+    mapsVs: Number(r.texts[1] || 0),
+  }));
+
+  const firstPick = firstOf('First Pick');
+  const firstBan = firstOf('First Ban');
+  return {
+    period: '近 3 个月',
+    firstPick: firstPick ? { name: firstPick.name, count: Number(firstPick.note.match(/\d+/)?.[0] || 0), label: '首选次数', img: firstPick.img ? `https://dltv.org${firstPick.img.startsWith('/') ? '' : '/'}${firstPick.img}` : '' } : null,
+    firstBan: firstBan ? { name: firstBan.name, count: Number(firstBan.note.match(/\d+/)?.[0] || 0), label: '首禁次数', img: firstBan.img ? `https://dltv.org${firstBan.img.startsWith('/') ? '' : '/'}${firstBan.img}` : '' } : null,
+    topPicks: picks,
+    topBans: bans,
+  };
+}
+
+/** 从选手页 HTML 解析 Signature heroes（招牌英雄 Top N）。 */
+function parseSignatureHeroesHtml(html) {
+  const sigStart = html.indexOf('Signature heroes');
+  if (sigStart < 0) return [];
+  const bodyStart = html.indexOf('table__body', sigStart);
+  if (bodyStart < 0) return [];
+  const block = html.slice(bodyStart, bodyStart + 6000);
+  const heroes = [];
+  const rowRe = /<div class="table__body-row">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/g;
+  for (const m of block.matchAll(rowRe)) {
+    const name = m[1].match(/cell__name">([\s\S]*?)<\/div>/)?.[1]?.trim();
+    const img = m[1].match(/background-image: url\('([^']+)'\)/)?.[1];
+    const winrate = m[1].match(/percent">([\s\S]*?)<\/div>/)?.[1]?.trim();
+    if (name) heroes.push({
+      name,
+      img: img ? `https://dltv.org${img.startsWith('/') ? '' : '/'}${img}` : '',
+      winrate: winrate || '',
+    });
+  }
+  return heroes.slice(0, 3);
+}
+
+/** 选手页 HTML 缓存（Signature heroes）。 */
+const playerPageCache = new Map();
+
+async function fetchPlayerPageHtml(playerSlug, fetchImpl) {
+  const cached = playerPageCache.get(playerSlug);
+  if (cached && Date.now() - cached.at < TEAM_PAGE_CACHE_TTL_MS) return cached.html;
+  const url = `https://dltv.org/players/${encodeURIComponent(playerSlug)}`;
+  try {
+    const res = await fetchImpl(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)', Accept: 'text/html' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) return cached?.html || '';
+    const html = await res.text();
+    playerPageCache.set(playerSlug, { html, at: Date.now() });
+    return html;
+  } catch (error) {
+    console.error('[TeamDetail] player page fetch failed:', error instanceof Error ? error.message : String(error));
+    return cached?.html || '';
+  }
+}
+
 // —— 归一化 upcoming：过滤本队下一场 ——
 function normalizeNextMatch(upcoming, teamName, teamTag) {
   const normalizedName = normalizeTeamName(teamName);
@@ -290,13 +490,15 @@ function normalizeNextMatch(upcoming, teamName, teamTag) {
 
 async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
   const base = `${DLTV_API_BASE}/teams/${encodeURIComponent(teamSlug)}`;
-  const [rmResult, statsResult, upcomingResult] = await Promise.all([
-    fetchJson(`${base}/recent_maps?date_range=2&event_type=&hero_id=0`, FETCH_TIMEOUT_MS, fetchImpl),
-    fetchJson(`${base}/stats?date_range=2&event_type=`, FETCH_TIMEOUT_MS, fetchImpl),
-    getDltvUpcoming(fetchImpl).then(
+  const httpFetch = typeof fetchImpl === 'function' ? fetchImpl : fetch;
+  const [rmResult, statsResult, upcomingResult, teamPageHtml] = await Promise.all([
+    fetchJson(`${base}/recent_maps?date_range=2&event_type=&hero_id=0`, FETCH_TIMEOUT_MS, httpFetch),
+    fetchJson(`${base}/stats?date_range=2&event_type=`, FETCH_TIMEOUT_MS, httpFetch),
+    getDltvUpcoming(httpFetch).then(
       (r) => ({ payload: r.upcoming, sourceType: 'dltv' }),
       () => ({ payload: [], sourceType: 'failed' }),
     ),
+    fetchTeamPageHtml(teamSlug, httpFetch),
   ]);
 
   if (!rmResult.payload && !statsResult.payload) {
@@ -350,56 +552,67 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
   }
 
   // —— 归一化 squad：从最近一场本队 map_results 提取（5 人首发 + 角色 + 常用英雄） ——
-  function normalizeSquad(maps, heroes, teamSlug) {
-    const teamIdFromSeries = null;
-    void teamIdFromSeries;
-    const latestMap = [...(maps || [])]
-      .sort((a, b) => String(b.started_at || '').localeCompare(String(a.started_at || '')))[0];
-    if (!latestMap) return [];
-    const series = latestMap.series || {};
-    const isRadiant = String(series.first_team?.slug || '').toLowerCase() === teamSlug.toLowerCase();
-    const myTeamId = isRadiant ? latestMap.radiant_team_id : latestMap.dire_team_id;
-    const results = (latestMap.map_results || []).filter((r) => String(r.team_id) === String(myTeamId));
-    const byPlayer = new Map();
-    for (const r of results) {
-      if (r.player_id === null || r.player_id === undefined) continue;
-      const existing = byPlayer.get(String(r.player_id)) || {
-        accountId: r.player_id,
-        roleKey: null,
-        rank: r.player_rank ?? null,
-        heroes: [],
-      };
-      if (existing.roleKey === null && r.role) existing.roleKey = r.role;
-      const heroName = heroes?.[String(r.hero_id)]?.title || null;
-      if (heroName && !existing.heroes.includes(heroName)) existing.heroes.push(heroName);
-      byPlayer.set(String(r.player_id), existing);
-    }
-    const ROLE_LABEL = { 1: '一号位', 2: '二号位', 3: '三号位', 4: '四号位', 5: '五号位', 6: 'Carry', 7: 'Mid', 8: 'Offlane', 9: 'Support' };
-    return Array.from(byPlayer.values())
-      .map((p) => ({
-        nick: `Player ${p.accountId}`,
-        playerId: p.accountId,
-        role: p.roleKey ? (ROLE_LABEL[p.roleKey] || `位置 ${p.roleKey}`) : '',
+  // —— 归一化 squad：战队页 HTML（昵称/照片/角色/天梯分）+ 选手页招牌英雄 ——
+  function normalizeSquad(pagePlayers, sigBySlug) {
+    const pages = Array.isArray(pagePlayers) ? pagePlayers : [];
+    if (pages.length === 0) return [];
+    return pages.map((p) => {
+      const sigs = sigBySlug.get(p.slug) || [];
+      return {
+        nick: p.nick,
+        playerId: p.playerId,
+        role: p.role || '',
         roleKey: p.roleKey ? String(p.roleKey) : '',
         rank: p.rank,
-        flag: '',
-        country: '',
-        photo: '',
-        sig: p.heroes.slice(0, 3).map((name) => {
-          const hero = Object.values(heroes || {}).find((h) => h.title === name);
-          return { name, img: hero?.image ? `https://dltv.org${String(hero.image).startsWith('/') ? '' : '/'}${hero.image}` : '' };
-        }),
-        isCoach: false,
-      }))
-      .sort((a, b) => (a.roleKey || '9').localeCompare(b.roleKey || '9'));
+        flag: p.flag,
+        flagCode: p.flagCode || '',
+        country: p.flagCode ? String(p.flagCode).toUpperCase() : '',
+        photo: p.photo,
+        realName: p.realName || '',
+        slug: p.slug || '',
+        sig: sigs,
+        isCoach: Boolean(p.isCoach),
+      };
+    });
   }
+
+  // —— 常用英雄：本队 recent_maps 的 map_results 聚合（pickCounts/pickWin），heroes 字典补图标 ——
+  function normalizeDraftStats(heroDict, normalizedDraft) {
+    const heroRows = (normalizedDraft?.topPicks || [])
+      .map((h) => {
+        const hero = Object.values(heroDict || {}).find((x) => x?.title === h.name);
+        return { ...h, img: hero?.image ? `https://dltv.org${String(hero.image).startsWith('/') ? '' : '/'}${hero.image}` : '' };
+      })
+      .slice(0, 5);
+    const bans = (normalizedDraft?.topBans || []).slice(0, 5);
+    return {
+      period: '近 3 个月',
+      firstPick: heroRows[0] ? { name: heroRows[0].name, count: heroRows[0].maps, label: '首选次数' } : null,
+      firstBan: bans[0] ? { name: bans[0].name, count: bans[0].mapsVs, label: '首禁次数' } : null,
+      topPicks: heroRows,
+      topBans: bans,
+    };
+  }
+
+  const achievements = parseAchievementsHtml(teamPageHtml);
+  const pagePlayers = parseSquadHtml(teamPageHtml);
+  const draftStats = parseDraftStatsHtml(teamPageHtml);
+
+  // 招牌英雄：并行抓选手页 Signature heroes（教练跳过）
+  const sigBySlug = new Map();
+  const nonCoach = (pagePlayers || []).filter((p) => !p.isCoach && p.slug);
+  await Promise.all(nonCoach.slice(0, 5).map(async (p) => {
+    const playerHtml = await fetchPlayerPageHtml(p.slug, httpFetch);
+    const sigs = parseSignatureHeroesHtml(playerHtml);
+    if (sigs.length > 0) sigBySlug.set(p.slug, sigs);
+  }));
 
   return {
     meta: {
       source: `https://dltv.org/teams/${teamSlug}`,
       capturedAt: new Date().toISOString(),
       apiBase: DLTV_API_BASE,
-      dataNote: '归一化自 dltv.org 官方 API（recent_maps + stats + upcoming）',
+      dataNote: '归一化自 dltv.org 官方 API（recent_maps + stats + upcoming + team page）',
     },
     team: teamMeta,
     nextMatch,
@@ -412,13 +625,13 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
       { label: '近 3 个月胜率', value: String(statsOverview.aggregate.win_rate) + '%', unit: '', href: '' },
     ].slice(0, 5),
     statsOverview,
-    draftStats: normalized.draftStats,
+    draftStats: draftStats || normalizeDraftStats(heroes, normalized.draftStats),
     h2h: normalized.h2h,
     recentMatches: normalized.recentMatches,
-    squad: normalizeSquad(maps, heroes, teamSlug),
+    squad: normalizeSquad(pagePlayers, sigBySlug),
     rosterHistory: [],
     currentFive: [],
-    achievements: [],
+    achievements,
     news: [],
   };
 }
@@ -429,6 +642,25 @@ function isFresh(timestamp) {
 
 function isUsableStale(timestamp) {
   return Number.isFinite(timestamp) && Date.now() - timestamp < CACHE_MAX_AGE_MS;
+}
+
+async function readNeonTeamDetail(key) {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const entry = await readDltvCache(db, neonCacheKey(key));
+    if (!entry?.payload) return null;
+    return { payload: entry.payload, refreshedAt: entry.refreshedAt };
+  } catch (error) {
+    console.error('[TeamDetail] neon cache read failed:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}
+
+function persistNeonTeamDetail(key, payload) {
+  const db = getDb();
+  if (!db || !payload) return;
+  writeDltvCache(db, neonCacheKey(key), { payload });
 }
 
 export async function getTeamDetail({ slug, name, tag }, fetchImpl) {
@@ -443,14 +675,37 @@ export async function getTeamDetail({ slug, name, tag }, fetchImpl) {
     return { ...cached, sourceType: 'stale-cache' };
   }
 
+  // Neon 持久缓存兜底：跨实例冷启动（内存空）不必直连 dltv.org。
+  if (!cached) {
+    const neonEntry = await readNeonTeamDetail(key);
+    if (neonEntry?.payload) {
+      const age = Date.now() - neonEntry.refreshedAt;
+      memoryCache.set(key, { ...neonEntry.payload, refreshedAt: neonEntry.refreshedAt });
+      if (age < NEON_CACHE_TTL_MS) {
+        return { ...neonEntry.payload, sourceType: 'cache' };
+      }
+      if (age < NEON_STALE_MAX_MS) {
+        void getTeamDetailFresh(key, name, tag, fetchImpl);
+        return { ...neonEntry.payload, sourceType: 'stale-cache' };
+      }
+    }
+  }
+
+  return getTeamDetailFresh(key, name, tag, fetchImpl);
+}
+
+/** 直抓 DLTV 并写内存 + Neon；并发共享一次在途抓取。 */
+async function getTeamDetailFresh(key, name, tag, fetchImpl) {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     try {
       const payload = await fetchTeamDetail(key, name, tag, fetchImpl);
       if (payload) {
         memoryCache.set(key, { ...payload, refreshedAt: Date.now() });
+        persistNeonTeamDetail(key, payload);
         return { ...payload, sourceType: 'dltv' };
       }
+      const cached = memoryCache.get(key);
       if (cached && isUsableStale(cached.refreshedAt)) {
         return { ...cached, sourceType: 'stale-cache' };
       }
@@ -460,6 +715,28 @@ export async function getTeamDetail({ slug, name, tag }, fetchImpl) {
     }
   })();
   return inFlight;
+}
+
+/** 供 cron 预热：按 slug 直抓并写 Neon（跨实例共享，用户请求免直连 DLTV）。 */
+export async function warmTeamDetail({ slug, name, tag, fetchImpl = fetch } = {}) {
+  const key = slug || slugFromName(name);
+  if (!key) return { ok: false, reason: 'missing slug' };
+  const db = getDb();
+  const lockKey = neonCacheKey(key);
+  const { tryAcquireDltvCacheLock } = await import('../lib/server/dltv-neon-cache.js');
+  const acquired = db ? await tryAcquireDltvCacheLock(db, lockKey, 60_000) : true;
+  if (!acquired) return { ok: false, reason: 'locked' };
+  try {
+    const payload = await fetchTeamDetail(key, name, tag, fetchImpl);
+    if (payload) {
+      memoryCache.set(key, { ...payload, refreshedAt: Date.now() });
+      persistNeonTeamDetail(key, payload);
+      return { ok: true, slug: key };
+    }
+    return { ok: false, reason: 'fetch failed' };
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 export default async function handler(req, res) {

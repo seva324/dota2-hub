@@ -6,7 +6,7 @@ cd "$ROOT_DIR"
 
 name=""
 action=""
-base="https://dota2-hub.vercel.app"
+base="https://dotahub.cn"
 timeout_ms="180000"
 notify="1"
 
