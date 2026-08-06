@@ -297,12 +297,9 @@ function MatchCard({ match, live }: { match: MatchRow; live?: boolean }) {
 function MatchesSection({ payload }: { payload: EventDetailPayload }) {
   const liveMatches = (payload.matches?.matches || []).filter((m) => m.isLive);
   const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive);
-  const finished = payload.matches?.finishedMatches || [];
-  const [finishedVisible, setFinishedVisible] = useState(10);
   const hasLive = liveMatches.length > 0;
   const hasUpcoming = upcomingMatches.length > 0;
-  const hasFinished = finished.length > 0;
-  if (!hasLive && !hasUpcoming && !hasFinished) return null;
+  if (!hasLive && !hasUpcoming) return null;
 
   return (
     <section className="space-y-10">
@@ -330,37 +327,47 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
           </div>
         </div>
       ) : null}
-      {hasFinished ? (
-        <div>
-          <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-            <TrendingUp className="size-5 text-slate-400" />
-            已结束比赛
-            <span className="text-sm font-bold text-slate-500">Finished</span>
-          </h2>
-          <div className="overflow-hidden rounded-2xl border border-white/10">
-            {finished.slice(0, finishedVisible).map((m, index) => (
-              <div
-                key={`${m.left}-${m.right}-${index}`}
-                className="flex items-center gap-3 border-b border-white/[0.06] bg-white/[0.02] px-4 py-2.5 last:border-b-0"
-              >
-                <TeamLogo src={m.leftLogo} name={m.left} size={22} />
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{m.left}</span>
-                <MatchScore center={m.center} />
-                <span className="min-w-0 flex-1 truncate text-right text-sm font-semibold text-white">{m.right}</span>
-                <TeamLogo src={m.rightLogo} name={m.right} size={22} />
-              </div>
-            ))}
+    </section>
+  );
+}
+
+function FinishedSection({ finished }: { finished: MatchRow[] }) {
+  const [finishedVisible, setFinishedVisible] = useState(10);
+  if (!finished || finished.length === 0) return null;
+  return (
+    <section>
+      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
+        <TrendingUp className="size-5 text-slate-400" />
+        已结束比赛
+        <span className="text-sm font-bold text-slate-500">Finished</span>
+      </h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {finished.slice(0, finishedVisible).map((m, index) => (
+          <div
+            key={`${m.left}-${m.right}-${index}`}
+            className="flex flex-col gap-1.5 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-3 transition-colors hover:border-white/[0.2]"
+          >
+            <span className="text-[11px] font-semibold text-slate-400">已结束</span>
+            <div className="flex items-center gap-2">
+              <TeamLogo src={m.leftLogo} name={m.left} size={20} />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{m.left}</span>
+              <MatchScore center={m.center} />
+            </div>
+            <div className="flex items-center gap-2">
+              <TeamLogo src={m.rightLogo} name={m.right} size={20} />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{m.right}</span>
+            </div>
           </div>
-          {finishedVisible < finished.length ? (
-            <button
-              type="button"
-              onClick={() => setFinishedVisible((v) => v + 10)}
-              className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/[0.06]"
-            >
-              加载更多比赛（剩余 {finished.length - finishedVisible} 场）
-            </button>
-          ) : null}
-        </div>
+        ))}
+      </div>
+      {finishedVisible < finished.length ? (
+        <button
+          type="button"
+          onClick={() => setFinishedVisible((v) => v + 10)}
+          className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/[0.06]"
+        >
+          加载更多比赛（剩余 {finished.length - finishedVisible} 场）
+        </button>
       ) : null}
     </section>
   );
@@ -761,6 +768,7 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} />
           <PrizePoolSection prizes={payload.prizePool} />
           <StatsSection />
+          <FinishedSection finished={payload.matches?.finishedMatches || []} />
           <ParticipantsSection participants={payload.participants} />
           {payload.source ? (
             <p className="text-center text-[11px] text-slate-600">数据来源 DLTV · {payload.source}</p>
