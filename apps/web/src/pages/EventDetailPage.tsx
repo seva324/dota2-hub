@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Trophy, Users, Zap, TrendingUp, ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -236,35 +236,25 @@ function AboutSection({ paragraphs }: { paragraphs?: string[] }) {
   if (!paragraphs || paragraphs.length === 0) return null;
   return (
     <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <TrendingUp className="size-5" style={{ color: design.blue }} />
-        赛事简介
-      </h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
+          <TrendingUp className="size-5" style={{ color: design.blue }} />
+          赛事简介
+        </h2>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/[0.08]"
+          aria-expanded={expanded}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}><path d="m6 9 6 6 6-6"></path></svg>
+          {expanded ? '收起赛事详情' : '展开赛事详情'}
+        </button>
+      </div>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className={`whitespace-pre-line text-[15px] leading-7 text-slate-300 ${expanded ? '' : 'max-h-64 overflow-hidden'}`}>
-          <p>{paragraphs.join('\n')}</p>
-        </div>
-        {!expanded ? (
-          <button
-            type="button"
-            onClick={() => setExpanded(true)}
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
-            style={{ color: design.blue }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-            展开赛事详情
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setExpanded(false)}
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
-            style={{ color: design.blue }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg>
-            收起
-          </button>
-        )}
+        {expanded ? (
+          <p className="whitespace-pre-line text-[15px] leading-7 text-slate-300">{paragraphs.join('\n')}</p>
+        ) : null}
       </div>
     </section>
   );
@@ -434,58 +424,92 @@ function GroupStageSection({ groups }: { groups?: EventGroup[] }) {
 /* 区块：淘汰赛 bracket                                                 */
 /* ------------------------------------------------------------------ */
 
-function isUpper(round: string) {
-  return /upper bracket/i.test(round);
-}
-function isLower(round: string) {
-  return /lower bracket/i.test(round);
-}
-function isFinal(round: string) {
-  return /grand final/i.test(round);
-}
-
 function BracketMatchCard({ match }: { match: PlayoffMatch }) {
   const teams = match.teams && match.teams.length > 0
     ? match.teams
     : [{ name: 'TBD', score: '-', logo: null, winner: false }, { name: 'TBD', score: '-', logo: null, winner: false }];
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.025]">
-      <div className="border-b border-white/[0.06] px-3 py-1.5 text-[11px] text-slate-400">{match.date || '待定'}</div>
+    <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-gradient-to-b from-white/[0.035] to-white/[0.015]">
+      <div className="border-b border-white/[0.06] px-3 py-1.5 text-[11px] tabular-nums text-slate-400">{match.date || '待定'}</div>
       {teams.map((team, index) => (
         <div key={`${team.name}-${index}`} className={`flex items-center gap-2 px-3 py-2 ${index === 0 ? 'border-b border-white/[0.06]' : ''}`}>
           <TeamLogo src={team.logo} name={team.name} size={20} />
-          <span className={`min-w-0 flex-1 truncate text-xs ${team.winner ? 'font-bold text-white' : 'text-slate-300'}`}>{team.name}</span>
-          <span className={`text-sm font-black tabular-nums ${team.winner ? 'text-[#ff3b30]' : 'text-slate-400'}`}>{team.score || '-'}</span>
+          <span className={`min-w-0 flex-1 truncate text-xs ${team.winner ? 'font-extrabold text-white' : 'text-slate-300'}`}>{team.name}</span>
+          <span className={`text-[15px] font-black tabular-nums ${team.winner ? 'text-[#ff3b30]' : 'text-slate-400'}`}>{team.score || '-'}</span>
         </div>
       ))}
     </div>
   );
 }
 
-function BracketRound({ round }: { round: PlayoffRound }) {
-  const bestOf = (round.round.match(/bo\d+/i) || [''])[0].toUpperCase();
+interface BracketCell {
+  key: string;
+  head: string;
+  bo: string;
+  col: number;
+  row: string;
+  center: boolean;
+  isFinal: boolean;
+  matches: PlayoffMatch[];
+}
+
+function BracketCellBox({ cell, prizes }: { cell: BracketCell; prizes?: PrizeEntry[] }) {
+  const medal = (place: string) => prizes?.find((p) => p.place === place)?.prize || '';
   return (
-    <div className="min-w-[200px] flex-1">
-      <div className="mb-3 flex items-baseline justify-between">
-        <span className="text-xs font-bold text-white">{round.round.replace(/\s*\(bo\d+\)\s*/i, '')}</span>
-        {bestOf ? <span className="text-[11px] font-bold tracking-wider" style={{ color: design.blue }}>{bestOf}</span> : null}
+    <div
+      className="flex flex-col gap-2.5 px-5"
+      style={{ gridColumn: cell.col, gridRow: cell.row, alignSelf: cell.center ? 'center' : undefined, position: 'relative', zIndex: 2 }}
+    >
+      <div className="mb-0.5 flex items-baseline justify-between">
+        <span className="text-xs font-bold text-white">{cell.head}</span>
+        {cell.bo ? <span className="text-[11px] font-bold tracking-wider" style={{ color: design.blue }}>{cell.bo}</span> : null}
       </div>
-      <div className="space-y-2">
-        {round.matches.length > 0
-          ? round.matches.map((m, index) => <BracketMatchCard key={`${m.url || index}`} match={m} />)
-          : <div className="rounded-xl border border-dashed border-white/10 p-4 text-center text-xs text-slate-500">待定</div>}
-      </div>
+      {cell.matches.length > 0
+        ? <div data-mid={cell.key}>{cell.matches.map((m, index) => <BracketMatchCard key={`${cell.key}-${index}`} match={m} />)}</div>
+        : <div data-mid={cell.key} className="flex min-h-[78px] items-center justify-center rounded-xl border border-dashed border-white/10 text-xs text-slate-500">
+            待定{cell.isFinal ? ' · BO5' : ''}
+          </div>}
+      {cell.isFinal ? (
+        <>
+          <div className="mt-0.5 flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-3 py-2.5 text-xs">
+            <span className="flex size-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black">1</span>
+            <span className="text-slate-400">{medal('1')} · 冠军</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-3 py-2.5 text-xs">
+            <span className="flex size-4 items-center justify-center rounded-full bg-slate-300 text-[9px] font-black text-black">2</span>
+            <span className="text-slate-400">{medal('2')} · 亚军</span>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
 
-function PlayoffsSection({ rounds }: { rounds?: PlayoffRound[] }) {
+function PlayoffsSection({ rounds, prizes }: { rounds?: PlayoffRound[]; prizes?: PrizeEntry[] }) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
   if (!rounds || rounds.length === 0) return null;
-  const upper = rounds.filter((r) => isUpper(r.round));
-  const lower = rounds.filter((r) => isLower(r.round));
-  const finals = rounds.filter((r) => isFinal(r.round));
-  const other = rounds.filter((r) => !isUpper(r.round) && !isLower(r.round) && !isFinal(r.round));
-  const topRow = [...upper, ...finals, ...other.filter((r) => !/lower/i.test(r.round))];
+
+  const byHead = (pat: RegExp) => rounds.find((r) => pat.test(r.round));
+  const ubr1 = byHead(/upper bracket r1/i);
+  const ubf = byHead(/upper bracket final/i);
+  const gf = byHead(/grand final/i);
+  const lbr1 = byHead(/lower bracket r1/i);
+  const lbr2 = byHead(/lower bracket r2/i);
+  const lbr3 = byHead(/lower bracket r3/i);
+  const lbf = byHead(/lower bracket final/i);
+
+  const head = (r?: PlayoffRound) => (r ? r.round.replace(/\s*\(bo\d+\)\s*/i, '').trim() : '');
+  const bo = (r?: PlayoffRound) => (r ? (r.round.match(/bo\d+/i) || [''])[0].toUpperCase() : '');
+
+  const cells: BracketCell[] = [
+    { key: 'lbr1', head: head(lbr1), bo: bo(lbr1), col: 1, row: '2', center: false, isFinal: false, matches: lbr1?.matches || [] },
+    { key: 'ubr1', head: head(ubr1), bo: bo(ubr1), col: 2, row: '1', center: false, isFinal: false, matches: ubr1?.matches || [] },
+    { key: 'lbr2', head: head(lbr2), bo: bo(lbr2), col: 2, row: '2', center: false, isFinal: false, matches: lbr2?.matches || [] },
+    { key: 'lbr3', head: head(lbr3), bo: bo(lbr3), col: 3, row: '2', center: false, isFinal: false, matches: lbr3?.matches || [] },
+    { key: 'ubf', head: head(ubf), bo: bo(ubf), col: 4, row: '1', center: true, isFinal: false, matches: ubf?.matches || [] },
+    { key: 'lbf', head: head(lbf), bo: bo(lbf), col: 4, row: '2', center: true, isFinal: false, matches: lbf?.matches || [] },
+    { key: 'gf', head: head(gf), bo: bo(gf), col: 5, row: '1 / 3', center: true, isFinal: true, matches: gf?.matches || [] },
+  ];
 
   return (
     <section>
@@ -494,20 +518,76 @@ function PlayoffsSection({ rounds }: { rounds?: PlayoffRound[] }) {
         淘汰赛
       </h2>
       <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#12161e] p-4">
-        <div className="min-w-[880px] space-y-6">
-          {topRow.length > 0 ? (
-            <div className="flex gap-5">
-              {topRow.map((r) => <BracketRound key={r.round} round={r} />)}
-            </div>
-          ) : null}
-          {lower.length > 0 ? (
-            <div className="flex gap-5 border-t border-white/10 pt-6">
-              {lower.map((r) => <BracketRound key={r.round} round={r} />)}
-            </div>
-          ) : null}
+        <div className="relative min-w-[960px] p-1">
+          <div ref={boxRef} className="relative grid gap-y-7" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+            {cells.map((c) => <BracketCellBox key={c.key} cell={c} prizes={prizes} />)}
+            <BracketConnectors cells={cells} boxRef={boxRef} />
+          </div>
+        </div>
+        <div className="mt-4 flex items-center gap-4 text-[11px] text-slate-500">
+          <span className="inline-flex items-center gap-1.5"><span className="h-px w-5 bg-[#7aa2ff]" />胜者晋级</span>
         </div>
       </div>
     </section>
+  );
+}
+
+function BracketConnectors({ cells, boxRef }: { cells: BracketCell[]; boxRef: React.RefObject<HTMLDivElement | null> }) {
+  const [paths, setPaths] = useState<string[]>([]);
+
+  const conns = [
+    { from: 'ubr1', to: 'ubf' },
+    { from: 'lbr1', to: 'lbr2' },
+    { from: 'lbr2', to: 'lbr3' },
+    { from: 'lbr3', to: 'lbf' },
+    { from: 'ubf', to: 'gf' },
+    { from: 'lbf', to: 'gf' },
+  ];
+
+  useEffect(() => {
+    const draw = () => {
+      const box = boxRef.current;
+      if (!box) return;
+      const boxRect = box.getBoundingClientRect();
+      const portOf = (key: string, port: 'right' | 'left') => {
+        const el = box.querySelector<HTMLElement>(`[data-mid="${key}"]`);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const x = r.left - boxRect.left;
+        const y = r.top - boxRect.top;
+        return port === 'right'
+          ? { x: x + r.width, y: y + r.height / 2 }
+          : { x, y: y + r.height / 2 };
+      };
+      const lines: string[] = [];
+      for (const { from, to } of conns) {
+        const s = portOf(from, 'right');
+        const t = portOf(to, 'left');
+        if (!s || !t) continue;
+        const hx = (s.x + t.x) / 2;
+        lines.push(`M ${s.x} ${s.y} L ${hx} ${s.y} L ${hx} ${t.y} L ${t.x} ${t.y}`);
+      }
+      setPaths(lines);
+    };
+    draw();
+    const t = setTimeout(draw, 60);
+    window.addEventListener('resize', draw);
+    return () => { clearTimeout(t); window.removeEventListener('resize', draw); };
+  }, [cells, boxRef]);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[1] overflow-visible" aria-hidden="true">
+      <svg className="absolute inset-0 h-full w-full" style={{ overflow: 'visible' }}>
+        <defs>
+          <marker id="arrowWin" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(150,180,255,0.9)" />
+          </marker>
+        </defs>
+        {paths.map((d, i) => (
+          <path key={i} d={d} fill="none" stroke="#7aa2ff" strokeWidth={1.5} markerEnd="url(#arrowWin)" />
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -678,7 +758,7 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
           <AboutSection paragraphs={payload.about} />
           <MatchesSection payload={payload} />
           <GroupStageSection groups={payload.groups} />
-          <PlayoffsSection rounds={payload.playoffRounds} />
+          <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} />
           <PrizePoolSection prizes={payload.prizePool} />
           <StatsSection />
           <ParticipantsSection participants={payload.participants} />
