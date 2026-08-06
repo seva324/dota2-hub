@@ -367,22 +367,33 @@ function parseDraftStatsHtml(html) {
   const firstOf = (label) => {
     const re = new RegExp(`draft__statistics-first__title">\\s*<small>${label}</small>\\s*<strong>([\\s\\S]*?)<\\/strong>\\s*<span>([\\s\\S]*?)<\\/span>`);
     const m = block.match(re);
-    const imgM = block.match(new RegExp(`draft__statistics-first__hero[^>]*>\\s*<i style="background-image: url\\('([^']+)'\\)`));
-    return m ? { name: m[1].trim(), note: m[2].trim(), img: imgM?.[1] || '' } : null;
+    if (!m) return null;
+    // 图标在该 title 区块之前最近的 background-image（First Pick/Ban 高亮图标）
+    const before = block.slice(Math.max(0, m.index - 800), m.index);
+    const imgs = [...before.matchAll(/background-image: url\('([^']+)'\)/g)];
+    const img = imgs.length > 0 ? imgs[imgs.length - 1][1] : '';
+    return { name: m[1].trim(), note: m[2].trim(), img };
   };
 
   const tableOf = (heading) => {
     const idx = block.indexOf(heading);
     if (idx < 0) return [];
     const bodyStart = block.indexOf('table__body', idx);
-    const nextTable = block.indexOf('<div class="table">', bodyStart + 10);
-    const tableBlock = block.slice(bodyStart, nextTable > 0 ? nextTable : bodyStart + 5000);
+    // 表结束：下一个 table__head（下一张表）或表容器闭合
+    const nextHead = block.indexOf('table__head', bodyStart + 10);
+    const endMark = nextHead > 0 ? nextHead : bodyStart + 6000;
+    const tableBlock = block.slice(bodyStart, endMark);
     const rows = [];
-    const rowRe = /<div class="table__body-row[^"]*">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/g;
-    for (const m of tableBlock.matchAll(rowRe)) {
-      const hero = m[1].match(/cell__hero-title">\s*<span>([\s\S]*?)<\/span>/)?.[1]?.trim();
-      const img = m[1].match(/background-image: url\('([^']+)'\)/)?.[1];
-      const texts = [...m[1].matchAll(/cell__text">([\s\S]*?)<\/div>/g)].map((x) => x[1].trim());
+    // 行开头是 <div class="table__body-row …">（可能带 non__stripped 等修饰类；排除 table__body-row__cell 内部类）
+    const rowOpenRe = /<div class="table__body-row(?: |")/g;
+    const opens = [...tableBlock.matchAll(rowOpenRe)].map((m) => m.index);
+    for (let i = 0; i < opens.length; i += 1) {
+      const start = opens[i];
+      const end = i + 1 < opens.length ? opens[i + 1] : tableBlock.length;
+      const rowHtml = tableBlock.slice(start, end);
+      const hero = rowHtml.match(/cell__hero-title">\s*<span>([\s\S]*?)<\/span>/)?.[1]?.trim();
+      const img = rowHtml.match(/background-image: url\('([^']+)'\)/)?.[1];
+      const texts = [...rowHtml.matchAll(/cell__text">([\s\S]*?)<\/div>/g)].map((x) => x[1].trim());
       if (hero) rows.push({ hero, img: img || '', texts });
     }
     return rows;
@@ -420,13 +431,19 @@ function parseSignatureHeroesHtml(html) {
   if (sigStart < 0) return [];
   const bodyStart = html.indexOf('table__body', sigStart);
   if (bodyStart < 0) return [];
-  const block = html.slice(bodyStart, bodyStart + 6000);
+  const nextHead = html.indexOf('table__head', bodyStart + 10);
+  const endMark = nextHead > 0 ? nextHead : bodyStart + 6000;
+  const block = html.slice(bodyStart, endMark);
   const heroes = [];
-  const rowRe = /<div class="table__body-row">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/g;
-  for (const m of block.matchAll(rowRe)) {
-    const name = m[1].match(/cell__name">([\s\S]*?)<\/div>/)?.[1]?.trim();
-    const img = m[1].match(/background-image: url\('([^']+)'\)/)?.[1];
-    const winrate = m[1].match(/percent">([\s\S]*?)<\/div>/)?.[1]?.trim();
+  const rowOpenRe = /<div class="table__body-row(?: |")/g;
+  const opens = [...block.matchAll(rowOpenRe)].map((m) => m.index);
+  for (let i = 0; i < opens.length; i += 1) {
+    const start = opens[i];
+    const end = i + 1 < opens.length ? opens[i + 1] : block.length;
+    const rowHtml = block.slice(start, end);
+    const name = rowHtml.match(/cell__name">([\s\S]*?)<\/div>/)?.[1]?.trim();
+    const img = rowHtml.match(/background-image: url\('([^']+)'\)/)?.[1];
+    const winrate = rowHtml.match(/percent">([\s\S]*?)<\/div>/)?.[1]?.trim();
     if (name) heroes.push({
       name,
       img: img ? `https://dltv.org${img.startsWith('/') ? '' : '/'}${img}` : '',

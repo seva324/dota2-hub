@@ -42,8 +42,8 @@ type TeamData = {
     };
   };
   draftStats?: {
-    firstPick?: { name: string; count: number; label?: string } | null;
-    firstBan?: { name: string; count: number; label?: string } | null;
+    firstPick?: { name: string; count: number; label?: string; img?: string } | null;
+    firstBan?: { name: string; count: number; label?: string; img?: string } | null;
     topPicks?: Array<{ name: string; img?: string; maps: number; rate: string; wins: number; losses: number }>;
     topBans?: Array<{ name: string; img?: string; rate: string; mapsVs: number }>;
   };
@@ -467,7 +467,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                 <div className="hero-split">
                   <div>
                     <div className="first-tag">
-                      {D.draftStats.topPicks[0].img && <img src={D.draftStats.topPicks[0].img} alt={D.draftStats.topPicks[0].name} />}
+                      {(D.draftStats.firstPick?.img || D.draftStats.topPicks[0].img) && <img src={D.draftStats.firstPick?.img || D.draftStats.topPicks[0].img} alt={D.draftStats.firstPick?.name || D.draftStats.topPicks[0].name} />}
                       <div>
                         <small>首选最多</small>
                         <b>{D.draftStats.firstPick?.name || D.draftStats.topPicks[0].name}</b>
@@ -493,7 +493,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   </div>
                   <div>
                     <div className="first-tag">
-                      {D.draftStats.topBans?.[0]?.img && <img src={D.draftStats.topBans[0].img} alt={D.draftStats.topBans[0].name} />}
+                      {(D.draftStats.firstBan?.img || D.draftStats.topBans?.[0]?.img) && <img src={D.draftStats.firstBan?.img || D.draftStats.topBans?.[0]?.img || ''} alt={D.draftStats.firstBan?.name || D.draftStats.topBans?.[0]?.name || '—'} />}
                       <div>
                         <small>首禁最多</small>
                         <b>{D.draftStats.firstBan?.name || D.draftStats.topBans?.[0]?.name || '—'}</b>
