@@ -23,6 +23,8 @@ export interface RouteState {
   teamName?: string;
   /** 仅 page==='team'：战队 team_id（query 参数，用于精确匹配） */
   teamId?: string;
+  /** 仅 page==='team'：DLTV 战队 slug（query 参数，优先于 name 启发式转换，用于精确拉取战队详情） */
+  teamSlug?: string;
 }
 
 const TOP_LEVEL_PAGES: TopLevelPage[] = ['home', 'tournaments', 'matches', 'teams', 'players', 'news'];
@@ -93,6 +95,7 @@ export function parseHash(hash: string): RouteState {
         overlay: null,
         teamName: decodeURIComponent(second),
         teamId: query.get('teamId') ?? undefined,
+        teamSlug: query.get('slug') ?? undefined,
       };
     }
     case 'player': {
@@ -128,7 +131,11 @@ export function toHash(route: RouteState): string {
   }
   if (route.page === 'team' && route.teamName) {
     const base = `#/team/${encodeURIComponent(route.teamName)}`;
-    return route.teamId ? `${base}?teamId=${encodeURIComponent(route.teamId)}` : base;
+    const params = new URLSearchParams();
+    if (route.teamId) params.set('teamId', route.teamId);
+    if (route.teamSlug) params.set('slug', route.teamSlug);
+    const query = params.toString();
+    return query ? `${base}?${query}` : base;
   }
   if (route.overlay) {
     switch (route.overlay.type) {

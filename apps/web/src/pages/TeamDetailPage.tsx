@@ -117,10 +117,11 @@ function stamp(t?: string): string {
 export interface TeamDetailPageProps {
   teamName: string;
   teamId?: string;
+  teamSlug?: string;
   onBack: () => void;
 }
 
-export function TeamDetailPage({ teamName, teamId, onBack }: TeamDetailPageProps) {
+export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetailPageProps) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,10 +132,11 @@ export function TeamDetailPage({ teamName, teamId, onBack }: TeamDetailPageProps
 
   const buildApiUrl = useCallback(() => {
     const params = new URLSearchParams();
+    if (teamSlug) params.set('slug', teamSlug);
     if (teamId) params.set('teamId', teamId);
     if (teamName) params.set('name', teamName);
     return `/api/team-detail?${params.toString()}`;
-  }, [teamId, teamName]);
+  }, [teamSlug, teamId, teamName]);
 
   useEffect(() => {
     let cancelled = false;

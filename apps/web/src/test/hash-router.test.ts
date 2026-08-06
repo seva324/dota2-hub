@@ -124,6 +124,26 @@ describe('parseHash', () => {
     });
   });
 
+  it('parses a team deep link with dltv slug query', () => {
+    expect(parseHash('#/team/Team%20Liquid?slug=team-liquid')).toEqual({
+      page: 'team',
+      overlay: null,
+      teamName: 'Team Liquid',
+      teamSlug: 'team-liquid',
+    });
+  });
+
+  it('serializes team detail with dltv slug', () => {
+    expect(toHash({ page: 'team', overlay: null, teamName: 'Team Liquid', teamSlug: 'team-liquid' })).toBe(
+      '#/team/Team%20Liquid?slug=team-liquid',
+    );
+  });
+
+  it('round-trips a team deep link with dltv slug', () => {
+    const parsed = parseHash('#/team/Team%20Liquid?slug=team-liquid');
+    expect(toHash(parsed)).toBe('#/team/Team%20Liquid?slug=team-liquid');
+  });
+
   it('parses a player deep link', () => {
     expect(parseHash('#/player/898754153')).toEqual({
       page: 'home',

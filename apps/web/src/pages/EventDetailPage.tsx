@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -76,9 +76,16 @@ interface MatchRow {
 
 interface Participant {
   name: string;
+  teamUrl?: string | null;
   logo?: string | null;
   invite?: string;
   players: string[];
+}
+
+/** 战队跳转目标（name 必填；slug 来自 DLTV teamUrl，缺失时后端按 name 启发式解析） */
+export interface TeamLinkTarget {
+  name: string;
+  slug?: string | null;
 }
 
 interface PrizeEntry {
@@ -123,6 +130,36 @@ function formatDateRange(value?: string): string {
   };
   if (!end) return fmt(start);
   return `${fmt(start)} - ${fmt(end)}`;
+}
+
+/** 从 DLTV 战队 URL（/teams/<slug>）提取 slug。 */
+function slugFromTeamUrl(url?: string | null): string | null {
+  const match = String(url || '').match(/\/teams\/([^/?#]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/** 可点击战队跳转（logo + 名字整块点击）。 */
+function TeamLink({
+  team,
+  children,
+  onOpenTeam,
+  className = '',
+}: {
+  team: TeamLinkTarget;
+  children: React.ReactNode;
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  className?: string;
+}) {
+  const handleClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenTeam?.({ name: team.name, slug: team.slug });
+  };
+  return (
+    <button type="button" className={`team-link ${className}`.trim()} onClick={handleClick} title={`查看 ${team.name} 战队资料`}>
+      {children}
+    </button>
+  );
 }
 
 function TeamLogo({ src, name, size = 24 }: { src?: string | null; name: string; size?: number }) {
@@ -281,10 +318,14 @@ function MatchCard({
   match,
   live,
   rounds,
+  onOpenTeam,
+  teamSlugMap,
 }: {
   match: MatchRow;
   live?: boolean;
   rounds?: PlayoffRound[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  teamSlugMap?: Record<string, string>;
 }) {
   const parts = match.center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
   const { stage, bo } = matchStage(rounds, match.url);
@@ -302,10 +343,14 @@ function MatchCard({
         )}
       </div>
       <div className="match-card-body">
-        <div className="match-team">
+        <TeamLink
+          className="match-team"
+          team={{ name: match.left, slug: teamSlugMap?.[match.left] ?? null }}
+          onOpenTeam={onOpenTeam}
+        >
           <TeamLogo src={match.leftLogo} name={match.left} size={34} />
           <span className="name">{match.left}</span>
-        </div>
+        </TeamLink>
         {live ? (
           <div className="match-score">
             <div className="s">
@@ -323,10 +368,14 @@ function MatchCard({
             <span className="bo">{bo}</span>
           </div>
         )}
-        <div className="match-team right">
+        <TeamLink
+          className="match-team right"
+          team={{ name: match.right, slug: teamSlugMap?.[match.right] ?? null }}
+          onOpenTeam={onOpenTeam}
+        >
           <span className="name">{match.right}</span>
           <TeamLogo src={match.rightLogo} name={match.right} size={34} />
-        </div>
+        </TeamLink>
       </div>
       <div className="match-card-foot">
         <span>{live ? '直播进行中' : '未开赛'}</span>
@@ -342,7 +391,15 @@ function MatchCard({
   );
 }
 
-function MatchesSection({ payload }: { payload: EventDetailPayload }) {
+function MatchesSection({
+  payload,
+  onOpenTeam,
+  teamSlugMap,
+}: {
+  payload: EventDetailPayload;
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
   const liveMatches = (payload.matches?.matches || []).filter((m) => m.isLive);
   const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive);
   const hasLive = liveMatches.length > 0;
@@ -355,7 +412,7 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
           <SectionHead title="关联直播" eyebrow="Live Now" />
           <div className="matches-scroll">
             {liveMatches.map((m) => (
-              <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} />
+              <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
             ))}
           </div>
         </section>
@@ -365,7 +422,7 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
           <SectionHead title="即将开赛" eyebrow="Upcoming" bar="blue" />
           <div className="matches-scroll">
             {upcomingMatches.map((m) => (
-              <MatchCard key={`${m.left}-${m.right}`} match={m} rounds={payload.playoffRounds} />
+              <MatchCard key={`${m.left}-${m.right}`} match={m} rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
             ))}
           </div>
         </section>
@@ -378,7 +435,7 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
 /* 区块：小组赛积分榜（双栏表格 · 晋级/淘汰色）                           */
 /* ------------------------------------------------------------------ */
 
-function GroupStageSection({ groups }: { groups?: EventGroup[] }) {
+function GroupStageSection({ groups, onOpenTeam }: { groups?: EventGroup[]; onOpenTeam?: (team: TeamLinkTarget) => void }) {
   if (!groups || groups.length === 0) return null;
   return (
     <section className="section" aria-label="小组赛">
@@ -405,13 +462,17 @@ function GroupStageSection({ groups }: { groups?: EventGroup[] }) {
             {group.rows.map((row) => (
               <div className={`stand-row ${row.advance ? 'adv' : 'out'}`} key={`${group.name}-${row.position}-${row.team}`}>
                 <span className="stand-rank">{row.position}</span>
-                <div className="stand-team">
+                <TeamLink
+                  className="stand-team"
+                  team={{ name: row.team, slug: slugFromTeamUrl(row.teamUrl) }}
+                  onOpenTeam={onOpenTeam}
+                >
                   <TeamLogo src={row.logo} name={row.team} size={28} />
                   <div className="meta">
                     <div className="t">{row.team}</div>
                     {row.country ? <div className="c">{row.country}</div> : null}
                   </div>
-                </div>
+                </TeamLink>
                 <span className="stand-cell dim">{row.record || '—'}</span>
                 <span className="stand-cell dim">{row.maps || '—'}</span>
                 <span className="stand-cell pts">{row.points || '—'}</span>
@@ -573,7 +634,19 @@ function isFinalKey(item: { round: string }): boolean {
   return GF_RE.test(item.round);
 }
 
-function BracketMatchCard({ match, mid, isFinal }: { match: PlayoffMatch; mid: string; isFinal: boolean }) {
+function BracketMatchCard({
+  match,
+  mid,
+  isFinal,
+  onOpenTeam,
+  teamSlugMap,
+}: {
+  match: PlayoffMatch;
+  mid: string;
+  isFinal: boolean;
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
   if (!match.teams || match.teams.length === 0) {
     return (
       <div className="bmatch-card bmatch-empty" data-mid={mid}>
@@ -582,19 +655,22 @@ function BracketMatchCard({ match, mid, isFinal }: { match: PlayoffMatch; mid: s
     );
   }
   const [a, b] = match.teams;
+  const teamLink = (team: PlayoffTeam, win: boolean) => (
+    <TeamLink
+      className={`bmatch-team ${win ? 'win' : ''}`}
+      team={{ name: team.name, slug: teamSlugMap?.[team.name] ?? null }}
+      onOpenTeam={onOpenTeam}
+    >
+      <TeamLogo src={team.logo} name={team.name} size={22} />
+      <span className="nm">{team.name}</span>
+      <span className="sc">{team.score ?? '-'}</span>
+    </TeamLink>
+  );
   return (
     <div className="bmatch-card" data-mid={mid}>
       <div className="bmatch-date">{match.date || ''}</div>
-      <div className={`bmatch-team ${a.winner ? 'win' : ''}`}>
-        <TeamLogo src={a.logo} name={a.name} size={22} />
-        <span className="nm">{a.name}</span>
-        <span className="sc">{a.score ?? '-'}</span>
-      </div>
-      <div className={`bmatch-team ${b.winner ? 'win' : ''}`}>
-        <TeamLogo src={b.logo} name={b.name} size={22} />
-        <span className="nm">{b.name}</span>
-        <span className="sc">{b.score ?? '-'}</span>
-      </div>
+      {teamLink(a, Boolean(a.winner))}
+      {teamLink(b, Boolean(b.winner))}
     </div>
   );
 }
@@ -610,7 +686,17 @@ interface BracketCell {
   matches: PlayoffMatch[];
 }
 
-function BracketCellBox({ cell, prizes }: { cell: BracketCell; prizes?: PrizeEntry[] }) {
+function BracketCellBox({
+  cell,
+  prizes,
+  onOpenTeam,
+  teamSlugMap,
+}: {
+  cell: BracketCell;
+  prizes?: PrizeEntry[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
   return (
     <div className={`bracket-cell ${cell.center ? 'center' : ''}`} style={{ gridColumn: cell.col, gridRow: cell.row }}>
       <div className="round-head">
@@ -618,10 +704,10 @@ function BracketCellBox({ cell, prizes }: { cell: BracketCell; prizes?: PrizeEnt
         <span className="rb">{cell.bo}</span>
       </div>
       {cell.matches.length === 0 ? (
-        <BracketMatchCard match={{ teams: [], date: '' }} mid={`${cell.key}-0`} isFinal={cell.isFinal} />
+        <BracketMatchCard match={{ teams: [], date: '' }} mid={`${cell.key}-0`} isFinal={cell.isFinal} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
       ) : (
         cell.matches.map((m, i) => (
-          <BracketMatchCard key={`${cell.key}-${i}`} match={m} mid={`${cell.key}-${i}`} isFinal={cell.isFinal} />
+          <BracketMatchCard key={`${cell.key}-${i}`} match={m} mid={`${cell.key}-${i}`} isFinal={cell.isFinal} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
         ))
       )}
       {cell.isFinal && cell.key === 'gf' ? (
@@ -727,7 +813,17 @@ function BracketConnectors({
   );
 }
 
-function PlayoffsSection({ rounds, prizes }: { rounds?: PlayoffRound[]; prizes?: PrizeEntry[] }) {
+function PlayoffsSection({
+  rounds,
+  prizes,
+  onOpenTeam,
+  teamSlugMap,
+}: {
+  rounds?: PlayoffRound[];
+  prizes?: PrizeEntry[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   if (!rounds || rounds.length === 0) return null;
 
@@ -740,7 +836,7 @@ function PlayoffsSection({ rounds, prizes }: { rounds?: PlayoffRound[]; prizes?:
         <div className="bracket-scroll">
           <div className="bracket" ref={boxRef} style={{ gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))` }}>
             {layout.cells.map((c) => (
-              <BracketCellBox key={c.key} cell={c} prizes={prizes} />
+              <BracketCellBox key={c.key} cell={c} prizes={prizes} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
             ))}
             <BracketConnectors boxRef={boxRef} conns={layout.conns} />
           </div>
@@ -818,7 +914,13 @@ function StatsSection() {
 
 const ROLE_COLORS = ['#ff6b5f', '#ff9f43', '#5f7fff', '#34d17b', '#b183ff'];
 
-function ParticipantsSection({ participants }: { participants?: Participant[] }) {
+function ParticipantsSection({
+  participants,
+  onOpenTeam,
+}: {
+  participants?: Participant[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+}) {
   if (!participants || participants.length === 0) return null;
   return (
     <section className="section" aria-label="参赛队伍">
@@ -826,13 +928,17 @@ function ParticipantsSection({ participants }: { participants?: Participant[] })
       <div className="team-grid">
         {participants.map((team) => (
           <article className="team-card" key={team.name}>
-            <div className="team-head">
+            <TeamLink
+              className="team-head"
+              team={{ name: team.name, slug: slugFromTeamUrl(team.teamUrl) }}
+              onOpenTeam={onOpenTeam}
+            >
               <TeamLogo src={team.logo} name={team.name} size={42} />
               <div className="tt">
                 <div className="tn">{team.name}</div>
                 <span className="tag">{team.invite === 'Direct invite' || team.invite === 'Direct Invite' ? '直接邀请' : team.invite || '参赛队伍'}</span>
               </div>
-            </div>
+            </TeamLink>
             <div className="team-roster">
               {team.players.map((player, j) => (
                 <span className="roster-item" key={player}>
@@ -857,7 +963,15 @@ function ParticipantsSection({ participants }: { participants?: Participant[] })
 const FINISHED_ROW_STEP = 2;
 const FINISHED_CARD_MIN = 244;
 
-function FinishedSection({ finished }: { finished: MatchRow[] }) {
+function FinishedSection({
+  finished,
+  onOpenTeam,
+  teamSlugMap,
+}: {
+  finished: MatchRow[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [rows, setRows] = useState(2);
   const [perRow, setPerRow] = useState(5);
@@ -908,16 +1022,24 @@ function FinishedSection({ finished }: { finished: MatchRow[] }) {
                 <span className="done">已结束</span>
               </div>
               <div className="fc-teams">
-                <div className={`fc-team ${lw ? 'win' : ''}`}>
+                <TeamLink
+                  className={`fc-team ${lw ? 'win' : ''}`}
+                  team={{ name: mm.left, slug: teamSlugMap?.[mm.left] ?? null }}
+                  onOpenTeam={onOpenTeam}
+                >
                   <TeamLogo src={mm.leftLogo} name={mm.left} size={24} />
                   <span className="nm">{mm.left}</span>
                   <span className="sc">{p1}</span>
-                </div>
-                <div className={`fc-team ${rw ? 'win' : ''}`}>
+                </TeamLink>
+                <TeamLink
+                  className={`fc-team ${rw ? 'win' : ''}`}
+                  team={{ name: mm.right, slug: teamSlugMap?.[mm.right] ?? null }}
+                  onOpenTeam={onOpenTeam}
+                >
                   <TeamLogo src={mm.rightLogo} name={mm.right} size={24} />
                   <span className="nm">{mm.right}</span>
                   <span className="sc">{p2}</span>
-                </div>
+                </TeamLink>
               </div>
             </div>
           );
@@ -958,7 +1080,15 @@ function Skeleton() {
   );
 }
 
-export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () => void }) {
+export function EventDetailPage({
+  slug,
+  onBack,
+  onOpenTeam,
+}: {
+  slug: string;
+  onBack?: () => void;
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+}) {
   const [payload, setPayload] = useState<EventDetailPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -993,6 +1123,22 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
     };
   }, [slug]);
 
+  // name → DLTV slug 映射：bracket/已结束/直播卡片只有队名没有 teamUrl，用此映射补充精确 slug。
+  const teamSlugMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of payload?.participants || []) {
+      const slug = slugFromTeamUrl(p.teamUrl);
+      if (slug) map[p.name] = slug;
+    }
+    for (const g of payload?.groups || []) {
+      for (const r of g.rows) {
+        const slug = slugFromTeamUrl(r.teamUrl);
+        if (slug && !map[r.team]) map[r.team] = slug;
+      }
+    }
+    return map;
+  }, [payload]);
+
   return (
     <div className="event-detail-root mx-auto w-full max-w-[1280px] px-4 pb-16 pt-24 lg:px-6">
       <button
@@ -1015,13 +1161,13 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
         <>
           <HeroSection payload={payload} />
           <AboutSection about={payload.about} />
-          <MatchesSection payload={payload} />
-          <GroupStageSection groups={payload.groups} />
-          <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} />
+          <MatchesSection payload={payload} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
+          <GroupStageSection groups={payload.groups} onOpenTeam={onOpenTeam} />
+          <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
           <StatsSection />
-          <ParticipantsSection participants={payload.participants} />
-          <FinishedSection finished={payload.matches?.finishedMatches || []} />
+          <ParticipantsSection participants={payload.participants} onOpenTeam={onOpenTeam} />
+          <FinishedSection finished={payload.matches?.finishedMatches || []} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           {payload.source ? (
             <p className="text-center text-[11px] text-slate-600">数据来源 DLTV · {payload.source}</p>
           ) : null}

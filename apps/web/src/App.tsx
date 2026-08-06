@@ -122,6 +122,13 @@ function App() {
           <EventDetailPage
             slug={route.eventSlug}
             onBack={() => navigate({ page: 'tournaments', overlay: null }, { replace: false })}
+            onOpenTeam={(team) => {
+              if (!team?.name) return;
+              navigate(
+                { page: 'team', overlay: null, teamName: team.name, teamSlug: team.slug ?? undefined },
+                { replace: false },
+              );
+            }}
           />
         ) : page === 'matches' ? (
           <MatchesPage
@@ -170,6 +177,7 @@ function App() {
           <TeamDetailPage
             teamName={route.teamName}
             teamId={route.teamId}
+            teamSlug={route.teamSlug}
             onBack={() => navigate({ page: 'teams', overlay: null }, { replace: false })}
           />
         ) : (
