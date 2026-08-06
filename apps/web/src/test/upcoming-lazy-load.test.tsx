@@ -2,10 +2,6 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCuratedTeamLogoMirrorPath } from '../../../../lib/team-logo-overrides.js';
 
-vi.mock('@/components/custom/TeamFlyout', () => ({
-  TeamFlyout: () => null,
-}));
-
 vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
   PlayerProfileFlyout: () => null,
 }));

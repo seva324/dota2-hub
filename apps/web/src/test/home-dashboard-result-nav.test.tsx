@@ -6,10 +6,6 @@ vi.mock('@/components/custom/MatchDetailModal', () => ({
     open ? <div role="dialog">比赛详情 {matchId}</div> : null,
 }));
 
-vi.mock('@/components/custom/TeamFlyout', () => ({
-  TeamFlyout: () => null,
-}));
-
 vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
   PlayerProfileFlyout: () => null,
 }));

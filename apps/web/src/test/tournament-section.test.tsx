@@ -15,10 +15,6 @@ vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
   PlayerProfileFlyout: () => null,
 }));
 
-vi.mock('@/components/custom/TeamFlyout', () => ({
-  TeamFlyout: () => null,
-}));
-
 vi.mock('@/lib/playerProfile', () => ({
   createMinimalPlayerFlyoutModel: vi.fn(() => null),
   fetchPlayerProfileFlyoutModel: vi.fn(async () => null),

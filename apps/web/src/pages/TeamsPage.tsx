@@ -24,7 +24,7 @@ interface RankingTeam {
   players: RankingPlayer[];
 }
 
-const RANK_FONT = { fontFamily: "'Anton', 'Arial Narrow', sans-serif" };
+const RANK_FONT = { fontFamily: "'Alibaba PuHuiTi', 'Exo2', sans-serif" };
 
 const INITIAL_VISIBLE_TEAMS = 10;
 const EXPAND_STEP_TEAMS = 10;

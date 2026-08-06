@@ -7,12 +7,6 @@ vi.mock('@/components/custom/MatchDetailModal', () => ({
   ),
 }));
 
-vi.mock('@/components/custom/TeamFlyout', () => ({
-  TeamFlyout: ({ open, selectedTeam }: { open: boolean; selectedTeam: { name: string } | null }) => (
-    open ? <div role="dialog">战队详情 {selectedTeam?.name}</div> : null
-  ),
-}));
-
 vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
   PlayerProfileFlyout: ({ open, player }: { open: boolean; player: { playerName: string } | null }) => (
     open ? <div role="dialog">选手详情 {player?.playerName ?? 'loading'}</div> : null

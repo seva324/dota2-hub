@@ -42,6 +42,11 @@ const PAGE_META: Record<Exclude<TopLevelPage, 'home'>, { title: string; badge: s
     badge: 'Event',
     description: '赛事详情页面加载失败，现在先回到赛事列表。',
   },
+  team: {
+    title: '战队详情',
+    badge: 'Team',
+    description: '战队详情页面加载失败，现在先回到战队列表。',
+  },
 };
 
 export function TopLevelPlaceholder({ page, onBack }: { page: Exclude<TopLevelPage, 'home'>; onBack: () => void }) {

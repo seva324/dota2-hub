@@ -2,10 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, Clock, Flame, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
-import { TeamFlyout } from '@/components/custom/TeamFlyout';
-import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
-import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { findTeamRow, isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
 import { apiFetch } from '@/lib/api-cache';
 
@@ -57,6 +53,8 @@ interface UpcomingSectionProps {
     region?: string | null;
     is_cn_team?: number | boolean;
   }>;
+  /** 点击战队 LOGO/名称 → 跳转战队详情页 */
+  onTeamClick?: (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => void;
 }
 
 const EMPTY_UPCOMING_MATCHES: Match[] = [];
@@ -206,8 +204,9 @@ function getMatchPeriod(timestamp: number): string {
 
 export function UpcomingSection({
   upcoming = EMPTY_UPCOMING_MATCHES,
-  allMatches = EMPTY_UPCOMING_ALL_MATCHES,
-  teams = EMPTY_UPCOMING_TEAMS
+  allMatches: _allMatches = EMPTY_UPCOMING_ALL_MATCHES,
+  teams = EMPTY_UPCOMING_TEAMS,
+  onTeamClick
 }: UpcomingSectionProps) {
   const [filter, setFilter] = useState<'all' | 'cn'>('all');
   const [lazyUpcoming, setLazyUpcoming] = useState<Match[]>([]);
@@ -215,10 +214,6 @@ export function UpcomingSection({
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [flyoutOpen, setFlyoutOpen] = useState(false);
-  const [flyoutTeam, setFlyoutTeam] = useState<{ team_id?: string | null; name: string; logo_url?: string | null } | null>(null);
-  const [playerFlyoutOpen, setPlayerFlyoutOpen] = useState(false);
-  const [playerFlyoutModel, setPlayerFlyoutModel] = useState<PlayerFlyoutModel | null>(null);
   const { ref: sectionRef, isInView } = useInView<HTMLElement>({ rootMargin: '240px 0px' });
   const effectiveTeams = lazyTeams.length > 0 ? lazyTeams : teams;
   const effectiveUpcoming = lazyUpcoming.length > 0 ? lazyUpcoming : upcoming;
@@ -299,32 +294,9 @@ export function UpcomingSection({
 
   const displayMatches = filter === 'cn' ? cnMatches : filteredMatches;
 
-  const openTeamFlyout = (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => {
+  const openTeamDetail = (team: { team_id?: string | null; name?: string | null; logo_url?: string | null }) => {
     if (!team?.name) return;
-    setFlyoutTeam({
-      team_id: team.team_id ? String(team.team_id) : null,
-      name: team.name,
-      logo_url: team.logo_url || null
-    });
-    setFlyoutOpen(true);
-  };
-
-  const openPlayerFlyout = async (accountId: number) => {
-    if (!Number.isFinite(accountId) || accountId <= 0) return;
-    setPlayerFlyoutModel(createMinimalPlayerFlyoutModel(accountId));
-    setPlayerFlyoutOpen(true);
-    try {
-      const model = await fetchPlayerProfileFlyoutModel(accountId, {
-        onHydrated: (hydrated) => {
-          setPlayerFlyoutModel((current) => (current?.accountId === accountId ? hydrated : current));
-        },
-      });
-      if (model) {
-        setPlayerFlyoutModel(model);
-      }
-    } catch (error) {
-      console.error('[UpcomingSection] Failed to load player profile:', error);
-    }
+    onTeamClick?.(team);
   };
 
   return (
@@ -514,7 +486,7 @@ export function UpcomingSection({
                                 <button
                                   type="button"
                                   className={`flex-1 flex items-center gap-2 sm:gap-3 text-left ${radiantIsCN ? 'group/team-a' : ''}`}
-                                  onClick={() => openTeamFlyout({
+                                  onClick={() => openTeamDetail({
                                     team_id: String(radiantTeamRow?.team_id || radiantTeamRow?.id || match.radiant_team_id || '') || null,
                                     name: radiantTeamRow?.name || match.radiant_team_name,
                                     logo_url: radiantTeamRow?.logo_url || match.radiant_team_logo || null
@@ -580,7 +552,7 @@ export function UpcomingSection({
                                 <button
                                   type="button"
                                   className={`flex-1 flex items-center gap-2 sm:gap-3 justify-end text-right ${direIsCN ? 'group/team-b' : ''}`}
-                                  onClick={() => openTeamFlyout({
+                                  onClick={() => openTeamDetail({
                                     team_id: String(direTeamRow?.team_id || direTeamRow?.id || match.dire_team_id || '') || null,
                                     name: direTeamRow?.name || match.dire_team_name,
                                     logo_url: direTeamRow?.logo_url || match.dire_team_logo || null
@@ -663,22 +635,6 @@ export function UpcomingSection({
           </Card>
         )}
       </div>
-
-      <TeamFlyout
-        open={flyoutOpen}
-        onOpenChange={setFlyoutOpen}
-        selectedTeam={flyoutTeam}
-        preloaded={{ teams: effectiveTeams, matches: allMatches, upcoming: effectiveUpcoming }}
-        onTeamSelect={(team) => openTeamFlyout(team)}
-        onPlayerClick={openPlayerFlyout}
-      />
-
-      <PlayerProfileFlyout
-        open={playerFlyoutOpen}
-        onOpenChange={setPlayerFlyoutOpen}
-        player={playerFlyoutModel}
-        onTeamSelect={(team) => openTeamFlyout(team)}
-      />
     </section>
   );
 }

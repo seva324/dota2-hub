@@ -7,6 +7,7 @@ import { MatchesPage } from '@/pages/MatchesPage';
 import { SeriesMatchPage } from '@/pages/SeriesMatchPage';
 import { LiveMatchDetailPage } from '@/pages/LiveMatchDetailPage';
 import { TeamsPage } from '@/pages/TeamsPage';
+import { TeamDetailPage } from '@/pages/TeamDetailPage';
 import { NewsPage } from '@/pages/NewsPage';
 import { NewsDetailPage } from '@/pages/NewsDetailPage';
 import { TournamentsPage } from '@/pages/TournamentsPage';
@@ -165,6 +166,12 @@ function App() {
           <NewsPage />
         ) : page === 'teams' ? (
           <TeamsPage />
+        ) : page === 'team' && route.teamName ? (
+          <TeamDetailPage
+            teamName={route.teamName}
+            teamId={route.teamId}
+            onBack={() => navigate({ page: 'teams', overlay: null }, { replace: false })}
+          />
         ) : (
           <TopLevelPlaceholder page={page} onBack={() => goTo('home')} />
         )}

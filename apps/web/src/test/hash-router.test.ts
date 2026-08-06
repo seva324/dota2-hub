@@ -109,8 +109,18 @@ describe('parseHash', () => {
 
   it('parses a team deep link with encoded names', () => {
     expect(parseHash('#/team/Team%20Spirit')).toEqual({
-      page: 'home',
-      overlay: { type: 'team', teamName: 'Team Spirit' },
+      page: 'team',
+      overlay: null,
+      teamName: 'Team Spirit',
+    });
+  });
+
+  it('parses a team deep link with teamId query', () => {
+    expect(parseHash('#/team/Team%20Spirit?teamId=2163')).toEqual({
+      page: 'team',
+      overlay: null,
+      teamName: 'Team Spirit',
+      teamId: '2163',
     });
   });
 
@@ -167,9 +177,10 @@ describe('toHash', () => {
     expect(toHash({ page: 'home', overlay: { type: 'match', matchId: '90001' } })).toBe('#/home/match/90001');
   });
 
-  it('serializes a team overlay with encoding', () => {
-    expect(toHash({ page: 'home', overlay: { type: 'team', teamName: 'Team Spirit' } })).toBe(
-      '#/team/Team%20Spirit',
+  it('serializes the team detail page with encoding', () => {
+    expect(toHash({ page: 'team', overlay: null, teamName: 'Team Spirit' })).toBe('#/team/Team%20Spirit');
+    expect(toHash({ page: 'team', overlay: null, teamName: 'Team Spirit', teamId: '2163' })).toBe(
+      '#/team/Team%20Spirit?teamId=2163',
     );
   });
 
@@ -180,8 +191,8 @@ describe('toHash', () => {
   });
 
   it('round-trips a team deep link through parseHash and toHash', () => {
-    const parsed = parseHash('#/team/Team%20Spirit');
-    expect(toHash(parsed)).toBe('#/team/Team%20Spirit');
+    const parsed = parseHash('#/team/Team%20Spirit?teamId=2163');
+    expect(toHash(parsed)).toBe('#/team/Team%20Spirit?teamId=2163');
   });
 
   it('serializes a news detail page', () => {

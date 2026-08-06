@@ -1,8 +1,7 @@
-export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match' | 'live' | 'event';
+export type TopLevelPage = 'home' | 'tournaments' | 'matches' | 'teams' | 'players' | 'news' | 'match' | 'live' | 'event' | 'team';
 
 export type OverlayState =
   | { type: 'match'; matchId: string }
-  | { type: 'team'; teamName: string }
   | { type: 'player'; accountId: string };
 
 export interface RouteState {
@@ -20,6 +19,10 @@ export interface RouteState {
   newsId?: string;
   /** 仅 page==='event'：DLTV 赛事 slug（/events/<slug>） */
   eventSlug?: string;
+  /** 仅 page==='team'：战队名（URL 段，可被 %20 等编码） */
+  teamName?: string;
+  /** 仅 page==='team'：战队 team_id（query 参数，用于精确匹配） */
+  teamId?: string;
 }
 
 const TOP_LEVEL_PAGES: TopLevelPage[] = ['home', 'tournaments', 'matches', 'teams', 'players', 'news'];
@@ -84,7 +87,13 @@ export function parseHash(hash: string): RouteState {
     }
     case 'team': {
       if (!second) return { page: 'home', overlay: null };
-      return { page: 'home', overlay: { type: 'team', teamName: decodeURIComponent(second) } };
+      const query = new URLSearchParams(queryString || '');
+      return {
+        page: 'team',
+        overlay: null,
+        teamName: decodeURIComponent(second),
+        teamId: query.get('teamId') ?? undefined,
+      };
     }
     case 'player': {
       if (!second) return { page: 'home', overlay: null };
@@ -117,12 +126,14 @@ export function toHash(route: RouteState): string {
     }
     return base;
   }
+  if (route.page === 'team' && route.teamName) {
+    const base = `#/team/${encodeURIComponent(route.teamName)}`;
+    return route.teamId ? `${base}?teamId=${encodeURIComponent(route.teamId)}` : base;
+  }
   if (route.overlay) {
     switch (route.overlay.type) {
       case 'match':
         return `#/home/match/${encodeURIComponent(route.overlay.matchId)}`;
-      case 'team':
-        return `#/team/${encodeURIComponent(route.overlay.teamName)}`;
       case 'player':
         return `#/player/${encodeURIComponent(route.overlay.accountId)}`;
     }

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
 import { SafeImg } from '@/components/custom/SafeImg';
-import { TeamFlyout } from '@/components/custom/TeamFlyout';
 import { EmptyState, LiveEmptyState } from '@/components/custom/EmptyState';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { LiveMatchCard, type LiveHeroPayload } from '@/components/custom/LiveMatchCard';
@@ -692,7 +691,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
 
   const overlay = route.overlay;
   const activeMatchId = overlay?.type === 'match' ? Number(overlay.matchId) : null;
-  const activeTeamName = overlay?.type === 'team' ? overlay.teamName : null;
   const activePlayerId = overlay?.type === 'player' ? Number(overlay.accountId) : null;
 
   const openOverlay = (next: Extract<RouteState['overlay'], NonNullable<RouteState['overlay']>>) => {
@@ -767,8 +765,13 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     handleOpenMatch(hero.liveMap?.matchId ?? hero.maps?.[0]?.matchId ?? '', buildSeriesMaps(hero));
   };
 
-  const handleOpenTeam = (teamName: string) => {
-    openOverlay({ type: 'team', teamName });
+  const handleOpenTeam = (team: { team_id?: string | null; name?: string | null }) => {
+    if (!team?.name) return;
+    // 点击战队 LOGO/名称 → 直接跳转战队详情页
+    navigate(
+      { page: 'team', overlay: null, teamName: team.name, teamId: team.team_id ? String(team.team_id) : undefined },
+      { replace: false },
+    );
   };
 
   const handleOpenPlayerByAccountId = (accountId: number) => {
@@ -909,22 +912,12 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         />
       </div>
 
-      {activeTeamName !== null && (
-        <TeamFlyout
-          open
-          onOpenChange={(open) => { if (!open) closeOverlay(); }}
-          selectedTeam={{ name: activeTeamName }}
-          onPlayerClick={handleOpenPlayerByAccountId}
-          onTeamSelect={(team) => { if (team.name) handleOpenTeam(team.name); }}
-        />
-      )}
-
       {activePlayerId !== null && Number.isFinite(activePlayerId) && (
         <PlayerProfileFlyout
           open
           onOpenChange={(open) => { if (!open) closeOverlay(); }}
           player={playerModel}
-          onTeamSelect={(team) => { if (team.name) handleOpenTeam(team.name); }}
+          onTeamSelect={(team) => handleOpenTeam(team)}
         />
       )}
 
@@ -935,7 +928,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
           open
           onOpenChange={(open) => { if (!open) closeOverlay(); }}
           fullPage
-          onTeamClick={(team) => { if (team.name) handleOpenTeam(team.name); }}
+          onTeamClick={(team) => handleOpenTeam(team)}
           onPlayerClick={handleOpenPlayerByAccountId}
         />
       )}

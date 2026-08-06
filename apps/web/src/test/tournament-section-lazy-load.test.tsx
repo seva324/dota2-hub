@@ -5,10 +5,6 @@ vi.mock('@/components/custom/MatchDetailModal', () => ({
   MatchDetailModal: () => null,
 }));
 
-vi.mock('@/components/custom/TeamFlyout', () => ({
-  TeamFlyout: () => null,
-}));
-
 vi.mock('@/components/custom/PlayerProfileFlyout', () => ({
   PlayerProfileFlyout: () => null,
 }));
