@@ -6,6 +6,14 @@ Dota 2 esports information platform for Chinese-speaking users.
 
 - React + Vite + TypeScript SPA, deployed on EdgeOne Pages.
 - Tailwind + shadcn/ui (Radix) + lucide; ECharts/Recharts for data viz.
+
+## Deployment (2026-08-06 确认)
+
+- 生产 = **EdgeOne Pages**（Provider=Github，仓库集成），**Vercel 已弃用**（仓库中的 vercel 部署记录/vercel.json 均为遗留）。
+- Provider=Github 项目**拒绝 CLI 直传**，`.github/workflows/deploy-edgeone.yml` 的 deploy job 默认跳过（`EDGEONE_DIRECT_DEPLOY` 变量已删除），push 只跑 build-and-test。
+- 部署依赖 **EdgeOne 控制台 Git 集成**：push main 后控制台自动构建，或手动在控制台触发。
+- ⚠️ 2026-08-06：push 后生产未自动更新（控制台集成未自动构建），需在 EdgeOne 控制台手动触发构建。验证方法：对比 `https://dotahub.cn/` 的 `assets/index-*.js` 与本地 `apps/web/dist/assets/`。
+- 详见 `DEPLOYMENT.md`。
 - **No react-router.** 自建轻量 hash router(`#/...`),2026-07-31 决策:可分享 URL 无需 EdgeOne SPA rewrite,且不新增依赖。
 - **Overlay 后退语义 = Replace 模型**(2026-07-31 决策):打开/切换浮层与比赛详情用 `history.replace`,back 永远回到 `#/`,历史深度 ≤2。overlay 是"临时查看",back 关掉浮层回列表最符合直觉。
 - **路由单一数据源**(2026-07-31 决策):所有打开浮层/详情/切换页面 = 更新 hash;所有 hash 变化(深链/刷新/分享/后退)由同一 listener 分发。浮层打开时 dashboard 保持渲染(纯 overlay,back 零闪烁);深链浮层不改变顶栏高亮。
