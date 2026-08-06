@@ -30,12 +30,22 @@ describe('resolveTeamLogo', () => {
     // PSG.LGD 只有镜像 fallback（无 curated/override），DLTV logo 不应抢先
     expect(resolveTeamLogo({ teamId: '5014799', name: 'PSG.LGD' }, [], 'https://hawk.live/storage/teams/lgd.png'))
       .toBe('/images/mirror/teams/5014799.png');
+    // DLTV 全名同样命中
+    expect(resolveTeamLogo({ name: 'LGD Gaming' }, [], 'https://dltv.org/uploads/teams/small/lgd.png'))
+      .toBe('/images/mirror/teams/5014799.png');
     // 行数据带远端 logo_url + tag 命中时，本地镜像 fallback 同样优先
     expect(resolveTeamLogo(
       { teamId: '5014799', name: 'LGD Gaming' },
       [{ team_id: '5014799', name: 'LGD Gaming', tag: 'LGD', logo_url: 'https://s3.dltv.org/uploads/teams/lgd.png' }],
       'https://hawk.live/storage/teams/lgd.png',
     )).toBe('/images/mirror/teams/5014799.png');
+  });
+
+  it('matches curated mirrors by DLTV short names used on event pages', () => {
+    expect(resolveTeamLogo({ name: 'Xtreme' }, [], 'https://dltv.org/uploads/teams/xg.png'))
+      .toBe(getCuratedTeamLogoMirrorPath('Xtreme Gaming'));
+    expect(resolveTeamLogo({ name: 'PARI' }, [], 'https://dltv.org/uploads/teams/pari.png'))
+      .toBe(getCuratedTeamLogoMirrorPath('PARIVISION'));
   });
 
   it('falls back to the explicit DLTV logo when no local mirror exists', () => {

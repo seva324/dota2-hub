@@ -2,6 +2,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { resolveTeamLogo } from '@/lib/teams';
 import './event-detail.css';
 
 /* ------------------------------------------------------------------ */
@@ -163,10 +164,11 @@ function TeamLink({
 }
 
 function TeamLogo({ src, name, size = 24 }: { src?: string | null; name: string; size?: number }) {
+  const logo = resolveTeamLogo({ name }, [], src);
   return (
     <span className="logo" style={{ width: size, height: size }}>
       <SafeImg
-        src={src || ''}
+        src={logo || ''}
         alt={name}
         fallback={
           <span style={{ fontSize: Math.round(size * 0.42), fontWeight: 900, color: '#8b96a5' }}>

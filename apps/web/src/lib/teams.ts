@@ -55,6 +55,7 @@ const TEAM_LOGO_FALLBACKS: Record<string, string> = {
   vg: '/images/mirror/teams/726228.png',
   vicigaming: '/images/mirror/teams/726228.png',
   lgd: '/images/mirror/teams/5014799.png',
+  lgdgaming: '/images/mirror/teams/5014799.png',
   psglgd: '/images/mirror/teams/5014799.png',
   aurora: '/images/mirror/teams/9467224.png',
   auroragaming: '/images/mirror/teams/9467224.png',
