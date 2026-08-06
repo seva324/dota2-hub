@@ -495,6 +495,34 @@ function parseDraftStatsHtml(html) {
   };
 }
 
+/** 从战队页 HTML 解析战队招牌英雄（top__heroes 区块，Hero + Winrate 进度条）。 */
+function parseTeamSignatureHeroesHtml(html) {
+  const sigStart = html.indexOf('<section class="top__heroes">');
+  if (sigStart < 0) return [];
+  const bodyStart = html.indexOf('table__body', sigStart);
+  if (bodyStart < 0) return [];
+  const nextHead = html.indexOf('table__head', bodyStart + 10);
+  const endMark = nextHead > 0 ? nextHead : bodyStart + 8000;
+  const block = html.slice(bodyStart, endMark);
+  const heroes = [];
+  const rowOpenRe = /<div class="table__body-row(?: |")/g;
+  const opens = [...block.matchAll(rowOpenRe)].map((m) => m.index);
+  for (let i = 0; i < opens.length; i += 1) {
+    const start = opens[i];
+    const end = i + 1 < opens.length ? opens[i + 1] : block.length;
+    const rowHtml = block.slice(start, end);
+    const name = rowHtml.match(/cell__name">([\s\S]*?)<\/div>/)?.[1]?.trim();
+    const img = rowHtml.match(/background-image: url\('([^']+)'\)/)?.[1];
+    const winrate = rowHtml.match(/percent">([\s\S]*?)<\/div>/)?.[1]?.trim();
+    if (name) heroes.push({
+      name,
+      img: img ? `https://dltv.org${img.startsWith('/') ? '' : '/'}${img}` : '',
+      winrate: winrate || '',
+    });
+  }
+  return heroes;
+}
+
 /** 从选手页 HTML 解析 Signature heroes（招牌英雄 Top N）。 */
 function parseSignatureHeroesHtml(html) {
   const sigStart = html.indexOf('Signature heroes');
@@ -682,6 +710,7 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
   }
 
   const achievements = parseAchievementsHtml(teamPageHtml);
+  const teamSignatureHeroes = parseTeamSignatureHeroesHtml(teamPageHtml);
   const pagePlayers = parseSquadHtml(teamPageHtml);
   const draftStats = parseDraftStatsHtml(teamPageHtml);
 
@@ -713,6 +742,7 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
     ].slice(0, 5),
     statsOverview,
     draftStats: draftStats || normalizeDraftStats(heroes, normalized.draftStats),
+    teamSignatureHeroes,
     h2h: normalized.h2h,
     recentMatches: await enrichRecentMatchesHeroes(normalized.recentMatches, teamSlug, httpFetch),
     squad: normalizeSquad(pagePlayers, sigBySlug),

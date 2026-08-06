@@ -47,6 +47,7 @@ type TeamData = {
     topPicks?: Array<{ name: string; img?: string; maps: number; rate: string; wins: number; losses: number }>;
     topBans?: Array<{ name: string; img?: string; rate: string; mapsVs: number; winsVs?: number; losesVs?: number }>;
   };
+  teamSignatureHeroes?: Array<{ name: string; img?: string; winrate?: string }>;
   h2h?: Array<{
     opponent: string;
     slug: string;
@@ -203,7 +204,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
     };
   }, [data?.nextMatch?.scheduledAt]);
 
-  // 近 10 场胜负趋势 canvas：胜上负下折线 + 分段着色，无背景填充
+  // 近 10 场胜负趋势 canvas：柱状图（胜正坐标绿色 / 负负坐标红色）
   useEffect(() => {
     const cv = chartRef.current;
     if (!cv || !data?.recentMatches?.length || data.recentMatches.length < 2) return;
@@ -217,16 +218,13 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
     const marks = data.recentMatches.map((m) => (m.won ? 1 : 0));
+    const n = marks.length;
     const pad = { t: 18, r: 16, b: 26, l: 16 };
     const iw = W - pad.l - pad.r;
     const ih = H - pad.t - pad.b;
-    const baseY = pad.t + ih * 0.5;
-    const amp = ih * 0.36;
-    const pts = marks.map((m, i) => ({
-      x: pad.l + (i / (marks.length - 1)) * iw,
-      y: m ? baseY - amp : baseY + amp,
-    }));
-    const n = pts.length;
+    // 中轴线（0 坐标）在垂直中部
+    const zeroY = pad.t + ih * 0.5;
+    const halfH = ih * 0.46; // 柱最大高度（正/负各占半区）
 
     // 柔和横向网格
     ctx.save();
@@ -241,86 +239,44 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
     }
     ctx.restore();
 
-    // 渐变面积填充：折线与中线之间的区域，上绿（胜）下红（负）渐变
+    // 0 轴（中轴线）
     ctx.save();
-    const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ih);
-    grad.addColorStop(0, 'rgba(102,187,106,0.14)');
-    grad.addColorStop(0.5, 'rgba(255,255,255,0.02)');
-    grad.addColorStop(1, 'rgba(244,67,54,0.12)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, baseY);
-    ctx.lineTo(pts[0].x, pts[0].y);
-    for (let i = 0; i < n - 1; i += 1) {
-      const p0 = pts[Math.max(0, i - 1)];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[Math.min(n - 1, i + 2)];
-      const c1x = p1.x + (p2.x - p0.x) / 6;
-      const c1y = p1.y + (p2.y - p0.y) / 6;
-      const c2x = p2.x - (p3.x - p1.x) / 6;
-      const c2y = p2.y - (p3.y - p1.y) / 6;
-      ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
-    }
-    ctx.lineTo(pts[n - 1].x, baseY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    // 中线参考（极淡）
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 6]);
     ctx.beginPath();
-    ctx.moveTo(pad.l, baseY);
-    ctx.lineTo(pad.l + iw, baseY);
+    ctx.moveTo(pad.l, zeroY);
+    ctx.lineTo(pad.l + iw, zeroY);
     ctx.stroke();
     ctx.restore();
 
-    // 平滑曲线（胜段绿、负段红）
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    let segStart = 0;
-    const drawSeg = (from: number, to: number, won: boolean) => {
-      ctx.strokeStyle = won ? '#66BB6A' : '#F44336';
-      ctx.beginPath();
-      ctx.moveTo(pts[from].x, pts[from].y);
-      for (let i = from; i < to; i += 1) {
-        const p0 = pts[Math.max(0, i - 1)];
-        const p1 = pts[i];
-        const p2 = pts[i + 1];
-        const p3 = pts[Math.min(n - 1, i + 2)];
-        const c1x = p1.x + (p2.x - p0.x) / 6;
-        const c1y = p1.y + (p2.y - p0.y) / 6;
-        const c2x = p2.x - (p3.x - p1.x) / 6;
-        const c2y = p2.y - (p3.y - p1.y) / 6;
-        ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
-      }
-      ctx.stroke();
-    };
-    for (let i = 1; i < n; i += 1) {
-      if (marks[i] !== marks[i - 1]) {
-        drawSeg(segStart, i - 1, Boolean(marks[segStart]));
-        segStart = i;
-      }
-    }
-    drawSeg(segStart, n - 1, Boolean(marks[segStart]));
-
-    // 数据点（带光晕）
+    // 柱状图：胜 → 正坐标（向上绿柱），负 → 负坐标（向下红柱）
+    const slot = iw / n;
+    const barW = Math.min(slot * 0.55, 42);
     marks.forEach((m, i) => {
+      const cx = pad.l + slot * i + slot / 2;
+      const bx = cx - barW / 2;
       const color = m ? '#66BB6A' : '#F44336';
+      const height = halfH;
+      // 渐变柱
+      const grad = ctx.createLinearGradient(0, zeroY - (m ? height : 0), 0, zeroY + (m ? 0 : height));
+      grad.addColorStop(0, m ? 'rgba(102,187,106,0.95)' : 'rgba(244,67,54,0.95)');
+      grad.addColorStop(1, m ? 'rgba(102,187,106,0.45)' : 'rgba(244,67,54,0.45)');
       ctx.save();
       ctx.shadowColor = color;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(pts[i].x, pts[i].y, 5.5, 0, Math.PI * 2);
-      ctx.fillStyle = color;
+      if (m) {
+        ctx.roundRect(bx, zeroY - height, barW, height, [4, 4, 0, 0]);
+      } else {
+        ctx.roundRect(bx, zeroY, barW, height, [0, 0, 4, 4]);
+      }
       ctx.fill();
       ctx.restore();
+      // 柱顶/柱底小亮点
       ctx.beginPath();
-      ctx.arc(pts[i].x, pts[i].y, 2, 0, Math.PI * 2);
+      ctx.arc(cx, m ? zeroY - height : zeroY + height, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = '#FFFFFF';
       ctx.fill();
     });
@@ -331,7 +287,10 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
     ctx.textAlign = 'center';
     marks.forEach((_, i) => {
       const d = (data.recentMatches?.[i]?.date || '').slice(5).replace('-', '/');
-      if (i % 2 === 0) ctx.fillText(d, pts[i].x, pad.t + ih + 18);
+      if (i % 2 === 0) {
+        const cx = pad.l + slot * i + slot / 2;
+        ctx.fillText(d, cx, pad.t + ih + 18);
+      }
     });
   }, [data]);
 
@@ -438,8 +397,8 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                 <a href="#next-match">Upcoming</a>
                 <a href="#stats">数据总览</a>
                 <a href="#h2h">最近交手</a>
-                <a href="#heroes">常用英雄</a>
                 <a href="#signature">招牌英雄</a>
+                <a href="#heroes">常用英雄</a>
                 <a href="#squad">成员</a>
                 <a href="#matches">Results</a>
                 <a href="#achievements">成就</a>
@@ -542,6 +501,27 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
               </div>
             </section>
 
+            {/* ===== 招牌英雄 Signature heroes ===== */}
+            <section className="section" id="signature">
+              <h2 className="section-title">招牌英雄 <small>Signature heroes · 战队招牌英雄与胜率</small></h2>
+              {D.teamSignatureHeroes && D.teamSignatureHeroes.length ? (
+                <div className="sig-grid">
+                  {D.teamSignatureHeroes.map((h) => (
+                    <div className="sig-hero-card" key={h.name}>
+                      {h.img ? <img src={h.img} alt={h.name} /> : <span className="sig-hero-ph-lg">{h.name?.[0] || '?'}</span>}
+                      <span className="sig-hero-name">{h.name}</span>
+                      <span className="sig-hero-wr">{h.winrate || ''}</span>
+                      <div className="sig-wr-bar">
+                        <i style={{ width: `${Math.min(100, Number.parseFloat(h.winrate || '0') || 0)}%` }}></i>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="sig-grid">{emptyNote('暂无招牌英雄数据')}</div>
+              )}
+            </section>
+
             {/* ===== 常用英雄 ===== */}
             <section className="section" id="heroes">
               <h2 className="section-title">常用英雄 <small>选人 / 禁用 · 近 3 个月</small></h2>
@@ -602,36 +582,6 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                 </div>
               ) : (
                 <div className="hero-split">{emptyNote('暂无英雄数据')}</div>
-              )}
-            </section>
-
-            {/* ===== 招牌英雄 Signature heroes ===== */}
-            <section className="section" id="signature">
-              <h2 className="section-title">招牌英雄 <small>Signature heroes · 选手招牌英雄与胜率</small></h2>
-              {D.squad && D.squad.some((p) => p.sig && p.sig.length) ? (
-                <div className="sig-grid">
-                  {D.squad.filter((p) => !p.isCoach && p.sig && p.sig.length).map((p) => (
-                    <div className="sig-card" key={p.nick}>
-                      <div className="sig-head">
-                        {p.photo ? <img className="sig-avatar" src={p.photo} alt={p.nick} /> : <span className="sig-avatar ph">{p.nick?.[0] || '?'}</span>}
-                        <div className="sig-meta">
-                          <div className="sig-nick">{p.nick}</div>
-                          <div className="sig-role">{p.role || '—'}</div>
-                        </div>
-                      </div>
-                      <div className="sig-heroes">
-                        {(p.sig ?? []).map((s) => (
-                          <div className="sig-hero" key={s.name}>
-                            {s.img ? <img src={s.img} alt={s.name} /> : <span className="sig-hero-ph">{s.name?.[0] || '?'}</span>}
-                            <span className="sig-hname">{s.name}</span>
-                            <span className="sig-wr">{s.winrate || ''}</span>
-                          </div>
-                        ))}
-                      </div>                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="sig-grid">{emptyNote('暂无招牌英雄数据')}</div>
               )}
             </section>
 
