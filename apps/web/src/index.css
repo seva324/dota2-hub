@@ -94,7 +94,7 @@
   
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Exo2', 'Alibaba PuHuiTi', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Alibaba PuHuiTi', 'Exo2', system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

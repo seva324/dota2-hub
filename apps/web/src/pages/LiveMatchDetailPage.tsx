@@ -27,7 +27,7 @@ function SectionCard({ title, sub, children }: { title: string; sub?: string; ch
   return (
     <section className="rounded-2xl p-4" style={{ backgroundColor: design.card, border: `1px solid ${design.border}` }}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ fontFamily: "'Exo2', sans-serif", color: '#eaf2fb' }}>
+        <h2 className="text-[11px] font-black uppercase tracking-[0.16em]" style={{ fontFamily: "'Alibaba PuHuiTi', 'Exo2', sans-serif", color: '#eaf2fb' }}>
           {title}
         </h2>
         {sub && <span className="shrink-0 text-[11px]" style={{ color: design.faint }}>{sub}</span>}

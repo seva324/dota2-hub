@@ -37,4 +37,5 @@ Thumbs.db
 # Visual QA artifacts  
 scripts/visual-qa/artifacts/  
 artifacts/visual-qa/  
+artifacts/*.png
 session_*.json 

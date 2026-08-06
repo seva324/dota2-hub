@@ -1,23 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Newspaper } from 'lucide-react';
-import { SafeImg } from '@/components/custom/SafeImg';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Newspaper, TriangleAlert } from 'lucide-react';
 import { NewsThumb, type NewsItem } from '@/components/custom/NewsArticle';
 import { apiFetch } from '@/lib/api-cache';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import { CATEGORY_ORDER, categoryInfo } from '@/lib/newsCategory';
+import './news-page.css';
 
 const EMPTY_NEWS: NewsItem[] = [];
-
-const design = {
-  bg: '#0f1115',
-  card: '#1a1d24',
-  card2: '#20242e',
-  blue: '#2b55e8',
-  blue2: '#5b7cff',
-  red: '#ff3b30',
-  text2: '#a1a1aa',
-  text3: '#71717a',
-};
+const PER_PAGE = 12;
 
 function formatNewsDate(timestamp: number) {
   if (!timestamp) return '';
@@ -28,11 +18,8 @@ function formatNewsDate(timestamp: number) {
 function CategoryBadge({ category }: { category?: string }) {
   const info = categoryInfo(category);
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-[#0f1115]/80 px-2 py-0.5 text-[11px] font-bold tracking-wide backdrop-blur"
-      style={{ color: '#fff' }}
-    >
-      <span className="size-1.5 rounded-[3px]" style={{ backgroundColor: info.color }} />
+    <span className="np-badge">
+      <span className="tick" style={{ backgroundColor: info.color }} />
       {info.label}
     </span>
   );
@@ -55,56 +42,28 @@ function useOpenOnClick(onOpen: () => void, label: string) {
 
 function FeaturedCard({ item, onOpen }: { item: NewsItem; onOpen: () => void }) {
   return (
-    <article
-      {...useOpenOnClick(onOpen, `阅读全文：${item.title}`)}
-      className="relative mb-6 cursor-pointer overflow-hidden rounded-2xl border border-white/[0.06]"
-      style={{ backgroundColor: design.card, minHeight: 400 }}
-    >
-      {item.image_url ? (
-        <SafeImg
-          src={item.image_url}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-          fallback={null}
-        />
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(135deg, #1c2440, #131a2c 55%, #2a3352)' }}
-        />
-      )}
-      <div
-        className="absolute inset-0"
-        style={{ background: 'linear-gradient(180deg, rgba(15,17,21,0.15) 0%, rgba(15,17,21,0.45) 45%, rgba(15,17,21,0.94) 100%)' }}
-      />
-      <div className="relative z-10 flex min-h-[400px] flex-col justify-end p-7">
-        <div className="mb-3.5 flex items-center gap-3">
+    <article className="np-featured" {...useOpenOnClick(onOpen, `阅读全文：${item.title}`)}>
+      <div className="photo">
+        <NewsThumb item={item} className="np-feat-img" />
+      </div>
+      <div className="scrim" />
+      <div className="body">
+        <div className="meta">
           <CategoryBadge category={item.category} />
-          <span className="text-xs font-medium" style={{ color: 'rgba(238,242,247,0.75)' }}>
-            {formatNewsDate(item.published_at)}
-          </span>
-          <span className="text-xs font-medium" style={{ color: 'rgba(238,242,247,0.75)' }}>
-            · {item.source}
-          </span>
+          <span className="np-date">{formatNewsDate(item.published_at)}</span>
+          <span className="np-date">· {item.source}</span>
         </div>
-        <h2 className="max-w-2xl text-2xl font-extrabold leading-snug tracking-tight text-white lg:text-3xl">
-          {item.title}
-        </h2>
-        {item.summary && (
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[rgba(238,242,247,0.78)] line-clamp-2">
-            {item.summary}
-          </p>
-        )}
+        <h2>{item.title}</h2>
+        {item.summary ? <p className="ex">{item.summary}</p> : null}
         <button
           type="button"
+          className="more"
           onClick={(e) => {
             e.stopPropagation();
             onOpen();
           }}
-          className="mt-5 inline-flex w-fit items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: design.blue }}
         >
-          阅读全文 <ArrowRight className="size-4" />
+          阅读全文 <ArrowRight width={14} height={14} />
         </button>
       </div>
     </article>
@@ -116,33 +75,23 @@ function NewsCard({ item, onOpen }: { item: NewsItem; onOpen: () => void }) {
   return (
     <article
       {...useOpenOnClick(onOpen, `阅读全文：${item.title}`)}
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-white/[0.06] transition-all hover:-translate-y-0.5 hover:border-white/[0.12]"
-      style={{ backgroundColor: design.card }}
+      className="np-card"
+      style={{ '--cat': info.color } as React.CSSProperties}
     >
-      <div className="h-[3px] w-full" style={{ backgroundColor: info.color }} />
-      <div className="relative aspect-[16/9] overflow-hidden" style={{ backgroundColor: '#0d1120' }}>
-        <NewsThumb item={item} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-        <span className="absolute left-3 top-3 rounded-md border border-white/10 bg-[#0f1115]/80 px-2 py-0.5 text-[11px] font-bold backdrop-blur">
-          <span className="mr-1.5 inline-block size-1.5 rounded-[3px] align-middle" style={{ backgroundColor: info.color }} />
-          <span className="align-middle">{info.label}</span>
-        </span>
+      <div className="np-thumb">
+        <NewsThumb item={item} className="np-thumb-img" />
+        <CategoryBadge category={item.category} />
       </div>
-      <div className="flex flex-1 flex-col p-4">
-        <div className="mb-2.5 flex items-center justify-between gap-2">
-          <span className="text-xs font-medium" style={{ color: design.text3 }}>
-            {formatNewsDate(item.published_at)}
-          </span>
+      <div className="inner">
+        <div className="meta">
+          <span className="np-date">{formatNewsDate(item.published_at)}</span>
         </div>
-        <h3 className="text-[16.5px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-[#5b7cff]">
-          {item.title}
-        </h3>
-        {item.summary && (
-          <p className="mt-2 flex-1 text-[13.5px] leading-relaxed text-[#a1a1aa] line-clamp-2">{item.summary}</p>
-        )}
-        <div className="mt-3.5 flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs" style={{ color: '#8a93a5' }}>
-          <span className="font-medium">{item.source}</span>
-          <span className="font-semibold transition-colors group-hover:text-[#5b7cff]">
-            阅读全文 <ArrowRight className="ml-0.5 inline-block size-3.5 transition-transform group-hover:translate-x-0.5" />
+        <h3>{item.title}</h3>
+        <p className="ex">{item.summary || ''}</p>
+        <div className="src">
+          <span>{item.source}</span>
+          <span className="go">
+            阅读全文 <ArrowRight width={14} height={14} />
           </span>
         </div>
       </div>
@@ -150,20 +99,71 @@ function NewsCard({ item, onOpen }: { item: NewsItem; onOpen: () => void }) {
   );
 }
 
+function HotTopics({ items, onOpen }: { items: NewsItem[]; onOpen: (item: NewsItem) => void }) {
+  return (
+    <section className="np-panel">
+      <h2>热门话题</h2>
+      <ol className="np-hot-list">
+        {items.map((item, index) => (
+          <li key={item.id}>
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                onOpen(item);
+              }}
+            >
+              <span className="rank">{String(index + 1).padStart(2, '0')}</span>
+              <span className="h-body">
+                <span className="h-title">{item.title}</span>
+                <span className="h-meta">
+                  {categoryInfo(item.category).label} · {item.source}
+                </span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function NewsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} className="overflow-hidden rounded-xl border border-white/[0.06]" style={{ backgroundColor: design.card }}>
-          <div className="aspect-[16/9] animate-pulse" style={{ backgroundColor: '#232733' }} />
-          <div className="space-y-3 p-4">
-            <div className="h-4 w-24 rounded animate-pulse" style={{ backgroundColor: '#232733' }} />
-            <div className="h-5 w-full rounded animate-pulse" style={{ backgroundColor: '#2a2d35' }} />
-            <div className="h-4 w-3/4 rounded animate-pulse" style={{ backgroundColor: '#232733' }} />
-          </div>
-        </div>
-      ))}
+    <div className="np-skeleton">
+      <div className="np-sk-feat" />
+      <div className="np-sk-grid">
+        <div className="np-sk-card" />
+        <div className="np-sk-card" />
+        <div className="np-sk-card" />
+        <div className="np-sk-card" />
+      </div>
     </div>
+  );
+}
+
+function Pager({ pages, page, onPage }: { pages: number; page: number; onPage: (page: number) => void }) {
+  return (
+    <nav className="np-pager" aria-label="分页">
+      <button type="button" className="np-pg" disabled={page === 1} onClick={() => onPage(page - 1)}>
+        ‹ 上一页
+      </button>
+      {Array.from({ length: pages }).map((_, i) => (
+        <button
+          key={i}
+          type="button"
+          className={`np-pg ${i + 1 === page ? 'on' : ''}`}
+          onClick={() => onPage(i + 1)}
+        >
+          {i + 1}
+        </button>
+      ))}
+      <button type="button" className="np-pg" disabled={page === pages} onClick={() => onPage(page + 1)}>
+        下一页 ›
+      </button>
+    </nav>
   );
 }
 
@@ -175,30 +175,30 @@ export function NewsPage() {
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
 
-  const openDetail = (item: NewsItem) => {
-    navigate({ page: 'news', overlay: null, newsId: item.id }, { replace: false });
-  };
+  const openDetail = useCallback(
+    (item: NewsItem) => {
+      navigate({ page: 'news', overlay: null, newsId: item.id }, { replace: false });
+    },
+    [navigate],
+  );
+
+  const loadNews = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const payload = await apiFetch<NewsItem[]>('/api/news?limit=30', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
+      setNews(Array.isArray(payload) ? payload : []);
+    } catch (error) {
+      console.error('[NewsPage] Failed to load news:', error);
+      setLoadError('加载新闻失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const loadNews = async () => {
-      setLoading(true);
-      setLoadError('');
-      try {
-        const payload = await apiFetch<NewsItem[]>('/api/news?limit=30', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
-        if (cancelled) return;
-        setNews(Array.isArray(payload) ? payload : []);
-      } catch (error) {
-        if (cancelled) return;
-        console.error('[NewsPage] Failed to load news:', error);
-        setLoadError('加载新闻失败，请稍后重试');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
     void loadNews();
-    return () => { cancelled = true; };
-  }, []);
+  }, [loadNews]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -227,7 +227,8 @@ export function NewsPage() {
     return news.filter((item) => categoryInfo(item.category).label === filter);
   }, [news, filter]);
 
-  const PER_PAGE = 12;
+  const hot = useMemo(() => news.slice(0, 5), [news]);
+
   const featured = filter === 'all' ? filtered[0] : null;
   const listSource = featured ? filtered.slice(1) : filtered;
   const pages = Math.max(1, Math.ceil(listSource.length / PER_PAGE));
@@ -239,114 +240,82 @@ export function NewsPage() {
     setPage(1);
   };
 
+  const showEmpty = !loading && !loadError && news.length === 0;
+
   return (
-    <div className="relative mx-auto w-full max-w-[1200px] px-4 pt-24 lg:px-6" style={{ backgroundColor: design.bg }}>
-      {/* 页头 */}
-      <div className="pb-2 pt-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.22em]" style={{ color: design.text2 }}>
-            <span className="size-1.5 rounded-full" style={{ backgroundColor: design.red, boxShadow: '0 0 10px rgba(255,59,48,0.8)' }} />
-            Dota 2 Esports News
-          </div>
-          <span className="text-xs font-medium" style={{ color: design.text3 }}>
-            更新于 <span className="font-semibold text-[#a1a1aa]">{new Date().toLocaleDateString('zh-CN')}</span>
-            {' · '}<span className="font-bold" style={{ color: design.blue2 }}>{news.length}</span> 篇
-          </span>
-        </div>
-        <h1
-          className="mt-2 text-[clamp(52px,8vw,96px)] uppercase leading-[0.9] tracking-wide text-white"
-          style={{ fontFamily: "'Anton', 'Arial Narrow', sans-serif", fontWeight: 400 }}
-        >
-          News<span style={{ color: design.red }}>.</span>
-        </h1>
-      </div>
-
-      {/* 分类筛选 */}
-      <div className="mb-8 mt-7 flex flex-wrap gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => selectFilter(tab.key)}
-            className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[13px] font-semibold transition-colors"
-            style={
-              tab.key === filter
-                ? { color: '#fff', borderColor: design.blue, backgroundColor: 'rgba(43,85,232,0.18)' }
-                : { color: design.text2, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent' }
-            }
-          >
-            {tab.label === 'all' ? '全部' : tab.label}
-            <span className="text-[11px] font-bold" style={{ color: tab.key === filter ? design.blue2 : design.text3 }}>
-              {tab.count}
+    <div className="news-page">
+      <div className="np-wrap pt-16">
+        <section className="np-head">
+          <div className="np-eyebrow-row">
+            <div className="np-eyebrow">
+              <span className="dot" />Dota 2 Esports News
+            </div>
+            <span className="np-updated">
+              更新于 <b className="date">{new Date().toLocaleDateString('zh-CN')}</b> ·{' '}
+              <b className="count">{news.length}</b> 篇
             </span>
-          </button>
-        ))}
-      </div>
+          </div>
 
-      {/* 内容 */}
-      {loading ? (
-        <NewsSkeleton />
-      ) : news.length === 0 ? (
-        <div className="py-16 text-center" style={{ color: design.text3 }}>
-          <Newspaper className="mx-auto mb-4 size-12 opacity-40" />
-          <p>{loadError || '暂无新闻数据'}</p>
-        </div>
-      ) : (
-        <>
-          {featured && <FeaturedCard item={featured} onOpen={() => openDetail(featured)} />}
-
-          {pageItems.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {pageItems.map((item) => (
-                <NewsCard key={item.id} item={item} onOpen={() => openDetail(item)} />
-              ))}
-            </div>
-          ) : (
-            <div className="py-16 text-center" style={{ color: design.text3 }}>
-              <p>该分类下暂无资讯</p>
-            </div>
-          )}
-
-          {/* 分页 */}
-          {pages > 1 && (
-            <nav className="mt-10 flex items-center justify-center gap-2" aria-label="分页">
+          <div className="np-filters">
+            {tabs.map((tab) => (
               <button
+                key={tab.key}
                 type="button"
-                disabled={safePage === 1}
-                onClick={() => setPage(safePage - 1)}
-                className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-white/[0.08] px-2.5 text-[13.5px] font-semibold transition-colors disabled:opacity-35"
-                style={{ color: design.text2 }}
+                className={`np-tab ${tab.key === filter ? 'on' : ''}`}
+                onClick={() => selectFilter(tab.key)}
               >
-                ‹ 上一页
+                {tab.label === 'all' ? '全部' : tab.label}
+                <span className="n">{tab.count}</span>
               </button>
-              {Array.from({ length: pages }).map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setPage(i + 1)}
-                  className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-[13.5px] font-semibold transition-colors"
-                  style={
-                    i + 1 === safePage
-                      ? { color: '#fff', borderColor: design.blue, backgroundColor: design.blue }
-                      : { color: design.text2, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent' }
-                  }
-                >
-                  {i + 1}
+            ))}
+          </div>
+        </section>
+
+        <section className="np-layout">
+          <div className="np-feed">
+            {loading ? (
+              <NewsSkeleton />
+            ) : loadError ? (
+              <div className="np-error" role="alert">
+                <TriangleAlert width={40} height={40} />
+                <p>{loadError}</p>
+                <button type="button" className="retry" onClick={() => void loadNews()}>
+                  重新加载
                 </button>
-              ))}
-              <button
-                type="button"
-                disabled={safePage === pages}
-                onClick={() => setPage(safePage + 1)}
-                className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-white/[0.08] px-2.5 text-[13.5px] font-semibold transition-colors disabled:opacity-35"
-                style={{ color: design.text2 }}
-              >
-                下一页 ›
-              </button>
-            </nav>
-          )}
-        </>
-      )}
+              </div>
+            ) : showEmpty ? (
+              <div className="np-empty" role="status">
+                <Newspaper width={40} height={40} />
+                <p>暂无新闻数据</p>
+              </div>
+            ) : (
+              <>
+                {featured && <FeaturedCard item={featured} onOpen={() => openDetail(featured)} />}
+
+                {pageItems.length > 0 ? (
+                  <div className="np-grid">
+                    {pageItems.map((item) => (
+                      <NewsCard key={item.id} item={item} onOpen={() => openDetail(item)} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="np-empty" role="status">
+                    <Newspaper width={40} height={40} />
+                    <p>该分类下暂无资讯</p>
+                    <span>试试其他分类，或稍后再来看看</span>
+                  </div>
+                )}
+
+                {pages > 1 && <Pager pages={pages} page={safePage} onPage={setPage} />}
+              </>
+            )}
+          </div>
+
+          <aside className="np-rail">
+            <HotTopics items={hot} onOpen={openDetail} />
+          </aside>
+        </section>
+      </div>
     </div>
   );
 }

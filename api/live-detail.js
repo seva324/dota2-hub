@@ -1,10 +1,26 @@
 import { getLiveDetail } from '../lib/server/live-detail-service.js';
+import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 // 高频实时走 CDN：15s 缓存挡掉大部分轮询，回源时才抓 hawk.live，全程不碰 Neon。
 const LIVE_DETAIL_CACHE_CONTROL = 'public, max-age=15, s-maxage=15, stale-while-revalidate=30';
 
 function shouldBypassSharedCache(query) {
   return String(query?.refresh || '') === '1' || String(query?.debug || '') === '1';
+}
+
+/** hawk 队标 URL 统一走 mirror → 代理 → 原样，与全站一致。 */
+function rebaseLogo(url, req) {
+  if (!url) return null;
+  return getMirroredAssetUrl(url, req) || url;
+}
+
+function rebaseTeamLogo(payload, req) {
+  if (!payload?.team1 && !payload?.team2) return payload;
+  return {
+    ...payload,
+    team1: payload.team1 ? { ...payload.team1, logoUrl: rebaseLogo(payload.team1.logoUrl, req) } : payload.team1,
+    team2: payload.team2 ? { ...payload.team2, logoUrl: rebaseLogo(payload.team2.logoUrl, req) } : payload.team2,
+  };
 }
 
 export default async function handler(req, res) {
@@ -39,14 +55,14 @@ export default async function handler(req, res) {
     }
     if (result.source === 'timeout') {
       res.setHeader('Cache-Control', 'no-store');
-      return res.status(200).json({ ...result, cached: false });
+      return res.status(200).json({ ...rebaseTeamLogo(result, req), cached: false });
     }
     if (result.source === 'error') {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(502).json({ error: 'upstream fetch failed', seriesId });
     }
 
-    return res.status(200).json(result);
+    return res.status(200).json(rebaseTeamLogo(result, req));
   } catch (error) {
     console.error('[Live Detail API] Error:', error instanceof Error ? error.message : String(error));
     return res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });

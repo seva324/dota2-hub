@@ -3,6 +3,7 @@ import { getCuratedTeamLogoGithubUrl } from '../../../../lib/team-logo-overrides
 
 import {
   getAssetImageFetchCandidates,
+  getDltvHostAlternate,
   toChinaReachableAssetUrl,
 } from '../../../../lib/asset-image-proxy.js'
 import assetImageHandler from '../../../../lib/api-handlers/asset-image.js'
@@ -76,6 +77,16 @@ describe('asset image proxy helpers', () => {
       'https://dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp',
       'https://s3.dltv.org/uploads/teams/g0qIsTyso5cQylIY7xnnCgQEi05uvITy.png.webp',
     ])
+  })
+
+  it('swaps dltv.org <-> s3.dltv.org host for mirror manifest lookup', () => {
+    expect(
+      getDltvHostAlternate('https://dltv.org/uploads/teams/ow0lHBBYMZsSHrUsVC4yYuI8YFZ8woga.png.webp')
+    ).toBe('https://s3.dltv.org/uploads/teams/ow0lHBBYMZsSHrUsVC4yYuI8YFZ8woga.png.webp')
+    expect(
+      getDltvHostAlternate('https://s3.dltv.org/uploads/teams/ow0lHBBYMZsSHrUsVC4yYuI8YFZ8woga.png.webp')
+    ).toBe('https://dltv.org/uploads/teams/ow0lHBBYMZsSHrUsVC4yYuI8YFZ8woga.png.webp')
+    expect(getDltvHostAlternate('https://cdn.steamstatic.com/apps/dota2/images/heroes/axe_lg.png')).toBeNull()
   })
 
   it('routes DLTV hero and item uploads through the same-origin asset proxy', () => {

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Trophy, Users, Zap, TrendingUp, ArrowLeft } from 'lucide-react';
+﻿import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
-import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
+import './event-detail.css';
 
 /* ------------------------------------------------------------------ */
 /* 类型（与后端 /api/event-detail 契约一致）                             */
@@ -15,6 +15,17 @@ interface EventOverview {
   'Event type'?: string;
   'Prize pool'?: string;
   Participants?: string;
+}
+
+interface AboutSection {
+  heading: string;
+  body: string;
+}
+
+interface AboutData {
+  intro: string;
+  sections: AboutSection[];
+  prizeBreakdown: [string, string][];
 }
 
 interface GroupStanding {
@@ -83,7 +94,7 @@ interface EventDetailPayload {
   live?: boolean;
   heroImage?: string | null;
   overview?: EventOverview;
-  about?: string[];
+  about?: AboutData;
   groups?: EventGroup[];
   playoffRounds?: PlayoffRound[];
   matches?: { matches?: MatchRow[]; finishedMatches?: MatchRow[] };
@@ -97,22 +108,10 @@ interface EventDetailPayload {
 /* 小工具                                                               */
 /* ------------------------------------------------------------------ */
 
-const design = { blue: '#2b55e8', red: '#ff3b30' };
 const FLAG_MAP: Record<string, string> = {
   Europe: 'https://dltv.org/assets/plugins/flag-icon/flags/4x3/eu.svg',
   China: 'https://dltv.org/assets/plugins/flag-icon/flags/4x3/cn.svg',
 };
-
-const TIER_TONES: Record<string, { chip: string; dot: string }> = {
-  'A-Tier': { chip: 'border-blue-400/30 bg-blue-500/10 text-blue-200', dot: '#60a5fa' },
-  'S-Tier': { chip: 'border-amber-300/30 bg-amber-400/10 text-amber-200', dot: '#fbbf24' },
-  'B-Tier': { chip: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-200', dot: '#22d3ee' },
-  'C-Tier': { chip: 'border-slate-400/30 bg-slate-500/10 text-slate-300', dot: '#94a3b8' },
-};
-
-function tierTone(tier?: string) {
-  return TIER_TONES[String(tier || '').trim()] || { chip: 'border-white/10 bg-white/[0.04] text-slate-300', dot: '#94a3b8' };
-}
 
 function formatDateRange(value?: string): string {
   if (!value) return 'TBD';
@@ -126,33 +125,31 @@ function formatDateRange(value?: string): string {
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
-function MatchScore({ center }: { center: string }) {
-  const parts = center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
-  const isTime = /^\d{1,2}:\d{2}$/.test(center);
-  if (isTime) {
-    return <span className="text-sm font-bold tabular-nums text-white">{center}</span>;
-  }
-  const n1 = Number(parts[0]);
-  const n2 = Number(parts[1]);
-  const lw = n1 > n2;
-  const rw = n2 > n1;
+function TeamLogo({ src, name, size = 24 }: { src?: string | null; name: string; size?: number }) {
   return (
-    <span className="font-black tabular-nums text-white">
-      <span className={lw ? 'text-[#ff3b30]' : ''}>{parts[0]}</span>
-      <span className="mx-1 text-slate-500">-</span>
-      <span className={rw ? 'text-[#ff3b30]' : ''}>{parts[1]}</span>
+    <span className="logo" style={{ width: size, height: size }}>
+      <SafeImg
+        src={src || ''}
+        alt={name}
+        fallback={
+          <span style={{ fontSize: Math.round(size * 0.42), fontWeight: 900, color: '#8b96a5' }}>
+            {(name || '?').slice(0, 2).toUpperCase()}
+          </span>
+        }
+      />
     </span>
   );
 }
 
-function TeamLogo({ src, name, size = 24 }: { src?: string | null; name: string; size?: number }) {
+function SectionHead({ title, eyebrow, bar }: { title: string; eyebrow?: string; bar?: 'blue' | 'slate' }) {
   return (
-    <span
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-white/[0.05]"
-      style={{ width: size, height: size }}
-    >
-      <SafeImg src={src || ''} alt={name} className="h-full w-full object-contain" fallback={<TeamLogoFallback name={name} size={size} />} />
-    </span>
+    <div className="section-head">
+      <h2 className="section-title">
+        <span className={`bar ${bar || ''}`.trim()} aria-hidden="true" />
+        {title}
+      </h2>
+      {eyebrow ? <p className="section-eyebrow">{eyebrow}</p> : null}
+    </div>
   );
 }
 
@@ -161,64 +158,99 @@ function TeamLogo({ src, name, size = 24 }: { src?: string | null; name: string;
 /* ------------------------------------------------------------------ */
 
 function HeroSection({ payload }: { payload: EventDetailPayload }) {
-  const overview = payload.overview || {};
-  const tier = overview['Event tier'];
-  const tone = tierTone(tier);
-  const flag = FLAG_MAP[overview.Country || ''] || null;
-  const typeZh = overview['Event type'] === 'Online' ? '线上' : overview['Event type'] === 'Offline' ? '线下' : overview['Event type'] || '';
-
+  const m = payload.overview || {};
+  const tier = m['Event tier'];
+  const flag = FLAG_MAP[m.Country || ''] || null;
+  const typeZh = m['Event type'] === 'Online' ? '线上' : m['Event type'] === 'Offline' ? '线下' : m['Event type'] || '';
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10" style={{ backgroundColor: '#0a0e14' }}>
+    <section className="hero" aria-label="赛事概览">
       {payload.heroImage ? (
-        <img
-          src={payload.heroImage}
-          alt=""
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover blur-[2px] brightness-[0.42]"
-        />
+        <div className="hero-bg" aria-hidden="true">
+          <img src={payload.heroImage} alt="" />
+        </div>
       ) : null}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: 'linear-gradient(100deg, rgba(10,14,20,0.94) 0%, rgba(10,14,20,0.82) 42%, rgba(10,14,20,0.55) 78%, rgba(10,14,20,0.68) 100%)',
-        }}
-      />
-      <div className="relative z-10 flex min-h-[360px] flex-col justify-between px-6 py-8 lg:px-10">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="hero-overlay" aria-hidden="true" />
+      <div className="hero-main">
+        <div className="hero-eyebrow">
           {payload.live ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-red-300">
-              <span className="size-1.5 animate-pulse rounded-full bg-red-400" />
-              Live
+            <span className="chip chip-live">
+              <span className="dot" aria-hidden="true" />
+              LIVE
             </span>
           ) : null}
-          {tier ? (
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] ${tone.chip}`}>
-              <span className="size-1.5 rounded-full" style={{ backgroundColor: tone.dot }} />
-              {tier}
-            </span>
-          ) : null}
-          {overview.Country ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-slate-300">
-              {flag ? <img src={flag} alt="" className="h-3 w-[18px] rounded-[2px] object-cover" /> : null}
-              {overview.Country}
+          {tier ? <span className="chip chip-tier">{tier}</span> : null}
+          {m.Country ? (
+            <span className="chip chip-region">
+              {flag ? (
+                <span className="flag">
+                  <img src={flag} alt={`${m.Country} 国旗`} />
+                </span>
+              ) : null}
+              {m.Country}
               {typeZh ? ` · ${typeZh}` : ''}
             </span>
           ) : null}
         </div>
-
-        <div className="mt-6">
-          <h1 className="text-4xl font-black uppercase leading-[1.05] tracking-tight text-white lg:text-5xl">{payload.title}</h1>
+        <h1 className="hero-title">{payload.title}</h1>
+        <div className="hero-stats">
+          <div className="hero-stat">
+            <div className="k">日期</div>
+            <div className="v">{formatDateRange(m.Dates)}</div>
+          </div>
+          <div className="hero-stat">
+            <div className="k">奖金池</div>
+            <div className="v red">{m['Prize pool'] || 'TBD'}</div>
+          </div>
+          <div className="hero-stat">
+            <div className="k">参赛队伍</div>
+            <div className="v">{m.Participants || 'TBD'}</div>
+          </div>
+          <div className="hero-stat">
+            <div className="k">赛事级别</div>
+            <div className="v">{tier || 'TBD'}</div>
+          </div>
         </div>
+      </div>
+    </section>
+  );
+}
 
-        <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-4">
-          {[
-            { k: '日期', v: formatDateRange(overview.Dates) },
-            { k: '奖金池', v: overview['Prize pool'] || 'TBD', red: true },
-            { k: '参赛队伍', v: overview.Participants || 'TBD' },
-            { k: '赛事级别', v: tier || 'TBD' },
-          ].map((stat) => (
-            <div key={stat.k} className="bg-[#0a0e14]/90 px-3 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{stat.k}</div>
-              <div className={`mt-1 truncate text-[15px] font-black tabular-nums ${stat.red ? 'text-[#ff3b30]' : 'text-white'}`}>{stat.v}</div>
+/* ------------------------------------------------------------------ */
+/* 区块：简介（intro + 编号小卡片 · 默认折叠）                            */
+/* ------------------------------------------------------------------ */
+
+function AboutSection({ about }: { about?: AboutData }) {
+  const [collapsed, setCollapsed] = useState(true);
+  if (!about || !about.intro) return null;
+  return (
+    <section className={`section ${collapsed ? 'collapsed' : ''}`} aria-label="赛事简介">
+      <div className="section-head">
+        <h2 className="section-title">
+          <span className="bar" aria-hidden="true" />
+          赛事简介
+        </h2>
+        <button
+          type="button"
+          className="collapse-toggle"
+          aria-expanded={!collapsed}
+          onClick={() => setCollapsed((v) => !v)}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+          <span className="t-label">{collapsed ? '展开赛事详情' : '收起赛事详情'}</span>
+        </button>
+      </div>
+      <div className="about-body">
+        <div className="card about-grid">
+          <p className="about-intro">{about.intro}</p>
+          {about.sections.map((s, i) => (
+            <div className="about-item" key={s.heading}>
+              <h4>
+                <span className="idx">{String(i + 1).padStart(2, '0')}</span>
+                {s.heading}
+              </h4>
+              <p>{s.body}</p>
             </div>
           ))}
         </div>
@@ -228,69 +260,85 @@ function HeroSection({ payload }: { payload: EventDetailPayload }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 区块：简介                                                           */
+/* 区块：关联直播 / 即将开赛（横向滑动卡片）                              */
 /* ------------------------------------------------------------------ */
 
-function AboutSection({ paragraphs }: { paragraphs?: string[] }) {
-  const [expanded, setExpanded] = useState(false);
-  if (!paragraphs || paragraphs.length === 0) return null;
-  return (
-    <section>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-          <TrendingUp className="size-5" style={{ color: design.blue }} />
-          赛事简介
-        </h2>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/[0.08]"
-          aria-expanded={expanded}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}><path d="m6 9 6 6 6-6"></path></svg>
-          {expanded ? '收起赛事详情' : '展开赛事详情'}
-        </button>
-      </div>
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        {expanded ? (
-          <p className="whitespace-pre-line text-[15px] leading-7 text-slate-300">{paragraphs.join('\n')}</p>
-        ) : null}
-      </div>
-    </section>
-  );
+function matchStage(rounds: PlayoffRound[] | undefined, url?: string): { stage: string; bo: string } {
+  if (rounds && url) {
+    for (const r of rounds) {
+      if (r.matches.some((mm) => mm.url === url)) {
+        return {
+          stage: r.round.replace(/\s*\(bo\d+\)\s*/i, '').trim(),
+          bo: (r.round.match(/bo\d+/i) || ['BO3'])[0].toUpperCase(),
+        };
+      }
+    }
+  }
+  return { stage: 'Playoffs', bo: 'BO3' };
 }
 
-/* ------------------------------------------------------------------ */
-/* 区块：关联比赛（live + upcoming + finished）                          */
-/* ------------------------------------------------------------------ */
-
-function MatchCard({ match, live }: { match: MatchRow; live?: boolean }) {
-  const left = match.left || 'TBD';
-  const right = match.right || 'TBD';
+function MatchCard({
+  match,
+  live,
+  rounds,
+}: {
+  match: MatchRow;
+  live?: boolean;
+  rounds?: PlayoffRound[];
+}) {
+  const parts = match.center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
+  const { stage, bo } = matchStage(rounds, match.url);
   return (
-    <div className="flex flex-col rounded-xl p-4 transition-transform hover:-translate-y-0.5" style={{ backgroundColor: '#1a1d24' }}>
-      <div className="mb-3 flex items-center justify-between">
+    <article className="match-card">
+      <div className="match-card-top">
+        <span>{stage}</span>
         {live ? (
-          <span className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-bold text-white" style={{ backgroundColor: design.red }}>
-            <span className="size-1.5 animate-pulse rounded-full bg-white" />
+          <span className="live-badge">
+            <span className="dot" aria-hidden="true" />
             LIVE
           </span>
         ) : (
-          <span className="text-[11px] font-semibold text-slate-400">已结束</span>
+          <span>未开赛</span>
         )}
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <TeamLogo src={match.leftLogo} name={left} />
-          <span className="truncate text-sm font-semibold text-white">{left}</span>
+      <div className="match-card-body">
+        <div className="match-team">
+          <TeamLogo src={match.leftLogo} name={match.left} size={34} />
+          <span className="name">{match.left}</span>
         </div>
-        <MatchScore center={match.center} />
-        <div className="flex min-w-0 items-center justify-end gap-2.5">
-          <span className="truncate text-sm font-semibold text-white">{right}</span>
-          <TeamLogo src={match.rightLogo} name={right} />
+        {live ? (
+          <div className="match-score">
+            <div className="s">
+              <span className={Number(parts[0]) >= Number(parts[1]) ? 'win' : ''}>{parts[0]}</span>
+              <span> - </span>
+              <span className={Number(parts[0]) >= Number(parts[1]) ? '' : 'win'}>{parts[1]}</span>
+            </div>
+            <span className="bo">{bo}</span>
+          </div>
+        ) : (
+          <div className="match-score">
+            <div className="clock">
+              {match.center.match(/\d{2}:\d{2}$/)?.[0] || match.center}
+            </div>
+            <span className="bo">{bo}</span>
+          </div>
+        )}
+        <div className="match-team right">
+          <span className="name">{match.right}</span>
+          <TeamLogo src={match.rightLogo} name={match.right} size={34} />
         </div>
       </div>
-    </div>
+      <div className="match-card-foot">
+        <span>{live ? '直播进行中' : '未开赛'}</span>
+        {match.url ? (
+          <a href={match.url} target="_blank" rel="noopener noreferrer">
+            查看详情 →
+          </a>
+        ) : (
+          <span>查看详情 →</span>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -300,126 +348,75 @@ function MatchesSection({ payload }: { payload: EventDetailPayload }) {
   const hasLive = liveMatches.length > 0;
   const hasUpcoming = upcomingMatches.length > 0;
   if (!hasLive && !hasUpcoming) return null;
-
   return (
-    <section className="space-y-10">
+    <>
       {hasLive ? (
-        <div>
-          <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-            <Zap className="size-5" style={{ color: design.red }} />
-            关联直播
-            <span className="text-sm font-bold text-slate-500">Live Now</span>
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {liveMatches.map((m) => <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live />)}
+        <section className="section" aria-label="关联直播">
+          <SectionHead title="关联直播" eyebrow="Live Now" />
+          <div className="matches-scroll">
+            {liveMatches.map((m) => (
+              <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} />
+            ))}
           </div>
-        </div>
+        </section>
       ) : null}
       {hasUpcoming ? (
-        <div>
-          <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-            <Zap className="size-5" style={{ color: design.blue }} />
-            即将开赛
-            <span className="text-sm font-bold text-slate-500">Upcoming</span>
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {upcomingMatches.map((m) => <MatchCard key={`${m.left}-${m.right}`} match={m} />)}
+        <section className="section" aria-label="即将开赛">
+          <SectionHead title="即将开赛" eyebrow="Upcoming" bar="blue" />
+          <div className="matches-scroll">
+            {upcomingMatches.map((m) => (
+              <MatchCard key={`${m.left}-${m.right}`} match={m} rounds={payload.playoffRounds} />
+            ))}
           </div>
-        </div>
+        </section>
       ) : null}
-    </section>
-  );
-}
-
-function FinishedSection({ finished }: { finished: MatchRow[] }) {
-  const [finishedVisible, setFinishedVisible] = useState(10);
-  if (!finished || finished.length === 0) return null;
-  return (
-    <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <TrendingUp className="size-5 text-slate-400" />
-        已结束比赛
-        <span className="text-sm font-bold text-slate-500">Finished</span>
-      </h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {finished.slice(0, finishedVisible).map((m, index) => (
-          <div
-            key={`${m.left}-${m.right}-${index}`}
-            className="flex flex-col gap-1.5 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-3 transition-colors hover:border-white/[0.2]"
-          >
-            <span className="text-[11px] font-semibold text-slate-400">已结束</span>
-            <div className="flex items-center gap-2">
-              <TeamLogo src={m.leftLogo} name={m.left} size={20} />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{m.left}</span>
-              <MatchScore center={m.center} />
-            </div>
-            <div className="flex items-center gap-2">
-              <TeamLogo src={m.rightLogo} name={m.right} size={20} />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{m.right}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      {finishedVisible < finished.length ? (
-        <button
-          type="button"
-          onClick={() => setFinishedVisible((v) => v + 10)}
-          className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/[0.06]"
-        >
-          加载更多比赛（剩余 {finished.length - finishedVisible} 场）
-        </button>
-      ) : null}
-    </section>
+    </>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* 区块：小组赛                                                         */
+/* 区块：小组赛积分榜（双栏表格 · 晋级/淘汰色）                           */
 /* ------------------------------------------------------------------ */
 
 function GroupStageSection({ groups }: { groups?: EventGroup[] }) {
   if (!groups || groups.length === 0) return null;
   return (
-    <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <Trophy className="size-5" style={{ color: design.blue }} />
-        小组赛积分榜
-      </h2>
-      <div className="grid gap-4 xl:grid-cols-2">
+    <section className="section" aria-label="小组赛">
+      <SectionHead title="小组赛积分榜" eyebrow="Group Stage" />
+      <div className="group-grid">
         {groups.map((group) => (
-          <div key={group.name} className="overflow-hidden rounded-2xl border border-white/10 bg-[#1a1d24]">
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-              <div className="text-sm font-bold text-white">{group.name}</div>
-              <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-emerald-500/60" />晋级</span>
-                <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-red-500/60" />淘汰</span>
-              </div>
+          <div className="card group-table" key={group.name}>
+            <div className="group-table-head">
+              <h4>{group.name}</h4>
+              <span className="g-legend">
+                <span className="legend-dot adv" aria-hidden="true" />
+                晋级
+                <span className="legend-dot out" aria-hidden="true" />
+                淘汰
+              </span>
             </div>
-            <div className="grid grid-cols-[40px_minmax(0,1fr)_70px_56px_44px] gap-2 border-b border-white/10 px-4 py-2 text-[11px] uppercase tracking-wide text-slate-400">
-              <span>#</span><span>队伍</span><span className="text-center">战绩</span><span className="text-center">图分</span><span className="text-center">积分</span>
+            <div className="stand-col-head">
+              <span>#</span>
+              <span>队伍</span>
+              <span>战绩</span>
+              <span>图分</span>
+              <span>积分</span>
             </div>
-            <div className="divide-y divide-white/[0.06]">
-              {group.rows.map((row) => (
-                <div
-                  key={`${group.name}-${row.position}-${row.team}`}
-                  className={`grid grid-cols-[40px_minmax(0,1fr)_70px_56px_44px] items-center gap-2 px-4 py-2.5 ${row.advance ? 'bg-emerald-500/[0.05]' : 'bg-red-500/[0.04]'}`}
-                >
-                  <div className={`flex size-7 items-center justify-center rounded-lg font-black ${row.advance ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
-                    {row.position}
+            {group.rows.map((row) => (
+              <div className={`stand-row ${row.advance ? 'adv' : 'out'}`} key={`${group.name}-${row.position}-${row.team}`}>
+                <span className="stand-rank">{row.position}</span>
+                <div className="stand-team">
+                  <TeamLogo src={row.logo} name={row.team} size={28} />
+                  <div className="meta">
+                    <div className="t">{row.team}</div>
+                    {row.country ? <div className="c">{row.country}</div> : null}
                   </div>
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <TeamLogo src={row.logo} name={row.team} size={26} />
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-bold text-white">{row.team}</div>
-                      {row.country ? <div className="text-[11px] text-slate-400">{row.country}</div> : null}
-                    </div>
-                  </div>
-                  <div className="text-center text-sm text-slate-300">{row.record || '—'}</div>
-                  <div className="text-center text-sm text-slate-400">{row.maps || '—'}</div>
-                  <div className="text-center text-sm font-black text-white">{row.points || '—'}</div>
                 </div>
-              ))}
-            </div>
+                <span className="stand-cell dim">{row.record || '—'}</span>
+                <span className="stand-cell dim">{row.maps || '—'}</span>
+                <span className="stand-cell pts">{row.points || '—'}</span>
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -428,23 +425,176 @@ function GroupStageSection({ groups }: { groups?: EventGroup[] }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 区块：淘汰赛 bracket                                                 */
+/* 区块：淘汰赛 bracket（动态赛制布局：单败/双败 · 任意轮数）             */
 /* ------------------------------------------------------------------ */
 
-function BracketMatchCard({ match }: { match: PlayoffMatch }) {
-  const teams = match.teams && match.teams.length > 0
-    ? match.teams
-    : [{ name: 'TBD', score: '-', logo: null, winner: false }, { name: 'TBD', score: '-', logo: null, winner: false }];
+const GF_RE = /grand final/i;
+const UB_RE = /(?:upper|winners|ub)\s*bracket|winners'|winner bracket/i;
+const LB_RE = /(?:lower|losers|lb)\s*bracket|losers'|loser bracket/i;
+const QUALIFIER_RE = /^\s*qualified\s*$/i;
+const BO_RE = /\(bo\d+\)/i;
+
+function roundHead(name: string): string {
+  return name.replace(BO_RE, '').trim() || '待定';
+}
+
+function roundBo(name: string): string {
+  return (name.match(/bo\d+/i) || [''])[0].toUpperCase();
+}
+
+/** 轮次名 → 组内序号（R 数字优先，SF=2、QF=1、Final=最大） */
+function roundOrder(name: string): number {
+  const m = name.match(/\bR(\d+)\b/i);
+  if (m) return Number(m[1]);
+  if (/quarterfinal/i.test(name)) return 1;
+  if (/semifinal/i.test(name)) return 2;
+  if (/final/i.test(name)) return 99;
+  return 0;
+}
+
+/** 组内排序：序号优先，同序号按 DOM 顺序。 */
+function sortRounds(items: { round: string; matches: PlayoffMatch[]; domOrder: number }[]) {
+  return [...items].sort((a, b) => roundOrder(a.round) - roundOrder(b.round) || a.domOrder - b.domOrder);
+}
+
+function makeCell(
+  item: { round: string; matches: PlayoffMatch[] },
+  key: string,
+  col: number,
+  row: string,
+  center: boolean,
+  isFinal: boolean
+): BracketCell {
+  return { key, head: roundHead(item.round), bo: roundBo(item.round), col, row, center, isFinal, matches: item.matches || [] };
+}
+
+/** 等比映射晋级线：上轮第 k 场 → 下轮第 floor(k*next/cur) 场。 */
+function addProgressionConns(
+  conns: { from: string; to: string }[],
+  fromKey: string,
+  fromMatches: PlayoffMatch[],
+  toKey: string,
+  toMatches: PlayoffMatch[]
+) {
+  const fromCount = fromMatches.length;
+  const toCount = Math.max(1, toMatches.length);
+  if (fromCount === 0 || toCount === 0) return;
+  for (let k = 0; k < fromCount; k += 1) {
+    const target = Math.min(toCount - 1, Math.floor((k * toCount) / fromCount));
+    conns.push({ from: `${fromKey}-${k}`, to: `${toKey}-${target}` });
+  }
+}
+
+interface BracketLayout {
+  cols: number;
+  cells: BracketCell[];
+  conns: { from: string; to: string }[];
+}
+
+/**
+ * 通用 bracket 构建：
+ * - 双败（存在 Upper/Lower/Winners/Losers 轮）：UB 行 1 从左向右、LB 行 2 左对齐、GF 最右跨行；
+ * - 单败（无 UB/LB 轮）：所有轮次单列链式排布，GF 在末列；
+ * - 头部附加轮（Round of N / Quarterfinals 等无前缀轮）置于 UB 之前作前置赛段；
+ * - 占位轮（Qualified）跳过。
+ */
+function buildBracket(rounds: PlayoffRound[]): BracketLayout {
+  const items = (rounds || []).map((r, domOrder) => ({
+    round: r.round || '',
+    matches: r.matches || [],
+    domOrder,
+  }));
+  const isDouble = items.some((x) => UB_RE.test(x.round) || LB_RE.test(x.round));
+  const gf = items.filter((x) => GF_RE.test(x.round));
+  const ub = sortRounds(items.filter((x) => !GF_RE.test(x.round) && UB_RE.test(x.round)));
+  const lb = sortRounds(items.filter((x) => !GF_RE.test(x.round) && LB_RE.test(x.round)));
+  const singles = sortRounds(
+    items.filter((x) => !GF_RE.test(x.round) && !UB_RE.test(x.round) && !LB_RE.test(x.round) && !QUALIFIER_RE.test(x.round))
+  );
+
+  const conns: { from: string; to: string }[] = [];
+  const cells: BracketCell[] = [];
+  let cols = 0;
+
+  if (!isDouble) {
+    const sequence = [...singles, ...gf];
+    sequence.forEach((item, i) => {
+      const isFinal = GF_RE.test(item.round);
+      cells.push(makeCell(item, isFinal ? 'gf' : `s${i}`, i + 1, '1', true, isFinal));
+    });
+    for (let i = 0; i < sequence.length - 1; i += 1) {
+      addProgressionConns(conns, isFinalKey(sequence[i]) ? 'gf' : `s${i}`, sequence[i].matches, isFinalKey(sequence[i + 1]) ? 'gf' : `s${i + 1}`, sequence[i + 1].matches);
+    }
+    cols = Math.max(1, sequence.length);
+    return { cols, cells, conns };
+  }
+
+  // 多个 Grand Final 轮（DLTV 占位 + 赛果）时取有赛果的；否则取第一个
+  const gfRound = gf.find((x) => (x.matches || []).length > 0) || gf[0] || null;
+  const ubCount = ub.length;
+  const lbCount = lb.length;
+
+  // 前置赛段（无前缀轮）放在最左；UB 右移使其与 LB 右端对齐。
+  const leadCount = singles.length;
+  const ubOffset = Math.max(0, lbCount - ubCount);
+
+  singles.forEach((item, i) => {
+    cells.push(makeCell(item, `lead${i}`, i + 1, '1', true, false));
+  });
+  ub.forEach((item, i) => {
+    cells.push(makeCell(item, `ub${i}`, leadCount + i + 1 + ubOffset, '1', false, false));
+  });
+  lb.forEach((item, j) => {
+    cells.push(makeCell(item, `lb${j}`, leadCount + j + 1, '2', false, false));
+  });
+  if (gfRound) {
+    cols = leadCount + Math.max(ubCount + ubOffset, lbCount) + 1;
+    cells.push(makeCell(gfRound, 'gf', cols, '1 / 3', true, true));
+  } else {
+    cols = Math.max(1, leadCount + Math.max(ubCount + ubOffset, lbCount));
+  }
+
+  // 组内晋级线
+  for (let i = 0; i < ub.length - 1; i += 1) {
+    addProgressionConns(conns, `ub${i}`, ub[i].matches, `ub${i + 1}`, ub[i + 1].matches);
+  }
+  for (let j = 0; j < lb.length - 1; j += 1) {
+    addProgressionConns(conns, `lb${j}`, lb[j].matches, `lb${j + 1}`, lb[j + 1].matches);
+  }
+  // 胜者组/败者组决赛 → 总决赛
+  if (gfRound) {
+    if (ub.length > 0) addProgressionConns(conns, `ub${ub.length - 1}`, ub[ub.length - 1].matches, 'gf', gfRound.matches);
+    if (lb.length > 0) addProgressionConns(conns, `lb${lb.length - 1}`, lb[lb.length - 1].matches, 'gf', gfRound.matches);
+  }
+  return { cols, cells, conns };
+}
+
+function isFinalKey(item: { round: string }): boolean {
+  return GF_RE.test(item.round);
+}
+
+function BracketMatchCard({ match, mid, isFinal }: { match: PlayoffMatch; mid: string; isFinal: boolean }) {
+  if (!match.teams || match.teams.length === 0) {
+    return (
+      <div className="bmatch-card bmatch-empty" data-mid={mid}>
+        待定{isFinal ? ' · BO5' : ''}
+      </div>
+    );
+  }
+  const [a, b] = match.teams;
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-gradient-to-b from-white/[0.035] to-white/[0.015]">
-      <div className="border-b border-white/[0.06] px-3 py-1.5 text-[11px] tabular-nums text-slate-400">{match.date || '待定'}</div>
-      {teams.map((team, index) => (
-        <div key={`${team.name}-${index}`} className={`flex items-center gap-2 px-3 py-2 ${index === 0 ? 'border-b border-white/[0.06]' : ''}`}>
-          <TeamLogo src={team.logo} name={team.name} size={20} />
-          <span className={`min-w-0 flex-1 truncate text-xs ${team.winner ? 'font-extrabold text-white' : 'text-slate-300'}`}>{team.name}</span>
-          <span className={`text-[15px] font-black tabular-nums ${team.winner ? 'text-[#ff3b30]' : 'text-slate-400'}`}>{team.score || '-'}</span>
-        </div>
-      ))}
+    <div className="bmatch-card" data-mid={mid}>
+      <div className="bmatch-date">{match.date || ''}</div>
+      <div className={`bmatch-team ${a.winner ? 'win' : ''}`}>
+        <TeamLogo src={a.logo} name={a.name} size={22} />
+        <span className="nm">{a.name}</span>
+        <span className="sc">{a.score ?? '-'}</span>
+      </div>
+      <div className={`bmatch-team ${b.winner ? 'win' : ''}`}>
+        <TeamLogo src={b.logo} name={b.name} size={22} />
+        <span className="nm">{b.name}</span>
+        <span className="sc">{b.score ?? '-'}</span>
+      </div>
     </div>
   );
 }
@@ -461,30 +611,32 @@ interface BracketCell {
 }
 
 function BracketCellBox({ cell, prizes }: { cell: BracketCell; prizes?: PrizeEntry[] }) {
-  const medal = (place: string) => prizes?.find((p) => p.place === place)?.prize || '';
   return (
-    <div
-      className="flex flex-col gap-2.5 px-5"
-      style={{ gridColumn: cell.col, gridRow: cell.row, alignSelf: cell.center ? 'center' : undefined, position: 'relative', zIndex: 2 }}
-    >
-      <div className="mb-0.5 flex items-baseline justify-between">
-        <span className="text-xs font-bold text-white">{cell.head}</span>
-        {cell.bo ? <span className="text-[11px] font-bold tracking-wider" style={{ color: design.blue }}>{cell.bo}</span> : null}
+    <div className={`bracket-cell ${cell.center ? 'center' : ''}`} style={{ gridColumn: cell.col, gridRow: cell.row }}>
+      <div className="round-head">
+        <span className="rn">{cell.head}</span>
+        <span className="rb">{cell.bo}</span>
       </div>
-      {cell.matches.length > 0
-        ? <div data-mid={cell.key}>{cell.matches.map((m, index) => <BracketMatchCard key={`${cell.key}-${index}`} match={m} />)}</div>
-        : <div data-mid={cell.key} className="flex min-h-[78px] items-center justify-center rounded-xl border border-dashed border-white/10 text-xs text-slate-500">
-            待定{cell.isFinal ? ' · BO5' : ''}
-          </div>}
-      {cell.isFinal ? (
+      {cell.matches.length === 0 ? (
+        <BracketMatchCard match={{ teams: [], date: '' }} mid={`${cell.key}-0`} isFinal={cell.isFinal} />
+      ) : (
+        cell.matches.map((m, i) => (
+          <BracketMatchCard key={`${cell.key}-${i}`} match={m} mid={`${cell.key}-${i}`} isFinal={cell.isFinal} />
+        ))
+      )}
+      {cell.isFinal && cell.key === 'gf' ? (
         <>
-          <div className="mt-0.5 flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-3 py-2.5 text-xs">
-            <span className="flex size-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black">1</span>
-            <span className="text-slate-400">{medal('1')} · 冠军</span>
+          <div className="bmatch-final-prize">
+            <span className="medal gold" aria-hidden="true">
+              1
+            </span>
+            {prizes?.[0]?.prize || ''} · 冠军
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-3 py-2.5 text-xs">
-            <span className="flex size-4 items-center justify-center rounded-full bg-slate-300 text-[9px] font-black text-black">2</span>
-            <span className="text-slate-400">{medal('2')} · 亚军</span>
+          <div className="bmatch-final-prize">
+            <span className="medal silver" aria-hidden="true">
+              2
+            </span>
+            {prizes?.[1]?.prize || ''} · 亚军
           </div>
         </>
       ) : null}
@@ -492,142 +644,169 @@ function BracketCellBox({ cell, prizes }: { cell: BracketCell; prizes?: PrizeEnt
   );
 }
 
-function PlayoffsSection({ rounds, prizes }: { rounds?: PlayoffRound[]; prizes?: PrizeEntry[] }) {
-  const boxRef = useRef<HTMLDivElement | null>(null);
-  if (!rounds || rounds.length === 0) return null;
-
-  const byHead = (pat: RegExp) => rounds.find((r) => pat.test(r.round));
-  const ubr1 = byHead(/upper bracket r1/i);
-  const ubf = byHead(/upper bracket final/i);
-  const gf = byHead(/grand final/i);
-  const lbr1 = byHead(/lower bracket r1/i);
-  const lbr2 = byHead(/lower bracket r2/i);
-  const lbr3 = byHead(/lower bracket r3/i);
-  const lbf = byHead(/lower bracket final/i);
-
-  const head = (r?: PlayoffRound) => (r ? r.round.replace(/\s*\(bo\d+\)\s*/i, '').trim() : '');
-  const bo = (r?: PlayoffRound) => (r ? (r.round.match(/bo\d+/i) || [''])[0].toUpperCase() : '');
-
-  const cells: BracketCell[] = [
-    { key: 'lbr1', head: head(lbr1), bo: bo(lbr1), col: 1, row: '2', center: false, isFinal: false, matches: lbr1?.matches || [] },
-    { key: 'ubr1', head: head(ubr1), bo: bo(ubr1), col: 2, row: '1', center: false, isFinal: false, matches: ubr1?.matches || [] },
-    { key: 'lbr2', head: head(lbr2), bo: bo(lbr2), col: 2, row: '2', center: false, isFinal: false, matches: lbr2?.matches || [] },
-    { key: 'lbr3', head: head(lbr3), bo: bo(lbr3), col: 3, row: '2', center: false, isFinal: false, matches: lbr3?.matches || [] },
-    { key: 'ubf', head: head(ubf), bo: bo(ubf), col: 4, row: '1', center: true, isFinal: false, matches: ubf?.matches || [] },
-    { key: 'lbf', head: head(lbf), bo: bo(lbf), col: 4, row: '2', center: true, isFinal: false, matches: lbf?.matches || [] },
-    { key: 'gf', head: head(gf), bo: bo(gf), col: 5, row: '1 / 3', center: true, isFinal: true, matches: gf?.matches || [] },
-  ];
-
-  return (
-    <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <TrendingUp className="size-5" style={{ color: design.blue }} />
-        淘汰赛
-      </h2>
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#12161e] p-4">
-        <div className="relative min-w-[960px] p-1">
-          <div ref={boxRef} className="relative grid gap-y-7" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
-            {cells.map((c) => <BracketCellBox key={c.key} cell={c} prizes={prizes} />)}
-            <BracketConnectors cells={cells} boxRef={boxRef} />
-          </div>
-        </div>
-        <div className="mt-4 flex items-center gap-4 text-[11px] text-slate-500">
-          <span className="inline-flex items-center gap-1.5"><span className="h-px w-5 bg-[#7aa2ff]" />胜者晋级</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function BracketConnectors({ cells, boxRef }: { cells: BracketCell[]; boxRef: React.RefObject<HTMLDivElement | null> }) {
-  const [paths, setPaths] = useState<string[]>([]);
-
-  const conns = [
-    { from: 'ubr1', to: 'ubf' },
-    { from: 'lbr1', to: 'lbr2' },
-    { from: 'lbr2', to: 'lbr3' },
-    { from: 'lbr3', to: 'lbf' },
-    { from: 'ubf', to: 'gf' },
-    { from: 'lbf', to: 'gf' },
-  ];
+function BracketConnectors({
+  boxRef,
+  conns,
+}: {
+  boxRef: React.RefObject<HTMLDivElement | null>;
+  conns: { from: string; to: string }[];
+}) {
+  const [lines, setLines] = useState<{ d: string; arrow: boolean }[]>([]);
 
   useEffect(() => {
     const draw = () => {
       const box = boxRef.current;
       if (!box) return;
       const boxRect = box.getBoundingClientRect();
-      const portOf = (key: string, port: 'right' | 'left') => {
-        const el = box.querySelector<HTMLElement>(`[data-mid="${key}"]`);
-        if (!el) return null;
+      const rects: Record<string, { x: number; y: number; w: number; h: number }> = {};
+      box.querySelectorAll<HTMLElement>('.bmatch-card[data-mid]').forEach((el) => {
         const r = el.getBoundingClientRect();
-        const x = r.left - boxRect.left;
-        const y = r.top - boxRect.top;
-        return port === 'right'
-          ? { x: x + r.width, y: y + r.height / 2 }
-          : { x, y: y + r.height / 2 };
+        rects[el.dataset.mid || ''] = { x: r.left - boxRect.left, y: r.top - boxRect.top, w: r.width, h: r.height };
+      });
+      if (Object.keys(rects).length === 0) return;
+      const portOf = (id: string, port: 'right' | 'left') => {
+        const r = rects[id];
+        if (!r) return null;
+        return port === 'right' ? { x: r.x + r.w, y: r.y + r.h / 2 } : { x: r.x, y: r.y + r.h / 2 };
       };
-      const lines: string[] = [];
-      for (const { from, to } of conns) {
-        const s = portOf(from, 'right');
+      const winTo: Record<string, string[]> = {};
+      for (const c of conns) (winTo[c.to] = winTo[c.to] || []).push(c.from);
+      const out: { d: string; arrow: boolean }[] = [];
+      for (const [to, froms] of Object.entries(winTo)) {
         const t = portOf(to, 'left');
-        if (!s || !t) continue;
-        const hx = (s.x + t.x) / 2;
-        lines.push(`M ${s.x} ${s.y} L ${hx} ${s.y} L ${hx} ${t.y} L ${t.x} ${t.y}`);
+        if (!t) continue;
+        if (froms.length === 1) {
+          const s = portOf(froms[0], 'right');
+          if (!s) continue;
+          const hx = (s.x + t.x) / 2;
+          out.push({ d: `M ${s.x} ${s.y} L ${hx} ${s.y} L ${hx} ${t.y} L ${t.x} ${t.y}`, arrow: true });
+        } else {
+          const srcs = froms.map((f) => portOf(f, 'right')).filter((v): v is { x: number; y: number } => Boolean(v));
+          if (srcs.length < 2) continue;
+          const railX = Math.max(...srcs.map((s) => s.x)) + 18;
+          const ys = srcs.map((s) => s.y);
+          const yA = Math.min(...ys);
+          const yB = Math.max(...ys);
+          const midY = (yA + yB) / 2;
+          srcs.forEach((s) => out.push({ d: `M ${s.x} ${s.y} L ${railX} ${s.y}`, arrow: false }));
+          if (yB - yA > 2) out.push({ d: `M ${railX} ${yA} L ${railX} ${yB}`, arrow: false });
+          out.push({ d: `M ${railX} ${midY} L ${t.x} ${midY}`, arrow: false });
+          if (Math.abs(t.y - midY) > 4) out.push({ d: `M ${t.x} ${midY} L ${t.x} ${t.y}`, arrow: false });
+        }
       }
-      setPaths(lines);
+      setLines(out);
     };
     draw();
-    const t = setTimeout(draw, 60);
+    const timer = setTimeout(draw, 60);
     window.addEventListener('resize', draw);
-    return () => { clearTimeout(t); window.removeEventListener('resize', draw); };
-  }, [cells, boxRef]);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', draw);
+    };
+  }, [boxRef, conns]);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[1] overflow-visible" aria-hidden="true">
-      <svg className="absolute inset-0 h-full w-full" style={{ overflow: 'visible' }}>
-        <defs>
-          <marker id="arrowWin" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(150,180,255,0.9)" />
-          </marker>
-        </defs>
-        {paths.map((d, i) => (
-          <path key={i} d={d} fill="none" stroke="#7aa2ff" strokeWidth={1.5} markerEnd="url(#arrowWin)" />
-        ))}
-      </svg>
-    </div>
+    <svg className="bracket-svg" aria-hidden="true">
+      <defs>
+        <marker id="arrowWin" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(150,180,255,0.9)" />
+        </marker>
+      </defs>
+      {lines.map((l, i) => (
+        <path
+          key={i}
+          d={l.d}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          className="bracket-line-win"
+          {...(l.arrow ? { markerEnd: 'url(#arrowWin)' } : {})}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function PlayoffsSection({ rounds, prizes }: { rounds?: PlayoffRound[]; prizes?: PrizeEntry[] }) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  if (!rounds || rounds.length === 0) return null;
+
+  const layout = buildBracket(rounds);
+
+  return (
+    <section className="section" aria-label="淘汰赛">
+      <SectionHead title="淘汰赛" eyebrow="Playoffs" />
+      <div className="card">
+        <div className="bracket-scroll">
+          <div className="bracket" ref={boxRef} style={{ gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))` }}>
+            {layout.cells.map((c) => (
+              <BracketCellBox key={c.key} cell={c} prizes={prizes} />
+            ))}
+            <BracketConnectors boxRef={boxRef} conns={layout.conns} />
+          </div>
+          <div className="bracket-legend">
+            <span>
+              <i className="win" aria-hidden="true" />
+              实线 · 胜者晋级
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* 区块：奖金池                                                         */
+/* 区块：奖金池（前三卡片 + 明细行）                                      */
 /* ------------------------------------------------------------------ */
 
-const PRIZE_TONES: Record<string, string> = {
-  gold: 'border-amber-300/35',
-  silver: 'border-slate-300/30',
-  bronze: 'border-orange-400/32',
-};
 const PRIZE_PLACE: Record<string, string> = { '1': '冠军', '2': '亚军', '3': '季军' };
 
-function PrizePoolSection({ prizes }: { prizes?: PrizeEntry[] }) {
+function PrizePoolSection({ prizes, breakdown }: { prizes?: PrizeEntry[]; breakdown?: [string, string][] }) {
   if (!prizes || prizes.length === 0) return null;
   return (
-    <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <Trophy className="size-5" style={{ color: design.blue }} />
-        奖金池
-      </h2>
-      <div className="grid gap-4 sm:grid-cols-3">
+    <section className="section" aria-label="奖金池">
+      <div className="prize-grid">
         {prizes.slice(0, 3).map((prize) => (
-          <div key={`${prize.place}-${prize.prize}`} className={`rounded-2xl border ${PRIZE_TONES[prize.tone] || 'border-white/10'} bg-[#1a1d24] p-6 text-center`}>
-            <div className="text-2xl font-black text-white">{prize.place}</div>
-            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              {PRIZE_PLACE[prize.place] || `${prize.place} 名`}
-            </div>
-            <div className="mt-3 text-3xl font-black tabular-nums text-white">{prize.prize}</div>
-            <div className="mt-1 text-sm text-slate-400">{prize.team === 'TBD' ? '待定' : prize.team}</div>
+          <div key={`${prize.place}-${prize.prize}`} className={`prize-card ${prize.tone}`}>
+            <div className="prize-place">{prize.place}</div>
+            <div className="prize-label">{PRIZE_PLACE[prize.place] || `${prize.place} 名`}</div>
+            <div className="prize-amount">{prize.prize}</div>
+            <div className="prize-team">{prize.team === 'TBD' ? '待定' : prize.team}</div>
           </div>
         ))}
+      </div>
+      {breakdown && breakdown.length > 0 ? (
+        <div className="prize-breakdown">
+          {breakdown.map(([pl, pa], i) => (
+            <div className="prize-break-row" key={`${pl}-${i}`}>
+              <span className="pl">{pl}</span>
+              <span className="pa">{pa}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 区块：赛事数据（空态）                                                */
+/* ------------------------------------------------------------------ */
+
+function StatsSection() {
+  return (
+    <section className="section" aria-label="赛事数据">
+      <SectionHead title="赛事数据" eyebrow="Event Stats" bar="blue" />
+      <div className="card stats-grid">
+        <div className="stats-empty">
+          <div className="icon" aria-hidden="true">
+            📊
+          </div>
+          该赛事暂未发布聚合统计数据。
+          <br />
+          比赛进行中 / 结束后，将自动补充地图统计、阵营胜率与英雄出场数据。
+        </div>
       </div>
     </section>
   );
@@ -637,36 +816,34 @@ function PrizePoolSection({ prizes }: { prizes?: PrizeEntry[] }) {
 /* 区块：参赛队伍                                                       */
 /* ------------------------------------------------------------------ */
 
+const ROLE_COLORS = ['#ff6b5f', '#ff9f43', '#5f7fff', '#34d17b', '#b183ff'];
+
 function ParticipantsSection({ participants }: { participants?: Participant[] }) {
   if (!participants || participants.length === 0) return null;
   return (
-    <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <Users className="size-5" style={{ color: design.blue }} />
-        参赛队伍
-        <span className="text-sm font-bold text-slate-500">{participants.length}</span>
-      </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <section className="section" aria-label="参赛队伍">
+      <SectionHead title="参赛队伍" eyebrow={`Participants · ${participants.length}`} />
+      <div className="team-grid">
         {participants.map((team) => (
-          <div key={team.name} className="rounded-2xl border border-white/10 bg-[#1a1d24] p-4">
-            <div className="mb-3 flex items-center gap-3">
-              <TeamLogo src={team.logo} name={team.name} size={40} />
-              <div className="min-w-0">
-                <div className="truncate text-[15px] font-bold text-white">{team.name}</div>
-                {team.invite ? <div className="text-[11px] text-slate-400">{team.invite}</div> : null}
+          <article className="team-card" key={team.name}>
+            <div className="team-head">
+              <TeamLogo src={team.logo} name={team.name} size={42} />
+              <div className="tt">
+                <div className="tn">{team.name}</div>
+                <span className="tag">{team.invite === 'Direct invite' || team.invite === 'Direct Invite' ? '直接邀请' : team.invite || '参赛队伍'}</span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {team.players.map((player, index) => (
-                <span key={player} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-slate-300">
-                  <span className="flex size-3.5 items-center justify-center rounded text-[8px] font-black" style={{ backgroundColor: ['#ff6b5f', '#ff9f43', '#5f7fff', '#34d17b', '#b183ff'][index % 5] }}>
-                    {index + 1}
+            <div className="team-roster">
+              {team.players.map((player, j) => (
+                <span className="roster-item" key={player}>
+                  <span className="role" style={{ background: ROLE_COLORS[j % ROLE_COLORS.length] }}>
+                    {j + 1}
                   </span>
                   {player}
                 </span>
               ))}
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </section>
@@ -674,19 +851,90 @@ function ParticipantsSection({ participants }: { participants?: Participant[] })
 }
 
 /* ------------------------------------------------------------------ */
-/* 区块：赛事数据                                                       */
+/* 区块：已结束比赛（结果卡片 · 默认 2 行 + load more）                    */
 /* ------------------------------------------------------------------ */
 
-function StatsSection() {
+const FINISHED_ROW_STEP = 2;
+const FINISHED_CARD_MIN = 244;
+
+function FinishedSection({ finished }: { finished: MatchRow[] }) {
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [rows, setRows] = useState(2);
+  const [perRow, setPerRow] = useState(5);
+
+  useEffect(() => {
+    const measure = () => {
+      const el = listRef.current;
+      if (!el) return;
+      setPerRow(Math.max(1, Math.floor((el.clientWidth + 12) / FINISHED_CARD_MIN)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  if (!finished || finished.length === 0) return null;
+  const all = [...finished].reverse();
+  const shown = Math.min(all.length, perRow * rows);
+  const hasMore = shown < all.length;
+  const canCollapse = all.length > perRow * 2;
+
+  const scoreOf = (mm: MatchRow) => {
+    const parts = mm.center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
+    const p1 = parts[0];
+    const p2 = parts[1];
+    let lw = false;
+    let rw = false;
+    if (/^W$/i.test(p1)) lw = true;
+    else if (/^(FF|W)$/i.test(p2)) rw = true;
+    else {
+      const n1 = Number(p1);
+      const n2 = Number(p2);
+      lw = n1 > n2;
+      rw = n2 > n1;
+    }
+    return { p1, p2, lw, rw };
+  };
+
   return (
-    <section>
-      <h2 className="mb-4 flex items-center gap-2.5 text-xl font-extrabold tracking-tight text-white">
-        <TrendingUp className="size-5" style={{ color: design.blue }} />
-        赛事数据
-        <span className="text-sm font-bold text-slate-500">Event Stats</span>
-      </h2>
-      <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-10 text-center">
-        <p className="text-sm text-slate-400">该赛事暂未发布聚合统计数据。</p>
+    <section className="section" aria-label="已结束比赛">
+      <SectionHead title="已结束比赛" eyebrow="Finished" bar="slate" />
+      <div className="finished-cards" ref={listRef}>
+        {all.slice(0, shown).map((mm) => {
+          const { p1, p2, lw, rw } = scoreOf(mm);
+          return (
+            <div className="finished-card" key={`${mm.left}-${mm.right}-${mm.center}`}>
+              <div className="fc-head">
+                <span className="done">已结束</span>
+              </div>
+              <div className="fc-teams">
+                <div className={`fc-team ${lw ? 'win' : ''}`}>
+                  <TeamLogo src={mm.leftLogo} name={mm.left} size={24} />
+                  <span className="nm">{mm.left}</span>
+                  <span className="sc">{p1}</span>
+                </div>
+                <div className={`fc-team ${rw ? 'win' : ''}`}>
+                  <TeamLogo src={mm.rightLogo} name={mm.right} size={24} />
+                  <span className="nm">{mm.right}</span>
+                  <span className="sc">{p2}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {hasMore ? (
+          <button className="load-more" type="button" onClick={() => setRows((r) => r + FINISHED_ROW_STEP)}>
+            加载更多比赛
+            <span className="lm-count">
+              每次 +{FINISHED_ROW_STEP} 行 · 剩余 {all.length - shown} 场
+            </span>
+          </button>
+        ) : canCollapse ? (
+          <button className="load-more" type="button" onClick={() => setRows(2)}>
+            收起
+            <span className="lm-count">回到前 2 行</span>
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -701,7 +949,9 @@ function Skeleton() {
     <div className="space-y-6" aria-hidden="true">
       <div className="h-[360px] animate-pulse rounded-2xl bg-white/[0.05]" />
       <div className="grid grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-white/[0.04]" />)}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-xl bg-white/[0.04]" />
+        ))}
       </div>
       <div className="h-64 animate-pulse rounded-2xl bg-white/[0.04]" />
     </div>
@@ -738,16 +988,18 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 pb-16 pt-24 lg:px-6">
+    <div className="event-detail-root mx-auto w-full max-w-[1280px] px-4 pb-16 pt-24 lg:px-6">
       <button
         type="button"
         onClick={onBack}
         className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
-        style={{ color: design.blue }}
+        style={{ color: '#2b55e8' }}
       >
         <ArrowLeft className="size-4" />
         返回赛事列表
@@ -760,20 +1012,20 @@ export function EventDetailPage({ slug, onBack }: { slug: string; onBack?: () =>
           <p className="text-sm text-slate-300">{error}</p>
         </div>
       ) : payload ? (
-        <div className="flex flex-col gap-12">
+        <>
           <HeroSection payload={payload} />
-          <AboutSection paragraphs={payload.about} />
+          <AboutSection about={payload.about} />
           <MatchesSection payload={payload} />
           <GroupStageSection groups={payload.groups} />
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} />
-          <PrizePoolSection prizes={payload.prizePool} />
+          <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
           <StatsSection />
-          <FinishedSection finished={payload.matches?.finishedMatches || []} />
           <ParticipantsSection participants={payload.participants} />
+          <FinishedSection finished={payload.matches?.finishedMatches || []} />
           {payload.source ? (
             <p className="text-center text-[11px] text-slate-600">数据来源 DLTV · {payload.source}</p>
           ) : null}
-        </div>
+        </>
       ) : null}
     </div>
   );

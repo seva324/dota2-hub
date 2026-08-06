@@ -18,10 +18,11 @@ import { getDb } from '../lib/db.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { readDltvCache, writeDltvCache, tryAcquireDltvCacheLock } from '../lib/server/dltv-neon-cache.js';
 import { parseDltvEventDetailPage } from '../lib/server/dltv-event-detail-parser.js';
+import { translateEventAbout } from '../lib/server/event-about-translation.js';
 
 const DLTV_EVENT_BASE = 'https://dltv.org/events/';
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=0, must-revalidate';
-const NEON_CACHE_PREFIX = 'dltv:event-detail:v2:';
+const NEON_CACHE_PREFIX = 'dltv:event-detail:v3:';
 const NEON_TTL_MS = 15 * 60 * 1000;
 const NEON_STALE_MAX_MS = 6 * 60 * 60 * 1000;
 const CACHE_TTL_MS = 2 * 60 * 1000;
@@ -35,11 +36,11 @@ function cacheKey(slug) {
   return `dltv:event-detail:${String(slug || '').trim().toLowerCase()}`;
 }
 
-function rebaseImages(payload) {
+function rebaseImages(payload, req) {
   if (!payload) return payload;
   const rebase = (logo) => {
     if (!logo) return null;
-    return getMirroredAssetUrl(logo) || logo;
+    return getMirroredAssetUrl(logo, req) || logo;
   };
   return {
     ...payload,
@@ -110,6 +111,12 @@ async function buildDetail(slug, fetchImpl = fetch) {
   const res = await fetchHtml(`${DLTV_EVENT_BASE}${slug}`, fetchImpl);
   const payload = res.raw ? parseDltvEventDetailPage(res.raw, slug) : null;
   if (!payload) return { payload: null, sourceType: res.sourceType };
+  // 简介首次冷抓时同步翻译（英文→中文），结果随 payload 写入内存/Neon 缓存。
+  // 翻译失败/超时不阻塞：保留英文原文返回，下次冷抓再试。
+  if (payload.about?.intro) {
+    const translatedAbout = await translateEventAbout(payload.about).catch(() => null);
+    if (translatedAbout) payload.about = translatedAbout;
+  }
   return { payload, sourceType: res.sourceType };
 }
 
@@ -168,13 +175,13 @@ export default async function handler(req, res) {
   if (!forceRefresh) {
     const fresh = getFresh(slug);
     if (fresh) {
-      return res.status(200).json({ ...rebaseImages(fresh), source: 'cache' });
+      return res.status(200).json({ ...rebaseImages(fresh, req), source: 'cache' });
     }
 
     const stale = getUsableStale(slug);
     if (stale) {
       void refreshBackground(slug, req.fetchImpl);
-      return res.status(200).json({ ...rebaseImages(stale), source: 'stale' });
+      return res.status(200).json({ ...rebaseImages(stale, req), source: 'stale' });
     }
   }
 
@@ -185,11 +192,11 @@ export default async function handler(req, res) {
       const age = now - neonEntry.refreshedAt;
       memoryCache.set(slug, { payload: neonEntry.payload, at: neonEntry.refreshedAt, expiresAt: neonEntry.refreshedAt + CACHE_TTL_MS });
       if (age < NEON_TTL_MS) {
-        return res.status(200).json({ ...rebaseImages(neonEntry.payload), source: 'cache' });
+        return res.status(200).json({ ...rebaseImages(neonEntry.payload, req), source: 'cache' });
       }
       if (age < NEON_STALE_MAX_MS) {
         void refreshBackground(slug, req.fetchImpl);
-        return res.status(200).json({ ...rebaseImages(neonEntry.payload), source: 'stale' });
+        return res.status(200).json({ ...rebaseImages(neonEntry.payload, req), source: 'stale' });
       }
     }
   }
@@ -199,7 +206,7 @@ export default async function handler(req, res) {
     if (payload) {
       memoryCache.set(slug, { payload, at: now, expiresAt: now + CACHE_TTL_MS });
       persistNeon(payload);
-      return res.status(200).json({ ...rebaseImages(payload), source: sourceType });
+      return res.status(200).json({ ...rebaseImages(payload, req), source: sourceType });
     }
   } catch (error) {
     console.error('[Event Detail] build failed:', error instanceof Error ? error.message : String(error));
@@ -207,7 +214,7 @@ export default async function handler(req, res) {
 
   const stale = getUsableStale(slug);
   if (stale) {
-    return res.status(200).json({ ...rebaseImages(stale), source: 'stale' });
+    return res.status(200).json({ ...rebaseImages(stale, req), source: 'stale' });
   }
   return res.status(200).json({ slug, source: 'failed', empty: true });
 }

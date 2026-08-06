@@ -44,12 +44,12 @@ describe('NewsPage', () => {
     expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/news?limit=30');
 
     await waitFor(() => {
-      expect(screen.getByText('First Headline')).toBeInTheDocument();
+      // 头条是第一条，单独呈现大标题
+      expect(screen.getByRole('heading', { name: /first headline/i })).toBeInTheDocument();
     });
-    expect(screen.getByText('Second Story')).toBeInTheDocument();
-    expect(screen.getByText('Third Update')).toBeInTheDocument();
-    // 头条是第一条，单独呈现大标题
-    expect(screen.getByRole('heading', { name: /first headline/i })).toBeInTheDocument();
+    // 列表卡片 + 右侧"热门话题"栏都会渲染标题
+    expect(screen.getAllByText('Second Story').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Third Update').length).toBeGreaterThan(0);
   });
 
   it('shows category filter tabs with counts and filters the grid', async () => {
@@ -70,12 +70,12 @@ describe('NewsPage', () => {
     expect(screen.getByRole('button', { name: /^观点/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^版本/ })).toBeInTheDocument();
 
-    // 点击"观点"标签 → 只剩 Takes C，Esports 卡片消失
+    // 点击"观点"标签 → 只剩 Takes C，Esports 卡片消失（热门话题栏仍保留，不受筛选影响）
     fireEvent.click(screen.getByRole('button', { name: /^观点/ }));
     await waitFor(() => {
-      expect(screen.getByText('Takes C')).toBeInTheDocument();
+      expect(screen.getAllByText('Takes C').length).toBeGreaterThan(0);
     });
-    expect(screen.queryByText('Esports A')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Esports A')).toHaveLength(1);
   });
 
   it('paginates when there are more than 12 list items', async () => {
@@ -117,7 +117,7 @@ describe('NewsPage', () => {
     render(<NewsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Only Esports')).toBeInTheDocument();
+      expect(screen.getAllByText('Only Esports').length).toBeGreaterThan(0);
     });
     // 数据中无 takes → 没有"观点"按钮
     expect(screen.queryByRole('button', { name: /^观点/ })).not.toBeInTheDocument();
@@ -143,11 +143,11 @@ describe('NewsPage', () => {
     render(<NewsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Second Story')).toBeInTheDocument();
+      expect(screen.getAllByText('Second Story').length).toBeGreaterThan(0);
     });
 
-    // 点击列表卡片 → 导航到全屏详情页 #/news/<id>
-    fireEvent.click(screen.getByText('Second Story'));
+    // 点击列表卡片 → 导航到全屏详情页 #/news/<id>（卡片在热门话题栏之前渲染，取第一个）
+    fireEvent.click(screen.getAllByText('Second Story')[0]);
 
     await waitFor(() => {
       expect(window.location.hash).toBe('#/news/b');
