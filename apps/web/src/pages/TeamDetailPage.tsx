@@ -45,7 +45,7 @@ type TeamData = {
     firstPick?: { name: string; count: number; label?: string; img?: string } | null;
     firstBan?: { name: string; count: number; label?: string; img?: string } | null;
     topPicks?: Array<{ name: string; img?: string; maps: number; rate: string; wins: number; losses: number }>;
-    topBans?: Array<{ name: string; img?: string; rate: string; mapsVs: number }>;
+    topBans?: Array<{ name: string; img?: string; rate: string; mapsVs: number; winsVs?: number; losesVs?: number }>;
   };
   h2h?: Array<{
     opponent: string;
@@ -69,6 +69,9 @@ type TeamData = {
     won: boolean;
     durationMin?: number;
     heroes?: string[];
+    heroImgs?: string[];
+    seriesId?: string | null;
+    seriesSlug?: string;
   }>;
   squad?: Array<{
     nick?: string;
@@ -82,7 +85,7 @@ type TeamData = {
     photo?: string;
     realName?: string;
     isCoach?: boolean;
-    sig?: Array<{ name: string; img?: string }>;
+    sig?: Array<{ name: string; img?: string; winrate?: string }>;
   }>;
   rosterHistory?: Array<{ nick: string; flag?: string; joined: string; left?: string | null }>;
   achievements?: Array<{ name: string; slug?: string; cup?: string; year?: number; img?: string }>;
@@ -127,7 +130,6 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [slug, setSlug] = useState<string>('');
   const chartRef = useRef<HTMLCanvasElement>(null);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [countdown, setCountdown] = useState('');
@@ -151,7 +153,6 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
         const payload = await apiFetch<TeamData>(buildApiUrl(), { ttlMs: 60_000, cacheEmpty: false });
         if (cancelled) return;
         setData(payload);
-        setSlug(payload?.team?.slug || '');
       } catch (e) {
         if (cancelled) return;
         console.error('[TeamDetailPage] failed:', e instanceof Error ? e.message : String(e));
@@ -202,7 +203,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
     };
   }, [data?.nextMatch?.scheduledAt]);
 
-  // 近 10 场胜负趋势 canvas
+  // 近 10 场胜负趋势 canvas：胜上负下折线 + 分段着色，无背景填充
   useEffect(() => {
     const cv = chartRef.current;
     if (!cv || !data?.recentMatches?.length || data.recentMatches.length < 2) return;
@@ -214,43 +215,123 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
     const marks = data.recentMatches.map((m) => (m.won ? 1 : 0));
-    const pts = marks.map((m, i) => ({ x: i / (marks.length - 1), y: m ? 0.18 : 0.82 }));
-    const pad = { t: 16, r: 14, b: 22, l: 14 };
+    const pad = { t: 18, r: 16, b: 26, l: 16 };
     const iw = W - pad.l - pad.r;
     const ih = H - pad.t - pad.b;
-    const X = (p: { x: number }) => pad.l + p.x * iw;
-    const Y = (p: { y: number }) => pad.t + p.y * ih;
-    ctx.lineWidth = 2.5;
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#66BB6A';
-    ctx.fillStyle = 'rgba(102,187,106,.22)';
+    const baseY = pad.t + ih * 0.5;
+    const amp = ih * 0.36;
+    const pts = marks.map((m, i) => ({
+      x: pad.l + (i / (marks.length - 1)) * iw,
+      y: m ? baseY - amp : baseY + amp,
+    }));
+    const n = pts.length;
+
+    // 柔和横向网格
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let g = 0; g <= 4; g += 1) {
+      const gy = pad.t + (ih / 4) * g;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, gy);
+      ctx.lineTo(pad.l + iw, gy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 渐变面积填充：折线与中线之间的区域，上绿（胜）下红（负）渐变
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ih);
+    grad.addColorStop(0, 'rgba(102,187,106,0.14)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+    grad.addColorStop(1, 'rgba(244,67,54,0.12)');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    pts.forEach((p, i) => (i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))));
-    ctx.stroke();
-    ctx.lineTo(X(pts[pts.length - 1]), pad.t + ih);
-    ctx.lineTo(X(pts[0]), pad.t + ih);
+    ctx.moveTo(pts[0].x, baseY);
+    ctx.lineTo(pts[0].x, pts[0].y);
+    for (let i = 0; i < n - 1; i += 1) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(n - 1, i + 2)];
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+    }
+    ctx.lineTo(pts[n - 1].x, baseY);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#F44336';
-    ctx.fillStyle = 'rgba(244,67,54,.22)';
+    ctx.restore();
+
+    // 中线参考（极淡）
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
     ctx.beginPath();
-    pts.forEach((p, i) => (i ? ctx.lineTo(X(p), Y(p)) : ctx.moveTo(X(p), Y(p))));
+    ctx.moveTo(pad.l, baseY);
+    ctx.lineTo(pad.l + iw, baseY);
     ctx.stroke();
-    marks.forEach((m, i) => {
-      const x = X(pts[i]);
-      const y = Y(pts[i]);
+    ctx.restore();
+
+    // 平滑曲线（胜段绿、负段红）
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    let segStart = 0;
+    const drawSeg = (from: number, to: number, won: boolean) => {
+      ctx.strokeStyle = won ? '#66BB6A' : '#F44336';
       ctx.beginPath();
-      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = m ? '#66BB6A' : '#F44336';
+      ctx.moveTo(pts[from].x, pts[from].y);
+      for (let i = from; i < to; i += 1) {
+        const p0 = pts[Math.max(0, i - 1)];
+        const p1 = pts[i];
+        const p2 = pts[i + 1];
+        const p3 = pts[Math.min(n - 1, i + 2)];
+        const c1x = p1.x + (p2.x - p0.x) / 6;
+        const c1y = p1.y + (p2.y - p0.y) / 6;
+        const c2x = p2.x - (p3.x - p1.x) / 6;
+        const c2y = p2.y - (p3.y - p1.y) / 6;
+        ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+      }
+      ctx.stroke();
+    };
+    for (let i = 1; i < n; i += 1) {
+      if (marks[i] !== marks[i - 1]) {
+        drawSeg(segStart, i - 1, Boolean(marks[segStart]));
+        segStart = i;
+      }
+    }
+    drawSeg(segStart, n - 1, Boolean(marks[segStart]));
+
+    // 数据点（带光晕）
+    marks.forEach((m, i) => {
+      const color = m ? '#66BB6A' : '#F44336';
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(pts[i].x, pts[i].y, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(pts[i].x, pts[i].y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFFFFF';
       ctx.fill();
     });
-    ctx.fillStyle = '#999999';
-    ctx.font = "600 11px 'Exo2',sans-serif";
+
+    // 日期标注
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = "600 10.5px 'Exo2',sans-serif";
     ctx.textAlign = 'center';
     marks.forEach((_, i) => {
       const d = (data.recentMatches?.[i]?.date || '').slice(5).replace('-', '/');
-      if (i % 2 === 0) ctx.fillText(d, X(pts[i]), pad.t + ih + 16);
+      if (i % 2 === 0) ctx.fillText(d, pts[i].x, pad.t + ih + 18);
     });
   }, [data]);
 
@@ -358,6 +439,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                 <a href="#stats">数据总览</a>
                 <a href="#h2h">最近交手</a>
                 <a href="#heroes">常用英雄</a>
+                <a href="#signature">招牌英雄</a>
                 <a href="#squad">成员</a>
                 <a href="#matches">Results</a>
                 <a href="#achievements">成就</a>
@@ -366,7 +448,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
 
             {/* ===== Upcoming：下一场比赛 ===== */}
             <section className="section" id="next-match">
-              <h2 className="section-title">Upcoming <small>下一场比赛 · 由后端定时同步</small></h2>
+              <h2 className="section-title">Upcoming <small>下一场比赛</small></h2>
               {D.nextMatch ? (
                 <div className="nextmatch">
                   <div className="nextmatch-band">
@@ -400,14 +482,14 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                 </div>
               ) : (
                 <div className="card card-pad" style={{ color: 'var(--muted)' }}>
-                  暂无已排定的下一场比赛 · 后端定时同步后将自动显示。
+                  暂无已排定的下一场比赛。
                 </div>
               )}
             </section>
 
             {/* ===== 数据总览 ===== */}
             <section className="section" id="stats">
-              <h2 className="section-title">数据总览 <small>近 3 个月 · date_range=2</small></h2>
+              <h2 className="section-title">数据总览 <small>近 3 个月</small></h2>
               {AGG ? (
                 <>
                   <div className="stats-grid">
@@ -436,7 +518,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   </div>
                 </>
               ) : (
-                <div className="stats-grid">{emptyNote('暂无统计数据 · 后端定时同步后将自动显示。')}</div>
+                <div className="stats-grid">{emptyNote('暂无统计数据')}</div>
               )}
             </section>
 
@@ -456,7 +538,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                       <div className="h-sub">地图胜率 {h.winRate}</div>
                     </a>
                   );
-                }) : emptyNote('暂无对标记录 · 后端定时同步后将自动显示。')}
+                }) : emptyNote('暂无对标记录')}
               </div>
             </section>
 
@@ -503,13 +585,14 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                     <div className="card card-pad">
                       <div className="section-title" style={{ marginBottom: 8, fontSize: 16 }}>Top 5 战队禁用</div>
                       <table className="hero-table">
-                        <thead><tr><th>英雄</th><th className="num">禁用率</th><th className="num">遇 / 胜</th></tr></thead>
+                        <thead><tr><th>英雄</th><th className="num">禁用率</th><th className="num">遇</th><th className="num">胜 / 负</th></tr></thead>
                         <tbody>
                           {(D.draftStats.topBans || []).map((h) => (
                             <tr key={h.name}>
                               <td><div className="hero-cell">{h.img && <img src={h.img} alt={h.name} />}<b>{h.name}</b></div></td>
                               <td className="num">{h.rate}</td>
-                              <td className="num">{h.mapsVs} / —</td>
+                              <td className="num">{h.mapsVs}</td>
+                              <td className="num">{h.winsVs ?? '—'} / {h.losesVs ?? '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -518,7 +601,37 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   </div>
                 </div>
               ) : (
-                <div className="hero-split">{emptyNote('暂无英雄数据 · 后端定时同步后将自动显示。')}</div>
+                <div className="hero-split">{emptyNote('暂无英雄数据')}</div>
+              )}
+            </section>
+
+            {/* ===== 招牌英雄 Signature heroes ===== */}
+            <section className="section" id="signature">
+              <h2 className="section-title">招牌英雄 <small>Signature heroes · 选手招牌英雄与胜率</small></h2>
+              {D.squad && D.squad.some((p) => p.sig && p.sig.length) ? (
+                <div className="sig-grid">
+                  {D.squad.filter((p) => !p.isCoach && p.sig && p.sig.length).map((p) => (
+                    <div className="sig-card" key={p.nick}>
+                      <div className="sig-head">
+                        {p.photo ? <img className="sig-avatar" src={p.photo} alt={p.nick} /> : <span className="sig-avatar ph">{p.nick?.[0] || '?'}</span>}
+                        <div className="sig-meta">
+                          <div className="sig-nick">{p.nick}</div>
+                          <div className="sig-role">{p.role || '—'}</div>
+                        </div>
+                      </div>
+                      <div className="sig-heroes">
+                        {(p.sig ?? []).map((s) => (
+                          <div className="sig-hero" key={s.name}>
+                            {s.img ? <img src={s.img} alt={s.name} /> : <span className="sig-hero-ph">{s.name?.[0] || '?'}</span>}
+                            <span className="sig-hname">{s.name}</span>
+                            <span className="sig-wr">{s.winrate || ''}</span>
+                          </div>
+                        ))}
+                      </div>                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="sig-grid">{emptyNote('暂无招牌英雄数据')}</div>
               )}
             </section>
 
@@ -551,7 +664,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                         </div>
                         <div className="full">{p.realName || p.role || '—'}</div>
                         <div className="rank-line">
-                          <span>{p.realName ? `${p.realName} · ` : ''}天梯排名 {p.rank || '—'}</span>
+                          <span>天梯排名 {p.rank || '—'}</span>
                         </div>
                         {p.sig && p.sig.length > 0 && (
                           <div className="sig-row">
@@ -563,7 +676,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   ))}
                 </div>
               ) : (
-                <div className="squad-grid">{emptyNote('暂无成员名单 · 后端定时同步后将自动显示。')}</div>
+                <div className="squad-grid">{emptyNote('暂无成员名单')}</div>
               )}
             </section>
 
@@ -592,17 +705,27 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                             <b>{m.opponent}</b>
                           </a>
                         </td>
-                        <td className="num"><span className={`score-num ${m.won ? 'good' : 'bad'}`}>{m.score}</span></td>
+                        <td className="num">
+                          {m.seriesId ? (
+                            <a className="score-link" href={`#/match/${m.seriesId}${m.seriesSlug ? `?slug=${encodeURIComponent(m.seriesSlug)}` : ''}`} title={`查看 ${m.opponent} 比赛详情`}>
+                              <span className={`score-num ${m.won ? 'good' : 'bad'}`}>{m.score}</span>
+                            </a>
+                          ) : (
+                            <span className={`score-num ${m.won ? 'good' : 'bad'}`}>{m.score}</span>
+                          )}
+                        </td>
                         <td><span className={`wl-chip ${m.won ? 'win' : 'lose'}`}>{m.won ? '胜' : '负'}</span></td>
                         <td className="hide-m">
                           <div className="hero-chips">
-                            {(m.heroes || []).map((h) => <span key={h}>{h}</span>)}
+                            {(m.heroImgs && m.heroImgs.length ? m.heroImgs : []).map((img, hi) => (
+                              <img key={hi} src={img} alt={m.heroes?.[hi] || ''} title={m.heroes?.[hi] || ''} />
+                            ))}
                           </div>
                         </td>
                         <td className="hide-m">{m.durationMin} 分钟</td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={6} style={{ color: 'var(--muted)', textAlign: 'center', padding: 18 }}>暂无比赛记录 · 后端定时同步后将自动显示。</td></tr>
+                      <tr><td colSpan={6} style={{ color: 'var(--muted)', textAlign: 'center', padding: 18 }}>暂无比赛记录</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -620,34 +743,12 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                     <div className="a-name">{a.name}</div>
                     {a.year && <div className="a-year">{a.year}</div>}
                   </a>
-                )) : emptyNote('暂无成就数据 · 后端定时同步后将自动显示。')}
+                )) : emptyNote('暂无成就数据')}
               </div>
             </section>
           </>
         )}
       </main>
-
-      <footer className="site-footer">
-        <div className="container footer-top">
-          <div>
-            <div className="footer-brand">战队<span>中心</span></div>
-            <p className="footer-desc">
-              战队详情页。数据由后端直连 DLTV 官方接口（recent_maps + stats + upcoming）归一化，带缓存与定时刷新。
-            </p>
-          </div>
-          <nav className="footer-links" aria-label="页脚导航">
-            <a href={`https://dltv.org/teams/${slug || T.slug || ''}`} target="_blank" rel="noopener">原站</a>
-            <a href="https://dltv.org/matches" target="_blank" rel="noopener">全部比赛</a>
-            <a href="https://dltv.org/ranking" target="_blank" rel="noopener">世界排名</a>
-          </nav>
-        </div>
-        <div className="footer-bottom">
-          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '0 20px' }}>
-            <span>数据来源 DLTV · 本地预览</span>
-            <span className="data-badge"><i></i><span>DLTV 官方接口 · 定时刷新</span></span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

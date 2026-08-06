@@ -7,6 +7,7 @@
 
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 import { getDltvUpcoming } from '../lib/server/dltv-matches-service.js';
+import { getDltvMatchPage } from '../lib/server/dltv-match-page-service.js';
 import { getDb } from '../lib/db.js';
 import { readDltvCache, writeDltvCache } from '../lib/server/dltv-neon-cache.js';
 
@@ -161,6 +162,11 @@ function normalizeRecentMaps(maps, heroes, teamSlug) {
     rec.last = m.started_at ? m.started_at.slice(0, 10) : rec.last;
     seen.set(slug, rec);
 
+    // 英雄图标：heroes 字典补 image
+    const heroImg = (id) => {
+      const hero = heroes?.[String(id)] || heroes?.[id];
+      return hero?.image ? `https://dltv.org${String(hero.image).startsWith('/') ? '' : '/'}${hero.image}` : '';
+    };
     recentMatches.push({
       date: m.started_at ? m.started_at.slice(0, 10) : '',
       event: series.slug ? String(series.slug).replaceAll('-', ' ') : '',
@@ -171,6 +177,9 @@ function normalizeRecentMaps(maps, heroes, teamSlug) {
       won,
       durationMin: Math.round((m.duration || 0) / 60),
       heroes: heroNames,
+      heroImgs: myHeroIds.map(heroImg).filter(Boolean),
+      seriesId: series.id != null ? String(series.id) : null,
+      seriesSlug: series.slug || '',
     });
   }
 
@@ -231,6 +240,64 @@ function normalizeRecentMaps(maps, heroes, teamSlug) {
       topBans,
     },
   };
+}
+
+/**
+ * 用 match-page（series_item JSON）覆盖 recent_maps 的英雄数据。
+ * recent_maps 的 map_results hero_id 常过期/错位（与 DLTV 页面不一致），
+ * 而系列赛详情页的 players[].heroTitle 是权威来源。
+ */
+async function enrichRecentMatchesHeroes(recentMatches, teamSlug, fetchImpl) {
+  const httpFetch = typeof fetchImpl === 'function' ? fetchImpl : fetch;
+  // 按 seriesId 去重（同系列赛多场共用一次抓取）
+  const bySeries = new Map();
+  for (const m of recentMatches || []) {
+    if (!m.seriesId) continue;
+    if (!bySeries.has(m.seriesId)) {
+      bySeries.set(m.seriesId, { slug: m.seriesSlug || '', matches: [] });
+    }
+    bySeries.get(m.seriesId).matches.push(m);
+  }
+
+  await Promise.all([...bySeries.entries()].map(async ([seriesId, info]) => {
+    try {
+      const result = await getDltvMatchPage({ seriesId, slug: info.slug }, { fetchImpl: httpFetch });
+      const series = result?.series;
+      const maps = Array.isArray(series?.maps) ? series.maps : [];
+      // 按开始时间升序排列（series_item 的 maps 顺序可能无序）
+      maps.sort((a, b) => (a.startTime ?? 0) - (b.startTime ?? 0));
+      for (const m of info.matches) {
+        // recentMatches 的顺序 = 时间倒序，第 i 场对应升序 maps 的第 (len-1-i) 场
+        const idxInSeries = maps.length - 1 - (info.matches.indexOf(m));
+        const map = maps[idxInSeries];
+        if (!map) continue;
+        const players = (map.players || []).filter((p) => {
+          // 需要知道本队在系列赛中的 teamId —— players 有 teamId 字段
+          return p && p.heroTitle;
+        });
+        // 取本队英雄：对比 map.radiantTeamId/direTeamId 与 series teams
+        const ft = series?.radiantTeam || {};
+        const st = series?.direTeam || {};
+        const myTeamSlug = teamSlug.toLowerCase();
+        const xtremeSide = String(ft?.slug || '').toLowerCase() === myTeamSlug || String(ft?.id) === teamSlug
+          ? 'radiant'
+          : String(st?.slug || '').toLowerCase() === myTeamSlug || String(st?.id) === teamSlug
+            ? 'dire'
+            : null;
+        const myTeamId = xtremeSide === 'radiant' ? map.radiantTeamId : xtremeSide === 'dire' ? map.direTeamId : null;
+        const myPlayers = (map.players || []).filter((p) => myTeamId != null && String(p.teamId) === String(myTeamId));
+        const heroNames = [...new Set(myPlayers.map((p) => p.heroTitle).filter(Boolean))];
+        const heroImgs = [...new Set(myPlayers.map((p) => p.heroImg).filter(Boolean))];
+        if (heroNames.length > 0) {
+          m.heroes = heroNames;
+          m.heroImgs = heroImgs;
+        }
+      }
+    } catch (error) {
+      console.error('[TeamDetail] match-page hero enrich failed:', error instanceof Error ? error.message : String(error));
+    }
+  }));
+  return recentMatches;
 }
 
 // —— 归一化 stats：数据总览 ——
@@ -362,7 +429,8 @@ function parseAchievementsHtml(html) {
 function parseDraftStatsHtml(html) {
   const draftStart = html.indexOf('draft__statistics');
   if (draftStart < 0) return null;
-  const block = html.slice(draftStart, draftStart + 20000);
+  // draft 区块可能较长（两张表 + 高亮），取足量范围
+  const block = html.slice(draftStart, draftStart + 60000);
 
   const firstOf = (label) => {
     const re = new RegExp(`draft__statistics-first__title">\\s*<small>${label}</small>\\s*<strong>([\\s\\S]*?)<\\/strong>\\s*<span>([\\s\\S]*?)<\\/span>`);
@@ -379,9 +447,9 @@ function parseDraftStatsHtml(html) {
     const idx = block.indexOf(heading);
     if (idx < 0) return [];
     const bodyStart = block.indexOf('table__body', idx);
-    // 表结束：下一个 table__head（下一张表）或表容器闭合
+    // 表结束：下一个 table__head（下一张表）或足够长的兜底范围（末表无后继 head）
     const nextHead = block.indexOf('table__head', bodyStart + 10);
-    const endMark = nextHead > 0 ? nextHead : bodyStart + 6000;
+    const endMark = nextHead > 0 ? nextHead : bodyStart + 12000;
     const tableBlock = block.slice(bodyStart, endMark);
     const rows = [];
     // 行开头是 <div class="table__body-row …">（可能带 non__stripped 等修饰类；排除 table__body-row__cell 内部类）
@@ -412,6 +480,8 @@ function parseDraftStatsHtml(html) {
     img: r.img ? `https://dltv.org${r.img.startsWith('/') ? '' : '/'}${r.img}` : '',
     rate: r.texts[0] || '',
     mapsVs: Number(r.texts[1] || 0),
+    winsVs: Number(r.texts[2] || 0),
+    losesVs: Number(r.texts[3] || 0),
   }));
 
   const firstPick = firstOf('First Pick');
@@ -644,7 +714,7 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
     statsOverview,
     draftStats: draftStats || normalizeDraftStats(heroes, normalized.draftStats),
     h2h: normalized.h2h,
-    recentMatches: normalized.recentMatches,
+    recentMatches: await enrichRecentMatchesHeroes(normalized.recentMatches, teamSlug, httpFetch),
     squad: normalizeSquad(pagePlayers, sigBySlug),
     rosterHistory: [],
     currentFive: [],

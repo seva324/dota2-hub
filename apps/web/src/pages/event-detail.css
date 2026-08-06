@@ -200,7 +200,7 @@
 .event-detail-root .finished-card .fc-head .done { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; letter-spacing: 0.06em; }
 .event-detail-root .finished-card .fc-head .done::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.28); }
 .event-detail-root .finished-card .fc-teams { display: flex; flex-direction: column; gap: 6px; }
-.event-detail-root .finished-card .fc-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.event-detail-root .finished-card .fc-team { display: flex; align-items: center; gap: 10px; min-width: 0; width: 100%; box-sizing: border-box; }
 .event-detail-root .finished-card .fc-team .logo {
   width: 24px; height: 24px; border-radius: 6px; background: rgba(255,255,255,0.05);
   display: flex; align-items: center; justify-content: center; overflow: hidden; flex: 0 0 auto;
@@ -213,7 +213,7 @@
 .event-detail-root .finished-card .fc-team.win .nm { color: #fff; font-weight: 800; }
 .event-detail-root .finished-card .fc-team .sc {
   font-family: var(--font-display); font-size: 15px; font-weight: 900;
-  color: var(--muted-2); min-width: 18px; text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--muted-2); width: 30px; flex: 0 0 30px; text-align: right; font-variant-numeric: tabular-nums;
 }
 .event-detail-root .finished-card .fc-team.win .sc { color: var(--accent); }
 
@@ -307,6 +307,7 @@
   border: 1px solid var(--border-soft); border-radius: 12px;
   background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
   overflow: hidden; transition: border-color 0.2s ease; position: relative;
+  min-width: 176px;
 }
 .event-detail-root .bmatch-card:hover { border-color: rgba(255,255,255,0.24); }
 .event-detail-root .bmatch-card.bmatch-empty {
@@ -319,15 +320,15 @@
   border-bottom: 1px solid var(--border-soft); font-variant-numeric: tabular-nums;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.event-detail-root .bmatch-team { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.event-detail-root .bmatch-team { display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-width: 0; width: 100%; box-sizing: border-box; }
 .event-detail-root .bmatch-team .logo {
   width: 22px; height: 22px; border-radius: 6px; background: rgba(255,255,255,0.05);
   display: flex; align-items: center; justify-content: center; overflow: hidden; flex: 0 0 auto;
 }
 .event-detail-root .bmatch-team .logo img { width: 100%; height: 100%; object-fit: contain; }
-.event-detail-root .bmatch-team .nm { flex: 1; font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-detail-root .bmatch-team .nm { flex: 1 1 auto; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event-detail-root .bmatch-team.win .nm { color: var(--text); font-weight: 800; }
-.event-detail-root .bmatch-team .sc { font-family: var(--font-display); font-size: 15px; font-weight: 900; color: var(--muted-2); min-width: 18px; text-align: right; font-variant-numeric: tabular-nums; }
+.event-detail-root .bmatch-team .sc { font-family: var(--font-display); font-size: 15px; font-weight: 900; color: var(--muted-2); width: 34px; flex: 0 0 34px; text-align: right; font-variant-numeric: tabular-nums; }
 .event-detail-root .bmatch-team.win .sc { color: var(--accent); }
 .event-detail-root .bmatch-final-prize {
   display: flex; align-items: center; gap: 8px; padding: 9px 12px;
