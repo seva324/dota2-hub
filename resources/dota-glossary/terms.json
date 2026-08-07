@@ -1,6 +1,376 @@
 [
   {
     "id": 0,
+    "internal_name": "term_ability_draft",
+    "english_name": "Ability Draft",
+    "chinese_name": "技能征召",
+    "english_aliases": [
+      "Ability Draft"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_aegis",
+    "english_name": "Aegis",
+    "chinese_name": "肉山盾",
+    "english_aliases": [
+      "Aegis"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_aegis_of_champions",
+    "english_name": "Aegis of Champions",
+    "chinese_name": "冠军之神盾",
+    "english_aliases": [
+      "Aegis of Champions"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "冠军之神盾"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_arcana",
+    "english_name": "Arcana",
+    "chinese_name": "至宝",
+    "english_aliases": [
+      "Arcana",
+      "Arcanas"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_area_of_effect",
+    "english_name": "Area of Effect",
+    "chinese_name": "作用范围",
+    "english_aliases": [
+      "Area of Effect"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_behavior_score",
+    "english_name": "behavior score",
+    "chinese_name": "行为分",
+    "english_aliases": [
+      "behavior score"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "行为分"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_best_of_three",
+    "english_name": "best-of-three",
+    "chinese_name": "BO3",
+    "english_aliases": [
+      "best-of-three"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_broadcast_feeds",
+    "english_name": "broadcast feeds",
+    "chinese_name": "直播画面",
+    "english_aliases": [
+      "broadcast feeds"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "直播画面"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_broadcast_licenses",
+    "english_name": "broadcast licenses",
+    "chinese_name": "直播授权",
+    "english_aliases": [
+      "broadcast licenses"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_captain_s_mode",
+    "english_name": "Captain's Mode",
+    "chinese_name": "队长模式",
+    "english_aliases": [
+      "Captain's Mode"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_cast_range",
+    "english_name": "cast range",
+    "chinese_name": "施法距离",
+    "english_aliases": [
+      "cast range"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_charges",
+    "english_name": "charges",
+    "chinese_name": "能量点数",
+    "english_aliases": [
+      "charges"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_chat_wheels",
+    "english_name": "Chat Wheels",
+    "chinese_name": "聊天轮盘",
+    "english_aliases": [
+      "Chat Wheels"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_collector_s_cache",
+    "english_name": "Collector's Cache",
+    "chinese_name": "典藏宝瓶",
+    "english_aliases": [
+      "Collector's Cache"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_combat_log",
+    "english_name": "Combat Log",
+    "chinese_name": "战斗日志",
+    "english_aliases": [
+      "Combat Log"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "战斗日志"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_cooldown",
+    "english_name": "cooldown",
+    "chinese_name": "冷却状态",
+    "english_aliases": [
+      "cooldown"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "冷却状态"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_cooldown_reduction",
+    "english_name": "cooldown reduction",
+    "chinese_name": "冷却时间减少",
+    "english_aliases": [
+      "cooldown reduction"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "冷却时间减少"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_cosmetic_items",
+    "english_name": "cosmetic items",
+    "chinese_name": "饰品",
+    "english_aliases": [
+      "cosmetic items",
+      "cosmetics",
+      "cosmetic"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "饰品"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_courier",
+    "english_name": "courier",
+    "chinese_name": "信使",
+    "english_aliases": [
+      "courier"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "信使"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_crimson_witness",
+    "english_name": "Crimson Witness",
+    "chinese_name": "猩红见证者",
+    "english_aliases": [
+      "Crimson Witness"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_crownfall",
+    "english_name": "Crownfall",
+    "chinese_name": "倾天之战",
+    "english_aliases": [
+      "Crownfall"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_crownfall_coins",
+    "english_name": "Crownfall Coins",
+    "chinese_name": "商店金币",
+    "english_aliases": [
+      "Crownfall Coins"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "商店金币"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_debuff_immunity",
+    "english_name": "debuff immunity",
+    "chinese_name": "减益免疫",
+    "english_aliases": [
+      "debuff immunity",
+      "debuff immune"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "减益免疫"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_demo_mode",
+    "english_name": "demo mode",
+    "chinese_name": "试玩模式",
+    "english_aliases": [
+      "demo mode"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_direct_invites",
+    "english_name": "Direct Invites",
+    "chinese_name": "直接邀请",
+    "english_aliases": [
+      "Direct Invites",
+      "direct invitation"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_dota_client",
+    "english_name": "Dota client",
+    "chinese_name": "Dota客户端",
+    "english_aliases": [
+      "Dota client"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_dota_labs",
+    "english_name": "Dota Labs",
+    "chinese_name": "刀塔实验室",
+    "english_aliases": [
+      "Dota Labs"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_double_elimination_bracket",
+    "english_name": "double elimination bracket",
+    "chinese_name": "双败淘汰赛",
+    "english_aliases": [
+      "double elimination bracket"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_elimination_round",
+    "english_name": "elimination round",
+    "chinese_name": "淘汰赛",
+    "english_aliases": [
+      "elimination round"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_emoticons",
+    "english_name": "emoticons",
+    "chinese_name": "聊天表情",
+    "english_aliases": [
+      "emoticons"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "聊天表情"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_expedition_pack",
+    "english_name": "Expedition Pack",
+    "chinese_name": "远征包",
+    "english_aliases": [
+      "Expedition Pack"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "远征包"
+    ]
+  },
+  {
+    "id": 0,
     "internal_name": "term_facet",
     "english_name": "Facet",
     "chinese_name": "命石",
@@ -14,6 +384,556 @@
       "аспект",
       "аспекты"
     ],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_fantasy",
+    "english_name": "fantasy",
+    "chinese_name": "梦幻挑战",
+    "english_aliases": [
+      "fantasy"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "梦幻挑战"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_fantasy_roster",
+    "english_name": "fantasy roster",
+    "chinese_name": "梦幻阵容",
+    "english_aliases": [
+      "fantasy roster"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_first_blood",
+    "english_name": "First Blood",
+    "chinese_name": "第一滴血",
+    "english_aliases": [
+      "First Blood"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_fog_of_war",
+    "english_name": "Fog of War",
+    "chinese_name": "战争迷雾",
+    "english_aliases": [
+      "Fog of War"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "战争迷雾"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_frostivus",
+    "english_name": "Frostivus",
+    "chinese_name": "迎霜节",
+    "english_aliases": [
+      "Frostivus"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_gameplay_patch",
+    "english_name": "gameplay patch",
+    "chinese_name": "游戏性版本更新",
+    "english_aliases": [
+      "gameplay patch"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "游戏性版本"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_grand_final",
+    "english_name": "Grand Final",
+    "chinese_name": "总决赛",
+    "english_aliases": [
+      "Grand Final",
+      "Grand Finals"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_group_stage",
+    "english_name": "Group Stage",
+    "chinese_name": "小组赛",
+    "english_aliases": [
+      "Group Stage"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_immortal_items",
+    "english_name": "Immortal items",
+    "chinese_name": "不朽物品",
+    "english_aliases": [
+      "Immortal items"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "不朽物品"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_immortals",
+    "english_name": "Immortals",
+    "chinese_name": "不朽",
+    "english_aliases": [
+      "Immortals"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "不朽"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_innate_ability",
+    "english_name": "innate ability",
+    "chinese_name": "先天技能",
+    "english_aliases": [
+      "innate ability",
+      "Innate abilities"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_item_sets",
+    "english_name": "item sets",
+    "chinese_name": "物品套装",
+    "english_aliases": [
+      "item sets",
+      "hero set",
+      "sets"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "物品套装",
+      "英雄套装"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_lower_bracket",
+    "english_name": "Lower Bracket",
+    "chinese_name": "败者组",
+    "english_aliases": [
+      "Lower Bracket"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_main_event",
+    "english_name": "main event",
+    "chinese_name": "主赛事",
+    "english_aliases": [
+      "main event"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_main_menu",
+    "english_name": "main menu",
+    "chinese_name": "主菜单",
+    "english_aliases": [
+      "main menu"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_mmr",
+    "english_name": "MMR",
+    "chinese_name": "天梯积分",
+    "english_aliases": [
+      "MMR"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "天梯积分"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_neutral_item_slot",
+    "english_name": "Neutral Item Slot",
+    "chinese_name": "中立物品栏",
+    "english_aliases": [
+      "Neutral Item Slot"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "中立物品栏"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_neutral_items",
+    "english_name": "neutral items",
+    "chinese_name": "中立物品",
+    "english_aliases": [
+      "neutral items"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "中立物品"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_open_qualifiers",
+    "english_name": "Open Qualifiers",
+    "chinese_name": "公开预选赛",
+    "english_aliases": [
+      "Open Qualifiers"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_overlay_map",
+    "english_name": "overlay map",
+    "chinese_name": "地图叠加层",
+    "english_aliases": [
+      "overlay map"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_overworld_map",
+    "english_name": "overworld map",
+    "chinese_name": "世界地图",
+    "english_aliases": [
+      "overworld map"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_patch_notes",
+    "english_name": "patch notes",
+    "chinese_name": "改动日志",
+    "english_aliases": [
+      "patch notes"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "改动日志"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_personas",
+    "english_name": "Personas",
+    "chinese_name": "身心",
+    "english_aliases": [
+      "Personas"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "身心"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_playoffs",
+    "english_name": "Playoffs",
+    "chinese_name": "淘汰赛",
+    "english_aliases": [
+      "Playoffs"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_predictions",
+    "english_name": "Predictions",
+    "chinese_name": "赛事预测",
+    "english_aliases": [
+      "Predictions"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "赛事预测"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_prize_pool",
+    "english_name": "prize pool",
+    "chinese_name": "总奖金",
+    "english_aliases": [
+      "prize pool"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "总奖金"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_pro_dota",
+    "english_name": "pro Dota",
+    "chinese_name": "职业Dota",
+    "english_aliases": [
+      "pro Dota"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_queue",
+    "english_name": "queue",
+    "chinese_name": "匹配",
+    "english_aliases": [
+      "queue"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_quick_buy",
+    "english_name": "Quick Buy",
+    "chinese_name": "快速购买",
+    "english_aliases": [
+      "Quick Buy"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "快速购买"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_quickcast",
+    "english_name": "quickcast",
+    "chinese_name": "快速施法",
+    "english_aliases": [
+      "quickcast"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_rampage",
+    "english_name": "RAMPAGE",
+    "chinese_name": "暴走",
+    "english_aliases": [
+      "RAMPAGE"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_regional_qualifiers",
+    "english_name": "Regional Qualifiers",
+    "chinese_name": "地区预选赛",
+    "english_aliases": [
+      "Regional Qualifiers",
+      "qualifiers"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "预选赛"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_rfp_request_for_proposal",
+    "english_name": "RFP (Request For Proposal)",
+    "chinese_name": "RFP（提案征询）",
+    "english_aliases": [
+      "RFP (Request For Proposal)",
+      "RFP"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "提案征询"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_road_to_the_international_playoffs",
+    "english_name": "Road to the International: Playoffs",
+    "chinese_name": "国际邀请赛之路：淘汰赛",
+    "english_aliases": [
+      "Road to the International: Playoffs"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_secret_shop",
+    "english_name": "Secret Shop",
+    "chinese_name": "神秘商店",
+    "english_aliases": [
+      "Secret Shop"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_stash",
+    "english_name": "stash",
+    "chinese_name": "储藏处",
+    "english_aliases": [
+      "stash"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_status_resistance",
+    "english_name": "status resistance",
+    "chinese_name": "状态抗性",
+    "english_aliases": [
+      "status resistance"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_steam_workshop",
+    "english_name": "Steam Workshop",
+    "chinese_name": "Steam创意工坊",
+    "english_aliases": [
+      "Steam Workshop"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_sticker_capsules",
+    "english_name": "sticker capsules",
+    "chinese_name": "贴纸胶囊",
+    "english_aliases": [
+      "sticker capsules"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_supporter_bundles",
+    "english_name": "supporter bundles",
+    "chinese_name": "应援捆绑包",
+    "english_aliases": [
+      "supporter bundles"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "应援捆绑包"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_swiss_bracket",
+    "english_name": "Swiss bracket",
+    "chinese_name": "瑞士轮",
+    "english_aliases": [
+      "Swiss bracket"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_talent",
+    "english_name": "talent",
+    "chinese_name": "天赋",
+    "english_aliases": [
+      "talent"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_team_wipe",
+    "english_name": "team wipe",
+    "chinese_name": "团灭",
+    "english_aliases": [
+      "team wipe"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_the_international",
+    "english_name": "The International",
+    "chinese_name": "国际邀请赛",
+    "english_aliases": [
+      "The International",
+      "TI"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "国际邀请赛"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_the_road_to_the_international",
+    "english_name": "The Road to The International",
+    "chinese_name": "国际邀请赛之路",
+    "english_aliases": [
+      "The Road to The International"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_tooltip",
+    "english_name": "tooltip",
+    "chinese_name": "说明描述",
+    "english_aliases": [
+      "tooltip"
+    ],
+    "russian_aliases": [],
     "chinese_aliases": []
   },
   {
@@ -39,6 +959,69 @@
   },
   {
     "id": 0,
+    "internal_name": "term_treasure",
+    "english_name": "treasure",
+    "chinese_name": "珍藏",
+    "english_aliases": [
+      "treasure"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "珍藏"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_treasure_chest",
+    "english_name": "Treasure Chest",
+    "chinese_name": "宝藏",
+    "english_aliases": [
+      "Treasure Chest"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "宝藏"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_true_sight",
+    "english_name": "true sight",
+    "chinese_name": "真实视域",
+    "english_aliases": [
+      "true sight"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": [
+      "真实视域"
+    ]
+  },
+  {
+    "id": 0,
+    "internal_name": "term_turbo",
+    "english_name": "Turbo",
+    "chinese_name": "加速模式",
+    "english_aliases": [
+      "Turbo",
+      "Turbo games",
+      "Turbo Mode"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_upper_bracket",
+    "english_name": "upper bracket",
+    "chinese_name": "胜者组",
+    "english_aliases": [
+      "upper bracket"
+    ],
+    "russian_aliases": [],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
     "internal_name": "term_wisdom_rune",
     "english_name": "Wisdom Rune",
     "chinese_name": "智慧神符",
@@ -52,6 +1035,17 @@
       "руны мудрости",
       "мудрость"
     ],
+    "chinese_aliases": []
+  },
+  {
+    "id": 0,
+    "internal_name": "term_workshop",
+    "english_name": "Workshop",
+    "chinese_name": "创意工坊",
+    "english_aliases": [
+      "Workshop"
+    ],
+    "russian_aliases": [],
     "chinese_aliases": []
   }
 ]

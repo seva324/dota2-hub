@@ -68,7 +68,7 @@ function normalizeKey(value = '') {
     .normalize('NFKC')
     .toLowerCase()
     .replace(/[’']/g, '')
-    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, '');
+    .replace(/[^a-z0-9\u4e00-\u9fff\u0400-\u04ff]+/g, '');
 }
 
 function uniqueAliases(values = []) {
@@ -358,6 +358,7 @@ function buildGlossary() {
         english_name: term.english_name,
         chinese_name: preferredChinese.chineseName,
         english_aliases: uniqueAliases(term.english_aliases || []),
+        russian_aliases: uniqueAliases(term.russian_aliases || []),
         chinese_aliases: preferredChinese.chineseAliases,
       };
     })
