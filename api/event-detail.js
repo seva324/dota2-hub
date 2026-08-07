@@ -22,8 +22,8 @@ import { translateEventAbout } from '../lib/server/event-about-translation.js';
 
 const DLTV_EVENT_BASE = 'https://dltv.org/events/';
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=0, must-revalidate';
-// v4：修复已结束赛事被误归入 matches（upcoming）的历史缓存问题，强制换 key 重建。
-const NEON_CACHE_PREFIX = 'dltv:event-detail:v4:';
+// v5：比赛行用 match URL 还原战队全名 + slug（修复 upcoming 卡片战队跳转错误），强制换 key 重建。
+const NEON_CACHE_PREFIX = 'dltv:event-detail:v5:';
 const NEON_TTL_MS = 15 * 60 * 1000;
 const NEON_STALE_MAX_MS = 6 * 60 * 60 * 1000;
 const CACHE_TTL_MS = 2 * 60 * 1000;
