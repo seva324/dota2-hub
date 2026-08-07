@@ -76,10 +76,16 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TeamStatBlock({ team, align }: { team: SeriesTeamInfo; align: 'left' | 'right' }) {
+type OpenTeamHandler = (team: { name: string; slug?: string | null }) => void;
+
+function TeamStatBlock({ team, align, onOpenTeam }: {
+  team: SeriesTeamInfo;
+  align: 'left' | 'right';
+  onOpenTeam?: OpenTeamHandler;
+}) {
   const logo = resolveTeamLogo({ teamId: team.id, name: team.name }, [], team.logo);
-  return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+  const inner = (
+    <>
       <SafeImg
         src={logo}
         alt={team.name || ''}
@@ -89,6 +95,23 @@ function TeamStatBlock({ team, align }: { team: SeriesTeamInfo; align: 'left' | 
       <span className="w-full truncate text-center text-sm font-black uppercase text-white sm:text-lg">
         {team.name}
       </span>
+    </>
+  );
+  const clickable = Boolean(team.name) && Boolean(onOpenTeam);
+  return (
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+      {clickable ? (
+        <button
+          type="button"
+          onClick={() => onOpenTeam?.({ name: team.name as string, slug: team.slug })}
+          title={`查看 ${team.name} 战队资料`}
+          className="flex flex-col items-center gap-2 rounded-xl px-2 py-1 transition-colors hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400/60"
+        >
+          {inner}
+        </button>
+      ) : (
+        <div className="flex flex-col items-center gap-2">{inner}</div>
+      )}
       {team.rank != null && (
         <span className="rounded px-2 py-0.5 text-[11px] font-semibold text-slate-300" style={{ backgroundColor: '#2a2d35' }}>
           World Rank #{team.rank}
@@ -152,20 +175,34 @@ function PlayerCard({ player }: { player: SeriesLineupPlayer }) {
   );
 }
 
-function LineupColumn({ team }: { team: SeriesTeamInfo }) {
+function LineupColumn({ team, onOpenTeam }: { team: SeriesTeamInfo; onOpenTeam?: OpenTeamHandler }) {
   const logo = resolveTeamLogo({ teamId: team.id, name: team.name }, [], team.logo);
+  const header = (
+    <>
+      <SafeImg
+        src={logo}
+        alt={team.name || ''}
+        className="size-5 shrink-0 object-contain"
+        fallback={<TeamLogoFallback name={team.name || 'T'} size={20} />}
+      />
+      <span className="truncate text-sm font-bold text-slate-200">{team.name}</span>
+      <span className="shrink-0 text-[11px] text-slate-500">· {formatPercent(team.winRate)} 胜率</span>
+    </>
+  );
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <SafeImg
-          src={logo}
-          alt={team.name || ''}
-          className="size-5 shrink-0 object-contain"
-          fallback={<TeamLogoFallback name={team.name || 'T'} size={20} />}
-        />
-        <span className="truncate text-sm font-bold text-slate-200">{team.name}</span>
-        <span className="shrink-0 text-[11px] text-slate-500">· {formatPercent(team.winRate)} 胜率</span>
-      </div>
+      {Boolean(team.name) && onOpenTeam ? (
+        <button
+          type="button"
+          onClick={() => onOpenTeam({ name: team.name as string, slug: team.slug })}
+          title={`查看 ${team.name} 战队资料`}
+          className="flex w-fit max-w-full items-center gap-2 rounded-lg py-0.5 pr-1 transition-colors hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400/60"
+        >
+          {header}
+        </button>
+      ) : (
+        <div className="flex items-center gap-2">{header}</div>
+      )}
       {team.players.length > 0 ? (
         team.players.map((player) => <PlayerCard key={`${team.id}-${player.id}`} player={player} />)
       ) : (
@@ -258,7 +295,11 @@ function StatsComparison({ first, second }: { first: SeriesTeamInfo; second: Ser
   );
 }
 
-export function UpcomingMatchView({ payload, onBack }: { payload: MatchPagePayload; onBack: () => void }) {
+export function UpcomingMatchView({ payload, onBack, onOpenTeam }: {
+  payload: MatchPagePayload;
+  onBack: () => void;
+  onOpenTeam?: OpenTeamHandler;
+}) {
   const first = payload.teams.radiant;
   const second = payload.teams.dire;
   const event = payload.event;
@@ -312,14 +353,14 @@ export function UpcomingMatchView({ payload, onBack }: { payload: MatchPagePaylo
         </div>
 
         <div className="flex items-center gap-4 sm:gap-8">
-          <TeamStatBlock team={first} align="left" />
+          <TeamStatBlock team={first} align="left" onOpenTeam={onOpenTeam} />
           <div className="shrink-0">
             <div className="flex flex-col items-center gap-1">
               <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">VS</span>
               <span className="rounded px-3 py-1 text-xs font-bold text-slate-300" style={{ backgroundColor: '#2a2d35' }}>{payload.bestOf || 'BO3'}</span>
             </div>
           </div>
-          <TeamStatBlock team={second} align="right" />
+          <TeamStatBlock team={second} align="right" onOpenTeam={onOpenTeam} />
         </div>
       </div>
 
@@ -333,8 +374,8 @@ export function UpcomingMatchView({ payload, onBack }: { payload: MatchPagePaylo
             <Trophy className="size-4 text-amber-400" /> 阵容 Lineups
           </h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-            <LineupColumn team={first} />
-            <LineupColumn team={second} />
+            <LineupColumn team={first} onOpenTeam={onOpenTeam} />
+            <LineupColumn team={second} onOpenTeam={onOpenTeam} />
           </div>
         </section>
       ) : null}

@@ -544,7 +544,7 @@ export function SeriesMatchPage({ matchId, slug, onBack, onOpenTeam }: {
   if (isUpcoming) {
     return (
       <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 lg:px-6" style={{ backgroundColor: '#0f1115' }}>
-        <UpcomingMatchView payload={payload} onBack={onBack} />
+        <UpcomingMatchView payload={payload} onBack={onBack} onOpenTeam={onOpenTeam} />
       </div>
     );
   }
