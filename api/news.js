@@ -34,7 +34,7 @@ export { normalizeBo3CoverImageUrl } from '../lib/server/bo3-images.js';
  * Usage: GET /api/news
  */
 
-const MAX_ITEMS = 30;
+const MAX_ITEMS = 60;
 const DETAIL_FETCH_LIMIT = 10;
 const HAWK_LIST_SCAN_LIMIT = 40;
 const CYBERSCORE_LIST_SCAN_LIMIT = 24;

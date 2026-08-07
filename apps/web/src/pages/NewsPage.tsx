@@ -186,7 +186,7 @@ export function NewsPage() {
     setLoading(true);
     setLoadError('');
     try {
-      const payload = await apiFetch<NewsItem[]>('/api/news?limit=30', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
+      const payload = await apiFetch<NewsItem[]>('/api/news?limit=60', { ttlMs: 5 * 60 * 1000, cacheEmpty: false });
       setNews(Array.isArray(payload) ? payload : []);
     } catch (error) {
       console.error('[NewsPage] Failed to load news:', error);

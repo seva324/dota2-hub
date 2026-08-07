@@ -46,7 +46,7 @@ describe('NewsDetailPage', () => {
 
     render(<NewsDetailPage newsId="a" onBack={onBack} />);
 
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/news?limit=30');
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/news?limit=60');
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /feature headline/i, level: 1 })).toBeInTheDocument();
