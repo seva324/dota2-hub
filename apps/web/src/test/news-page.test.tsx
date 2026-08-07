@@ -41,7 +41,7 @@ describe('NewsPage', () => {
 
     render(<NewsPage />);
 
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/news?limit=30');
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/news?limit=60');
 
     await waitFor(() => {
       // 头条是第一条，单独呈现大标题

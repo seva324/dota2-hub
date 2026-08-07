@@ -50,6 +50,7 @@ interface EventGroup {
 interface PlayoffTeam {
   logo?: string | null;
   name: string;
+  slug?: string | null;
   score?: string;
   winner?: boolean;
 }
@@ -68,10 +69,12 @@ interface PlayoffRound {
 interface MatchRow {
   url?: string;
   left: string;
+  leftSlug?: string | null;
   leftLogo?: string | null;
   center: string;
   isLive?: boolean;
   right: string;
+  rightSlug?: string | null;
   rightLogo?: string | null;
 }
 
@@ -347,7 +350,7 @@ function MatchCard({
       <div className="match-card-body">
         <TeamLink
           className="match-team"
-          team={{ name: match.left, slug: teamSlugMap?.[match.left] ?? null }}
+          team={{ name: match.left, slug: match.leftSlug ?? teamSlugMap?.[match.left] ?? null }}
           onOpenTeam={onOpenTeam}
         >
           <TeamLogo src={match.leftLogo} name={match.left} size={34} />
@@ -372,7 +375,7 @@ function MatchCard({
         )}
         <TeamLink
           className="match-team right"
-          team={{ name: match.right, slug: teamSlugMap?.[match.right] ?? null }}
+          team={{ name: match.right, slug: match.rightSlug ?? teamSlugMap?.[match.right] ?? null }}
           onOpenTeam={onOpenTeam}
         >
           <span className="name">{match.right}</span>
@@ -660,7 +663,7 @@ function BracketMatchCard({
   const teamLink = (team: PlayoffTeam, win: boolean) => (
     <TeamLink
       className={`bmatch-team ${win ? 'win' : ''}`}
-      team={{ name: team.name, slug: teamSlugMap?.[team.name] ?? null }}
+      team={{ name: team.name, slug: team.slug ?? teamSlugMap?.[team.name] ?? null }}
       onOpenTeam={onOpenTeam}
     >
       <TeamLogo src={team.logo} name={team.name} size={22} />
@@ -1026,7 +1029,7 @@ function FinishedSection({
               <div className="fc-teams">
                 <TeamLink
                   className={`fc-team ${lw ? 'win' : ''}`}
-                  team={{ name: mm.left, slug: teamSlugMap?.[mm.left] ?? null }}
+                  team={{ name: mm.left, slug: mm.leftSlug ?? teamSlugMap?.[mm.left] ?? null }}
                   onOpenTeam={onOpenTeam}
                 >
                   <TeamLogo src={mm.leftLogo} name={mm.left} size={24} />
@@ -1035,7 +1038,7 @@ function FinishedSection({
                 </TeamLink>
                 <TeamLink
                   className={`fc-team ${rw ? 'win' : ''}`}
-                  team={{ name: mm.right, slug: teamSlugMap?.[mm.right] ?? null }}
+                  team={{ name: mm.right, slug: mm.rightSlug ?? teamSlugMap?.[mm.right] ?? null }}
                   onOpenTeam={onOpenTeam}
                 >
                   <TeamLogo src={mm.rightLogo} name={mm.right} size={24} />
