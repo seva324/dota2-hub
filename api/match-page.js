@@ -90,12 +90,13 @@ function mapLineupPlayer(player, req) {
   };
 }
 
-function mapEvent(event, req) {
+function mapEvent(event, eventSlug, req) {
   if (!event) return null;
   return {
     name: event.name ?? null,
     tag: event.tag ?? null,
     countryId: event.countryId ?? null,
+    eventSlug: eventSlug ?? null,
     country: event.country
       ? {
           name: event.country.name ?? null,
@@ -212,7 +213,7 @@ export default async function handler(req, res) {
       status: series.status ?? null,
       stage: series.stage ?? null,
       eventFormat: series.eventFormat ?? null,
-      event: mapEvent(series.event, req),
+      event: mapEvent(series.event, series.eventSlug, req),
       streams: mapStreams(series.streams),
       teams: {
         radiant: {
