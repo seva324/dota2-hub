@@ -140,6 +140,22 @@ function App() {
               if (!nav) return;
               navigate({ page: 'match', overlay: null, matchId: nav.matchId, slug: nav.slug }, { replace: false });
             }}
+            onOpenLive={(hero) => {
+              if (hero.sourceSeriesId) {
+                navigate({
+                  page: 'live',
+                  overlay: null,
+                  seriesId: String(hero.sourceSeriesId),
+                  slug: hero.sourceSeriesSlug ?? undefined,
+                  champ: hero.sourceChampionshipSlug ?? undefined,
+                }, { replace: false });
+                return;
+              }
+              const matchId = hero.liveMap?.matchId ?? hero.maps?.[0]?.matchId;
+              if (matchId != null && Number.isFinite(Number(matchId))) {
+                navigate({ page: 'match', overlay: null, matchId: String(matchId) }, { replace: false });
+              }
+            }}
           />
         ) : page === 'matches' ? (
           <MatchesPage
