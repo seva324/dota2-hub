@@ -39,11 +39,12 @@ function SectionCard({ title, sub, children }: { title: string; sub?: string; ch
 }
 
 /** Live 比赛详情全屏页：15s 轮询 /api/live-detail，展示比分/经济曲线/建筑/BP/已结束地图。 */
-export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
+export function LiveMatchDetailPage({ seriesId, slug, champ, onBack, onOpenTeam }: {
   seriesId: string;
   slug?: string;
   champ?: string;
   onBack: () => void;
+  onOpenTeam?: (team: { name: string; slug?: string | null }) => void;
 }) {
   const [payload, setPayload] = useState<LiveDetailPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +150,7 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack }: {
           payload={payload}
           activeMap={activeMap}
           onSelectMap={selectMap}
+          onOpenTeam={onOpenTeam}
         />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">

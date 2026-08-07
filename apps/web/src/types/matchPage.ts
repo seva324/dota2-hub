@@ -36,6 +36,7 @@ export interface SeriesTeamStats {
 export interface SeriesTeamInfo {
   id: number | null;
   name: string | null;
+  slug: string | null;
   tag: string | null;
   logo: string | null;
   logoDark: string | null;

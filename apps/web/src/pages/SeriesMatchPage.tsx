@@ -212,6 +212,30 @@ function PlayerRow({ player, side }: { player: SeriesPlayerRow; side: 'left' | '
 
 }
 
+/** 可点击战队跳转（logo + 名字整块点击）；无 onOpenTeam 或队名为空时退化为普通容器。 */
+function TeamButton({ name, slug, onOpenTeam, className, children }: {
+  name: string;
+  slug?: string | null;
+  onOpenTeam?: (team: { name: string; slug?: string | null }) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const clickable = Boolean(name) && Boolean(onOpenTeam);
+  if (!clickable) {
+    return <div className={className}>{children}</div>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenTeam?.({ name, slug })}
+      title={`查看 ${name} 战队资料`}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** 单场比赛块 */
 function GameBlock({
   game,
@@ -219,20 +243,26 @@ function GameBlock({
   secondTeamId,
   firstTeamName,
   secondTeamName,
+  firstTeamSlug,
+  secondTeamSlug,
   firstLogo,
   secondLogo,
   leftPips,
   rightPips,
+  onOpenTeam,
 }: {
   game: SeriesMapBlock;
   firstTeamId: number | null;
   secondTeamId: number | null;
   firstTeamName: string | null;
   secondTeamName: string | null;
+  firstTeamSlug?: string | null;
+  secondTeamSlug?: string | null;
   firstLogo: string | null;
   secondLogo: string | null;
   leftPips: number;
   rightPips: number;
+  onOpenTeam?: (team: { name: string; slug?: string | null }) => void;
 }) {
   // 固定布局：左边永远是 first_team，右边永远是 second_team。
   // 各队在比赛内可能换边，用每局的 radiantTeamId/direTeamId 换算出两边击杀数。
@@ -267,10 +297,16 @@ function GameBlock({
         <span className={`truncate text-sm font-black uppercase text-white md:text-base ${isLeft ? '' : 'text-right'}`}>{name}</span>
       </div>
     );
+    const slug = isLeft ? firstTeamSlug : secondTeamSlug;
     return (
-      <div className={`flex min-w-0 flex-1 items-center gap-1.5 md:gap-3 ${isLeft ? '' : 'justify-end'}`}>
+      <TeamButton
+        name={name || ''}
+        slug={slug}
+        onOpenTeam={onOpenTeam}
+        className={`flex min-w-0 flex-1 items-center gap-1.5 md:gap-3 ${isLeft ? '' : 'justify-end'}`}
+      >
         {isLeft ? <>{logoEl}{textEl}</> : <>{textEl}{logoEl}</>}
-      </div>
+      </TeamButton>
     );
   };
 
@@ -395,10 +431,11 @@ function GameBlock({
   );
 }
 
-export function SeriesMatchPage({ matchId, slug, onBack }: {
+export function SeriesMatchPage({ matchId, slug, onBack, onOpenTeam }: {
   matchId: string;
   slug?: string;
   onBack: () => void;
+  onOpenTeam?: (team: { name: string; slug?: string | null }) => void;
 }) {
   const [payload, setPayload] = useState<MatchPagePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -544,7 +581,12 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
 
         {/* 系列赛总比分 */}
         <div className="flex items-center justify-center gap-6 rounded-2xl border border-white/8 bg-white/[0.03] px-6 py-5">
-          <div className="flex flex-col items-center gap-1">
+          <TeamButton
+            name={first.name || ''}
+            slug={first.slug}
+            onOpenTeam={onOpenTeam}
+            className="flex flex-col items-center gap-1 rounded-xl px-2 py-1 transition-colors hover:bg-white/[0.04]"
+          >
             <SafeImg
               src={firstLogo}
               alt={first.name || ''}
@@ -552,13 +594,18 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
               fallback={<TeamLogoFallback name={first.name || 'A'} size={48} />}
             />
             <span className="max-w-[160px] truncate text-sm font-bold text-white">{first.name}</span>
-          </div>
+          </TeamButton>
           <div className="flex items-center gap-2">
             <span className="text-4xl font-black tabular-nums text-white">{payload.radiantWins}</span>
             <span className="text-2xl font-bold text-slate-500">:</span>
             <span className="text-4xl font-black tabular-nums text-white">{payload.direWins}</span>
           </div>
-          <div className="flex flex-col items-center gap-1">
+          <TeamButton
+            name={second.name || ''}
+            slug={second.slug}
+            onOpenTeam={onOpenTeam}
+            className="flex flex-col items-center gap-1 rounded-xl px-2 py-1 transition-colors hover:bg-white/[0.04]"
+          >
             <SafeImg
               src={secondLogo}
               alt={second.name || ''}
@@ -566,7 +613,7 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
               fallback={<TeamLogoFallback name={second.name || 'B'} size={48} />}
             />
             <span className="max-w-[160px] truncate text-sm font-bold text-white">{second.name}</span>
-          </div>
+          </TeamButton>
         </div>
 
         {/* 每场比赛（倒叙） */}
@@ -578,10 +625,13 @@ export function SeriesMatchPage({ matchId, slug, onBack }: {
             secondTeamId={secondTeamId}
             firstTeamName={first.name}
             secondTeamName={second.name}
+            firstTeamSlug={first.slug}
+            secondTeamSlug={second.slug}
             firstLogo={firstLogo}
             secondLogo={secondLogo}
             leftPips={leftPips}
             rightPips={rightPips}
+            onOpenTeam={onOpenTeam}
           />
         ))}
       </div>

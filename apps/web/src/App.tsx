@@ -49,6 +49,13 @@ function App() {
   const goTo = (target: TopLevelPage) => {
     navigate({ page: target, overlay: null } satisfies RouteState, { replace: false });
   };
+  const handleOpenTeam = (team: { name: string; slug?: string | null }) => {
+    if (!team?.name) return;
+    navigate(
+      { page: 'team', overlay: null, teamName: team.name, teamSlug: team.slug ?? undefined },
+      { replace: false },
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#05090d] text-foreground">
@@ -161,6 +168,7 @@ function App() {
             matchId={route.matchId}
             slug={route.slug}
             onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
+            onOpenTeam={handleOpenTeam}
           />
         ) : page === 'live' && route.seriesId ? (
           <LiveMatchDetailPage
@@ -168,6 +176,7 @@ function App() {
             slug={route.slug}
             champ={route.champ}
             onBack={() => navigate({ page: 'matches', overlay: null }, { replace: false })}
+            onOpenTeam={handleOpenTeam}
           />
         ) : page === 'news' && route.newsId ? (
           <NewsDetailPage
@@ -177,7 +186,7 @@ function App() {
         ) : page === 'news' ? (
           <NewsPage />
         ) : page === 'teams' ? (
-          <TeamsPage />
+          <TeamsPage onOpenTeam={handleOpenTeam} />
         ) : page === 'team' && route.teamName ? (
           <TeamDetailPage
             teamName={route.teamName}

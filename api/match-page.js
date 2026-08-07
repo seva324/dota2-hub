@@ -218,6 +218,7 @@ export default async function handler(req, res) {
         radiant: {
           id: series.radiantTeam?.id ?? null,
           name: series.radiantTeam?.name ?? null,
+          slug: series.radiantTeam?.slug ?? null,
           tag: series.radiantTeam?.tag ?? null,
           logo: proxyUrl(series.radiantTeam?.logo, req),
           logoDark: proxyUrl(series.radiantTeam?.logoDark, req),
@@ -232,6 +233,7 @@ export default async function handler(req, res) {
         dire: {
           id: series.direTeam?.id ?? null,
           name: series.direTeam?.name ?? null,
+          slug: series.direTeam?.slug ?? null,
           tag: series.direTeam?.tag ?? null,
           logo: proxyUrl(series.direTeam?.logo, req),
           logoDark: proxyUrl(series.direTeam?.logoDark, req),
