@@ -136,6 +136,10 @@ function App() {
                 { replace: false },
               );
             }}
+            onOpenMatch={(nav) => {
+              if (!nav) return;
+              navigate({ page: 'match', overlay: null, matchId: nav.matchId, slug: nav.slug }, { replace: false });
+            }}
           />
         ) : page === 'matches' ? (
           <MatchesPage

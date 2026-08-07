@@ -177,8 +177,10 @@
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; color: var(--muted-2);
 }
-.event-detail-root .match-card-foot a { color: var(--muted); transition: color 0.18s ease; }
-.event-detail-root .match-card-foot a:hover { color: #fff; }
+.event-detail-root .match-card-foot a,
+.event-detail-root .match-card-foot button { color: var(--muted); transition: color 0.18s ease; background: none; border: none; padding: 0; font: inherit; cursor: pointer; }
+.event-detail-root .match-card-foot a:hover,
+.event-detail-root .match-card-foot button:hover { color: #fff; }
 
 /* 已结束结果卡片 */
 .event-detail-root .finished-cards {
@@ -191,6 +193,8 @@
   padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
+.event-detail-root .finished-card.clickable { cursor: pointer; }
+.event-detail-root .finished-card.clickable:focus-visible { outline: 2px solid rgba(120,160,255,0.6); outline-offset: 2px; }
 .event-detail-root .finished-card:hover { border-color: rgba(255,255,255,0.24); transform: translateY(-1px); }
 .event-detail-root .finished-card .fc-head {
   display: flex; align-items: center; justify-content: space-between;

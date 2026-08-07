@@ -101,6 +101,20 @@ describe('TeamDetailPage', () => {
     });
   });
 
+  it('links opponent team names to the internal team detail page instead of dltv.org', async () => {
+    render(<TeamDetailPage teamName="Team Alpha" teamId="1" onBack={() => {}} />);
+    await waitFor(() => {
+      const links = screen.getAllByTitle('查看 Team Beta 资料') as HTMLAnchorElement[];
+      expect(links.length).toBeGreaterThan(0);
+      for (const link of links) {
+        // encodeURIComponent 会把空格编码为 %20，与路由 toHash/parseHash 往返一致
+        expect(link.getAttribute('href')).toBe('#/team/Team%20Beta?slug=team-beta');
+        expect(link.getAttribute('href')).not.toContain('dltv.org');
+        expect(link.getAttribute('target')).not.toBe('_blank');
+      }
+    });
+  });
+
   it('shows error state on failed request', async () => {
     __resetApiCache();
     vi.unstubAllGlobals();

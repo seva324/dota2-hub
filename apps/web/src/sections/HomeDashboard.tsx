@@ -8,6 +8,7 @@ import { EmptyState, LiveEmptyState } from '@/components/custom/EmptyState';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { LiveMatchCard, type LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { TournamentCarousel, type PrimaryLeague } from '@/components/custom/TournamentCarousel';
+import { TournamentNameLink } from '@/components/custom/TournamentNameLink';
 import { createMinimalPlayerFlyoutModel, fetchPlayerProfileFlyoutModel } from '@/lib/playerProfile';
 import type { PlayerFlyoutModel } from '@/lib/playerProfile';
 import { slugFromMatchUrl } from '@/lib/matchUrl';
@@ -100,6 +101,7 @@ interface UpcomingMatch {
   tournament_name?: string | null;
   tournament_name_cn?: string | null;
   match_url?: string | null;
+  event_slug?: string | null;
 }
 
 interface FinishedSeries {
@@ -114,6 +116,7 @@ interface FinishedSeries {
   tournament_name?: string | null;
   series_type?: string | null;
   match_url?: string | null;
+  event_slug?: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -292,9 +295,12 @@ function ScheduleCard({ match, isLive, onOpen }: {
         <TeamColumn name={right} logo={match.dire_team_logo} />
       </div>
 
-      <div className="mt-3 line-clamp-1 min-h-4 text-center text-[11px]" style={{ color: '#71717a' }}>
-        {match.tournament_name_cn || match.tournament_name || ''}
-      </div>
+      <TournamentNameLink
+        slug={match.event_slug}
+        name={match.tournament_name_cn || match.tournament_name}
+        className="mt-3 block min-h-4 line-clamp-1 text-center text-[11px] hover:text-slate-300"
+        style={{ color: '#71717a' }}
+      />
 
       <Button
         size="sm"
@@ -357,9 +363,18 @@ function ResultCard({ match, onOpen }: {
         />
       </div>
 
-      <div className="mt-3 min-h-4 truncate text-center text-[11px]" style={{ color: '#71717a' }}>
-        {match.tournament_name || formatTimeAgo(match.start_time)}
-      </div>
+      {match.tournament_name ? (
+        <TournamentNameLink
+          slug={match.event_slug}
+          name={match.tournament_name}
+          className="mt-3 block min-h-4 truncate text-center text-[11px] hover:text-slate-300"
+          style={{ color: '#71717a' }}
+        />
+      ) : (
+        <div className="mt-3 min-h-4 truncate text-center text-[11px]" style={{ color: '#71717a' }}>
+          {formatTimeAgo(match.start_time)}
+        </div>
+      )}
     </button>
   );
 }

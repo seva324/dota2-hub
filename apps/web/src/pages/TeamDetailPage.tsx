@@ -120,6 +120,12 @@ function stamp(t?: string): string {
   return t ? new Date(t).toLocaleString('zh-CN', { hour12: false }) : '—';
 }
 
+/** 站内战队详情页 hash：#/team/<name>?slug=<DLTV slug>（有 slug 时精确匹配）。 */
+function teamDetailHash(name?: string | null, slug?: string | null): string {
+  const base = `#/team/${encodeURIComponent(String(name || ''))}`;
+  return slug ? `${base}?slug=${encodeURIComponent(String(slug))}` : base;
+}
+
 export interface TeamDetailPageProps {
   teamName: string;
   teamId?: string;
@@ -427,7 +433,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                       <span className="nm-vs-txt">VS</span>
                       <span className="nm-format">{D.nextMatch.format || 'BO3'}</span>
                     </div>
-                    <a className="nm-team" href={`https://dltv.org/teams/${D.nextMatch.opponentSlug || ''}`} target="_blank" rel="noopener" title={`查看 ${D.nextMatch.opponent} 资料`}>
+                    <a className="nm-team" href={teamDetailHash(D.nextMatch.opponent, D.nextMatch.opponentSlug)} title={`查看 ${D.nextMatch.opponent} 资料`}>
                       {D.nextMatch.opponentLogo ? <img src={D.nextMatch.opponentLogo} alt={`${D.nextMatch.opponent} 队标`} /> : <span style={{ fontSize: 32, fontWeight: 900, color: 'var(--muted)' }}>?</span>}
                       <span className="nm-name">{D.nextMatch.opponent}</span>
                       <span className="nm-sub">{D.nextMatch.format}</span>
@@ -488,7 +494,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                 {D.h2h && D.h2h.length ? D.h2h.slice(0, 5).map((h) => {
                   const won = h.mapsWon > h.mapsLost;
                   return (
-                    <a key={h.slug} className={`h2h-card ${won ? 'win' : 'lose'}`} href={`https://dltv.org/teams/${h.slug}`} target="_blank" rel="noopener" title={`查看 ${h.opponent} 资料`}>
+                    <a key={h.slug} className={`h2h-card ${won ? 'win' : 'lose'}`} href={teamDetailHash(h.opponent, h.slug)} title={`查看 ${h.opponent} 资料`}>
                       {h.logo ? <img src={h.logo} alt={`${h.opponent} 队标`} /> : <div style={{ height: 48 }} />}
                       <div className="h-name">{h.opponent}</div>
                       <div className="h-sub">{h.series} 系列赛{h.last ? ` · 最近 ${h.last}` : ''}</div>
@@ -650,7 +656,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                       <tr key={i} className={m.won ? '' : 'losing'}>
                         <td>{(m.date || '').slice(5).replace('-', '/')}</td>
                         <td>
-                          <a className="opp-cell" href={`https://dltv.org/teams/${m.oppSlug || ''}`} target="_blank" rel="noopener" title={`查看 ${m.opponent} 资料`}>
+                          <a className="opp-cell" href={teamDetailHash(m.opponent, m.oppSlug)} title={`查看 ${m.opponent} 资料`}>
                             {m.oppLogo && <img src={m.oppLogo} alt="" />}
                             <b>{m.opponent}</b>
                           </a>

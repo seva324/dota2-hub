@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { findTeamRow, isTeamInRegion, resolveTeamLogo } from '@/lib/teams';
 import { apiFetch } from '@/lib/api-cache';
+import { TournamentNameLink } from '@/components/custom/TournamentNameLink';
 
 
 
@@ -24,6 +25,7 @@ interface Match {
   status?: string;
   tournament_name: string;
   tournament_name_cn?: string;
+  event_slug?: string;
 }
 
 interface UpcomingSectionProps {
@@ -451,7 +453,7 @@ export function UpcomingSection({
                                   <Trophy className={`w-4 h-4 ${hasCN ? 'text-red-400' : 'text-blue-400'}`} />
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-sm font-medium text-slate-200 truncate">{match.tournament_name}</div>
+                                  <TournamentNameLink slug={match.event_slug} name={match.tournament_name} className="block truncate text-sm font-medium text-slate-200 hover:text-slate-100" />
                                   <div className="text-xs text-slate-500">{match.series_type}</div>
                                 </div>
                               </div>

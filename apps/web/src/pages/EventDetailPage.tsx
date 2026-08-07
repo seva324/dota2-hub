@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { resolveTeamLogo } from '@/lib/teams';
+import { seriesIdAndSlugFromMatchUrl } from '@/lib/matchUrl';
 import './event-detail.css';
 
 /* ------------------------------------------------------------------ */
@@ -324,16 +325,19 @@ function MatchCard({
   live,
   rounds,
   onOpenTeam,
+  onOpenMatch,
   teamSlugMap,
 }: {
   match: MatchRow;
   live?: boolean;
   rounds?: PlayoffRound[];
   onOpenTeam?: (team: TeamLinkTarget) => void;
+  onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
   teamSlugMap?: Record<string, string>;
 }) {
   const parts = match.center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
   const { stage, bo } = matchStage(rounds, match.url);
+  const matchNav = seriesIdAndSlugFromMatchUrl(match.url);
   return (
     <article className="match-card">
       <div className="match-card-top">
@@ -384,10 +388,10 @@ function MatchCard({
       </div>
       <div className="match-card-foot">
         <span>{live ? '直播进行中' : '未开赛'}</span>
-        {match.url ? (
-          <a href={match.url} target="_blank" rel="noopener noreferrer">
+        {matchNav && onOpenMatch ? (
+          <button type="button" onClick={() => onOpenMatch(matchNav)}>
             查看详情 →
-          </a>
+          </button>
         ) : (
           <span>查看详情 →</span>
         )}
@@ -399,10 +403,12 @@ function MatchCard({
 function MatchesSection({
   payload,
   onOpenTeam,
+  onOpenMatch,
   teamSlugMap,
 }: {
   payload: EventDetailPayload;
   onOpenTeam?: (team: TeamLinkTarget) => void;
+  onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
   teamSlugMap?: Record<string, string>;
 }) {
   const liveMatches = (payload.matches?.matches || []).filter((m) => m.isLive);
@@ -417,7 +423,7 @@ function MatchesSection({
           <SectionHead title="关联直播" eyebrow="Live Now" />
           <div className="matches-scroll">
             {liveMatches.map((m) => (
-              <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
+              <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
             ))}
           </div>
         </section>
@@ -427,7 +433,7 @@ function MatchesSection({
           <SectionHead title="即将开赛" eyebrow="Upcoming" bar="blue" />
           <div className="matches-scroll">
             {upcomingMatches.map((m) => (
-              <MatchCard key={`${m.left}-${m.right}`} match={m} rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
+              <MatchCard key={`${m.left}-${m.right}`} match={m} rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
             ))}
           </div>
         </section>
@@ -971,10 +977,12 @@ const FINISHED_CARD_MIN = 244;
 function FinishedSection({
   finished,
   onOpenTeam,
+  onOpenMatch,
   teamSlugMap,
 }: {
   finished: MatchRow[];
   onOpenTeam?: (team: TeamLinkTarget) => void;
+  onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
   teamSlugMap?: Record<string, string>;
 }) {
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -1021,8 +1029,16 @@ function FinishedSection({
       <div className="finished-cards" ref={listRef}>
         {all.slice(0, shown).map((mm) => {
           const { p1, p2, lw, rw } = scoreOf(mm);
+          const nav = seriesIdAndSlugFromMatchUrl(mm.url);
           return (
-            <div className="finished-card" key={`${mm.left}-${mm.right}-${mm.center}`}>
+            <div
+              className={`finished-card ${nav && onOpenMatch ? 'clickable' : ''}`}
+              key={`${mm.left}-${mm.right}-${mm.center}`}
+              role={nav && onOpenMatch ? 'button' : undefined}
+              tabIndex={nav && onOpenMatch ? 0 : undefined}
+              onClick={nav && onOpenMatch ? () => onOpenMatch(nav) : undefined}
+              onKeyDown={nav && onOpenMatch ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenMatch(nav); } } : undefined}
+            >
               <div className="fc-head">
                 <span className="done">已结束</span>
               </div>
@@ -1089,10 +1105,12 @@ export function EventDetailPage({
   slug,
   onBack,
   onOpenTeam,
+  onOpenMatch,
 }: {
   slug: string;
   onBack?: () => void;
   onOpenTeam?: (team: TeamLinkTarget) => void;
+  onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
 }) {
   const [payload, setPayload] = useState<EventDetailPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1166,13 +1184,13 @@ export function EventDetailPage({
         <>
           <HeroSection payload={payload} />
           <AboutSection about={payload.about} />
-          <MatchesSection payload={payload} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
+          <MatchesSection payload={payload} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
           <GroupStageSection groups={payload.groups} onOpenTeam={onOpenTeam} />
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
           <StatsSection />
           <ParticipantsSection participants={payload.participants} onOpenTeam={onOpenTeam} />
-          <FinishedSection finished={payload.matches?.finishedMatches || []} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
+          <FinishedSection finished={payload.matches?.finishedMatches || []} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
           {payload.source ? (
             <p className="text-center text-[11px] text-slate-600">数据来源 DLTV · {payload.source}</p>
           ) : null}
