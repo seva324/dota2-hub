@@ -35,6 +35,7 @@ test('buildReviewPrompt includes EN source, ZH translation, glossary, and checkl
   assert.match(prompt, /术语译法/);
   assert.match(prompt, /专有名词/);
   assert.match(prompt, /内容保真/);
+  assert.match(prompt, /摘要保真/);
   assert.match(prompt, /body_corrections/);
 });
 
