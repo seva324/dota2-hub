@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
 import { resolveTeamLogo } from '@/lib/teams';
 import { seriesIdAndSlugFromMatchUrl } from '@/lib/matchUrl';
+import { LiveMatchCard, type LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import './event-detail.css';
 
 /* ------------------------------------------------------------------ */
@@ -400,31 +401,45 @@ function MatchCard({
   );
 }
 
+/** 关联直播里的 LiveMatchCard 固定宽度，与 match-card（340px）在 matches-scroll 里对齐。 */
+const LIVE_CARD_SNAP = { flex: '0 0 340px', scrollSnapAlign: 'start' as const };
+
 function MatchesSection({
   payload,
+  relatedLive,
   onOpenTeam,
   onOpenMatch,
+  onOpenLive,
   teamSlugMap,
 }: {
   payload: EventDetailPayload;
+  relatedLive: LiveHeroPayload[];
   onOpenTeam?: (team: TeamLinkTarget) => void;
   onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
+  onOpenLive?: (hero: LiveHeroPayload) => void;
   teamSlugMap?: Record<string, string>;
 }) {
-  const liveMatches = (payload.matches?.matches || []).filter((m) => m.isLive);
+  // 关联直播优先用 hawk.live 的实时卡片（可进 live detail）；hawk.live 未覆盖时回退 DLTV 页面的 isLive 行。
+  const dltvLiveRows = (payload.matches?.matches || []).filter((m) => m.isLive);
+  const hasRelatedLive = relatedLive.length > 0 || dltvLiveRows.length > 0;
   const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive);
-  const hasLive = liveMatches.length > 0;
   const hasUpcoming = upcomingMatches.length > 0;
-  if (!hasLive && !hasUpcoming) return null;
+  if (!hasRelatedLive && !hasUpcoming) return null;
   return (
     <>
-      {hasLive ? (
+      {hasRelatedLive ? (
         <section className="section" aria-label="关联直播">
           <SectionHead title="关联直播" eyebrow="Live Now" />
           <div className="matches-scroll">
-            {liveMatches.map((m) => (
-              <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
-            ))}
+            {relatedLive.length > 0
+              ? relatedLive.map((hero) => (
+                  <div key={`${hero.sourceSeriesId}-${hero.teams?.[0]?.name}-${hero.teams?.[1]?.name}`} style={LIVE_CARD_SNAP}>
+                    <LiveMatchCard hero={hero} onOpen={() => onOpenLive?.(hero)} />
+                  </div>
+                ))
+              : dltvLiveRows.map((m) => (
+                  <MatchCard key={`${m.left}-${m.right}-${m.center}`} match={m} live rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
+                ))}
           </div>
         </section>
       ) : null}
@@ -1106,15 +1121,18 @@ export function EventDetailPage({
   onBack,
   onOpenTeam,
   onOpenMatch,
+  onOpenLive,
 }: {
   slug: string;
   onBack?: () => void;
   onOpenTeam?: (team: TeamLinkTarget) => void;
   onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
+  onOpenLive?: (hero: LiveHeroPayload) => void;
 }) {
   const [payload, setPayload] = useState<EventDetailPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1146,6 +1164,24 @@ export function EventDetailPage({
     };
   }, [slug]);
 
+  // 关联直播数据源与首页一致（/api/live-hero，hawk.live）。短缓存，返回赛事详情时命中即显。
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<{ liveMatches?: LiveHeroPayload[]; live?: LiveHeroPayload }>('/api/live-hero', {
+      ttlMs: 20_000,
+      cacheEmpty: false,
+    })
+      .then((data) => {
+        if (cancelled) return;
+        const list = Array.isArray(data?.liveMatches) ? data.liveMatches : data?.live ? [data.live] : [];
+        setLiveHeroes(list);
+      })
+      .catch(() => { /* 保留空态，不阻塞赛事详情 */ });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // name → DLTV slug 映射：bracket/已结束/直播卡片只有队名没有 teamUrl，用此映射补充精确 slug。
   const teamSlugMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -1161,6 +1197,36 @@ export function EventDetailPage({
     }
     return map;
   }, [payload]);
+
+  // 本赛事涉及的全部战队名（participants + 关联直播/已结束行的对阵），用于把 hawk.live 的实时场次归属到本赛事。
+  const eventTeams = useMemo(() => {
+    const names = new Set<string>();
+    const add = (value?: string | null) => {
+      const normalized = String(value || '').trim().toLowerCase();
+      if (normalized) names.add(normalized);
+    };
+    for (const p of payload?.participants || []) add(p.name);
+    for (const m of payload?.matches?.matches || []) {
+      add(m.left);
+      add(m.right);
+    }
+    for (const m of payload?.matches?.finishedMatches || []) {
+      add(m.left);
+      add(m.right);
+    }
+    return names;
+  }, [payload]);
+
+  // 关联直播：hawk.live 实时场次中，两队都属于本赛事 → 展示为首页同款 LiveMatchCard（点击进 live detail）。
+  const relatedLive = useMemo(() => {
+    if (eventTeams.size === 0) return [];
+    return liveHeroes.filter((hero) => {
+      const teams = (hero.teams || [])
+        .map((t) => String(t.name || '').trim().toLowerCase())
+        .filter(Boolean);
+      return teams.length >= 2 && teams.every((t) => eventTeams.has(t));
+    });
+  }, [liveHeroes, eventTeams]);
 
   return (
     <div className="event-detail-root mx-auto w-full max-w-[1280px] px-4 pb-16 pt-24 lg:px-6">
@@ -1184,7 +1250,7 @@ export function EventDetailPage({
         <>
           <HeroSection payload={payload} />
           <AboutSection about={payload.about} />
-          <MatchesSection payload={payload} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
+          <MatchesSection payload={payload} relatedLive={relatedLive} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} onOpenLive={onOpenLive} teamSlugMap={teamSlugMap} />
           <GroupStageSection groups={payload.groups} onOpenTeam={onOpenTeam} />
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
