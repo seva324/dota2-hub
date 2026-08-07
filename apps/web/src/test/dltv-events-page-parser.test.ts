@@ -28,6 +28,106 @@ function buildCardHtml({ title, href, live, startDate, endDate, dateAttr }) {
   `;
 }
 
+function buildOngoingTableHtml({ title, href, startDate, endDate, location, tier, prize }) {
+  return `
+    <section class="ongoing__events">
+      <div class="card">
+        <div class="card__title">Ongoing events</div>
+        <div class="card__body">
+          <div class="table">
+            <div class="table-body">
+              <a href="${href}" class="table__body-row">
+                <div class="table__body-row__cell width-10 width-m-20">
+                  <div class="cell__num">
+                    <span data-moment="MMM DD">${startDate}</span>
+                    - <span data-moment="MMM DD">${endDate}</span>
+                  </div>
+                </div>
+                <div class="table__body-row__cell width-28 width-m-80">
+                  <div class="cell__logo" data-theme-light="/uploads/events/small/x.png"></div>
+                  <div class="cell__name">${title}</div>
+                </div>
+                <div class="table__body-row__cell center width-10 mobile-none">
+                  <div class="cell__text">${location}</div>
+                </div>
+                <div class="table__body-row__cell center width-10 mobile-none">
+                  <div class="cell__text">Online</div>
+                </div>
+                <div class="table__body-row__cell center width-10 mobile-none">
+                  <div class="cell__text">${tier}</div>
+                </div>
+                <div class="table__body-row__cell center width-10 mobile-none">
+                  <div class="cell__text">${prize}</div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+describe('parseDltvEventsPageRaw ongoing table (DLTV 2026-08 markup)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-07T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('parses the dedicated ongoing events table as ongoing', () => {
+    const raw = buildOngoingTableHtml({
+      title: 'EPL Masters 1',
+      href: 'https://dltv.org/events/epl-masters-1',
+      startDate: '2026-07-26 00:00:00',
+      endDate: '2026-08-12 00:00:00',
+      location: 'Europe',
+      tier: 'B-Tier',
+      prize: '$100,000',
+    });
+
+    const [entry] = parseDltvEventsPageRaw(raw, 'ongoing');
+    expect(entry).toMatchObject({
+      title: 'EPL Masters 1',
+      status: 'ongoing',
+      live: true,
+      location: 'Europe',
+      tier: 'B',
+      prizePool: '$100,000',
+    });
+    expect(entry.startTime).toBeGreaterThan(0);
+    expect(entry.endTime).toBeGreaterThan(entry.startTime);
+  });
+
+  it('prefers ongoing-table status over an upcoming card for the same event', () => {
+    const raw = `
+      ${buildCardHtml({
+        title: 'Lunar Horse Trophy 8',
+        href: 'https://dltv.org/events/lunar-horse-trophy-8',
+        live: false,
+        startDate: '2026-07-19 00:00:00',
+        endDate: '2026-08-12 00:00:00',
+        dateAttr: 'data-moment',
+      })}
+      ${buildOngoingTableHtml({
+        title: 'Lunar Horse Trophy 8',
+        href: 'https://dltv.org/events/lunar-horse-trophy-8',
+        startDate: '2026-07-19 00:00:00',
+        endDate: '2026-08-12 00:00:00',
+        location: 'SEA',
+        tier: 'C-Tier',
+        prize: '$15,000',
+      })}
+    `;
+
+    const [entry] = parseDltvEventsPageRaw(raw, 'ongoing');
+    expect(entry).toMatchObject({ title: 'Lunar Horse Trophy 8', status: 'ongoing' });
+  });
+});
+
 describe('parseDltvEventsPageRaw status derivation (LIVE badge priority)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
