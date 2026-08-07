@@ -37,6 +37,14 @@ const MEDALS = {
 
 type MedalKey = keyof typeof MEDALS;
 
+/** 从 DLTV 战队 URL（/teams/<slug>）提取 slug。 */
+function slugFromTeamUrl(url?: string | null): string | null {
+  const match = String(url || '').match(/\/teams\/([^/?#]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+type OpenTeamHandler = (team: { name: string; slug?: string | null }) => void;
+
 function formatUpdatedAt(ts?: number): string {
   if (typeof ts !== 'number' || !Number.isFinite(ts)) return '';
   return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -70,10 +78,11 @@ function PlayerAvatar({ player, teamName, px = 40, onSelect }: {
   );
 }
 
-function PodiumCard({ team, medal, onSelectPlayer }: {
+function PodiumCard({ team, medal, onSelectPlayer, onOpenTeam }: {
   team: RankingTeam;
   medal: MedalKey;
   onSelectPlayer: (teamName: string, player: RankingPlayer) => void;
+  onOpenTeam?: OpenTeamHandler;
 }) {
   const champion = medal === 'gold';
   const { color, label } = MEDALS[medal];
@@ -97,18 +106,25 @@ function PodiumCard({ team, medal, onSelectPlayer }: {
       >
         {team.rank}
       </div>
-      <SafeImg
-        src={toCnAssetUrl(team.logo)}
-        alt={`${team.name} logo`}
-        className={champion ? 'size-16 object-contain md:size-20' : 'size-12 object-contain md:size-14'}
-        fallback={<TeamLogoFallback name={team.name} size={champion ? 64 : 48} />}
-      />
-      <h2
-        className={champion ? 'max-w-full truncate text-xl tracking-wide text-white md:text-2xl' : 'max-w-full truncate text-lg tracking-wide text-white'}
-        style={RANK_FONT}
+      <button
+        type="button"
+        onClick={() => onOpenTeam?.({ name: team.name, slug: slugFromTeamUrl(team.teamUrl) })}
+        title={`查看 ${team.name} 战队资料`}
+        className="flex flex-col items-center gap-2 rounded-xl px-3 py-1 transition-colors hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400/60"
       >
-        {team.name}
-      </h2>
+        <SafeImg
+          src={toCnAssetUrl(team.logo)}
+          alt={`${team.name} logo`}
+          className={champion ? 'size-16 object-contain md:size-20' : 'size-12 object-contain md:size-14'}
+          fallback={<TeamLogoFallback name={team.name} size={champion ? 64 : 48} />}
+        />
+        <h2
+          className={champion ? 'max-w-full truncate text-xl tracking-wide text-white md:text-2xl' : 'max-w-full truncate text-lg tracking-wide text-white'}
+          style={RANK_FONT}
+        >
+          {team.name}
+        </h2>
+      </button>
       <div className="flex items-center gap-2">
         {team.players.map((player) => (
           <PlayerAvatar key={player.name} player={player} teamName={team.name} px={champion ? 44 : 40} onSelect={onSelectPlayer} />
@@ -118,22 +134,30 @@ function PodiumCard({ team, medal, onSelectPlayer }: {
   );
 }
 
-function TeamRow({ team, onSelectPlayer }: {
+function TeamRow({ team, onSelectPlayer, onOpenTeam }: {
   team: RankingTeam;
   onSelectPlayer: (teamName: string, player: RankingPlayer) => void;
+  onOpenTeam?: OpenTeamHandler;
 }) {
   return (
     <li className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-2xl border border-white/5 bg-[#0A1623]/50 px-4 py-3 transition-colors hover:border-white/10 hover:bg-[#0A1623]">
       <span className="w-8 shrink-0 text-center text-lg leading-none text-slate-300" style={RANK_FONT}>
         {team.rank}
       </span>
-      <SafeImg
-        src={toCnAssetUrl(team.logo)}
-        alt={`${team.name} logo`}
-        className="size-9 shrink-0 object-contain"
-        fallback={<TeamLogoFallback name={team.name} size={36} />}
-      />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{team.name}</span>
+      <button
+        type="button"
+        onClick={() => onOpenTeam?.({ name: team.name, slug: slugFromTeamUrl(team.teamUrl) })}
+        title={`查看 ${team.name} 战队资料`}
+        className="flex min-w-0 items-center gap-3 rounded-lg py-0.5 pr-1 transition-colors hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400/60"
+      >
+        <SafeImg
+          src={toCnAssetUrl(team.logo)}
+          alt={`${team.name} logo`}
+          className="size-9 shrink-0 object-contain"
+          fallback={<TeamLogoFallback name={team.name} size={36} />}
+        />
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{team.name}</span>
+      </button>
       <div className="order-last flex basis-full items-center justify-end gap-1.5 md:order-none md:basis-auto">
         {team.players.map((player) => (
           <PlayerAvatar key={player.name} player={player} teamName={team.name} px={36} onSelect={onSelectPlayer} />
@@ -193,7 +217,7 @@ function PlayerDialog({ teamName, player, onClose }: {
   );
 }
 
-export function TeamsPage() {
+export function TeamsPage({ onOpenTeam }: { onOpenTeam?: OpenTeamHandler }) {
   const [teams, setTeams] = useState<RankingTeam[]>([]);
   const [updatedAt, setUpdatedAt] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -302,14 +326,14 @@ export function TeamsPage() {
               const medal: MedalKey = index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze';
               return (
                 <div key={team.rank} className={index === 0 ? 'md:order-2' : index === 1 ? 'md:order-1' : 'md:order-3'}>
-                  <PodiumCard team={team} medal={medal} onSelectPlayer={(teamName, player) => setSelected({ teamName, player })} />
+                  <PodiumCard team={team} medal={medal} onSelectPlayer={(teamName, player) => setSelected({ teamName, player })} onOpenTeam={onOpenTeam} />
                 </div>
               );
             })}
           </div>
           <ul className="grid gap-3 md:grid-cols-2">
             {rest.map((team) => (
-              <TeamRow key={team.rank} team={team} onSelectPlayer={(teamName, player) => setSelected({ teamName, player })} />
+              <TeamRow key={team.rank} team={team} onSelectPlayer={(teamName, player) => setSelected({ teamName, player })} onOpenTeam={onOpenTeam} />
             ))}
           </ul>
           {hasMore && (

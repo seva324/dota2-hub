@@ -52,15 +52,17 @@ function WinChips({ wins }: { wins: number }) {
   );
 }
 
-function TeamBlock({ team, side, wins }: {
+function TeamBlock({ team, side, wins, onOpenTeam }: {
   team: { name?: string | null; id?: string | null; logoUrl?: string | null };
   side: 'Radiant' | 'Dire';
   wins: number;
+  onOpenTeam?: (team: { name: string }) => void;
 }) {
   const name = team.name || 'TBD';
   const logo = resolveTeamLogo({ name, teamId: team.id }, [], team.logoUrl);
-  return (
-    <div className="flex min-w-0 flex-col items-center gap-2">
+  const clickable = Boolean(team.name) && Boolean(onOpenTeam);
+  const inner = (
+    <>
       <SafeImg
         src={logo || ''}
         alt={name}
@@ -72,15 +74,29 @@ function TeamBlock({ team, side, wins }: {
         {side}
       </span>
       <WinChips wins={wins} />
-    </div>
+    </>
+  );
+  if (!clickable) {
+    return <div className="flex min-w-0 flex-col items-center gap-2">{inner}</div>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onOpenTeam?.({ name: team.name as string })}
+      title={`查看 ${name} 战队资料`}
+      className="flex min-w-0 flex-col items-center gap-2 rounded-xl px-2 py-1 transition-colors hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400/60"
+    >
+      {inner}
+    </button>
   );
 }
 
 /** Live 详情比分头：地图切换 + 比分 + 天辉在左/夜魇在右 + 胜场点 + 实时领先条。队标走镜像、兜底 hawk.live。 */
-export function LiveScoreHeader({ payload, activeMap, onSelectMap }: {
+export function LiveScoreHeader({ payload, activeMap, onSelectMap, onOpenTeam }: {
   payload: LiveDetailPayload;
   activeMap: LiveMap;
   onSelectMap: (number: number) => void;
+  onOpenTeam?: (team: { name: string }) => void;
 }) {
   const isTeam1Radiant = activeMap.isTeam1Radiant;
   const radiantTeam = isTeam1Radiant ? payload.team1 : payload.team2;
@@ -138,7 +154,7 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap }: {
 
       {/* 天辉（左）| 比分 | 夜魇（右） */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
-        <TeamBlock team={radiantTeam} side="Radiant" wins={radiantWins} />
+        <TeamBlock team={radiantTeam} side="Radiant" wins={radiantWins} onOpenTeam={onOpenTeam} />
 
         {/* 中央比分 */}
         <div className="flex flex-col items-center px-2">
@@ -166,7 +182,7 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap }: {
           </div>
         </div>
 
-        <TeamBlock team={direTeam} side="Dire" wins={direWins} />
+        <TeamBlock team={direTeam} side="Dire" wins={direWins} onOpenTeam={onOpenTeam} />
       </div>
 
       {/* 实时领先条（仅直播局） */}
