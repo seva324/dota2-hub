@@ -113,4 +113,30 @@ describe('EventDetailPage navigation', () => {
     expect(onOpenLive).toHaveBeenCalledTimes(1);
     expect(onOpenLive).toHaveBeenCalledWith(expect.objectContaining({ sourceSeriesId: '98930' }));
   });
+
+  it('falls back to the DLTV live row when live-hero has no matching match (after live loads)', async () => {
+    const payloadWithLive = {
+      ...PAYLOAD,
+      matches: {
+        matches: [
+          { url: 'https://dltv.org/matches/333/team-e-vs-team-f-test-event', left: 'Team E', center: '1 - 1', right: 'Team F', isLive: true },
+        ],
+        finishedMatches: [],
+      },
+    };
+    __resetApiCache();
+    vi.unstubAllGlobals();
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/event-detail')) return createJsonResponse(payloadWithLive);
+      if (url.startsWith('/api/live-hero')) return createJsonResponse({ liveMatches: [] });
+      return createJsonResponse({});
+    }));
+    renderEventDetail();
+    // live-hero 加载完成(空)后才回退到 DLTV isLive 行,渲染 live 卡片
+    await waitFor(() => {
+      expect(screen.getByText('直播进行中')).toBeTruthy();
+    });
+    expect(screen.getByRole('button', { name: /查看详情/ })).toBeTruthy();
+  });
 });

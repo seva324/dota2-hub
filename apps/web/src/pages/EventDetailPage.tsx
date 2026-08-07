@@ -407,6 +407,7 @@ const LIVE_CARD_SNAP = { flex: '0 0 340px', scrollSnapAlign: 'start' as const };
 function MatchesSection({
   payload,
   relatedLive,
+  liveLoaded,
   onOpenTeam,
   onOpenMatch,
   onOpenLive,
@@ -414,14 +415,15 @@ function MatchesSection({
 }: {
   payload: EventDetailPayload;
   relatedLive: LiveHeroPayload[];
+  liveLoaded: boolean;
   onOpenTeam?: (team: TeamLinkTarget) => void;
   onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
   onOpenLive?: (hero: LiveHeroPayload) => void;
   teamSlugMap?: Record<string, string>;
 }) {
-  // 关联直播优先用 hawk.live 的实时卡片（可进 live detail）；hawk.live 未覆盖时回退 DLTV 页面的 isLive 行。
+  // 关联直播优先用 hawk.live 的实时卡片（可进 live detail）；hawk.live 已加载但仍未覆盖时回退 DLTV 页面的 isLive 行。
   const dltvLiveRows = (payload.matches?.matches || []).filter((m) => m.isLive);
-  const hasRelatedLive = relatedLive.length > 0 || dltvLiveRows.length > 0;
+  const hasRelatedLive = relatedLive.length > 0 || (liveLoaded && dltvLiveRows.length > 0);
   const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive);
   const hasUpcoming = upcomingMatches.length > 0;
   if (!hasRelatedLive && !hasUpcoming) return null;
@@ -1133,6 +1135,7 @@ export function EventDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [liveHeroes, setLiveHeroes] = useState<LiveHeroPayload[]>([]);
+  const [liveLoaded, setLiveLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1175,8 +1178,12 @@ export function EventDetailPage({
         if (cancelled) return;
         const list = Array.isArray(data?.liveMatches) ? data.liveMatches : data?.live ? [data.live] : [];
         setLiveHeroes(list);
+        setLiveLoaded(true);
       })
-      .catch(() => { /* 保留空态，不阻塞赛事详情 */ });
+      .catch(() => {
+        if (cancelled) return;
+        setLiveLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -1250,7 +1257,7 @@ export function EventDetailPage({
         <>
           <HeroSection payload={payload} />
           <AboutSection about={payload.about} />
-          <MatchesSection payload={payload} relatedLive={relatedLive} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} onOpenLive={onOpenLive} teamSlugMap={teamSlugMap} />
+          <MatchesSection payload={payload} relatedLive={relatedLive} liveLoaded={liveLoaded} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} onOpenLive={onOpenLive} teamSlugMap={teamSlugMap} />
           <GroupStageSection groups={payload.groups} onOpenTeam={onOpenTeam} />
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
