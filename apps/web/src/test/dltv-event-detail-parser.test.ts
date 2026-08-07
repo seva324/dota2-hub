@@ -56,7 +56,7 @@ function matchesHtml() {
         ${matchRow(
           'https://dltv.org/matches/427521/power-rangers-vs-team-jenz-epl-masters-1',
           'PR', '/l3.png',
-          '<div class="score">2 - 1</div>',
+          '<div class="score"><span class="text-default" data-moment="HH:mm">2026-08-07 15:00:00</span></div>',
           'Jenz', '/r3.png',
         )}
       </table>
@@ -155,5 +155,31 @@ describe('dltv-event-detail-parser 战队 slug 还原', () => {
     expect(match.teams[0].slug).toBe('no-hoodwink');
     expect(match.teams[1].name).toBe('Zero Tenacity');
     expect(match.teams[1].slug).toBe('zero-tenacity');
+  });
+});
+
+describe('dltv-event-detail-parser 已结束/upcoming 切分', () => {
+  it('无 "Finished matches" 标记时按行内容归类（比分行→finished）', () => {
+    // 模拟生产环境抓到的 HTML：缺少 finished 切分标记，比分行混在表里
+    const html = `<h1>X</h1>${participantsHtml()}
+      <section class="matches__scores"><div class="card">
+        <table class="matches__scores-table">
+          ${matchRow('https://dltv.org/matches/427538/no-hoodwink-vs-zero-tenacity-epl-masters-1', 'NoHood', '/l1.png', '<div class="score"><span class="text-default" data-moment="HH:mm">2026-08-07 09:00:00</span></div>', 'Z10', '/r1.png')}
+          ${matchRow('https://dltv.org/matches/427534/re-arise-vs-zero-tenacity-epl-masters-1', 'RE.Arise', '/l4.png', '<div class="score">0 - 2</div>', 'Z10', '/r2.png')}
+        </table>
+      </div></section>`;
+    const payload = parseDltvEventDetailPage(html, 'x');
+    expect(payload.matches.matches.map((m) => m.left)).toEqual(['No Hoodwink']);
+    expect(payload.matches.finishedMatches.map((m) => m.left)).toEqual(['RE Arise']);
+  });
+
+  it('按 match URL 去重重复行（DLTV 重复渲染的表格）', () => {
+    const row = matchRow('https://dltv.org/matches/427534/re-arise-vs-zero-tenacity-epl-masters-1', 'RE.Arise', '/l4.png', '<div class="score">0 - 2</div>', 'Z10', '/r2.png');
+    const html = `<h1>X</h1>${participantsHtml()}
+      <section class="matches__scores"><div class="card">
+        <table class="matches__scores-table">${row}${row}</table>
+      </div></section>`;
+    const payload = parseDltvEventDetailPage(html, 'x');
+    expect(payload.matches.finishedMatches.length).toBe(1);
   });
 });
