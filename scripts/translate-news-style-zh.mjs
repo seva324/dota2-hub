@@ -19,6 +19,7 @@ import {
   stripMarkdownEmphasis,
 } from '../lib/news-translation-cleanup.js';
 import { evaluateAutoPostSafety, isLocalLlmProvider, TRANSLATION_STATUS_COMPLETED } from '../lib/news-posting-guards.js';
+import { reviewTranslation } from '../lib/translation-review.js';
 
 const DB_URL =
   process.env.DATABASE_URL_UNPOOLED ||
@@ -77,6 +78,9 @@ const FORCE = ['1', 'true', 'yes', 'on'].includes(String(arg('force', 'false')).
 const XHS_AUTO_POST = ['1', 'true', 'yes', 'on'].includes(String(process.env.XHS_AUTO_POST || '').toLowerCase());
 const TARGET_IDS = Array.from(new Set(getArgs('id').map((x) => String(x).trim()).filter(Boolean)));
 const RECENT_CUTOFF_SECONDS = Math.floor(Date.now() / 1000) - (RECENT_DAYS * 24 * 60 * 60);
+const REVIEW_ENABLED =
+  !args.includes('--no-review') &&
+  !['0', 'false', 'no', 'off'].includes(String(process.env.NEWS_TRANSLATE_REVIEW || '1').toLowerCase());
 const AUTO_POST_REQUIRES_LOCAL_MODEL = isLocalLlmProvider(TRANSLATION_PROVIDER);
 
 function isTransientDbError(error) {
@@ -894,11 +898,15 @@ function buildRowUpdateMeta(row, zh) {
       || hasUsableChineseBody(zh.content_markdown_zh || zh.content_zh || '', sourceBody))
     : true;
   const anyDone = titleDone || summaryDone || bodyDone;
-  const status = titleDone && summaryDone && bodyDone
-    ? TRANSLATION_STATUS_COMPLETED
-    : anyDone
-      ? TRANSLATION_STATUS_PARTIAL
-      : TRANSLATION_STATUS_PENDING;
+  const needsReview = Boolean(zh?.needs_review);
+  const reviewReason = zh?.review_reason || null;
+  const status = needsReview
+    ? TRANSLATION_STATUS_PARTIAL
+    : (titleDone && summaryDone && bodyDone
+      ? TRANSLATION_STATUS_COMPLETED
+      : anyDone
+        ? TRANSLATION_STATUS_PARTIAL
+        : TRANSLATION_STATUS_PENDING);
 
   return {
     titleDone,
@@ -906,6 +914,8 @@ function buildRowUpdateMeta(row, zh) {
     bodyDone,
     anyDone,
     status,
+    needsReview,
+    reviewReason,
     titleZh: titleDone ? zh.title_zh || null : existingTitle,
     summaryZh: summaryDone ? zh.summary_zh || null : existingSummary,
     contentMarkdownZh: bodyDone ? zh.content_markdown_zh || null : existingBodyMarkdown,
@@ -925,6 +935,8 @@ async function updateRow(row, zh) {
       content_zh = ${meta.contentZh},
       translation_status = ${meta.status},
       translation_provider = ${meta.anyDone ? TRANSLATION_PROVIDER : null},
+      translation_needs_review = ${meta.needsReview},
+      translation_review_reason = ${meta.reviewReason},
       title_zh_provider = ${meta.titleDone ? TRANSLATION_PROVIDER : null},
       summary_zh_provider = ${meta.summaryDone ? TRANSLATION_PROVIDER : null},
       content_zh_provider = ${meta.bodyDone ? TRANSLATION_PROVIDER : null},
@@ -961,8 +973,30 @@ async function translateOne(row, force = false) {
       : (keepBody ? Promise.resolve(row.content_markdown_zh) : translateMarkdown(preparedMarkdown, row, requiredBodyGlossaryPrompt)),
   ]);
   const content_zh = content_markdown_zh ? stripMarkdown(content_markdown_zh) : (row.content_en || null);
+  let zh = { title_zh, summary_zh, content_markdown_zh, content_zh };
+  let reviewNeedsReview = false;
+  let reviewReason = null;
 
-  let meta = await updateRow(row, { title_zh, summary_zh, content_markdown_zh, content_zh });
+  if (REVIEW_ENABLED && (row.title_en || row.summary_en || preparedMarkdown)) {
+    const reviewOut = await reviewTranslation({
+      source: row,
+      zh,
+      glossaryPrompt: glossaryPromptForSource(row),
+      callJson: callModelJson,
+      mdToText: stripMarkdown,
+    });
+    if (reviewOut.review_error) {
+      console.warn(`[translate] review failed for ${row.id}: ${reviewOut.review_error}`);
+    } else {
+      zh = reviewOut.zh;
+      reviewNeedsReview = reviewOut.needs_review;
+      if (reviewNeedsReview && reviewOut.issues.length) {
+        reviewReason = reviewOut.issues.join('；').slice(0, 1000);
+      }
+    }
+  }
+
+  let meta = await updateRow(row, { ...zh, needs_review: reviewNeedsReview, review_reason: reviewReason });
   const shouldRetryMissingBody =
     !force &&
     !meta.bodyDone &&
@@ -986,6 +1020,8 @@ async function translateOne(row, force = false) {
       summary_zh: meta.summaryZh || summary_zh,
       content_markdown_zh: retriedBodyMarkdown,
       content_zh: retriedBodyText,
+      needs_review: reviewNeedsReview,
+      review_reason: reviewReason,
     });
   }
 

@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 .env.vercel
+.env.translate
 *.log
 data/players.db
 memory/

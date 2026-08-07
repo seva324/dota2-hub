@@ -389,7 +389,13 @@ export function UpcomingMatchView({ payload, onBack, onOpenTeam }: {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">赛事</div>
-              <div className="mt-0.5 text-sm font-bold text-white">{eventName}</div>
+              {event.eventSlug ? (
+                <a href={`#/event/${encodeURIComponent(event.eventSlug)}`} className="mt-0.5 block text-sm font-bold text-white transition-colors hover:text-blue-300" title={`查看 ${eventName} 赛事详情`}>
+                  {eventName}
+                </a>
+              ) : (
+                <div className="mt-0.5 text-sm font-bold text-white">{eventName}</div>
+              )}
             </div>
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">奖金池</div>
@@ -415,7 +421,11 @@ export function UpcomingMatchView({ payload, onBack, onOpenTeam }: {
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              {event.bracketsLink ? (
+              {event.eventSlug ? (
+                <a href={`#/event/${encodeURIComponent(event.eventSlug)}`} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:text-white" style={{ backgroundColor: '#2a2d35' }}>
+                  <Trophy className="size-3.5" /> 赛程
+                </a>
+              ) : event.bracketsLink ? (
                 <a href={event.bracketsLink} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:text-white" style={{ backgroundColor: '#2a2d35' }}>
                   <ExternalLink className="size-3.5" /> 赛程
                 </a>

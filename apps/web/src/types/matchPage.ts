@@ -78,6 +78,7 @@ export interface SeriesLineupPlayer {
 export interface SeriesEventInfo {
   name: string | null;
   tag: string | null;
+  eventSlug: string | null;
   countryId: number | null;
   country: SeriesCountryInfo | null;
   startDate: string | null;

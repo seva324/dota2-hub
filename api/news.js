@@ -3002,6 +3002,8 @@ export async function upsertSyncedNewsItems(db, items, options = {}) {
           content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
           translation_status = ${meta.translation_status},
           translation_provider = ${meta.translation_provider},
+          translation_needs_review = ${meta.translation_needs_review ?? false},
+          translation_review_reason = ${meta.translation_review_reason ?? null},
           title_zh_provider = ${meta.title_zh_provider},
           summary_zh_provider = ${meta.summary_zh_provider},
           content_zh_provider = ${meta.content_zh_provider},
@@ -3070,6 +3072,8 @@ async function ensureNewsTable(db) {
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS summary_zh_provider TEXT`;
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS content_zh_provider TEXT`;
   await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translated_at TIMESTAMPTZ`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_needs_review BOOLEAN DEFAULT FALSE`;
+  await db`ALTER TABLE news_articles ADD COLUMN IF NOT EXISTS translation_review_reason TEXT`;
   await db`CREATE INDEX IF NOT EXISTS idx_news_articles_published_at ON news_articles(published_at DESC)`;
 
   newsTableReady = true;
@@ -3369,6 +3373,8 @@ export async function translateNewsBackfill(options = {}) {
         content_markdown_zh = ${meta.content_zh_provider ? zh.content_markdown_zh || null : null},
         translation_status = ${meta.translation_status},
         translation_provider = ${meta.translation_provider},
+        translation_needs_review = ${meta.translation_needs_review ?? false},
+        translation_review_reason = ${meta.translation_review_reason ?? null},
         title_zh_provider = ${meta.title_zh_provider},
         summary_zh_provider = ${meta.summary_zh_provider},
         content_zh_provider = ${meta.content_zh_provider},

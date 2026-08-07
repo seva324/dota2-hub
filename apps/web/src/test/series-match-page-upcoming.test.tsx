@@ -19,6 +19,7 @@ function makeUpcomingPayload(): MatchPagePayload {
     event: {
       name: 'Games of the Future 2026',
       tag: 'GOTF 2026',
+      eventSlug: 'games-of-the-future-2026',
       countryId: 47,
       country: { name: 'Kazakhstan', code: 'kz', emoji: '🇰🇿', flag: null },
       startDate: '2026-07-31T00:00:00.000Z',
@@ -123,6 +124,28 @@ describe('SeriesMatchPage upcoming view', () => {
     // 国家名
     expect(screen.getByText('Kazakhstan')).toBeInTheDocument();
     expect(screen.getByText('举办国家')).toBeInTheDocument();
+  });
+
+  it('links the event name and 赛程 button to the tournament detail page', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => makeUpcomingPayload(),
+    } as Response);
+
+    render(
+      <SeriesMatchPage
+        matchId="427409"
+        slug="team-resilience-vs-rune-eaters-games-of-the-future-2026"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByText('赛事信息');
+    const eventLink = screen.getByRole('link', { name: 'Games of the Future 2026' });
+    expect(eventLink.getAttribute('href')).toBe('#/event/games-of-the-future-2026');
+    const scheduleLink = screen.getByRole('link', { name: '赛程' });
+    expect(scheduleLink.getAttribute('href')).toBe('#/event/games-of-the-future-2026');
+    expect(scheduleLink.getAttribute('target')).not.toBe('_blank');
   });
 
   it('does not render the upcoming view when start time is in the past', async () => {
