@@ -14,12 +14,96 @@
 - 英文英雄简称：Liquipedia《List of Abbreviations》
 - 中文别名与社区优先叫法：仓库内人工维护的 `resources/dota-glossary/manual-aliases.mjs`
 
-## 通用术语（2）
+## 通用术语（86）
 
 | 中文正式名 | 英文正式名 | 英文别名/旧称 | 中文别名 | 内部名 |
 | --- | --- | --- | --- | --- |
+| 技能征召 | Ability Draft | Ability Draft |  | term_ability_draft |
+| 肉山盾 | Aegis | Aegis |  | term_aegis |
+| 冠军之神盾 | Aegis of Champions | Aegis of Champions | 冠军之神盾 | term_aegis_of_champions |
+| 至宝 | Arcana | Arcana / Arcanas |  | term_arcana |
+| 作用范围 | Area of Effect | Area of Effect |  | term_area_of_effect |
+| 行为分 | behavior score | behavior score | 行为分 | term_behavior_score |
+| BO3 | best-of-three | best-of-three |  | term_best_of_three |
+| 直播画面 | broadcast feeds | broadcast feeds | 直播画面 | term_broadcast_feeds |
+| 直播授权 | broadcast licenses | broadcast licenses |  | term_broadcast_licenses |
+| 队长模式 | Captain's Mode | Captain's Mode |  | term_captain_s_mode |
+| 施法距离 | cast range | cast range |  | term_cast_range |
+| 能量点数 | charges | charges |  | term_charges |
+| 聊天轮盘 | Chat Wheels | Chat Wheels |  | term_chat_wheels |
+| 典藏宝瓶 | Collector's Cache | Collector's Cache |  | term_collector_s_cache |
+| 战斗日志 | Combat Log | Combat Log | 战斗日志 | term_combat_log |
+| 冷却状态 | cooldown | cooldown | 冷却状态 | term_cooldown |
+| 冷却时间减少 | cooldown reduction | cooldown reduction | 冷却时间减少 | term_cooldown_reduction |
+| 饰品 | cosmetic items | cosmetic items / cosmetics / cosmetic | 饰品 | term_cosmetic_items |
+| 信使 | courier | courier | 信使 | term_courier |
+| 猩红见证者 | Crimson Witness | Crimson Witness |  | term_crimson_witness |
+| 倾天之战 | Crownfall | Crownfall |  | term_crownfall |
+| 商店金币 | Crownfall Coins | Crownfall Coins | 商店金币 | term_crownfall_coins |
+| 减益免疫 | debuff immunity | debuff immunity / debuff immune | 减益免疫 | term_debuff_immunity |
+| 试玩模式 | demo mode | demo mode |  | term_demo_mode |
+| 直接邀请 | Direct Invites | Direct Invites / direct invitation |  | term_direct_invites |
+| Dota客户端 | Dota client | Dota client |  | term_dota_client |
+| 刀塔实验室 | Dota Labs | Dota Labs |  | term_dota_labs |
+| 双败淘汰赛 | double elimination bracket | double elimination bracket |  | term_double_elimination_bracket |
+| 淘汰赛 | elimination round | elimination round |  | term_elimination_round |
+| 聊天表情 | emoticons | emoticons | 聊天表情 | term_emoticons |
+| 远征包 | Expedition Pack | Expedition Pack | 远征包 | term_expedition_pack |
 | 命石 | Facet | Facet / Facets / Aspect / Aspects |  | term_facet |
+| 梦幻挑战 | fantasy | fantasy | 梦幻挑战 | term_fantasy |
+| 梦幻阵容 | fantasy roster | fantasy roster |  | term_fantasy_roster |
+| 第一滴血 | First Blood | First Blood |  | term_first_blood |
+| 战争迷雾 | Fog of War | Fog of War | 战争迷雾 | term_fog_of_war |
+| 迎霜节 | Frostivus | Frostivus |  | term_frostivus |
+| 游戏性版本更新 | gameplay patch | gameplay patch | 游戏性版本 | term_gameplay_patch |
+| 总决赛 | Grand Final | Grand Final / Grand Finals |  | term_grand_final |
+| 小组赛 | Group Stage | Group Stage |  | term_group_stage |
+| 不朽物品 | Immortal items | Immortal items | 不朽物品 | term_immortal_items |
+| 不朽 | Immortals | Immortals | 不朽 | term_immortals |
+| 先天技能 | innate ability | innate ability / Innate abilities |  | term_innate_ability |
+| 物品套装 | item sets | item sets / hero set / sets | 物品套装 / 英雄套装 | term_item_sets |
+| 败者组 | Lower Bracket | Lower Bracket |  | term_lower_bracket |
+| 主赛事 | main event | main event |  | term_main_event |
+| 主菜单 | main menu | main menu |  | term_main_menu |
+| 天梯积分 | MMR | MMR | 天梯积分 | term_mmr |
+| 中立物品栏 | Neutral Item Slot | Neutral Item Slot | 中立物品栏 | term_neutral_item_slot |
+| 中立物品 | neutral items | neutral items | 中立物品 | term_neutral_items |
+| 公开预选赛 | Open Qualifiers | Open Qualifiers |  | term_open_qualifiers |
+| 地图叠加层 | overlay map | overlay map |  | term_overlay_map |
+| 世界地图 | overworld map | overworld map |  | term_overworld_map |
+| 改动日志 | patch notes | patch notes | 改动日志 | term_patch_notes |
+| 身心 | Personas | Personas | 身心 | term_personas |
+| 淘汰赛 | Playoffs | Playoffs |  | term_playoffs |
+| 赛事预测 | Predictions | Predictions | 赛事预测 | term_predictions |
+| 总奖金 | prize pool | prize pool | 总奖金 | term_prize_pool |
+| 职业Dota | pro Dota | pro Dota |  | term_pro_dota |
+| 匹配 | queue | queue |  | term_queue |
+| 快速购买 | Quick Buy | Quick Buy | 快速购买 | term_quick_buy |
+| 快速施法 | quickcast | quickcast |  | term_quickcast |
+| 暴走 | RAMPAGE | RAMPAGE |  | term_rampage |
+| 地区预选赛 | Regional Qualifiers | Regional Qualifiers / qualifiers | 预选赛 | term_regional_qualifiers |
+| RFP（提案征询） | RFP (Request For Proposal) | RFP (Request For Proposal) / RFP | 提案征询 | term_rfp_request_for_proposal |
+| 国际邀请赛之路：淘汰赛 | Road to the International: Playoffs | Road to the International: Playoffs |  | term_road_to_the_international_playoffs |
+| 神秘商店 | Secret Shop | Secret Shop |  | term_secret_shop |
+| 储藏处 | stash | stash |  | term_stash |
+| 状态抗性 | status resistance | status resistance |  | term_status_resistance |
+| Steam创意工坊 | Steam Workshop | Steam Workshop |  | term_steam_workshop |
+| 贴纸胶囊 | sticker capsules | sticker capsules |  | term_sticker_capsules |
+| 应援捆绑包 | supporter bundles | supporter bundles | 应援捆绑包 | term_supporter_bundles |
+| 瑞士轮 | Swiss bracket | Swiss bracket |  | term_swiss_bracket |
+| 天赋 | talent | talent |  | term_talent |
+| 团灭 | team wipe | team wipe |  | term_team_wipe |
+| 国际邀请赛 | The International | The International / TI | 国际邀请赛 | term_the_international |
+| 国际邀请赛之路 | The Road to The International | The Road to The International |  | term_the_road_to_the_international |
+| 说明描述 | tooltip | tooltip |  | term_tooltip |
 | 痛苦魔方 | Tormentor | Tormentor / Tormentors | 魔方 / 焦哥 | term_tormentor |
+| 珍藏 | treasure | treasure | 珍藏 | term_treasure |
+| 宝藏 | Treasure Chest | Treasure Chest | 宝藏 | term_treasure_chest |
+| 真实视域 | true sight | true sight | 真实视域 | term_true_sight |
+| 加速模式 | Turbo | Turbo / Turbo games / Turbo Mode |  | term_turbo |
+| 胜者组 | upper bracket | upper bracket |  | term_upper_bracket |
+| 智慧神符 | Wisdom Rune | Wisdom Rune / Wisdom Runes / Wisdom |  | term_wisdom_rune |
+| 创意工坊 | Workshop | Workshop |  | term_workshop |
 
 ## 英雄（127）
 
