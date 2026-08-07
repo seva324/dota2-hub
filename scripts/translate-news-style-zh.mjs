@@ -977,7 +977,7 @@ async function translateOne(row, force = false) {
   let reviewNeedsReview = false;
   let reviewReason = null;
 
-  if (REVIEW_ENABLED && (row.title_en || row.summary_en || preparedMarkdown)) {
+  if (REVIEW_ENABLED && (!keepTitle || !keepSummary || !keepBody) && (row.title_en || row.summary_en || preparedMarkdown)) {
     const reviewOut = await reviewTranslation({
       source: row,
       zh,
