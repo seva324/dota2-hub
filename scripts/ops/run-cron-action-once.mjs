@@ -148,7 +148,7 @@ async function main() {
   const qs = new URLSearchParams();
   qs.set('action', action);
   const onlySource = String(args['only-source'] || args.onlySource || '').trim().toLowerCase();
-  if (['bo3', 'hawk', 'cyberscore', 'taverna'].includes(onlySource)) qs.set('onlySource', onlySource);
+  if (['bo3', 'hawk', 'cyberscore', 'taverna', 'dota2'].includes(onlySource)) qs.set('onlySource', onlySource);
   if (force) qs.set('force', '1');
   if (minIntervalMin > 0) qs.set('minIntervalMin', String(minIntervalMin));
   const url = `${base}/api/cron?${qs.toString()}`;

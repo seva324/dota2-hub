@@ -167,7 +167,7 @@ function buildSyncNewsOptions(raw = {}) {
   const onlySource = pickParam(raw.onlySource, '').trim().toLowerCase();
   const options = {};
 
-  if (['bo3', 'hawk', 'cyberscore', 'taverna'].includes(onlySource)) {
+  if (['bo3', 'hawk', 'cyberscore', 'taverna', 'dota2'].includes(onlySource)) {
     options.onlySource = onlySource;
   }
 

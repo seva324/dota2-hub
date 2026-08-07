@@ -10,6 +10,11 @@ import {
 import { getPublicOrigin } from '../lib/server/public-origin.js';
 import { fetchWithTimeout, markdownToText, looksChinese } from '../lib/server/news-utils.js';
 import {
+  bbcodeToMarkdown,
+  stripBbcodeToText,
+  extractFirstImageUrl,
+} from '../lib/steam-news-bbcode.js';
+import {
   TRANSLATION_STATUS_COMPLETED,
   TRANSLATION_STATUS_PENDING,
   buildTranslationMeta,
@@ -2513,7 +2518,14 @@ export function normalizeAndSortNews(items, options = {}) {
     const rawMarkdown = item.content_markdown
       ? cleanJinaBoilerplate(String(item.content_markdown))
       : (item.content ? cleanJinaBoilerplate(String(item.content)) : '');
-    const keepImagesInMarkdown = String(item.source || '').toLowerCase() === 'cyberscore';
+    const keepImagesInMarkdown = ['cyberscore', 'dota2 official'].includes(String(item.source || '').toLowerCase());
+    const rawMarkdownZh = item.content_markdown_zh
+      ? cleanJinaBoilerplate(String(item.content_markdown_zh))
+      : (item.content_zh ? cleanJinaBoilerplate(String(item.content_zh)) : '');
+    const sanitizedMarkdownZh = rawMarkdownZh ? sanitizeStoredMarkdown(rawMarkdownZh, { keepImages: keepImagesInMarkdown }) : undefined;
+    const rawContentZh = item.content_zh ? String(item.content_zh) : markdownToText(stripHtmlWithParagraphs(rawMarkdownZh));
+    const normalizedContentZh = rawContentZh ? truncateText(markdownToText(stripHtmlWithParagraphs(rawContentZh))) : undefined;
+    const normalizedSummaryZh = item.summary_zh ? stripHtml(item.summary_zh).slice(0, 320) : undefined;
     const sanitizedMarkdown = sanitizeStoredMarkdown(rawMarkdown, { keepImages: keepImagesInMarkdown });
     const rawContent = item.content ? String(item.content) : markdownToText(stripHtmlWithParagraphs(rawMarkdown));
     const normalizedSummary = item.summary ? stripHtml(item.summary).slice(0, 320) : undefined;
@@ -2537,6 +2549,11 @@ export function normalizeAndSortNews(items, options = {}) {
             : (normalizeUrl(item.imageUrl, item.url || normalizedUrl) || item.imageUrl)
         )
         : undefined,
+      title_zh: item.title_zh ? stripHtml(String(item.title_zh)) : undefined,
+      summary_zh: normalizedSummaryZh,
+      content_zh: normalizedContentZh,
+      content_markdown_zh: sanitizedMarkdownZh,
+      bilingual: Boolean(item.bilingual),
       published_at: publishedAt,
       category: classifyNewsCategory({
         category: item.category || null,
@@ -2891,22 +2908,35 @@ export async function upsertSyncedNewsItems(db, items, options = {}) {
       !existing?.content_markdown_zh;
     const needTranslate = enChanged || missingCoreZh;
     const hasChineseBody = hasCompleteChineseBody(existing?.content_markdown_zh || existing?.content_zh || '', englishBody);
-    const shouldTranslate = needTranslate || !hasChineseBody;
-    const shouldResetZh = item.source === 'BO3.gg' && enChanged;
+    const isBilingual = Boolean(item.bilingual);
+    const shouldTranslate = isBilingual ? false : (needTranslate || !hasChineseBody);
+    const shouldResetZh = !isBilingual && item.source === 'BO3.gg' && enChanged;
 
-    const existingZh = {
-      title_zh: shouldResetZh ? null : (existing?.title_zh || null),
-      summary_zh: shouldResetZh ? null : (existing?.summary_zh || null),
-      content_zh: shouldResetZh ? null : (existing?.content_zh || null),
-      content_markdown_zh: shouldResetZh ? null : (existing?.content_markdown_zh || null),
-      translation_status: shouldResetZh
-        ? TRANSLATION_STATUS_PENDING
-        : (existing?.translation_status || TRANSLATION_STATUS_PENDING),
-      translation_provider: shouldResetZh ? null : (existing?.translation_provider || null),
-      title_zh_provider: shouldResetZh ? null : (existing?.title_zh_provider || null),
-      summary_zh_provider: shouldResetZh ? null : (existing?.summary_zh_provider || null),
-      content_zh_provider: shouldResetZh ? null : (existing?.content_zh_provider || null),
-    };
+    const existingZh = isBilingual
+      ? {
+          title_zh: item.title_zh || null,
+          summary_zh: item.summary_zh || null,
+          content_zh: item.content_zh || null,
+          content_markdown_zh: item.content_markdown_zh || null,
+          translation_status: TRANSLATION_STATUS_COMPLETED,
+          translation_provider: 'official',
+          title_zh_provider: 'official',
+          summary_zh_provider: 'official',
+          content_zh_provider: 'official',
+        }
+      : {
+          title_zh: shouldResetZh ? null : (existing?.title_zh || null),
+          summary_zh: shouldResetZh ? null : (existing?.summary_zh || null),
+          content_zh: shouldResetZh ? null : (existing?.content_zh || null),
+          content_markdown_zh: shouldResetZh ? null : (existing?.content_markdown_zh || null),
+          translation_status: shouldResetZh
+            ? TRANSLATION_STATUS_PENDING
+            : (existing?.translation_status || TRANSLATION_STATUS_PENDING),
+          translation_provider: shouldResetZh ? null : (existing?.translation_provider || null),
+          title_zh_provider: shouldResetZh ? null : (existing?.title_zh_provider || null),
+          summary_zh_provider: shouldResetZh ? null : (existing?.summary_zh_provider || null),
+          content_zh_provider: shouldResetZh ? null : (existing?.content_zh_provider || null),
+        };
 
     await db`
       INSERT INTO news_articles (
@@ -3045,6 +3075,120 @@ async function ensureNewsTable(db) {
   newsTableReady = true;
 }
 
+const DOTA2_OFFICIAL_SOURCE = 'Dota2 Official';
+const DOTA2_OFFICIAL_EVENTS_URL = 'https://store.steampowered.com/events/ajaxgetpartnereventspageable/';
+const DOTA2_OFFICIAL_APPID = 570;
+
+function makeDota2Summary(text, fallback) {
+  const cleaned = String(text || '')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned ? cleaned.slice(0, 150) : (fallback || undefined);
+}
+
+async function fetchDota2OfficialEvents(language, count = 100) {
+  const params = new URLSearchParams({
+    appid: String(DOTA2_OFFICIAL_APPID),
+    clanaccountid: '0',
+    count_after: String(count),
+    l: language,
+  });
+  const url = `${DOTA2_OFFICIAL_EVENTS_URL}?${params.toString()}`;
+  const res = await fetchWithTimeout(url, {
+    headers: { Referer: 'https://store.steampowered.com/events/' },
+  }, 20000);
+  if (!res.ok) throw new Error(`Dota2 official events HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data?.events) ? data.events : [];
+}
+
+function isPublishableDota2Event(event = {}) {
+  const ab = event?.announcement_body || {};
+  return event?.published === 1
+    && !event?.hidden
+    && !event?.unlisted
+    && Boolean(ab?.gid)
+    && Number(ab?.posttime) > 0;
+}
+
+function buildDota2Item(candidate) {
+  const hasZh = Boolean(candidate.body_zh || candidate.title_zh);
+  const contentMarkdownEn = bbcodeToMarkdown(candidate.body_en);
+  const contentEn = stripBbcodeToText(candidate.body_en);
+  const contentMarkdownZh = hasZh ? bbcodeToMarkdown(candidate.body_zh || '') : '';
+  const contentZh = hasZh ? stripBbcodeToText(candidate.body_zh || '') : '';
+  return {
+    id: generateId(candidate.url, 'dota2'),
+    title: candidate.title_en,
+    title_zh: hasZh ? (candidate.title_zh || '') : undefined,
+    summary: makeDota2Summary(contentEn, candidate.title_en),
+    summary_zh: hasZh ? makeDota2Summary(contentZh, candidate.title_zh) : undefined,
+    content: contentEn || undefined,
+    content_markdown: contentMarkdownEn || undefined,
+    content_zh: hasZh ? (contentZh || undefined) : undefined,
+    content_markdown_zh: hasZh ? (contentMarkdownZh || undefined) : undefined,
+    imageUrl: extractFirstImageUrl(candidate.body_en) || extractFirstImageUrl(candidate.body_zh || ''),
+    source: DOTA2_OFFICIAL_SOURCE,
+    url: candidate.url,
+    publishedAt: new Date(candidate.posttime * 1000),
+    category: null,
+    bilingual: hasZh,
+  };
+}
+
+async function scrapeDota2Official(options = {}) {
+  const source = 'dota2';
+  const recentDays = Number(options?.recentDays) || 7;
+  const existingUrls = options?.existingUrls instanceof Set ? options.existingUrls : new Set();
+  try {
+    const [eventsEn, eventsZh] = await Promise.all([
+      fetchDota2OfficialEvents('english', 100),
+      fetchDota2OfficialEvents('schinese', 100),
+    ]);
+    const zhByGid = new Map();
+    for (const event of eventsZh) {
+      if (!isPublishableDota2Event(event)) continue;
+      const ab = event.announcement_body;
+      zhByGid.set(String(event.gid), {
+        title_zh: String(ab.headline || '').trim(),
+        body_zh: String(ab.body || '').trim(),
+      });
+    }
+    const cutoff = Math.floor(Date.now() / 1000) - recentDays * 24 * 60 * 60;
+    const candidates = eventsEn
+      .filter(isPublishableDota2Event)
+      .filter((event) => Number(event.announcement_body.posttime) >= cutoff)
+      .map((event) => {
+        const ab = event.announcement_body;
+        const zh = zhByGid.get(String(event.gid)) || {};
+        return {
+          posttime: Number(ab.posttime),
+          title_en: String(ab.headline || '').trim(),
+          body_en: String(ab.body || '').trim(),
+          title_zh: zh.title_zh || '',
+          body_zh: zh.body_zh || '',
+          url: `https://www.dota2.com/newsentry/${event.gid}`,
+        };
+      })
+      .filter((candidate) => candidate.title_en && !existingUrls.has(candidate.url));
+    console.log(`[News API] Dota2 official candidates: ${candidates.length}`);
+
+    const items = candidates.map(buildDota2Item);
+    if (items.length === 0) {
+      return { items: [], source, success: true };
+    }
+    return { items, source, success: true };
+  } catch (error) {
+    return {
+      items: [],
+      source,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 export async function syncNewsToDb(options = {}) {
   const db = getDb();
   if (!db) {
@@ -3058,7 +3202,7 @@ export async function syncNewsToDb(options = {}) {
     purgedBo3Count = removed.length;
   }
 
-  const onlySource = ['bo3', 'hawk', 'cyberscore', 'taverna'].includes(options?.onlySource)
+  const onlySource = ['bo3', 'hawk', 'cyberscore', 'taverna', 'dota2'].includes(options?.onlySource)
     ? options.onlySource
     : null;
   const sourceTasks = [];
@@ -3074,6 +3218,14 @@ export async function syncNewsToDb(options = {}) {
   if (!onlySource || onlySource === 'bo3') {
     const testUrl = options?.bo3TestUrl ? normalizeBo3NewsUrl(options.bo3TestUrl, 'https://bo3.gg') : null;
     sourceTasks.push({ key: 'bo3', run: () => scrapeBO3({ urls: testUrl ? [testUrl] : [] }) });
+  }
+  if (!onlySource || onlySource === 'dota2') {
+    const existingDota2Rows = await db`SELECT url FROM news_articles WHERE source = ${DOTA2_OFFICIAL_SOURCE}`;
+    const existingDota2Urls = new Set(existingDota2Rows.map((row) => row.url));
+    sourceTasks.push({
+      key: 'dota2',
+      run: () => scrapeDota2Official({ recentDays: options?.recentDays, existingUrls: existingDota2Urls }),
+    });
   }
 
   const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);

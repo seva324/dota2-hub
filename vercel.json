@@ -35,6 +35,10 @@
       "schedule": "40 9 * * *"
     },
     {
+      "path": "/api/cron?action=sync-news&onlySource=dota2",
+      "schedule": "45 9 * * *"
+    },
+    {
       "path": "/api/sync-liquipedia",
       "schedule": "0 14 * * *"
     },
