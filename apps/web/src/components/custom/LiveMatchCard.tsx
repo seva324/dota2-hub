@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Play } from 'lucide-react';
 import { SafeImg } from '@/components/custom/SafeImg';
+import { TournamentNameLink } from '@/components/custom/TournamentNameLink';
 
 export interface LiveHeroPayload {
   source?: string;
@@ -9,6 +10,8 @@ export interface LiveHeroPayload {
   sourceSeriesSlug?: string | null;
   sourceChampionshipSlug?: string | null;
   leagueName: string;
+  /** 匹配到本站赛事时透传的 DLTV 赛事 slug，用于"赛事名→赛事详情"跳转 */
+  event_slug?: string | null;
   stage?: string | null;
   bestOf?: string | number | null;
   seriesScore: string;
@@ -209,7 +212,7 @@ export function LiveMatchCard({ hero, onOpen }: {
       </div>
 
       <div className="relative mt-3 line-clamp-2 min-h-8 text-center text-[11px]" style={{ color: '#71717a' }}>
-        {hero.leagueName}
+        <TournamentNameLink slug={hero.event_slug} name={hero.leagueName} className="hover:text-slate-300" />
         {hero.stage ? ` · ${hero.stage}` : ''}
       </div>
 

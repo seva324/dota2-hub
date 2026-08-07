@@ -28,6 +28,12 @@ function extractSlugFromMatchUrl(matchUrl) {
   return match?.[1] || undefined;
 }
 
+/** 从 DLTV eventUrl（/events/<slug>）提取赛事 slug，供前端"赛事名→赛事详情"跳转。 */
+function extractEventSlug(eventUrl) {
+  const match = String(eventUrl || '').match(/\/events\/([^/?#]+)/i);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -78,6 +84,7 @@ export default async function handler(req, res) {
       series_type: row.bestOf || 'BO3',
       status: 'completed',
       match_url: row.matchUrl || null,
+      event_slug: extractEventSlug(row.eventUrl),
     }));
 
     // 抓取失败时 source='failed'：不缓存空响应，避免 CDN 缓存污染后续请求。

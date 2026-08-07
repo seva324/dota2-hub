@@ -7,6 +7,7 @@ import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import type { LiveHeroPayload } from '@/components/custom/LiveMatchCard';
 import { Button } from '@/components/ui/button';
 import { slugFromMatchUrl } from '@/lib/matchUrl';
+import { TournamentNameLink } from '@/components/custom/TournamentNameLink';
 import { apiFetch, getCachedValue } from '@/lib/api-cache';
 
 const design = {
@@ -46,6 +47,7 @@ interface UpcomingMatch {
   tournament_name?: string | null;
   tournament_name_cn?: string | null;
   match_url?: string | null;
+  event_slug?: string | null;
 }
 
 interface FinishedMatch {
@@ -62,6 +64,7 @@ interface FinishedMatch {
   tournament_name?: string | null;
   series_type?: string | null;
   match_url?: string | null;
+  event_slug?: string | null;
 }
 
 function formatMatchTime(ts: number): string {
@@ -187,7 +190,7 @@ function UpcomingRow({ match, onOpen }: {
       </div>
       {/* 移动端赛事名行 */}
       <div className="flex min-w-0 items-center gap-2 md:hidden">
-        <span className="truncate text-[11px] text-slate-500">{tournamentName}</span>
+        <TournamentNameLink slug={match.event_slug} name={tournamentName} className="truncate text-[11px] text-slate-500 hover:text-slate-300" />
         <span className="shrink-0 text-[10px] text-slate-600">Upcoming</span>
       </div>
 
@@ -210,7 +213,7 @@ function UpcomingRow({ match, onOpen }: {
           <div className="text-[10px] text-slate-500">{formatCountdown(match.start_time)}</div>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-slate-200">{tournamentName}</div>
+          <TournamentNameLink slug={match.event_slug} name={tournamentName} className="block truncate text-[13px] font-semibold text-slate-200 hover:text-slate-300" />
           <div className="truncate text-[11px] text-slate-500">Upcoming</div>
         </div>
       </div>
@@ -249,7 +252,7 @@ function CompletedRow({ match, onOpen }: {
           <span className="shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
             COMPLETED
           </span>
-          <span className="truncate text-[11px] text-slate-500">{tournamentName}</span>
+          <TournamentNameLink slug={match.event_slug} name={tournamentName} className="truncate text-[11px] text-slate-500 hover:text-slate-300" />
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-[11px]" style={{ color: '#71717a' }}>{formatBestOf(match.series_type)}</span>
@@ -279,7 +282,7 @@ function CompletedRow({ match, onOpen }: {
           COMPLETED
         </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-slate-200">{tournamentName}</div>
+          <TournamentNameLink slug={match.event_slug} name={tournamentName} className="block truncate text-[13px] font-semibold text-slate-200 hover:text-slate-300" />
           <div className="truncate text-[11px] text-slate-500">Completed</div>
         </div>
       </div>
