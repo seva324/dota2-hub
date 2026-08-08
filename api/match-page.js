@@ -19,6 +19,15 @@ function proxyUrl(url, req) {
   return getMirroredAssetUrl(url, req);
 }
 
+/** DLTV 相对图片路径 → 绝对 https://dltv.org URL。hero 图可能是相对路径，镜像逻辑对相对路径会拼成站点上不存在的路径而 404。 */
+function toAbsDltvUrl(path) {
+  if (!path) return null;
+  const trimmed = String(path).trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://dltv.org${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+}
+
 function mapItem(item, req) {
   if (!item) return null;
   return {
@@ -155,7 +164,7 @@ function mapTeamStats(stats, teamId, req) {
         return {
           heroId: row.heroId,
           heroTitle: hero.title ?? null,
-          heroImage: proxyUrl(hero.image ?? null, req),
+          heroImage: proxyUrl(toAbsDltvUrl(hero.image) ?? null, req),
           maps: row.maps,
           wins: row.wins,
           winRate: row.winRate,
