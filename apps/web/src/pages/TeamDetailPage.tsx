@@ -622,7 +622,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                           {p.nick}
                           {p.isCoach ? <span className="coach-tag">教练</span> : null}
                         </div>
-                        <div className="full">{p.realName && !HAS_CJK.test(p.realName) ? p.realName : p.role || '—'}</div>
+                        <div className="full">{p.realName && !HAS_CJK.test(p.realName) ? p.realName : p.nick || '—'}</div>
                         <div className="rank-line">
                           <span>天梯排名 {p.rank || '—'}</span>
                         </div>
