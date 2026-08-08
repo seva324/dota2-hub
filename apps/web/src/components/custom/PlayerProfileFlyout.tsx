@@ -247,7 +247,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
               <SafeImg src={playerTeamLogoUrl} alt={player?.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[9px] text-slate-500">队</span>} />
             </span>
-            <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+            <span className="truncate">{player?.teamName || '自由人'}</span>
           </button>
           {/* Rank row + nationality */}
           <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
@@ -328,7 +328,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
             <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
               <SafeImg src={playerTeamLogoUrl} alt={player?.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[9px] text-slate-500">队</span>} />
             </span>
-            <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+            <span className="truncate">{player?.teamName || '自由人'}</span>
           </button>
           {player?.realName && (
             <div className="mt-1.5 text-xs text-slate-400">{player.realName}{player?.chineseName ? ` · ${player.chineseName}` : ''}</div>
@@ -475,7 +475,7 @@ export function PlayerProfileFlyout({ open, onOpenChange, player, onTeamSelect }
                     won === false ? 'bg-red-500/20 text-red-300' :
                     'bg-slate-700 text-slate-400'
                   }`}>
-                    {won === true ? 'WIN' : won === false ? 'LOSS' : '--'}
+                    {won === true ? '胜' : won === false ? '负' : '--'}
                   </span>
                 </div>
               </div>

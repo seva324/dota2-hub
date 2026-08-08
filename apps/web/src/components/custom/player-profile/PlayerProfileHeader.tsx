@@ -26,7 +26,7 @@ export function PlayerProfileHeader({ player, flagImageUrl, nationalityLabel, te
           <div className="h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-slate-700 to-slate-900">
             <SafeImg
               src={player?.avatarUrl}
-              alt={player?.playerName || 'Player'}
+              alt={player?.playerName || '选手'}
               className="h-full w-full object-cover"
               fallback={<div className="flex size-full items-center justify-center bg-gradient-to-br from-slate-600 to-slate-800"><span className="text-2xl font-bold text-slate-400">{player?.playerName?.[0] || '?'}</span></div>}
             />
@@ -49,7 +49,7 @@ export function PlayerProfileHeader({ player, flagImageUrl, nationalityLabel, te
             <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-700 bg-slate-800">
               <SafeImg src={teamLogoUrl} alt={player?.teamName || ''} className="h-full w-full object-contain" fallback={<span className="text-[9px] text-slate-500">队</span>} />
             </span>
-            <span className="truncate">{player?.teamName || 'Free Agent'}</span>
+            <span className="truncate">{player?.teamName || '自由人'}</span>
           </button>
           <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
             {player?.hotRank != null && (

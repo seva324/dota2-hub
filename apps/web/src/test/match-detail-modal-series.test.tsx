@@ -121,12 +121,12 @@ describe('MatchDetailModal Series maps', () => {
       />
     );
 
-    expect(await screen.findByText(/Match ID 9101/)).toBeInTheDocument();
+    expect(await screen.findByText(/比赛 ID: 9101/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /地图 2/ }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Match ID 9102/)).toBeInTheDocument();
+      expect(screen.getByText(/比赛 ID: 9102/)).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith('/api/match-details?match_id=9102');
     });
   });
@@ -166,7 +166,7 @@ describe('MatchDetailModal full-page adapter', () => {
       />
     );
 
-    expect(await screen.findByText(/Match ID: 9103/)).toBeInTheDocument();
+    expect(await screen.findByText(/比赛 ID: 9103/)).toBeInTheDocument();
     expect(document.querySelector('[data-visual-role="match-detail-page"]')).toBeTruthy();
     expect(document.querySelector('[data-visual-role="match-detail-modal"]')).toBeFalsy();
   });

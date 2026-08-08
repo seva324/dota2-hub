@@ -66,8 +66,8 @@ export function LiveLineup({ picks, team1Name, team2Name, isTeam1Radiant }: {
 }) {
   const radiantPicks = picks.filter((p) => p.isRadiant);
   const direPicks = picks.filter((p) => !p.isRadiant);
-  const radiantLabel = isTeam1Radiant ? `${team1Name}（Radiant）` : `${team2Name}（Radiant）`;
-  const direLabel = isTeam1Radiant ? `${team2Name}（Dire）` : `${team1Name}（Dire）`;
+  const radiantLabel = isTeam1Radiant ? `${team1Name}（天辉）` : `${team2Name}（天辉）`;
+  const direLabel = isTeam1Radiant ? `${team2Name}（夜魇）` : `${team1Name}（夜魇）`;
 
   return (
     <div className="flex flex-col gap-3">

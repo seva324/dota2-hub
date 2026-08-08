@@ -58,7 +58,7 @@ function TeamBlock({ team, side, wins, onOpenTeam }: {
   wins: number;
   onOpenTeam?: (team: { name: string }) => void;
 }) {
-  const name = team.name || 'TBD';
+  const name = team.name || '待定';
   const logo = resolveTeamLogo({ name, teamId: team.id }, [], team.logoUrl);
   const clickable = Boolean(team.name) && Boolean(onOpenTeam);
   const inner = (
@@ -71,7 +71,7 @@ function TeamBlock({ team, side, wins, onOpenTeam }: {
       />
       <span className="w-full truncate text-center text-sm font-bold text-white md:text-base">{name}</span>
       <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: side === 'Radiant' ? design.radiant : design.dire }}>
-        {side}
+        {side === 'Radiant' ? '天辉' : '夜魇'}
       </span>
       <WinChips wins={wins} />
     </>
@@ -168,11 +168,10 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap, onOpenTeam }:
             className="mt-2 rounded-md px-2 py-1 text-[10px] font-bold"
             style={{ color: design.text, backgroundColor: 'rgba(255,255,255,0.05)' }}
           >
-            Series {radiantWins} : {direWins} · {formatClock(activeMap.gameTime)}
-          </span>
+            系列赛 {radiantWins} : {direWins} · {formatClock(activeMap.gameTime)}          </span>
           <div className="mt-2 flex items-center gap-2">
             <span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: design.text, backgroundColor: 'rgba(255,255,255,0.05)' }}>
-              Best of {payload.bestOf || 3}
+              赛制 {payload.bestOf || 3}
             </span>
             {isLive && (
               <span className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold text-white" style={{ backgroundColor: design.dire, boxShadow: `0 0 16px ${design.dire}66` }}>

@@ -138,7 +138,7 @@ export function MatchDetailPage({
 
         {/* Match metadata row */}
         <div className="flex items-center justify-center gap-4 border-t border-border/20 px-6 py-2 text-[11px] text-slate-500">
-          <span>Match ID: {match.match_id}</span>
+          <span>比赛 ID: {match.match_id}</span>
           <span>·</span>
           <span>{match.start_time ? new Date(match.start_time * 1000).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}</span>
           <span>·</span>
@@ -292,7 +292,7 @@ export function MatchDetailPage({
 
         {/* Other tabs: reuse existing content */}
         <TabsContent value="draft"><PicksBansInline picksBans={match.picks_bans || []} heroesData={heroesData} /></TabsContent>
-        <TabsContent value="players"><div className="text-sm text-slate-400 p-4">比赛数据 — see 概览 tab</div></TabsContent>
+        <TabsContent value="players"><div className="text-sm text-slate-400 p-4">比赛数据 — 详见概览页</div></TabsContent>
         <TabsContent value="economy"><MatchGraphs match={match} radiantTeamName={radiantTeamName} direTeamName={direTeamName} heroesData={heroesData} /></TabsContent>
         <TabsContent value="history"><div className="text-sm text-slate-400 p-4">历史交锋数据 — 开发中</div></TabsContent>
       </Tabs>

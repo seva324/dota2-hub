@@ -117,8 +117,8 @@ describe('SeriesMatchPage upcoming view', () => {
     expect(screen.queryByText('该系列赛暂无比赛数据')).not.toBeInTheDocument();
 
     // 数据对比 + 签名英雄
-    expect(screen.getByText('WIN WHEN FB')).toBeInTheDocument();
-    expect(screen.getByText('Avg Duration')).toBeInTheDocument();
+    expect(screen.getByText('一血后胜率')).toBeInTheDocument();
+    expect(screen.getByText('平均时长')).toBeInTheDocument();
     expect(screen.getByText('Puck')).toBeInTheDocument();
 
     // 国家名

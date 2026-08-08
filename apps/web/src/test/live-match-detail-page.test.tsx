@@ -68,7 +68,7 @@ describe('LiveMatchDetailPage', () => {
     expect(await screen.findByText('Team Resilience')).toBeTruthy();
     expect(screen.getByText('Rune Eaters')).toBeTruthy();
     expect(screen.getByText('Games of the Future 2026: Playoffs · BO3')).toBeTruthy();
-    expect(screen.getByText('Series 0 : 0 · 12:00')).toBeTruthy();
+    expect(screen.getByText('系列赛 0 : 0 · 12:00')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
 
     // 阵容 BP

@@ -98,16 +98,16 @@ function PlayerRow({ player, side }: { player: SeriesPlayerRow; side: 'left' | '
     hasAghs
       ? {
           src: AGHS_ICON,
-          alt: "Aghanim's Scepter",
-          title: "Aghanim's Scepter (A杖)",
+          alt: "阿哈利姆神杖",
+          title: "阿哈利姆神杖 (A杖)",
           ring: 'border-amber-400/40',
         }
       : null,
     player.hasShard
       ? {
           src: SHARD_ICON,
-          alt: "Aghanim's Shard",
-          title: "Aghanim's Shard (魔晶)",
+          alt: "阿哈利姆魔晶",
+          title: "阿哈利姆魔晶",
           ring: 'border-cyan-400/40',
         }
       : null,
@@ -157,9 +157,9 @@ function PlayerRow({ player, side }: { player: SeriesPlayerRow; side: 'left' | '
   const stats = (
     <div className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-2.5">
       <Stat label="KDA" value={kda} title="击杀-死亡-助攻" />
-      <Stat label="Net Worth" value={netWorth} title={`总经济 ${player.goldTotal}`} />
+      <Stat label="经济" value={netWorth} title={`总经济 ${player.goldTotal}`} />
       <Stat label="GPM/XPM" value={gpmXpm} title="每分钟金钱/经验" />
-      <Stat label="正补/反补" value={lhDn} title="Last hits / Denies" />
+      <Stat label="正补/反补" value={lhDn} title="正补/反补" />
     </div>
   );
 
@@ -292,7 +292,7 @@ function GameBlock({
     const textEl = (
       <div className="flex min-w-0 flex-1 flex-col">
         <span className={`${isLeft ? '' : 'text-right'} text-[10px] font-bold uppercase tracking-wide text-slate-400`}>
-          {win ? <span style={{ color: design.pip }}>Victory</span> : 'Defeat'}
+          {win ? <span style={{ color: design.pip }}>胜利</span> : '失败'}
         </span>
         <span className={`truncate text-sm font-black uppercase text-white md:text-base ${isLeft ? '' : 'text-right'}`}>{name}</span>
       </div>
@@ -324,7 +324,7 @@ function GameBlock({
               style={{ backgroundColor: design.pip }}
             >
               {formatDuration(game.duration)}
-              <span className="text-[8px] font-bold uppercase leading-none tracking-widest">Game Time</span>
+              <span className="text-[8px] font-bold uppercase leading-none tracking-widest">比赛时长</span>
             </span>
           </div>
           <div className="flex items-center justify-center gap-1.5">
@@ -374,7 +374,7 @@ function GameBlock({
               >
                 {formatDuration(game.duration)}
                 <span className="mt-0.5 text-[8px] font-bold uppercase leading-none tracking-widest">
-                  Game Time
+                  比赛时长
                 </span>
               </span>
             </div>

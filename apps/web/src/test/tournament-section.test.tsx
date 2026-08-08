@@ -641,7 +641,7 @@ describe('TournamentSection', () => {
     );
 
     fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 7' })[1]);
-    await screen.findByText('Main Event');
+    await screen.findByText('主赛事');
     expect(screen.getByText('Upcoming and finished matches').closest('section')).toHaveClass('hidden');
   });
 
@@ -716,7 +716,7 @@ describe('TournamentSection', () => {
     );
 
     fireEvent.click(screen.getAllByRole('button', { name: 'ESL One Season Birmingham' })[1]);
-    expect(await screen.findByText('Compact view')).toBeInTheDocument();
+    expect((await screen.findAllByText('紧凑视图')).length).toBeGreaterThan(0);
 
     const upperR1 = screen.getAllByText('Upper Bracket R1')[1];
     const upperFinals = screen.getAllByText('Upper Bracket Finals')[1];
@@ -815,7 +815,7 @@ describe('TournamentSection', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '小型比赛' }));
     fireEvent.click(screen.getAllByRole('button', { name: 'DreamLeague Division 2 Season 4' })[1]);
-    expect(await screen.findByText('DreamLeague playoffs')).toBeInTheDocument();
+    expect(await screen.findByText('DreamLeague 淘汰赛')).toBeInTheDocument();
     expect(screen.getAllByText('Upper Bracket R2').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Lower Bracket R4').length).toBeGreaterThan(0);
     expect(screen.getByText('$15,000')).toBeInTheDocument();
@@ -1023,8 +1023,8 @@ describe('TournamentSection', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'PGL Wallachia Season 8' })[1]);
     expect(await screen.findByText('Bracket rounds and pairings')).toBeInTheDocument();
 
-    const noButton = screen.getByRole('button', { name: 'No' });
-    const yesButton = screen.getByRole('button', { name: 'Yes' });
+    const noButton = screen.getByRole('button', { name: '否' });
+    const yesButton = screen.getByRole('button', { name: '是' });
     expect(noButton).toHaveAttribute('aria-pressed', 'true');
     expect(document.querySelector('[data-featured-bracket-mode="standard"]')).not.toBeNull();
 
@@ -1139,9 +1139,9 @@ describe('TournamentSection', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'ESL Challenger China Season 3' })[1]);
 
     expect(await screen.findByText('无小组赛 · 直接双败淘汰')).toBeInTheDocument();
-    expect(screen.getByText('Double Elimination')).toBeInTheDocument();
-    expect(screen.getByText('ESL China playoffs')).toBeInTheDocument();
-    expect(screen.getByText(/Upper Bracket R1 starts as Bo1/)).toBeInTheDocument();
+    expect(screen.getByText('双败淘汰')).toBeInTheDocument();
+    expect(screen.getByText('ESL China 淘汰赛')).toBeInTheDocument();
+    expect(screen.getByText(/胜者组第一轮为 BO1/)).toBeInTheDocument();
     expect(screen.getByText('Bracket rounds and pairings')).toBeInTheDocument();
     expect(screen.getAllByText('Xtreme Gaming').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Roar Gaming').length).toBeGreaterThan(0);

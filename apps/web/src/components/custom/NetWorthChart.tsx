@@ -106,11 +106,11 @@ export function NetWorthChart({ states, radiantName, direName }: {
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold">
         <span className="flex items-center gap-1.5" style={{ color: design.radiant }}>
           <span className="size-2 rounded-[3px]" style={{ backgroundColor: design.radiant }} />
-          {radiantName || 'Radiant'}（Radiant）
+          {radiantName || '天辉'}（天辉）
         </span>
         <span className="flex items-center gap-1.5" style={{ color: design.dire }}>
           <span className="size-2 rounded-[3px]" style={{ backgroundColor: design.dire }} />
-          {direName || 'Dire'}（Dire）
+          {direName || '夜魇'}（夜魇）
         </span>
         <span className="ml-auto font-black tabular-nums" style={{ color: leadColor }}>
           +{formatAbs(last.radiantNetWorthAdvantage)}{leaderName ? ` ${leaderName}` : ''}

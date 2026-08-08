@@ -127,8 +127,8 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack, onOpenTeam 
   const activeMap = maps.find((m) => m.number === activeMapNumber) ?? maps[maps.length - 1] ?? maps[0];
   const radiantTeam = activeMap.isTeam1Radiant ? payload.team1 : payload.team2;
   const direTeam = activeMap.isTeam1Radiant ? payload.team2 : payload.team1;
-  const radiantName = radiantTeam.name || 'TBD';
-  const direName = direTeam.name || 'TBD';
+  const radiantName = radiantTeam.name || '待定';
+  const direName = direTeam.name || '待定';
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 lg:px-6" style={{ backgroundColor: design.bg }}>
@@ -141,7 +141,7 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack, onOpenTeam 
           <div className="flex min-w-0 items-center gap-2">
             {activeMap.status === 'live' && <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#ff3b30]" />}
             <span className="truncate text-sm font-semibold text-slate-200">
-              {payload.championship?.name || 'Live Match'} · {formatBestOf(payload.bestOf)}
+              {payload.championship?.name || '直播中'} · {formatBestOf(payload.bestOf)}
             </span>
           </div>
         </div>
@@ -165,8 +165,8 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack, onOpenTeam 
         <SectionCard title="阵容 · Picks" sub={`Map ${activeMap.number} · 选人`}>
           <LiveLineup
             picks={activeMap.picks}
-            team1Name={payload.team1.name || 'TBD'}
-            team2Name={payload.team2.name || 'TBD'}
+            team1Name={payload.team1.name || '待定'}
+            team2Name={payload.team2.name || '待定'}
             isTeam1Radiant={activeMap.isTeam1Radiant}
           />
         </SectionCard>

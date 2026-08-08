@@ -166,8 +166,8 @@ function UpcomingRow({ match, onOpen }: {
   match: UpcomingMatch;
   onOpen?: (id: string | number, maps?: Array<{ slug?: string }>, seriesId?: string | number | null) => void;
 }) {
-  const left = match.radiant_team_name || 'TBD';
-  const right = match.dire_team_name || 'TBD';
+  const left = match.radiant_team_name || '待定';
+  const right = match.dire_team_name || '待定';
   const tournamentName = match.tournament_name_cn || match.tournament_name || '';
   return (
     <button
@@ -184,14 +184,14 @@ function UpcomingRow({ match, onOpen }: {
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-[11px]" style={{ color: '#71717a' }}>{formatBestOf(match.series_type)}</span>
           <span className="whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ color: '#d4d4d8', backgroundColor: '#2a2d35', border: '1px solid rgba(255,255,255,0.08)' }}>
-            View Match
+            查看比赛
           </span>
         </div>
       </div>
       {/* 移动端赛事名行 */}
       <div className="flex min-w-0 items-center gap-2 md:hidden">
         <TournamentNameLink slug={match.event_slug} name={tournamentName} className="truncate text-[11px] text-slate-500 hover:text-slate-300" />
-        <span className="shrink-0 text-[10px] text-slate-600">Upcoming</span>
+        <span className="shrink-0 text-[10px] text-slate-600">即将开赛</span>
       </div>
 
       {/* 队伍匹配（桌面中间列） */}
@@ -214,7 +214,7 @@ function UpcomingRow({ match, onOpen }: {
         </div>
         <div className="min-w-0 flex-1">
           <TournamentNameLink slug={match.event_slug} name={tournamentName} className="block truncate text-[13px] font-semibold text-slate-200 hover:text-slate-300" />
-          <div className="truncate text-[11px] text-slate-500">Upcoming</div>
+          <div className="truncate text-[11px] text-slate-500">即将开赛</div>
         </div>
       </div>
 
@@ -225,7 +225,7 @@ function UpcomingRow({ match, onOpen }: {
         </div>
         <div className="w-24 text-right">
           <span className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold" style={{ color: '#d4d4d8', backgroundColor: '#2a2d35', border: '1px solid rgba(255,255,255,0.08)' }}>
-            View Match
+            查看比赛
           </span>
         </div>
       </div>
@@ -250,14 +250,14 @@ function CompletedRow({ match, onOpen }: {
       <div className="flex items-center justify-between gap-2 md:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <span className="shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
-            COMPLETED
+            已结束
           </span>
           <TournamentNameLink slug={match.event_slug} name={tournamentName} className="truncate text-[11px] text-slate-500 hover:text-slate-300" />
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-[11px]" style={{ color: '#71717a' }}>{formatBestOf(match.series_type)}</span>
           <span className="whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ color: '#d4d4d8', backgroundColor: '#2a2d35', border: '1px solid rgba(255,255,255,0.08)' }}>
-            View Match
+            查看比赛
           </span>
         </div>
       </div>
@@ -283,7 +283,7 @@ function CompletedRow({ match, onOpen }: {
         </span>
         <div className="min-w-0 flex-1">
           <TournamentNameLink slug={match.event_slug} name={tournamentName} className="block truncate text-[13px] font-semibold text-slate-200 hover:text-slate-300" />
-          <div className="truncate text-[11px] text-slate-500">Completed</div>
+          <div className="truncate text-[11px] text-slate-500">已结束</div>
         </div>
       </div>
 
@@ -295,7 +295,7 @@ function CompletedRow({ match, onOpen }: {
         </div>
         <div className="w-24 text-right">
           <span className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold" style={{ color: '#d4d4d8', backgroundColor: '#2a2d35', border: '1px solid rgba(255,255,255,0.08)' }}>
-            View Match
+            查看比赛
           </span>
         </div>
       </div>
@@ -374,7 +374,7 @@ export function MatchesPage({
   })();
   const dateOptions = Array.from({ length: 5 }).map((_, i) => {
     const d = new Date((todayStart - i * 86400) * 1000);
-    const label = i === 0 ? 'Today' : `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')}`;
+    const label = i === 0 ? '今天' : `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')}`;
     return { key: i === 0 ? 'today' : String(i), label, dayStart: todayStart - i * 86400 };
   });
 
@@ -466,14 +466,14 @@ export function MatchesPage({
       <div className="flex flex-col gap-10 pb-16">
         {/* 主标题 */}
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Matches</h1>
+          <h1 className="text-3xl font-black tracking-tight text-white">比赛</h1>
         </div>
 
         {/* LIVE MATCHES */}
         <section>
           <SectionHeader
             icon={Clock}
-            title="Live Matches"
+            title="直播中"
             count={liveHeroes.length}
           />
           {liveHeroes.length > 0 ? (
@@ -485,7 +485,7 @@ export function MatchesPage({
 
         {/* UPCOMING MATCHES */}
         <section>
-          <SectionHeader icon={CalendarDays} title="Upcoming Matches" />
+          <SectionHeader icon={CalendarDays} title="即将开赛" />
           {/* 赛事筛选（深色下拉，浅色文字） */}
           <div className="mb-4 flex items-center">
             <select
@@ -494,7 +494,7 @@ export function MatchesPage({
               className="rounded-md border border-white/15 bg-[#1a1d24] px-3 py-2 text-xs font-semibold text-slate-200"
               style={{ colorScheme: 'dark' }}
             >
-              <option value="all">All Tournaments</option>
+              <option value="all">全部赛事</option>
               {upcomingTournaments.map((name) => (
                 <option key={name} value={name}>{name}</option>
               ))}
@@ -527,7 +527,7 @@ export function MatchesPage({
 
         {/* COMPLETED MATCHES */}
         <section>
-          <SectionHeader icon={Trophy} title="Completed Matches" />
+          <SectionHeader icon={Trophy} title="已结束" />
 
           {/* 日期 + 赛事 筛选 */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -569,7 +569,7 @@ export function MatchesPage({
               className="rounded-md border border-white/15 bg-[#1a1d24] px-3 py-2 text-xs font-semibold text-slate-200"
               style={{ colorScheme: 'dark' }}
             >
-              <option value="all">All Tournaments</option>
+              <option value="all">全部赛事</option>
               {tournamentOptions.map((name) => (
                 <option key={name} value={name}>{name}</option>
               ))}
@@ -591,7 +591,7 @@ export function MatchesPage({
                     style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
                     onClick={() => setVisibleCount((count) => count + 10)}
                   >
-                    Load More Matches
+                    加载更多比赛
                   </Button>
                 </div>
               )}

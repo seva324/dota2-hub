@@ -59,33 +59,33 @@ const design = {
 };
 
 const TIER_TONES: Record<string, { chip: string; dot: string; label: string }> = {
-  S: { chip: 'border-amber-300/30 bg-amber-400/10 text-amber-200', dot: '#fbbf24', label: 'S-Tier' },
-  A: { chip: 'border-blue-400/30 bg-blue-500/10 text-blue-200', dot: '#60a5fa', label: 'A-Tier' },
-  B: { chip: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-200', dot: '#22d3ee', label: 'B-Tier' },
-  C: { chip: 'border-slate-400/30 bg-slate-500/10 text-slate-300', dot: '#94a3b8', label: 'C-Tier' },
-  'S-Qual': { chip: 'border-amber-300/20 bg-amber-400/5 text-amber-200/70', dot: '#fbbf24', label: 'S-Qual' },
-  'A-Qual': { chip: 'border-blue-400/20 bg-blue-500/5 text-blue-200/70', dot: '#60a5fa', label: 'A-Qual' },
-  'B-Qual': { chip: 'border-cyan-400/20 bg-cyan-500/5 text-cyan-200/70', dot: '#22d3ee', label: 'B-Qual' },
-  'C-Qual': { chip: 'border-slate-400/20 bg-slate-500/5 text-slate-300/70', dot: '#94a3b8', label: 'C-Qual' },
+  S: { chip: 'border-amber-300/30 bg-amber-400/10 text-amber-200', dot: '#fbbf24', label: 'S 级' },
+  A: { chip: 'border-blue-400/30 bg-blue-500/10 text-blue-200', dot: '#60a5fa', label: 'A 级' },
+  B: { chip: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-200', dot: '#22d3ee', label: 'B 级' },
+  C: { chip: 'border-slate-400/30 bg-slate-500/10 text-slate-300', dot: '#94a3b8', label: 'C 级' },
+  'S-Qual': { chip: 'border-amber-300/20 bg-amber-400/5 text-amber-200/70', dot: '#fbbf24', label: 'S 预选' },
+  'A-Qual': { chip: 'border-blue-400/20 bg-blue-500/5 text-blue-200/70', dot: '#60a5fa', label: 'A 预选' },
+  'B-Qual': { chip: 'border-cyan-400/20 bg-cyan-500/5 text-cyan-200/70', dot: '#22d3ee', label: 'B 预选' },
+  'C-Qual': { chip: 'border-slate-400/20 bg-slate-500/5 text-slate-300/70', dot: '#94a3b8', label: 'C 预选' },
 };
 
 function tierTone(tier?: string | null) {
   const key = String(tier || '').toUpperCase().trim();
-  return TIER_TONES[key] || { chip: 'border-white/10 bg-white/[0.04] text-slate-300', dot: '#94a3b8', label: key || 'Tier' };
+  return TIER_TONES[key] || { chip: 'border-white/10 bg-white/[0.04] text-slate-300', dot: '#94a3b8', label: key || '级别' };
 }
 
 function formatRange(startTs?: number | null, endTs?: number | null): string {
   if (!startTs || !endTs) {
     if (startTs) {
-      return new Date(startTs * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return new Date(startTs * 1000).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', year: 'numeric' });
     }
-    return 'TBD';
+    return '待定';
   }
   const start = new Date(startTs * 1000);
   const end = new Date(endTs * 1000);
   const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
   const fmt = (d: Date, withYear: boolean) =>
-    d.toLocaleDateString('en-US', {
+    d.toLocaleDateString('zh-CN', {
       month: 'short',
       day: 'numeric',
       ...(withYear ? { year: 'numeric' } : {}),
@@ -95,7 +95,7 @@ function formatRange(startTs?: number | null, endTs?: number | null): string {
 
 function formatShortDate(ts?: number | null): string {
   if (!ts) return '—';
-  return new Date(ts * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(ts * 1000).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
 
 function formatPrize(prizePool?: string | null): string {
@@ -449,7 +449,7 @@ export function TournamentsPage() {
           style={{ background: 'radial-gradient(ellipse at center, rgba(43,85,232,0.16) 0%, rgba(43,85,232,0) 70%)' }}
         />
         <p className="relative text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
-          Dota 2 · Tournament Directory
+          Dota 2 · 赛事目录
         </p>
         <h1 className="relative mt-5 text-5xl font-black leading-none tracking-tight text-white lg:text-6xl">
           赛事
@@ -484,7 +484,7 @@ export function TournamentsPage() {
           {/* Ongoing */}
           {ongoing.length > 0 && (
             <section>
-              <SectionHeading eyebrow="Live Now" title={<span className="inline-flex items-center gap-2"><SectionDot tone="red" />进行中的赛事</span>} count={ongoing.length} />
+              <SectionHeading eyebrow="进行中" title={<span className="inline-flex items-center gap-2"><SectionDot tone="red" />进行中的赛事</span>} count={ongoing.length} />
               <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]">
                 {ongoing.map((entry) => (
                   <PosterCard key={`${entry.title}-${entry.startTime || ''}`} entry={entry} />
@@ -496,7 +496,7 @@ export function TournamentsPage() {
           {/* Upcoming */}
           {upcoming.length > 0 && (
             <section>
-              <SectionHeading eyebrow="Coming Up" title={<span className="inline-flex items-center gap-2"><SectionDot tone="blue" />即将开始</span>} count={upcoming.length} />
+              <SectionHeading eyebrow="即将开始" title={<span className="inline-flex items-center gap-2"><SectionDot tone="blue" />即将开始</span>} count={upcoming.length} />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {upcoming.map((entry) => (
                   <UpcomingCard key={`${entry.title}-${entry.startTime || ''}`} entry={entry} />
@@ -508,7 +508,7 @@ export function TournamentsPage() {
           {/* Finished */}
           {finishedLoading && finished.length === 0 ? (
             <section>
-              <SectionHeading eyebrow="History" title={<span className="inline-flex items-center gap-2"><SectionDot tone="slate" />已结束</span>} count={0} />
+              <SectionHeading eyebrow="历史" title={<span className="inline-flex items-center gap-2"><SectionDot tone="slate" />已结束</span>} count={0} />
               <div className="flex h-16 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#1a1d24] text-sm text-slate-500">
                 <span className="size-4 animate-spin rounded-full border-2 border-slate-600 border-t-slate-300" />
                 已结束赛事加载中…
@@ -516,7 +516,7 @@ export function TournamentsPage() {
             </section>
           ) : finished.length > 0 ? (
             <section>
-              <SectionHeading eyebrow="History" title={<span className="inline-flex items-center gap-2"><SectionDot tone="slate" />已结束</span>} count={finished.length} />
+              <SectionHeading eyebrow="历史" title={<span className="inline-flex items-center gap-2"><SectionDot tone="slate" />已结束</span>} count={finished.length} />
               <div className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/10 bg-[#1a1d24]">
                 {finished.map((entry) => (
                   <FinishedRow key={`${entry.title}-${entry.startTime || ''}`} entry={entry} />

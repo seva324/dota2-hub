@@ -148,7 +148,7 @@ function UpcomingCard({ match }: { match: UpcomingMatch }) {
     <div className="shrink-0 w-52 rounded-2xl border border-white/10 bg-slate-800/60 p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between gap-1">
         <span className="text-[10px] truncate text-slate-400 min-w-0">
-          {match.tournament_name || 'Upcoming'}
+          {match.tournament_name || '即将开赛'}
         </span>
         <span className="text-[10px] rounded bg-slate-700 px-1.5 py-0.5 text-slate-300 shrink-0">
           {match.series_type}
@@ -188,7 +188,7 @@ function UpcomingCard({ match }: { match: UpcomingMatch }) {
       </div>
 
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-slate-400">{formatMatchTime(match.start_time)} CST</span>
+        <span className="text-slate-400">{formatMatchTime(match.start_time)} 北京时间</span>
         <span className="text-amber-300 font-medium">{formatCountdown(match.start_time)}</span>
       </div>
     </div>

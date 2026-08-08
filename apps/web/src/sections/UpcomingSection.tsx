@@ -174,14 +174,14 @@ function formatCSTTime(timestamp: number): string {
 function formatCountdown(targetTime: number): string {
   const now = Math.floor(Date.now() / 1000);
   const diff = targetTime - now;
-  if (diff <= 0) return 'Live';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff <= 0) return '直播中';
+  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟`;
   if (diff < 86400) {
     const h = Math.floor(diff / 3600);
     const m = Math.floor((diff % 3600) / 60);
-    return `${h}h ${m}m`;
+    return `${h} 小时 ${m} 分钟`;
   }
-  return `${Math.floor(diff / 86400)}d`;
+  return `${Math.floor(diff / 86400)} 天`;
 }
 
 function getMatchDate(timestamp: number): string {

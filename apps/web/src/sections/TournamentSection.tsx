@@ -416,7 +416,7 @@ function normalizeTeamAlias(name?: string | null): string {
 }
 
 function getTeamAbbrev(teamName: string | null | undefined, aliasToTag: Map<string, string>): string {
-  if (!teamName) return 'TBD';
+  if (!teamName) return '待定';
   const fromTeamsTable = aliasToTag.get(normalizeTeamAlias(teamName));
   if (fromTeamsTable) return fromTeamsTable;
   return FALLBACK_TEAM_ABBR[teamName] || teamName.substring(0, 3).toUpperCase();
@@ -554,9 +554,9 @@ function formatDuration(seconds: number): string {
 }
 
 function formatDate(value?: string | number): string {
-  if (!value) return 'TBD';
+  if (!value) return '待定';
   const date = typeof value === 'number' ? new Date(value * 1000) : new Date(value);
-  if (Number.isNaN(date.getTime())) return 'TBD';
+  if (Number.isNaN(date.getTime())) return '待定';
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
@@ -572,7 +572,7 @@ function formatPrizeUsd(value?: number, fallback?: string): string {
       maximumFractionDigits: 0
     }).format(value);
   }
-  return fallback || 'TBD';
+  return fallback || '待定';
 }
 
 function getTournamentVisualUrl(tournament?: Tournament | null): string {
@@ -646,7 +646,7 @@ function parseEventDateTime(value?: string | null): Date | null {
 
 function formatEventDateTime(value?: string | null, options?: Intl.DateTimeFormatOptions): string {
   const date = parseEventDateTime(value);
-  if (!date) return 'TBD';
+  if (!date) return '待定';
   return date.toLocaleString('zh-CN', {
     month: '2-digit',
     day: '2-digit',
@@ -658,7 +658,7 @@ function formatEventDateTime(value?: string | null, options?: Intl.DateTimeForma
 
 function formatFeaturedFetchTime(value?: string | null): string {
   const date = value ? new Date(value) : null;
-  if (!date || Number.isNaN(date.getTime())) return 'TBD';
+  if (!date || Number.isNaN(date.getTime())) return '待定';
   return date.toLocaleString('zh-CN', {
     month: '2-digit',
     day: '2-digit',
@@ -873,10 +873,10 @@ function getFeaturedRoundTone(round: FeaturedEventRoundCell) {
 }
 
 function getFeaturedAdvancementLabel(advancement?: string | null) {
-  if (advancement === 'playoff') return 'Playoffs';
-  if (advancement === 'upper') return 'UB Seed';
-  if (advancement === 'lower') return 'LB Seed';
-  return 'Out';
+  if (advancement === 'playoff') return '淘汰赛';
+  if (advancement === 'upper') return '胜者组种子';
+  if (advancement === 'lower') return '败者组种子';
+  return '出局';
 }
 
 function FeaturedGroupCards({
@@ -895,18 +895,18 @@ function FeaturedGroupCards({
           <div className="flex items-center justify-between border-b border-white/10 bg-[linear-gradient(135deg,rgba(245,158,11,0.12),rgba(15,23,42,0.94))] px-4 py-3">
             <div>
               <div className="text-sm font-semibold text-white">{group.name}</div>
-              <div className="text-[11px] text-slate-400">Round-robin standings</div>
+              <div className="text-[11px] text-slate-400">循环赛积分榜</div>
             </div>
             <div className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
-              BO2 League
+              BO2 联赛
             </div>
           </div>
           <div className="grid grid-cols-[52px_minmax(0,1fr)_88px_80px_86px] border-b border-white/10 px-4 py-2 text-[11px] uppercase tracking-wide text-slate-400">
-            <span>Rank</span>
-            <span>Team</span>
-            <span className="text-center">Series</span>
-            <span className="text-center">Maps</span>
-            <span className="text-right">Seed</span>
+            <span>排名</span>
+            <span>战队</span>
+            <span className="text-center">系列</span>
+            <span className="text-center">地图</span>
+            <span className="text-right">种子</span>
           </div>
           <div className="divide-y divide-white/10">
             {group.standings.map((row) => {
@@ -926,7 +926,7 @@ function FeaturedGroupCards({
                     />
                     {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
                   </div>
-                  <div className="text-center text-sm font-semibold text-white">{row.record || 'TBD'}</div>
+                  <div className="text-center text-sm font-semibold text-white">{row.record || '待定'}</div>
                   <div className="text-center text-sm text-slate-300">{row.mapRecord || '—'}</div>
                   <div className="text-right">
                     <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${tone.badge}`}>
@@ -1683,14 +1683,14 @@ function FeaturedPlayoffModeToggle({
 }) {
   return (
     <div className="flex items-center gap-2 text-xs text-slate-400">
-      <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">Compact View</span>
+      <span className="font-semibold uppercase tracking-[0.14em] text-slate-200">紧凑视图</span>
       <button
         type="button"
         aria-pressed={compactView}
         onClick={() => onChange(true)}
         className={`rounded-md border px-2 py-1 transition-colors ${compactView ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'}`}
       >
-        Yes
+        是
       </button>
       <button
         type="button"
@@ -1698,7 +1698,7 @@ function FeaturedPlayoffModeToggle({
         onClick={() => onChange(false)}
         className={`rounded-md border px-2 py-1 transition-colors ${compactView ? 'border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200' : 'border-amber-300/20 bg-amber-400/10 text-amber-100'}`}
       >
-        No
+        否
       </button>
     </div>
   );
@@ -1728,7 +1728,7 @@ function FeaturedPlayoffBracket({
         data-featured-bracket-mode={compactView ? 'compact' : 'standard'}
       >
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-cyan-200/10 pb-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100/85">DreamLeague playoffs</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100/85">DreamLeague 淘汰赛</div>
           <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
         </div>
         <div className="grid gap-3 md:hidden">
@@ -1761,7 +1761,7 @@ function FeaturedPlayoffBracket({
     return (
       <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">紧凑视图</div>
           <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
         </div>
         <div className="grid gap-3 md:hidden">
@@ -1794,11 +1794,11 @@ function FeaturedPlayoffBracket({
     return (
       <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">ESL China playoffs</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">ESL China 淘汰赛</div>
           <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
         </div>
         <div className="mb-3 rounded-xl border border-amber-300/15 bg-amber-400/5 px-3 py-2 text-[11px] leading-relaxed text-amber-50/85 md:text-xs">
-          Upper Bracket R1 starts as Bo1. Winners stay upper; losers drop to Lower Bracket R1. Upper Semifinal/Final and all lower rounds are Bo3, then Grand Final is one Bo5.
+          胜者组第一轮为 BO1,胜者留在胜者组,败者掉入败者组第一轮;胜者组半决赛/决赛及所有败者组轮次为 BO3,总决赛为 BO5。
         </div>
         <div className="grid gap-3 md:hidden">
           {rounds.map((round) => (
@@ -1830,7 +1830,7 @@ function FeaturedPlayoffBracket({
     return (
       <div className="rounded-2xl border border-white/10 bg-slate-950/75 p-3 md:p-4" data-featured-bracket-mode={compactView ? 'compact' : 'standard'}>
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Compact view</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">紧凑视图</div>
           <FeaturedPlayoffModeToggle compactView={compactView} onChange={onToggleCompactView} />
         </div>
         <div className="grid gap-3 md:hidden">
@@ -1924,10 +1924,10 @@ function FeaturedMobileStageTable({
       <div className="mb-2 flex items-start justify-between gap-3 px-3 pt-3">
         <div>
           <h5 className="text-sm font-semibold uppercase tracking-[0.12em] text-white">{payload.groupStage.title}</h5>
-          <p className="mt-1 text-[11px] text-slate-400">Swipe horizontally to view all round results.</p>
+          <p className="mt-1 text-[11px] text-slate-400">左右滑动查看全部轮次结果。</p>
         </div>
         <div className="rounded-md border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-emerald-100">
-          Top 8
+          前八
         </div>
       </div>
 
@@ -1939,9 +1939,9 @@ function FeaturedMobileStageTable({
               className="grid border-y border-white/10 bg-slate-950/80 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400"
               style={{ gridTemplateColumns: template }}
             >
-              <div className="sticky left-0 z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2">Rank</div>
-              <div className="sticky z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2" style={{ left: `${rankWidth}px` }}>Team</div>
-              <div className="sticky z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2 text-center" style={{ left: `${rankWidth + teamWidth}px` }}>Record</div>
+              <div className="sticky left-0 z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2">排名</div>
+              <div className="sticky z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2" style={{ left: `${rankWidth}px` }}>战队</div>
+              <div className="sticky z-20 border-r border-white/10 bg-slate-950/96 px-3 py-2 text-center" style={{ left: `${rankWidth + teamWidth}px` }}>战绩</div>
               {payload.groupStage.rounds.map((round) => (
                 <div key={round} className="border-r border-white/10 px-2 py-2 text-center last:border-r-0">
                   {round}
@@ -1978,9 +1978,9 @@ function FeaturedMobileStageTable({
                   </div>
 
                   <div className={`sticky z-10 flex flex-col items-center justify-center border-r border-white/10 px-2 py-3 ${tone.sticky}`} style={{ left: `${rankWidth + teamWidth}px` }}>
-                    <span className="text-sm font-semibold text-white">{row.record || 'TBD'}</span>
+                    <span className="text-sm font-semibold text-white">{row.record || '待定'}</span>
                     <span className={`mt-1 rounded-md border px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide ${tone.badge}`}>
-                      {row.advancement === 'playoff' ? 'Advance' : 'Out'}
+                      {row.advancement === 'playoff' ? '晋级' : '出局'}
                     </span>
                   </div>
 
@@ -2010,7 +2010,7 @@ function FeaturedMobileStageTable({
                           <span className={`max-w-[72px] truncate text-[11px] font-semibold ${round.opponentIsCnTeam ? 'text-red-100' : 'text-slate-100'}`}>
                             {getTeamAbbrev(round.opponentName, aliasToTag)}
                           </span>
-                          <span className="text-xs font-semibold text-white">{round.score || 'TBD'}</span>
+                          <span className="text-xs font-semibold text-white">{round.score || '待定'}</span>
                         </>
                       )}
                     </FeaturedMatchSurface>
@@ -2087,7 +2087,7 @@ function FeaturedTournamentPanel({
     <div className="mb-5 rounded-xl border border-white/10 bg-slate-950/88 p-3 shadow-[0_10px_24px_rgba(2,6,23,0.22)] sm:p-4 md:mb-6 md:rounded-2xl md:border-amber-500/20 md:bg-gradient-to-br md:from-amber-500/10 md:via-slate-900/80 md:to-slate-950/90 md:p-5 md:shadow-none">
       <div className="mb-4 flex flex-col gap-2 border-b border-white/10 pb-3 md:mb-5 md:flex-row md:items-end md:justify-between md:gap-3 md:pb-4">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/80 md:text-xs md:tracking-[0.2em]">Main Event</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/80 md:text-xs md:tracking-[0.2em]">主赛事</div>
           <h4 className="mt-1 text-base font-semibold text-white md:text-lg">主赛事定制视图</h4>
           <p className="mt-1 text-xs text-slate-400 md:text-sm">
             数据源 {payload.sourceLabel} · 更新于 {formatFeaturedFetchTime(payload.fetchedAt)}
@@ -2109,7 +2109,7 @@ function FeaturedTournamentPanel({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <div className="inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-red-100">
-                  Bracket-only event
+                  纯淘汰赛事
                 </div>
                 <h5 className="mt-3 text-lg font-semibold text-white">无小组赛 · 直接双败淘汰</h5>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
@@ -2118,16 +2118,16 @@ function FeaturedTournamentPanel({
               </div>
               <div className="grid gap-2 text-xs sm:grid-cols-3 lg:w-[430px]">
                 <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3">
-                  <div className="text-slate-500">Format</div>
-                  <div className="mt-1 font-semibold text-white">Double Elimination</div>
+                  <div className="text-slate-500">赛制</div>
+                  <div className="mt-1 font-semibold text-white">双败淘汰</div>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3">
-                  <div className="text-slate-500">Teams</div>
-                  <div className="mt-1 font-semibold text-white">8 teams</div>
+                  <div className="text-slate-500">队伍</div>
+                  <div className="mt-1 font-semibold text-white">8 支</div>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/55 p-3">
-                  <div className="text-slate-500">Group Stage</div>
-                  <div className="mt-1 font-semibold text-red-100">None</div>
+                  <div className="text-slate-500">小组赛</div>
+                  <div className="mt-1 font-semibold text-red-100">无</div>
                 </div>
               </div>
             </div>
@@ -2142,9 +2142,9 @@ function FeaturedTournamentPanel({
                   <p className="text-xs text-slate-400">双小组循环赛排名 · 前二进胜者组，三四名进败者组</p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-[11px]">
-                  <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-100">Top 2 → Upper Bracket</span>
-                  <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100">3rd-4th → Lower Bracket</span>
-                  <span className="rounded-full border border-rose-400/20 bg-rose-500/10 px-2.5 py-1 text-rose-100">5th-8th Out</span>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-100">前二 → 胜者组</span>
+                  <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100">第三四名 → 败者组</span>
+                  <span className="rounded-full border border-rose-400/20 bg-rose-500/10 px-2.5 py-1 text-rose-100">第五至八名 出局</span>
                 </div>
               </div>
               <FeaturedGroupCards groups={payload.groupStage.groups || []} aliasToTag={aliasToTag} teams={teams} />
@@ -2164,16 +2164,16 @@ function FeaturedTournamentPanel({
                     <p className="text-xs text-slate-400">小组排名和轮次对阵</p>
                   </div>
                   <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
-                    Top 8 advance
+                    前八晋级
                   </div>
                 </div>
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
                   <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
                     <div className="grid grid-cols-[56px_minmax(0,1fr)_88px_86px] border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400">
-                      <span>Rank</span>
-                      <span>Team</span>
-                      <span className="text-center">Record</span>
-                      <span className="text-right">Status</span>
+                      <span>排名</span>
+                      <span>战队</span>
+                      <span className="text-center">战绩</span>
+                      <span className="text-right">状态</span>
                     </div>
                     <div className="divide-y divide-white/10">
                       {payload.groupStage.standings.map((row) => (
@@ -2194,14 +2194,14 @@ function FeaturedTournamentPanel({
                             />
                             {row.country ? <div className="pl-8 text-xs text-slate-500">{row.country}</div> : null}
                           </div>
-                          <div className="text-center text-sm font-medium text-slate-200">{row.record || 'TBD'}</div>
+                          <div className="text-center text-sm font-medium text-slate-200">{row.record || '待定'}</div>
                           <div className="text-right">
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
                               row.advancement === 'playoff'
                                 ? 'bg-emerald-500/15 text-emerald-200'
                                 : 'bg-red-500/15 text-red-200'
                             }`}>
-                              {row.advancement === 'playoff' ? 'Playoffs' : 'Out'}
+                              {row.advancement === 'playoff' ? '淘汰赛' : '出局'}
                             </span>
                           </div>
                         </div>
@@ -2216,7 +2216,7 @@ function FeaturedTournamentPanel({
                           className="grid border-b border-white/10 px-3 py-2 text-[11px] uppercase tracking-wide text-slate-400"
                           style={{ gridTemplateColumns: `minmax(180px,1.3fr) repeat(${payload.groupStage.rounds.length}, minmax(98px,1fr))` }}
                         >
-                          <span>Team</span>
+                          <span>战队</span>
                           {payload.groupStage.rounds.map((round) => (
                             <span key={round} className="text-center">{round}</span>
                           ))}
@@ -2266,7 +2266,7 @@ function FeaturedTournamentPanel({
                                           {getTeamAbbrev(round.opponentName, aliasToTag)}
                                         </span>
                                       </div>
-                                      <div className="text-xs font-semibold text-white">{round.score || 'TBD'}</div>
+                                      <div className="text-xs font-semibold text-white">{round.score || '待定'}</div>
                                     </div>
                                   )}
                                 </FeaturedMatchSurface>
@@ -2303,13 +2303,13 @@ function FeaturedTournamentPanel({
         <section className="hidden rounded-xl border border-white/10 bg-slate-950/70 p-3 md:rounded-2xl md:bg-slate-950/60 md:p-4">
           <div className="mb-3 md:mb-4">
             <h5 className="text-sm font-semibold text-white md:text-base">{payload.matches.title}</h5>
-            <p className="text-xs text-slate-400">Upcoming 和 finished 比赛</p>
+            <p className="text-xs text-slate-400">即将开始和已结束的比赛</p>
             <p className="text-[11px] text-slate-400 md:text-xs">Upcoming and finished matches</p>
           </div>
           <div className="grid gap-3 md:gap-4 xl:grid-cols-2">
             {[
-              { title: 'Upcoming', items: payload.matches.upcoming, accent: 'text-cyan-200 bg-cyan-500/10 border-cyan-400/20' },
-              { title: 'Finished', items: payload.matches.finished, accent: 'text-rose-200 bg-rose-500/10 border-rose-400/20' },
+              { title: '即将开始', items: payload.matches.upcoming, accent: 'text-cyan-200 bg-cyan-500/10 border-cyan-400/20' },
+              { title: '已结束', items: payload.matches.finished, accent: 'text-rose-200 bg-rose-500/10 border-rose-400/20' },
             ].map((section) => (
               <div key={section.title} className="rounded-lg border border-white/10 bg-slate-900/60 p-2.5 md:rounded-2xl md:bg-slate-900/70 md:p-3">
                 <div className="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium text-white md:mb-3 md:px-3 md:text-xs">
@@ -2331,7 +2331,7 @@ function FeaturedTournamentPanel({
                       <div className="flex items-center justify-between gap-2 md:gap-3">
                         <FeaturedTeamChip
                           teamId={match.teams[0]?.teamId}
-                          name={match.teams[0]?.name || 'TBD'}
+                          name={match.teams[0]?.name || '待定'}
                           logoUrl={match.teams[0]?.logoUrl}
                           isCnTeam={match.teams[0]?.isCnTeam}
                           aliasToTag={aliasToTag}
@@ -2343,7 +2343,7 @@ function FeaturedTournamentPanel({
                         </div>
                         <FeaturedTeamChip
                           teamId={match.teams[1]?.teamId}
-                          name={match.teams[1]?.name || 'TBD'}
+                          name={match.teams[1]?.name || '待定'}
                           logoUrl={match.teams[1]?.logoUrl}
                           isCnTeam={match.teams[1]?.isCnTeam}
                           aliasToTag={aliasToTag}
@@ -2616,7 +2616,7 @@ export function TournamentSection({
         //
         throw new Error((payload as { error?: string })?.error || '涓昏禌浜嬫暟鎹姞杞藉け璐?);
         //
-        throw new Error((payload as { error?: string })?.error || 'Failed to load main event data');
+        throw new Error((payload as { error?: string })?.error || '主赛事数据加载失败');
       }
 
       setFeaturedStateByTournament((prev) => ({
@@ -2682,7 +2682,7 @@ export function TournamentSection({
           return;
         }
 
-        throw new Error((payload as { error?: string })?.error || 'Failed to load main event data');
+        throw new Error((payload as { error?: string })?.error || '主赛事数据加载失败');
       }
 
       setFeaturedStateByTournament((prev) => ({
@@ -2699,7 +2699,7 @@ export function TournamentSection({
         [tournamentKey]: {
           data: prev[tournamentKey]?.data || null,
           loading: false,
-          error: error instanceof Error ? error.message : 'Failed to load main event data',
+          error: error instanceof Error ? error.message : '主赛事数据加载失败',
         },
       }));
     }
@@ -3159,7 +3159,7 @@ export function TournamentSection({
                           className="h-3.5 w-5 rounded-[2px] object-cover"
                         />
                       ) : null}
-                      <span>{selectedTournament.location || 'TBD'}</span>
+                      <span>{selectedTournament.location || '待定'}</span>
                     </div>
                     <div className="flex items-center gap-2 min-w-0 text-slate-400">
                       <Calendar className="w-4 h-4" />

@@ -248,7 +248,7 @@ export function NewsPage() {
         <section className="np-head">
           <div className="np-eyebrow-row">
             <div className="np-eyebrow">
-              <span className="dot" />Dota 2 Esports News
+              <span className="dot" />Dota 2 电竞资讯
             </div>
             <span className="np-updated">
               更新于 <b className="date">{new Date().toLocaleDateString('zh-CN')}</b> ·{' '}

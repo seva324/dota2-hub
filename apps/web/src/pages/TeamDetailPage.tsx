@@ -400,20 +400,20 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
             {/* ===== 区块锚点导航 ===== */}
             <nav className="section-nav">
               <div className="container section-nav-inner">
-                <a href="#next-match">Upcoming</a>
+                <a href="#next-match">即将开赛</a>
                 <a href="#stats">数据总览</a>
                 <a href="#h2h">最近交手</a>
                 <a href="#signature">招牌英雄</a>
                 <a href="#heroes">常用英雄</a>
                 <a href="#squad">成员</a>
-                <a href="#matches">Results</a>
+                <a href="#matches">赛果</a>
                 <a href="#achievements">成就</a>
               </div>
             </nav>
 
-            {/* ===== Upcoming：下一场比赛 ===== */}
+            {/* ===== 即将开赛：下一场比赛 ===== */}
             <section className="section" id="next-match">
-              <h2 className="section-title">Upcoming <small>下一场比赛</small></h2>
+              <h2 className="section-title">即将开赛 <small>下一场比赛</small></h2>
               {D.nextMatch ? (
                 <div className="nextmatch">
                   <div className="nextmatch-band">
@@ -460,8 +460,8 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   <div className="stats-grid">
                     <div className="stat-tile"><div className="st-label">地图场次</div><div className="st-value">{AGG.maps}</div><div className="st-delta">近 3 个月</div></div>
                     <div className="stat-tile"><div className="st-label">胜率</div><div className="st-value good">{AGG.win_rate}%</div><div className="st-delta">胜 {AGG.wins} / 负 {Math.max(0, (AGG.maps || 0) - (AGG.wins || 0))}</div></div>
-                    <div className="stat-tile"><div className="st-label">场均击杀</div><div className="st-value accent">{Number(AGG.avg_kills || 0).toFixed(1)}</div><div className="st-delta">Kills Avg.</div></div>
-                    <div className="stat-tile"><div className="st-label">场均死亡</div><div className="st-value">{Number(AGG.avg_deaths || 0).toFixed(1)}</div><div className="st-delta">Deaths Avg.</div></div>
+                    <div className="stat-tile"><div className="st-label">场均击杀</div><div className="st-value accent">{Number(AGG.avg_kills || 0).toFixed(1)}</div><div className="st-delta">场均击杀</div></div>
+                    <div className="stat-tile"><div className="st-label">场均死亡</div><div className="st-value">{Number(AGG.avg_deaths || 0).toFixed(1)}</div><div className="st-delta">场均死亡</div></div>
                   </div>
                   <div className="stats-split">
                     <div className="card card-pad">
@@ -474,9 +474,9 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                       <div className="sub-list">
                         <div className="sub-item"><span>场均助攻</span><span className="sub-v">{AGG.avg_assists}</span></div>
                         <div className="sub-item"><span>一血率 FB</span><span className="sub-v">{AGG.first_blood_rate}%</span></div>
-                        <div className="sub-item"><span>十分钟率 F10</span><span className="sub-v">{AGG.first_ten_rate}%</span></div>
+                        <div className="sub-item"><span>10杀率 F10</span><span className="sub-v">{AGG.first_ten_rate}%</span></div>
                         <div className="sub-item"><span>一血后胜率</span><span className="sub-v">{AGG.win_first_blood_rate}%</span></div>
-                        <div className="sub-item"><span>F10 后胜率</span><span className="sub-v">{AGG.win_first_ten_rate}%</span></div>
+                        <div className="sub-item"><span>10杀后胜率</span><span className="sub-v">{AGG.win_first_ten_rate}%</span></div>
                         <div className="sub-item"><span>平均时长</span><span className="sub-v">{AGG.avg_time_min} 分钟</span></div>
                       </div>
                     </div>
@@ -599,7 +599,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                   {D.squad.map((p, i) => (
                     <div className="squad-card" key={`${p.playerId ?? p.nick}-${i}`}>
                       <div className="ph">
-                        <span className={`role-badge ${p.isCoach ? 'coach' : ''}`}>{p.role || 'Player'}</span>
+                        <span className={`role-badge ${p.isCoach ? 'coach' : ''}`}>{p.role || '选手'}</span>
                         {p.photo ? (
                           <img src={p.photo} alt={`${p.nick} 照片`} />
                         ) : (
@@ -616,7 +616,7 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
                             <img src={`${FLAG_BASE}${FLAG_FILES[p.flagCode]}`} alt="" />
                           ) : null}
                           {p.nick}
-                          {p.isCoach ? <span className="coach-tag">Coach</span> : null}
+                          {p.isCoach ? <span className="coach-tag">教练</span> : null}
                         </div>
                         <div className="full">{p.realName || p.role || '—'}</div>
                         <div className="rank-line">
@@ -636,9 +636,9 @@ export function TeamDetailPage({ teamName, teamId, teamSlug, onBack }: TeamDetai
               )}
             </section>
 
-            {/* ===== Results：最近比赛 ===== */}
+            {/* ===== 赛果：最近比赛 ===== */}
             <section className="section" id="matches">
-              <h2 className="section-title">Results <small>最近比赛</small></h2>
+              <h2 className="section-title">赛果 <small>最近比赛</small></h2>
               <div className="card">
                 <table className="match-table">
                   <thead>
