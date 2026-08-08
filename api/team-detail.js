@@ -336,20 +336,41 @@ const pageCache = new Map();
 async function fetchTeamPageHtml(teamSlug, fetchImpl = fetch) {
   const cached = pageCache.get(teamSlug);
   if (cached && Date.now() - cached.at < TEAM_PAGE_CACHE_TTL_MS) return cached.html;
+  const httpFetch = typeof fetchImpl === 'function' ? fetchImpl : fetch;
   const url = `https://dltv.org/teams/${encodeURIComponent(teamSlug)}`;
-  try {
-    const res = await fetchImpl(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)', Accept: 'text/html' },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) return cached?.html || '';
-    const html = await res.text();
-    pageCache.set(teamSlug, { html, at: Date.now() });
-    return html;
-  } catch (error) {
-    console.error('[TeamDetail] team page fetch failed:', error instanceof Error ? error.message : String(error));
-    return cached?.html || '';
+  // DLTV 对国内出口(EdgeOne)默认返回中文版战队页,squad 真名被本地化成中文(且部分翻译错误);
+  // ___user__language=en 强制英文罗马音,保证选手名字全英文。
+  const langHeaders = { Cookie: '___user__language=en', 'Accept-Language': 'en,en-US;q=0.9' };
+  // direct 失败(EdgeOne 出口直连 dltv 间歇不可用)时转 jina;校验页面确实是对应战队页(含自身 slug),
+  // 避免把 CDN 挑战页/错误页当成功结果缓存,导致 squad/draft 等页面区块解析为空。
+  const attempts = [
+    { url, timeoutMs: FETCH_TIMEOUT_MS, headers: langHeaders },
+    {
+      url: buildJinaUrl(url),
+      timeoutMs: FETCH_TIMEOUT_MS + 3000,
+      headers: { ...langHeaders, 'X-Return-Format': 'html', 'X-No-Cache': 'true' },
+    },
+  ];
+  for (const attempt of attempts) {
+    const timeout = buildTimeoutSignal(attempt.timeoutMs);
+    try {
+      const res = await httpFetch(attempt.url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)', Accept: 'text/html', ...attempt.headers },
+        signal: timeout.signal,
+      });
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (String(text || '').trim().length < 2000 || !text.includes(`/teams/${teamSlug}`)) continue;
+      pageCache.set(teamSlug, { html: text, at: Date.now() });
+      return text;
+    } catch {
+      // 忽略单次尝试,继续下一来源。
+    } finally {
+      timeout.dispose();
+    }
   }
+  console.error('[TeamDetail] team page fetch failed:', teamSlug);
+  return cached?.html || '';
 }
 
 const SQUAD_ROLE_LABEL = { 1: 'Core', 2: 'Mid', 3: 'Offlane', 4: 'Support', 5: 'Full Support' };
@@ -741,7 +762,12 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
       { label: '近 3 个月胜率', value: String(statsOverview.aggregate.win_rate) + '%', unit: '', href: '' },
     ].slice(0, 5),
     statsOverview,
-    draftStats: draftStats || normalizeDraftStats(heroes, normalized.draftStats),
+    // HTML 解析非空才用;战队页拉取异常导致 draft 区块为空时,回退到 recent_maps 聚合,
+    // 避免 常用英雄 整块丢失。
+    draftStats:
+      draftStats?.topPicks?.length || draftStats?.topBans?.length
+        ? draftStats
+        : normalizeDraftStats(heroes, normalized.draftStats),
     teamSignatureHeroes,
     h2h: normalized.h2h,
     recentMatches: await enrichRecentMatchesHeroes(normalized.recentMatches, teamSlug, httpFetch),
