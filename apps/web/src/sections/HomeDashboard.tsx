@@ -180,23 +180,23 @@ function HeroBanner({ liveCount, upcomingCount, resultsCount }: {
           LIVE.
         </h1>
         <h2 className="mt-1 text-3xl font-bold leading-tight tracking-tight text-white lg:text-4xl">
-          Dota Never Stops.
+          Dota 永不停止。
         </h2>
         <p className="mt-5 max-w-md text-base leading-6" style={{ color: '#a1a1aa' }}>
-          Your home for live matches, real-time stats, and everything Dota.
+          你的 Dota 赛事之家——直播、实时数据,尽在掌握。
         </p>
 
         <div className="mt-8 flex items-center gap-10">
           <div className="flex flex-col">
             <span className="text-3xl font-black tabular-nums" style={{ color: design.red }}>{liveCount}</span>
-            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Live Matches</span>
+            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">直播中</span>
           </div>
           <div className="flex flex-col">
             <span className="text-3xl font-black tabular-nums text-white">{upcomingCount}</span>
-            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Upcoming</span>
+            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">即将开赛</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-3xl font-black tabular-nums text-white">{resultsCount}</span>            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Results</span>
+            <span className="text-3xl font-black tabular-nums text-white">{resultsCount}</span>            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">赛果</span>
           </div>
         </div>
 
@@ -206,7 +206,7 @@ function HeroBanner({ liveCount, upcomingCount, resultsCount }: {
           style={{ backgroundColor: design.blue }}
         >
           <Play className="size-4 fill-white" />
-          Watch Live Matches
+          观看直播
         </Button>
       </div>
     </section>
@@ -273,8 +273,8 @@ function ScheduleCard({ match, isLive, onOpen }: {
   isLive: boolean;
   onOpen?: () => void;
 }) {
-  const left = match.radiant_team_name || 'TBD';
-  const right = match.dire_team_name || 'TBD';
+  const left = match.radiant_team_name || '待定';
+  const right = match.dire_team_name || '待定';
   return (
     <button
       type="button"
@@ -309,7 +309,7 @@ function ScheduleCard({ match, isLive, onOpen }: {
           ? { backgroundColor: design.red, color: '#fff' }
           : { backgroundColor: '#2a2d35', color: '#d4d4d8', border: '1px solid rgba(255,255,255,0.08)' }}
       >
-        {isLive ? 'Watch Live' : 'View Match'}
+        {isLive ? '观看直播' : '查看比赛'}
       </Button>
     </button>
   );
@@ -331,7 +331,7 @@ function ResultCard({ match, onOpen }: {
       style={{ backgroundColor: design.card }}
     >
       <div className="flex items-center justify-between">
-        <CardStatus text="COMPLETED" tone="completed" />
+        <CardStatus text="已结束" tone="completed" />
         <span className="text-[11px] font-semibold" style={{ color: '#71717a' }}>
           {formatBestOf(match.series_type)}
         </span>
@@ -395,27 +395,27 @@ function TournamentSpotlight() {
       <div className="relative z-10 grid min-h-[280px] items-center gap-8 px-8 py-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-14">
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: '#8ca6ff' }}>
-            Tournament Spotlight
+            赛事焦点
           </div>
           <h3 className="mt-3 text-4xl font-black tracking-tight text-white">
             Riyadh Masters 2024
           </h3>
           <p className="mt-2 text-sm" style={{ color: '#a1a1aa' }}>
-            The world's best teams. One crown.
+            全球顶尖战队,角逐唯一桂冠。
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-10 gap-y-4">
             <div className="flex flex-col">
               <span className="text-xl font-black tabular-nums text-white">$5,000,000</span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Prize Pool</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">奖金池</span>
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black tabular-nums text-white">24</span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Teams</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">参赛队伍</span>
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black tabular-nums" style={{ color: design.red }}>LIVE NOW</span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Playoffs</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">季后赛</span>
             </div>
           </div>
 
@@ -424,7 +424,7 @@ function TournamentSpotlight() {
             className="mt-8 w-fit rounded-lg px-6 text-sm font-semibold text-white hover:opacity-90"
             style={{ backgroundColor: design.blue }}
           >
-            Explore Tournament
+            查看赛事
           </Button>
         </div>
 
@@ -491,7 +491,7 @@ function LatestNewsSection({ items, onMore, onOpenItem }: {
   const rest = items.slice(1, 4);
   return (
     <section>
-      <SectionHeader title="Latest News" linkLabel="View All News" onClick={onMore} />
+      <SectionHeader title="最新资讯" linkLabel="查看全部资讯" onClick={onMore} />
       <div className="grid gap-4 lg:grid-cols-2">
         {featured && (
           <button
@@ -835,8 +835,8 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         {/* Today's Schedule */}
         <section>
           <SectionHeader
-            title="Today's Schedule"
-            linkLabel="View Full Schedule"
+            title="今日赛程"
+            linkLabel="查看全部赛程"
             onClick={() => navigate({ page: 'matches', overlay: null })}
           />
           {loading || scheduleCards.length > 0 ? (
@@ -857,9 +857,9 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         {/* Live Matches */}
         <section>
           <SectionHeader
-            title="Live Matches"
+            title="直播中"
             accent={{ text: design.red, count: `${liveCount} LIVE` }}
-            linkLabel="View All Live"
+            linkLabel="查看全部直播"
             onClick={() => navigate({ page: 'matches', overlay: null })}
           />
           <button
@@ -870,7 +870,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
             style={{ color: design.blue, backgroundColor: `${design.blue}1f` }}
           >
             <RefreshCw size={14} className={isLiveRefreshing ? 'animate-spin' : ''} />
-            {isLiveRefreshing ? '刷新中...' : '刷新 Live'}
+            {isLiveRefreshing ? '刷新中...' : '刷新直播'}
           </button>
           {liveHeroes.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -890,8 +890,8 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         {/* Recent Results */}
         <section>
           <SectionHeader
-            title="Recent Results"
-            linkLabel="View All Results"
+            title="近期赛果"
+            linkLabel="查看全部赛果"
             onClick={() => navigate({ page: 'matches', overlay: null })}
           />
           {results.length > 0 ? (
@@ -912,7 +912,7 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
         {/* Tournament Spotlight / Primary Leagues */}
         {primaryLeagues.length > 0 ? (
           <section>
-            <SectionHeader title="Tournaments" linkLabel="View All Tournaments" />
+            <SectionHeader title="赛事" linkLabel="查看全部赛事" />
             <TournamentCarousel tournaments={primaryLeagues} />
           </section>
         ) : (
