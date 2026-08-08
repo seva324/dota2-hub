@@ -112,7 +112,7 @@ describe('parseDltvSeriesItem upcoming pre-match', () => {
 
     // 阵容按位置 1-5 排序，roleLabel 正确映射。
     expect(team?.players.map((p) => p.name)).toEqual(['Erika', 'EchozZ', 'niu', 'planet', 'zzq']);
-    expect(team?.players.map((p) => p.roleLabel)).toEqual(['Core', 'Mid', 'Offlane', 'Support', 'Full Support']);
+    expect(team?.players.map((p) => p.roleLabel)).toEqual(['一号位', '二号位', '三号位', '四号位', '五号位']);
 
     const carry = team?.players[0];
     expect(carry?.rank).toBe(1);

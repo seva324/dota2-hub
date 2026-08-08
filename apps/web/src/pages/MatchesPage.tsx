@@ -279,7 +279,7 @@ function CompletedRow({ match, onOpen }: {
       {/* 桌面左信息列：COMPLETED 标签 + 赛事名 */}
       <div className="hidden min-w-0 items-center gap-3 md:order-1 md:flex">
         <span className="shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-bold" style={{ color: '#34d399', backgroundColor: 'rgba(52,211,153,0.12)' }}>
-          COMPLETED
+          已结束
         </span>
         <div className="min-w-0 flex-1">
           <TournamentNameLink slug={match.event_slug} name={tournamentName} className="block truncate text-[13px] font-semibold text-slate-200 hover:text-slate-300" />

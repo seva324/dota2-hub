@@ -13,9 +13,9 @@ const BASE_PAYLOAD = {
   nextMatch: null,
   quickStats: [
     { label: '世界排名', value: '#3' },
-    { label: '总地图数', value: '100', unit: 'maps' },
+    { label: '总地图数', value: '100', unit: '场' },
     { label: '赛事奖金', value: '$100,000' },
-    { label: '近 3 个月地图', value: '20', unit: 'maps' },
+    { label: '近 3 个月地图', value: '20', unit: '场' },
     { label: '近 3 个月胜率', value: '60%' },
   ],
   statsOverview: {

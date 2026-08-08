@@ -52,7 +52,7 @@ function makeUpcomingPayload(): MatchPagePayload {
             image: null,
             rank: 1,
             role: 1,
-            roleLabel: 'Core',
+            roleLabel: '一号位',
             winRate: '57.000',
             maps: 19,
             kda: '5.800',
@@ -111,7 +111,7 @@ describe('SeriesMatchPage upcoming view', () => {
 
     expect((await screen.findAllByText('Team Resilience')).length).toBeGreaterThan(0);
     expect(screen.getByText('Erika')).toBeInTheDocument();
-    expect(screen.getByText('Core')).toBeInTheDocument();
+    expect(screen.getByText('一号位')).toBeInTheDocument();
     expect(screen.getByText('距开赛')).toBeInTheDocument();
     expect(screen.getAllByText('Rune Eaters').length).toBeGreaterThan(0);
     expect(screen.queryByText('该系列赛暂无比赛数据')).not.toBeInTheDocument();
