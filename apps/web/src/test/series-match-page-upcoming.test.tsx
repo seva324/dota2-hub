@@ -126,6 +126,27 @@ describe('SeriesMatchPage upcoming view', () => {
     expect(screen.getByText('举办国家')).toBeInTheDocument();
   });
 
+  it('shows World Rank NA when a team has no rank (rank 0)', async () => {
+    const payload = makeUpcomingPayload();
+    payload.teams.dire.rank = 0;
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => payload,
+    } as Response);
+
+    render(
+      <SeriesMatchPage
+        matchId="427409"
+        slug="team-resilience-vs-rune-eaters-games-of-the-future-2026"
+        onBack={() => {}}
+      />,
+    );
+
+    await screen.findByText('World Rank #18');
+    expect(screen.getByText('World Rank #18')).toBeInTheDocument();
+    expect(screen.getByText('World Rank NA')).toBeInTheDocument();
+  });
+
   it('links the event name and 赛程 button to the tournament detail page', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

@@ -152,16 +152,22 @@ function mapTeamStats(stats, teamId, req) {
     heroes: (team.heroes || [])
       .map((row) => {
         const hero = heroMeta[String(row.heroId)] || {};
+        // DLTV stats 接口的 hero.image 是相对路径（/uploads/heroes/..），直接走代理会拼到站点自身 origin 而 404；
+        // 先补上 dltv.org 域名，让 getMirroredAssetUrl 落到 /api/asset-image 镜像代理。
+        const rawImage = hero.image ?? null;
+        const heroImage = rawImage && !/^https?:\/\//i.test(String(rawImage))
+          ? `https://dltv.org${String(rawImage).startsWith('/') ? '' : '/'}${rawImage}`
+          : rawImage;
         return {
           heroId: row.heroId,
           heroTitle: hero.title ?? null,
-          heroImage: proxyUrl(hero.image ?? null, req),
+          heroImage: proxyUrl(heroImage, req),
           maps: row.maps,
           wins: row.wins,
           winRate: row.winRate,
         };
       })
-      .filter((hero) => hero.heroId != null)
+      .filter((hero) => hero.heroId != null && hero.heroTitle)
       .sort((a, b) => (b.maps ?? 0) - (a.maps ?? 0))
       .slice(0, 5),
   };

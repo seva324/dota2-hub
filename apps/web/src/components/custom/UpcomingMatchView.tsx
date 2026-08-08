@@ -112,11 +112,9 @@ function TeamStatBlock({ team, align, onOpenTeam }: {
       ) : (
         <div className="flex flex-col items-center gap-2">{inner}</div>
       )}
-      {team.rank != null && (
-        <span className="rounded px-2 py-0.5 text-[11px] font-semibold text-slate-300" style={{ backgroundColor: '#2a2d35' }}>
-          World Rank #{team.rank}
-        </span>
-      )}
+      <span className="rounded px-2 py-0.5 text-[11px] font-semibold text-slate-300" style={{ backgroundColor: '#2a2d35' }}>
+        World Rank {team.rank != null && Number(team.rank) > 0 ? `#${team.rank}` : 'NA'}
+      </span>
       <div className="flex items-center gap-3">
         <Stat label="Winrate" value={formatPercent(team.winRate)} />
         <Stat label="FB" value={formatPercent(team.fbRate)} />
@@ -229,7 +227,7 @@ function SignatureHeroes({ team }: { team: SeriesTeamInfo }) {
   return (
     <div className="mt-4">
       <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        签名英雄 · {team.name}（场次 / 胜率）
+        招牌英雄 · {team.name}（场次 / 胜率）
       </div>
       <div className="flex flex-wrap gap-2">
         {heroes.map((hero) => (
