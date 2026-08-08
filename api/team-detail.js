@@ -338,14 +338,17 @@ async function fetchTeamPageHtml(teamSlug, fetchImpl = fetch) {
   if (cached && Date.now() - cached.at < TEAM_PAGE_CACHE_TTL_MS) return cached.html;
   const httpFetch = typeof fetchImpl === 'function' ? fetchImpl : fetch;
   const url = `https://dltv.org/teams/${encodeURIComponent(teamSlug)}`;
+  // DLTV 对国内出口(EdgeOne)默认返回中文版战队页,squad 真名被本地化成中文(且部分翻译错误);
+  // ___user__language=en 强制英文罗马音,保证选手名字全英文。
+  const langHeaders = { Cookie: '___user__language=en', 'Accept-Language': 'en,en-US;q=0.9' };
   // direct 失败(EdgeOne 出口直连 dltv 间歇不可用)时转 jina;校验页面确实是对应战队页(含自身 slug),
   // 避免把 CDN 挑战页/错误页当成功结果缓存,导致 squad/draft 等页面区块解析为空。
   const attempts = [
-    { url, timeoutMs: FETCH_TIMEOUT_MS, headers: {} },
+    { url, timeoutMs: FETCH_TIMEOUT_MS, headers: langHeaders },
     {
       url: buildJinaUrl(url),
       timeoutMs: FETCH_TIMEOUT_MS + 3000,
-      headers: { 'X-Return-Format': 'html', 'X-No-Cache': 'true' },
+      headers: { ...langHeaders, 'X-Return-Format': 'html', 'X-No-Cache': 'true' },
     },
   ];
   for (const attempt of attempts) {
