@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Play, RefreshCw } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MatchDetailModal } from '@/components/custom/MatchDetailModal';
 import { PlayerProfileFlyout } from '@/components/custom/PlayerProfileFlyout';
@@ -685,25 +685,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
     };
   }, []);
 
-  // 手动刷新：?refresh=1 绕过 CDN 缓存强制源站重新抓取，刷新按钮用
-  const [isLiveRefreshing, setIsLiveRefreshing] = useState(false);
-  const handleRefreshLive = async () => {
-    if (isLiveRefreshing) return;
-    setIsLiveRefreshing(true);
-    try {
-      const data = await apiFetch<LiveHeroApi>(`${LIVE_API_URL}?refresh=1`, { ttlMs: 0 });
-      const liveMatches = Array.isArray(data?.liveMatches)
-        ? data.liveMatches
-        : data?.live
-          ? [data.live]
-          : [];
-      emptyLivePollsRef.current = 0;
-      setLiveHeroes(liveMatches);
-    } catch { /* 保留现有数据 */ } finally {
-      setIsLiveRefreshing(false);
-    }
-  };
-
   const overlay = route.overlay;
   const activeMatchId = overlay?.type === 'match' ? Number(overlay.matchId) : null;
   const activePlayerId = overlay?.type === 'player' ? Number(overlay.accountId) : null;
@@ -862,16 +843,6 @@ export function HomeDashboard({ route, navigate, closeOverlay }: HomeDashboardPr
             linkLabel="查看全部直播"
             onClick={() => navigate({ page: 'matches', overlay: null })}
           />
-          <button
-            type="button"
-            onClick={() => void handleRefreshLive()}
-            disabled={isLiveRefreshing}
-            className="mb-4 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-            style={{ color: design.blue, backgroundColor: `${design.blue}1f` }}
-          >
-            <RefreshCw size={14} className={isLiveRefreshing ? 'animate-spin' : ''} />
-            {isLiveRefreshing ? '刷新中...' : '刷新直播'}
-          </button>
           {liveHeroes.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {liveHeroes.slice(0, 4).map((hero) => (
