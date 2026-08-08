@@ -207,7 +207,7 @@ export function LiveMatchCard({ hero, onOpen }: {
       {/* 系列比分：独占一行，始终居中 */}
       <div className="relative mt-3 flex h-4 items-center justify-center">
         <span className="text-[11px] font-semibold tabular-nums" style={{ color: '#71717a' }}>
-          Series {seriesScore.team1} : {seriesScore.team2}
+          系列赛 {seriesScore.team1} : {seriesScore.team2}
         </span>
       </div>
 
@@ -218,7 +218,7 @@ export function LiveMatchCard({ hero, onOpen }: {
 
       <div className="relative mt-2 flex items-center justify-between gap-2">
         <span className="shrink-0 text-[11px] font-semibold" style={{ color: liveMap?.status === 'live' ? design.red : '#a1a1aa' }}>
-          {liveMap?.label ? liveMap.label.replace(/Map\s*(\d+)/i, 'Game $1') : 'Game 1'}
+          {liveMap?.label ? liveMap.label.replace(/Map\s*(\d+)/i, '第 $1 局').replace(/Game\s*(\d+)/i, '第 $1 局') : '第 1 局'}
           {formatGameClock(liveMap?.gameTime) && (
             <span className="ml-1.5 font-semibold tabular-nums" style={{ color: '#71717a' }}>
               {formatGameClock(liveMap?.gameTime)}

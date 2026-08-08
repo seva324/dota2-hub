@@ -48,9 +48,9 @@ function formatPrize(value?: string | null): string {
 function tierLabel(tier?: string | null): string {
   const normalized = String(tier || '').toUpperCase();
   const match = normalized.match(/^([SABC])-?TIER$/i);
-  if (match) return `${match[1]}-Tier`;
-  if (/^[SABC]$/.test(normalized)) return `${normalized}-Tier`;
-  return normalized || 'Tier';
+  if (match) return `${match[1]} 级`;
+  if (/^[SABC]$/.test(normalized)) return `${normalized} 级`;
+  return normalized || '级别';
 }
 
 function deriveStatus(tournament: PrimaryLeague): { label: string; live?: boolean } {
@@ -59,8 +59,8 @@ function deriveStatus(tournament: PrimaryLeague): { label: string; live?: boolea
   const end = Number(tournament.endTime) || 0;
   if (start > 0 && end > 0) {
     if (now >= start && now <= end) return { label: 'LIVE', live: true };
-    if (now < start) return { label: 'UPCOMING' };
-    return { label: 'COMPLETED' };
+    if (now < start) return { label: '即将开始' };
+    return { label: '已结束' };
   }
   return { label: 'Dota 2' };
 }
@@ -85,7 +85,7 @@ function TournamentSlide({ tournament }: { tournament: PrimaryLeague }) {
       <div className="relative z-10 grid min-h-[280px] items-center px-8 py-12 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-14">
         <div>
           <div className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: '#8ca6ff' }}>
-            Tournament Spotlight
+            赛事焦点
           </div>
           <h3 className="mt-3 text-3xl font-black tracking-tight text-white lg:text-4xl">
             {tournament.name}
@@ -110,11 +110,11 @@ function TournamentSlide({ tournament }: { tournament: PrimaryLeague }) {
           <div className="mt-6 flex flex-wrap items-center gap-x-10 gap-y-4">
             <div className="flex flex-col">
               <span className="text-xl font-black tabular-nums text-white">{formatPrize(tournament.prizePool)}</span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Prize Pool</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">奖金池</span>
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black tabular-nums text-white">{tierLabel(tournament.tier)}</span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tier</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">级别</span>
             </div>
             <div className="flex flex-col">
               <span
@@ -124,7 +124,7 @@ function TournamentSlide({ tournament }: { tournament: PrimaryLeague }) {
                 {status.live && <span className="size-1.5 animate-pulse rounded-full bg-white" />}
                 {status.label}
               </span>
-              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">状态</span>
             </div>
           </div>
 

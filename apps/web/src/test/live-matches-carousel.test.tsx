@@ -45,7 +45,7 @@ describe('LiveMatchesCarousel', () => {
     expect(screen.getByText((content) => content.includes('DreamLeague S24'))).toBeInTheDocument();
     expect(screen.getByText('Team Spirit')).toBeInTheDocument();
     expect(screen.getAllByText('GG').length).toBeGreaterThan(0);
-    expect(screen.getAllByText((content) => content.includes('Series 1 : 0')).length).toBe(2);
+    expect(screen.getAllByText((content) => content.includes('系列赛 1 : 0')).length).toBe(2);
   });
 
   it('renders nothing when no live matches', () => {
