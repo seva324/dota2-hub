@@ -339,7 +339,8 @@ async function fetchTeamPageHtml(teamSlug, fetchImpl = fetch) {
   const url = `https://dltv.org/teams/${encodeURIComponent(teamSlug)}`;
   try {
     const res = await fetchImpl(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)', Accept: 'text/html' },
+      // DLTV 对国内出口(EdgeOne)默认返回中文版,选手真名变中文;___user__language=en 强制英文罗马音。
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Dota2Hub/1.0)', Accept: 'text/html', Cookie: '___user__language=en' },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return cached?.html || '';
