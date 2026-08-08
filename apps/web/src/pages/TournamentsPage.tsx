@@ -63,10 +63,10 @@ const TIER_TONES: Record<string, { chip: string; dot: string; label: string }> =
   A: { chip: 'border-blue-400/30 bg-blue-500/10 text-blue-200', dot: '#60a5fa', label: 'A 级' },
   B: { chip: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-200', dot: '#22d3ee', label: 'B 级' },
   C: { chip: 'border-slate-400/30 bg-slate-500/10 text-slate-300', dot: '#94a3b8', label: 'C 级' },
-  'S-Qual': { chip: 'border-amber-300/20 bg-amber-400/5 text-amber-200/70', dot: '#fbbf24', label: 'S 预选' },
-  'A-Qual': { chip: 'border-blue-400/20 bg-blue-500/5 text-blue-200/70', dot: '#60a5fa', label: 'A 预选' },
-  'B-Qual': { chip: 'border-cyan-400/20 bg-cyan-500/5 text-cyan-200/70', dot: '#22d3ee', label: 'B 预选' },
-  'C-Qual': { chip: 'border-slate-400/20 bg-slate-500/5 text-slate-300/70', dot: '#94a3b8', label: 'C 预选' },
+  'S-QUAL': { chip: 'border-amber-300/20 bg-amber-400/5 text-amber-200/70', dot: '#fbbf24', label: 'S 预选' },
+  'A-QUAL': { chip: 'border-blue-400/20 bg-blue-500/5 text-blue-200/70', dot: '#60a5fa', label: 'A 预选' },
+  'B-QUAL': { chip: 'border-cyan-400/20 bg-cyan-500/5 text-cyan-200/70', dot: '#22d3ee', label: 'B 预选' },
+  'C-QUAL': { chip: 'border-slate-400/20 bg-slate-500/5 text-slate-300/70', dot: '#94a3b8', label: 'C 预选' },
 };
 
 function tierTone(tier?: string | null) {

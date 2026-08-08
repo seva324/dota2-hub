@@ -735,9 +735,9 @@ async function fetchTeamDetail(teamSlug, teamName, teamTag, fetchImpl) {
     upcomingMatches: nextMatch ? [nextMatch] : [],
     quickStats: [
       ...(teamMeta.rank ? [{ label: '世界排名', value: `#${teamMeta.rank}`, unit: '', href: 'https://dltv.org/ranking' }] : []),
-      ...(teamMeta.maps ? [{ label: '总地图数', value: String(teamMeta.maps), unit: 'maps', href: `https://dltv.org/teams/${teamSlug}/maps` }] : []),
+      ...(teamMeta.maps ? [{ label: '总地图数', value: String(teamMeta.maps), unit: '场', href: `https://dltv.org/teams/${teamSlug}/maps` }] : []),
       ...(teamMeta.prize ? [{ label: '赛事奖金', value: `$${Number(teamMeta.prize).toLocaleString('en-US')}`, unit: '', href: '' }] : []),
-      { label: '近 3 个月地图', value: String(statsOverview.aggregate.maps), unit: 'maps', href: '' },
+      { label: '近 3 个月地图', value: String(statsOverview.aggregate.maps), unit: '场', href: '' },
       { label: '近 3 个月胜率', value: String(statsOverview.aggregate.win_rate) + '%', unit: '', href: '' },
     ].slice(0, 5),
     statsOverview,
