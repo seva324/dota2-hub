@@ -64,7 +64,7 @@ export function PlayerRecentMatches({ matches, heroMap }: Props) {
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
                     match.won === true ? 'bg-emerald-500/20 text-emerald-300' :
                     match.won === false ? 'bg-red-500/20 text-red-300' : 'bg-slate-700 text-slate-400'
-                  }`}>{match.won === true ? 'WIN' : match.won === false ? 'LOSS' : '--'}</span>
+                  }`}>{match.won === true ? '胜' : match.won === false ? '负' : '--'}</span>
                 </div>
               </div>
             );

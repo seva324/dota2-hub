@@ -30,9 +30,9 @@ const INITIAL_VISIBLE_TEAMS = 10;
 const EXPAND_STEP_TEAMS = 10;
 
 const MEDALS = {
-  gold: { color: '#F5C96B', label: 'CHAMPION' },
-  silver: { color: '#C7CDD6', label: 'RUNNER-UP' },
-  bronze: { color: '#B08A5E', label: 'THIRD PLACE' },
+  gold: { color: '#F5C96B', label: '冠军' },
+  silver: { color: '#C7CDD6', label: '亚军' },
+  bronze: { color: '#B08A5E', label: '季军' },
 } as const;
 
 type MedalKey = keyof typeof MEDALS;
@@ -259,9 +259,8 @@ export function TeamsPage({ onOpenTeam }: { onOpenTeam?: OpenTeamHandler }) {
       <section className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl tracking-wide text-white md:text-4xl" style={RANK_FONT}>
-            TEAM RANKING
-          </h1>
-        </div>
+            战队排名
+          </h1>        </div>
         {!loading && !error && (
           <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-slate-400">
             {teams.length} 支战队{updatedAt ? ` · 更新于 ${formatUpdatedAt(updatedAt)}` : ''}

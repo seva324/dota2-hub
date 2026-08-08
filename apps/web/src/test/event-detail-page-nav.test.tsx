@@ -88,7 +88,7 @@ describe('EventDetailPage navigation', () => {
   it('opens the match detail page when clicking a finished result card', async () => {
     const { onOpenMatch } = renderEventDetail();
     await waitFor(() => {
-      expect(screen.getByText('已结束')).toBeTruthy();
+      expect(screen.getByRole('button', { name: /已结束.*Team C.*Team D/s })).toBeTruthy();
     });
     fireEvent.click(screen.getByRole('button', { name: /已结束.*Team C.*Team D/s }));
     expect(onOpenMatch).toHaveBeenCalledWith({ matchId: '222', slug: 'team-c-vs-team-d-test-event' });

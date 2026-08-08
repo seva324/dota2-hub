@@ -127,7 +127,7 @@ const FLAG_MAP: Record<string, string> = {
 };
 
 function formatDateRange(value?: string): string {
-  if (!value) return 'TBD';
+  if (!value) return '待定';
   const [start, end] = value.split(' - ').map((part) => part.trim());
   const fmt = (raw: string) => {
     const date = new Date(raw.replace(' ', 'T'));
@@ -243,15 +243,15 @@ function HeroSection({ payload }: { payload: EventDetailPayload }) {
           </div>
           <div className="hero-stat">
             <div className="k">奖金池</div>
-            <div className="v red">{m['Prize pool'] || 'TBD'}</div>
+            <div className="v red">{m['Prize pool'] || '待定'}</div>
           </div>
           <div className="hero-stat">
             <div className="k">参赛队伍</div>
-            <div className="v">{m.Participants || 'TBD'}</div>
+            <div className="v">{m.Participants || '待定'}</div>
           </div>
           <div className="hero-stat">
             <div className="k">赛事级别</div>
-            <div className="v">{tier || 'TBD'}</div>
+            <div className="v">{tier || '待定'}</div>
           </div>
         </div>
       </div>
@@ -318,7 +318,7 @@ function matchStage(rounds: PlayoffRound[] | undefined, url?: string): { stage: 
       }
     }
   }
-  return { stage: 'Playoffs', bo: 'BO3' };
+  return { stage: '淘汰赛', bo: 'BO3' };
 }
 
 function MatchCard({
@@ -431,7 +431,7 @@ function MatchesSection({
     <>
       {hasRelatedLive ? (
         <section className="section" aria-label="关联直播">
-          <SectionHead title="关联直播" eyebrow="Live Now" />
+          <SectionHead title="关联直播" eyebrow="进行中" />
           <div className="matches-scroll">
             {relatedLive.length > 0
               ? relatedLive.map((hero) => (
@@ -447,7 +447,7 @@ function MatchesSection({
       ) : null}
       {hasUpcoming ? (
         <section className="section" aria-label="即将开赛">
-          <SectionHead title="即将开赛" eyebrow="Upcoming" bar="blue" />
+          <SectionHead title="即将开赛" eyebrow="即将开赛" bar="blue" />
           <div className="matches-scroll">
             {upcomingMatches.map((m) => (
               <MatchCard key={`${m.left}-${m.right}`} match={m} rounds={payload.playoffRounds} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
@@ -467,7 +467,7 @@ function GroupStageSection({ groups, onOpenTeam }: { groups?: EventGroup[]; onOp
   if (!groups || groups.length === 0) return null;
   return (
     <section className="section" aria-label="小组赛">
-      <SectionHead title="小组赛积分榜" eyebrow="Group Stage" />
+      <SectionHead title="小组赛积分榜" eyebrow="小组赛" />
       <div className="group-grid">
         {groups.map((group) => (
           <div className="card group-table" key={group.name}>
@@ -859,7 +859,7 @@ function PlayoffsSection({
 
   return (
     <section className="section" aria-label="淘汰赛">
-      <SectionHead title="淘汰赛" eyebrow="Playoffs" />
+      <SectionHead title="淘汰赛" eyebrow="淘汰赛" />
       <div className="card">
         <div className="bracket-scroll">
           <div className="bracket" ref={boxRef} style={{ gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))` }}>
@@ -921,7 +921,7 @@ function PrizePoolSection({ prizes, breakdown }: { prizes?: PrizeEntry[]; breakd
 function StatsSection() {
   return (
     <section className="section" aria-label="赛事数据">
-      <SectionHead title="赛事数据" eyebrow="Event Stats" bar="blue" />
+      <SectionHead title="赛事数据" eyebrow="赛事数据" bar="blue" />
       <div className="card stats-grid">
         <div className="stats-empty">
           <div className="icon" aria-hidden="true">
@@ -952,7 +952,7 @@ function ParticipantsSection({
   if (!participants || participants.length === 0) return null;
   return (
     <section className="section" aria-label="参赛队伍">
-      <SectionHead title="参赛队伍" eyebrow={`Participants · ${participants.length}`} />
+      <SectionHead title="参赛队伍" eyebrow={`参赛队伍 · ${participants.length}`} />
       <div className="team-grid">
         {participants.map((team) => (
           <article className="team-card" key={team.name}>
@@ -1042,7 +1042,7 @@ function FinishedSection({
 
   return (
     <section className="section" aria-label="已结束比赛">
-      <SectionHead title="已结束比赛" eyebrow="Finished" bar="slate" />
+      <SectionHead title="已结束比赛" eyebrow="已结束" bar="slate" />
       <div className="finished-cards" ref={listRef}>
         {all.slice(0, shown).map((mm) => {
           const { p1, p2, lw, rw } = scoreOf(mm);

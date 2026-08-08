@@ -41,7 +41,7 @@ export function PicksBansInline({ picksBans, heroesData }: { picksBans: PicksBan
 
   return (
     <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
-      <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
+      <div className="text-xs text-slate-400 mb-2">选人 / 禁用</div>
       <div className="overflow-x-auto pb-1">
         <div className="flex min-w-max flex-nowrap items-start gap-2.5">
           {picksBans.map((entry) => {

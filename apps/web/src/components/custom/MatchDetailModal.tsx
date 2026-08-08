@@ -92,7 +92,7 @@ function getSeriesTypeLabel(seriesType: number): string {
     2: 'BO5',
     3: 'BO2',
   };
-  return seriesTypes[seriesType] || 'Unknown';
+  return seriesTypes[seriesType] || '未知';
 }
 
 function formatCompact(value: number): string {
@@ -131,7 +131,7 @@ function getPlayerDisplayName(player: Player): string {
   if (player.name && player.name !== 'Unknown') return player.name;
   if (proInfo?.name) return proInfo.name;
   if (player.personaname) return player.personaname;
-  return player.account_id ? String(player.account_id) : 'Unknown';
+  return player.account_id ? String(player.account_id) : '未知';
 }
 
 function getMainItemIds(player: Player): number[] {
@@ -548,7 +548,7 @@ export function MatchDetailModal({ matchId, seriesMaps = [], open, onOpenChange,
                     <span className="text-slate-500">·</span>
                     <span>时长 {formatDuration(match.duration)}</span>
                     <span className="text-slate-500">·</span>
-                    <span>Match ID {match.match_id}</span>
+                    <span>比赛 ID: {match.match_id}</span>
                     <span className="text-slate-500">·</span>
                     <span>{formatDate(match.start_time)}</span>
                   </div>
@@ -1520,7 +1520,7 @@ function TeamSummaryTable({
         <div className="min-w-[820px]">
           <header className="grid grid-cols-[minmax(180px,1.6fr)_70px_80px_72px_52px_52px_68px_52px_72px] divide-x divide-slate-800 bg-slate-900/70 text-[10px] uppercase tracking-wide text-slate-400">
             <div className="px-3 py-1.5">选手</div>
-            <div className="px-2 py-1.5 text-center">K/D/A</div>
+            <div className="px-2 py-1.5 text-center">击杀/死亡/助攻</div>
             <div className="px-2 py-1.5 text-center">正补/反补</div>
             <div className="px-2 py-1.5 text-center">净值</div>
             <div className="px-2 py-1.5 text-center">GPM</div>
@@ -1881,7 +1881,7 @@ function PicksBansInline({ picksBans }: { picksBans: PicksBans[] }) {
 
   return (
     <div className="border-t border-slate-800 px-4 py-3 bg-slate-900/30">
-      <div className="text-xs text-slate-400 mb-2">Picks / Bans</div>
+      <div className="text-xs text-slate-400 mb-2">选人 / 禁用</div>
       <div className="overflow-x-auto pb-1">
         <div className="flex min-w-max flex-nowrap items-start gap-2.5">
           {picksBans.map((entry) => {

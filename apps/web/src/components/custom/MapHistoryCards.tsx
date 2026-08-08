@@ -30,7 +30,7 @@ function TeamCell({ team, side, lose }: {
   side: 'Radiant' | 'Dire';
   lose: boolean;
 }) {
-  const name = team.name || 'TBD';
+  const name = team.name || '待定';
   const logo = resolveTeamLogo({ name, teamId: team.id }, [], team.logoUrl);
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -40,7 +40,7 @@ function TeamCell({ team, side, lose }: {
       <span className="min-w-0">
         <span className="block truncate text-xs font-bold" style={{ color: lose ? design.faint : design.fg }}>{name}</span>
         <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: side === 'Radiant' ? design.radiant : design.dire, opacity: lose ? 0.5 : 1 }}>
-          {side}
+          {side === 'Radiant' ? '天辉' : '夜魇'}
         </span>
       </span>
     </div>
@@ -71,7 +71,7 @@ export function MapHistoryCards({ maps, team1, team2 }: {
         const radiantLose = m.winner !== radiantSideKey;
         const direLose = m.winner !== direSideKey;
         const wTeam = m.winner === radiantSideKey ? radiant : dire;
-        const wSide = m.winner === radiantSideKey ? 'Radiant' : 'Dire';
+        const wSide = m.winner === radiantSideKey ? '天辉' : '夜魇';
         const lead = m.team1NetWorthLead != null
           ? `${formatNetWorth(Math.abs(m.team1NetWorthLead))} ${team1.name}`
           : m.team2NetWorthLead != null
@@ -112,7 +112,7 @@ export function MapHistoryCards({ maps, team1, team2 }: {
               <span className="mt-1 flex items-center gap-2 text-[10px]">
                 <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: design.gold }}>
                   <span className="size-1.5 rounded-full" style={{ backgroundColor: design.gold, boxShadow: `0 0 8px ${design.gold}88` }} />
-                  {wTeam.name || 'TBD'} 获胜
+                  {wTeam.name || '待定'} 获胜
                 </span>
                 <span style={{ color: design.faint }}>· {wSide}</span>
               </span>

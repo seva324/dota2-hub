@@ -118,9 +118,9 @@ function TeamStatBlock({ team, align, onOpenTeam }: {
         </span>
       )}
       <div className="flex items-center gap-3">
-        <Stat label="Winrate" value={formatPercent(team.winRate)} />
-        <Stat label="FB" value={formatPercent(team.fbRate)} />
-        <Stat label="F10" value={formatPercent(team.f10Rate)} />
+        <Stat label="胜率" value={formatPercent(team.winRate)} />
+        <Stat label="一血" value={formatPercent(team.fbRate)} />
+        <Stat label="10杀" value={formatPercent(team.f10Rate)} />
       </div>
     </div>
   );
@@ -263,17 +263,17 @@ function StatsComparison({ first, second }: { first: SeriesTeamInfo; second: Ser
 
   const pct = (v: number | null) => (v == null ? '—' : `${v}%`);
   const num = (v: number | null) => (v == null ? '—' : v.toFixed(1));
-  const mins = (v: number | null) => (v == null ? '—' : `${Math.round(v / 60)}min`);
+  const mins = (v: number | null) => (v == null ? '—' : `${Math.round(v / 60)} 分钟`);
   const rows = [
-    { label: 'Winrate', left: pct(a.winRate), right: pct(b.winRate) },
-    { label: 'Kills Avg', left: num(a.avgKills), right: num(b.avgKills) },
-    { label: 'Deaths Avg', left: num(a.avgDeaths), right: num(b.avgDeaths) },
-    { label: 'Assists', left: num(a.avgAssists), right: num(b.avgAssists) },
-    { label: 'FB', left: pct(a.fbRate), right: pct(b.fbRate) },
-    { label: 'F10', left: pct(a.f10Rate), right: pct(b.f10Rate) },
-    { label: 'WIN WHEN FB', left: pct(a.winFbRate), right: pct(b.winFbRate) },
-    { label: 'WIN WHEN F10', left: pct(a.winF10Rate), right: pct(b.winF10Rate) },
-    { label: 'Avg Duration', left: mins(a.avgTime), right: mins(b.avgTime) },
+    { label: '胜率', left: pct(a.winRate), right: pct(b.winRate) },
+    { label: '场均击杀', left: num(a.avgKills), right: num(b.avgKills) },
+    { label: '场均死亡', left: num(a.avgDeaths), right: num(b.avgDeaths) },
+    { label: '助攻', left: num(a.avgAssists), right: num(b.avgAssists) },
+    { label: '一血', left: pct(a.fbRate), right: pct(b.fbRate) },
+    { label: '10杀', left: pct(a.f10Rate), right: pct(b.f10Rate) },
+    { label: '一血后胜率', left: pct(a.winFbRate), right: pct(b.winFbRate) },
+    { label: '10杀后胜率', left: pct(a.winF10Rate), right: pct(b.winF10Rate) },
+    { label: '平均时长', left: mins(a.avgTime), right: mins(b.avgTime) },
   ];
 
   return (
