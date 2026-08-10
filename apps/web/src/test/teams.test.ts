@@ -26,19 +26,16 @@ describe('resolveTeamLogo', () => {
       .toBe(getCuratedTeamLogoMirrorPath('Zero Tenacity'));
   });
 
-  it('prefers the local name-based mirror fallback over DLTV explicit logos', () => {
-    // PSG.LGD 只有镜像 fallback（无 curated/override），DLTV logo 不应抢先
-    expect(resolveTeamLogo({ teamId: '5014799', name: 'PSG.LGD' }, [], 'https://hawk.live/storage/teams/lgd.png'))
-      .toBe('/images/mirror/teams/5014799.png');
-    // DLTV 全名同样命中
+  it('uses the DLTV logo for LGD Gaming (no local mirror fallback)', () => {
+    // LGD 没有本地镜像 fallback（原 5014799 是 Nemiga 的 logo），无行数据时直接用 explicit DLTV logo
     expect(resolveTeamLogo({ name: 'LGD Gaming' }, [], 'https://dltv.org/uploads/teams/small/lgd.png'))
-      .toBe('/images/mirror/teams/5014799.png');
-    // 行数据带远端 logo_url + tag 命中时，本地镜像 fallback 同样优先
+      .toBe('https://dltv.org/uploads/teams/small/lgd.png');
+    // 行数据带远端 logo_url 时优先用行数据
     expect(resolveTeamLogo(
-      { teamId: '5014799', name: 'LGD Gaming' },
-      [{ team_id: '5014799', name: 'LGD Gaming', tag: 'LGD', logo_url: 'https://s3.dltv.org/uploads/teams/lgd.png' }],
+      { teamId: '15', name: 'LGD Gaming' },
+      [{ team_id: '15', name: 'LGD Gaming', tag: 'LGD', logo_url: 'https://s3.dltv.org/uploads/teams/lgd.png' }],
       'https://hawk.live/storage/teams/lgd.png',
-    )).toBe('/images/mirror/teams/5014799.png');
+    )).toBe('https://s3.dltv.org/uploads/teams/lgd.png');
   });
 
   it('matches curated mirrors by DLTV short names used on event pages', () => {
