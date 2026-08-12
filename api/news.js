@@ -2984,9 +2984,9 @@ export async function upsertSyncedNewsItems(db, items, options = {}) {
     }
   }
 
-  const translateLimit = Number.isFinite(Number(options?.translateLimit))
-    ? Math.max(0, Number(options.translateLimit))
-    : pendingTranslateItems.length;
+  const translateLimit = options?.translateLimit == null || !Number.isFinite(Number(options.translateLimit))
+    ? pendingTranslateItems.length
+    : Math.max(0, Number(options.translateLimit));
   const translationErrors = [];
   const translateTargets = pendingTranslateItems.slice(0, translateLimit);
   for (const item of translateTargets) {
@@ -3233,9 +3233,9 @@ export async function syncNewsToDb(options = {}) {
   }
 
   const cutoffSeconds = Math.floor(Date.now() / 1000) - resolveNewsIncrementalWindowSeconds(options);
-  const translateLimit = Number.isFinite(Number(options?.translateLimit))
-    ? Math.max(0, Number(options.translateLimit))
-    : null;
+  const translateLimit = options?.translateLimit == null || !Number.isFinite(Number(options.translateLimit))
+    ? null
+    : Math.max(0, Number(options.translateLimit));
   let remainingTranslateBudget = translateLimit;
 
   const sourceDiagnostics = [];
