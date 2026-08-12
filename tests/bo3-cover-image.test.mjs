@@ -66,6 +66,7 @@ test('getBo3ImageFetchCandidates falls back from BO3 image proxy to files origin
     [
       'https://image-proxy.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp.webp?w=960&h=480',
       'https://files.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp',
+      'https://wsrv.nl/?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F471032%2Ftitle_image%2Fwebp-a1ad4563323fda40b1520cf8559625c2.webp.webp%3Fw%3D960%26h%3D480',
     ],
   );
 });
@@ -74,5 +75,17 @@ test('rewriteBo3ImageUrlsForClient proxies BO3 image URLs inside markdown', () =
   assert.equal(
     rewriteBo3ImageUrlsForClient('![cover](https://files.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp)'),
     '![cover](/api/bo3-image?url=https%3A%2F%2Ffiles.bo3.gg%2Fuploads%2Fnews%2F471032%2Ftitle_image%2Fwebp-a1ad4563323fda40b1520cf8559625c2.webp)',
+  );
+});
+
+test('getBo3ImageFetchCandidates appends a wsrv.nl fallback that decodes back to the original URL', () => {
+  const candidates = getBo3ImageFetchCandidates('https://image-proxy.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp.webp?w=960&h=480');
+
+  assert.ok(candidates.length > 0);
+  const fallback = candidates[candidates.length - 1];
+  assert.ok(fallback.startsWith('https://wsrv.nl/?url='));
+  assert.equal(
+    decodeURIComponent(fallback.slice('https://wsrv.nl/?url='.length)),
+    'https://image-proxy.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp.webp?w=960&h=480',
   );
 });
