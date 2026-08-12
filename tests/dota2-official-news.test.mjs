@@ -54,3 +54,21 @@ test('extractLocalizedAnnouncement parses embedded localized headline/body', () 
 test('extractLocalizedAnnouncement returns null without an announcement', () => {
   assert.equal(extractLocalizedAnnouncement('<html><body>no announcement</body></html>'), null);
 });
+
+test('extractFirstImageUrl resolves self-closing img src token URL', () => {
+  const body = '[img src="{STEAM_CLAN_LOC_IMAGE}/3703047/aa83bcaaafe7cd4d11a841ec381ec28ccb039d41.png"]';
+  assert.equal(
+    extractFirstImageUrl(body),
+    'https://clan.fastly.steamstatic.com/images/3703047/aa83bcaaafe7cd4d11a841ec381ec28ccb039d41.png'
+  );
+});
+
+test('extractFirstImageUrl resolves self-closing img src with already-resolved https URL', () => {
+  const body = '[img src="https://media.steampowered.com/a.png"]';
+  assert.equal(extractFirstImageUrl(body), 'https://media.steampowered.com/a.png');
+});
+
+test('bbcodeToMarkdown renders self-closing img src as markdown image', () => {
+  const md = bbcodeToMarkdown('[img src="{STEAM_CLAN_LOC_IMAGE}/3703047/a.png"]');
+  assert.equal(md, '![img](https://clan.fastly.steamstatic.com/images/3703047/a.png)');
+});
