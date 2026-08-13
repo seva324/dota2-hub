@@ -296,6 +296,28 @@ describe('dltv-event-detail-parser 瑞士轮（TI2026 风格）', () => {
     const payload = parseDltvEventDetailPage(html, 'some-event');
     expect(payload.groups[0].rounds).toBeUndefined();
   });
+
+  it('表头内多包一层（表头项 → span → 轮名）也能识别 rounds', () => {
+    const html = `<section class="group__stage">
+      <div class="col-6">
+        <div class="table">
+          <div class="table-body">
+            ${swissStandRow(1, 'BoomBoys', 'Russia', '2 - 0', true)}
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="table">
+          <div class="table__head">
+            <div class="table__head-item width-16 text-center"><span>R 1</span></div>
+            <div class="table__head-item width-16 text-center"><span>R 2</span></div>
+          </div>
+        </div>
+      </div>
+    </section>`;
+    const payload = parseDltvEventDetailPage(html, 'ti26');
+    expect(payload.groups[0].rounds).toEqual(['R1', 'R2']);
+  });
 });
 
 describe('dltv-event-detail-parser 已结束比赛时间（data-event-matches-odd）', () => {
