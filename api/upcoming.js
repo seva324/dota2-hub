@@ -4,6 +4,7 @@
  */
 
 import { getDltvUpcoming } from '../lib/server/dltv-matches-service.js';
+import { enrichUpcomingWithEventMatches } from '../lib/server/event-upcoming-enrichment.js';
 import { getCuratedTeamLogoGithubUrl } from '../lib/team-logo-overrides.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
@@ -36,7 +37,10 @@ export default async function handler(req, res) {
   const days = Number.isFinite(parsedDays) && parsedDays > 0 ? Math.min(parsedDays, 14) : 7;
 
   try {
-    const { upcoming, source } = await getDltvUpcoming();
+    // base = DLTV /matches 的 upcoming（通常只有最近一天少量场次）。
+    // 富化：按 event_slug 拉赛事页 matches 并入，去重后让主列表显示完整 upcoming。
+    const { upcoming: baseUpcoming, source } = await getDltvUpcoming();
+    const upcoming = await enrichUpcomingWithEventMatches(baseUpcoming, { fetchImpl: req.fetchImpl });
 
     const result = upcoming
       .filter((row) => row.timestamp >= Math.floor(Date.now() / 1000))

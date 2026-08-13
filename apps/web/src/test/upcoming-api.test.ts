@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getDltvUpcoming = vi.fn();
+const enrichUpcomingWithEventMatches = vi.fn(async (upcoming) => upcoming);
 
 vi.mock('../../../../lib/server/dltv-matches-service.js', () => ({
   getDltvUpcoming,
+}));
+
+vi.mock('../../../../lib/server/event-upcoming-enrichment.js', () => ({
+  enrichUpcomingWithEventMatches,
 }));
 
 vi.mock('../../../../lib/team-logo-overrides.js', () => ({
@@ -53,6 +58,8 @@ describe('/api/upcoming', () => {
     vi.resetModules();
     getDltvUpcoming.mockReset();
     getDltvUpcoming.mockResolvedValue({ upcoming: [UPCOMING_MATCH], source: 'dltv' });
+    enrichUpcomingWithEventMatches.mockReset();
+    enrichUpcomingWithEventMatches.mockImplementation(async (upcoming) => upcoming);
   });
 
   it('maps DLTV upcoming matches into the response envelope', async () => {
