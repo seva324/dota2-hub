@@ -139,12 +139,21 @@ function formatDateRange(value?: string): string {
 }
 
 /** DLTV center 是 UTC 时间串（"YYYY-MM-DD HH:MM:SS"），转北京时间 HH:MM 显示（与全站约定一致）。
- *  注意：不能对原始字符串做 /\d{2}:\d{2}$/ 提取——那会抓到末尾的 MM:SS（"00:00"）。 */
-function formatCenterAsCstTime(center: string): string {
+ *  注意：① 不能对原始字符串做 /\d{2}:\d{2}$/ 提取——那会抓到末尾的 MM:SS（"00:00"）。
+ *  ② 不能 new Date(unix+8h).getHours()——浏览器若是 UTC+8 会双重加时区（02:00→18:00）。
+ *  用 Intl 显式指定 Asia/Shanghai，与浏览器时区无关。 */
+export function formatCenterAsCstTime(center: string): string {
   const date = new Date(String(center || '').replace(' ', 'T') + 'Z');
   if (Number.isNaN(date.getTime())) return center;
-  const cst = new Date(date.getTime() + 8 * 3600000);
-  return `${cst.getHours().toString().padStart(2, '0')}:${cst.getMinutes().toString().padStart(2, '0')}`;
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parts.find((p) => p.type === 'hour')?.value || '00';
+  const minute = parts.find((p) => p.type === 'minute')?.value || '00';
+  return `${hour}:${minute}`;
 }
 
 /** 从 DLTV 战队 URL（/teams/<slug>）提取 slug。 */
