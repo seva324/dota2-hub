@@ -169,6 +169,51 @@ describe('parseDltvUpcomingMatchesPage', () => {
     ]);
   });
 
+  it('carries the event header across many consecutive cards (regression: 4 upcoming, only first has head metadata)', () => {
+    const card = (seriesId, teams, opts = {}) => `
+      <div class="match upcoming " data-matches-odd="${opts.time}" data-series-id="${seriesId}">
+        ${opts.head ? `
+        <div class="match__head">
+          <a href="https://dltv.org/events/the-international-2026"></a>
+          <div class="match__head-event"><span>The International 2026</span></div>
+          <div class="match__head-format red"><span>Group Stage</span></div>
+          <div class="match__head-format"><span>bo3</span></div>
+        </div>` : ''}
+        <div class="match__body">
+          <div class="match__body-details">
+            <a href="https://dltv.org/matches/${seriesId}/dummy"></a>
+            <div class="match__body-details__team"><div class="team__title"><span>${teams[0]}</span></div></div>
+            <div class="match__body-details__team"><div class="team__title"><span>${teams[1]}</span></div></div>
+          </div>
+        </div>
+      </div>
+    `;
+    // 卡片间隔 2500 字符：第 3、4 场超出旧的 4000 字符回溯窗口，旧实现会丢这两场。
+    const pad = '\n' + ' '.repeat(2500);
+    const fixture = [
+      card('501', ['Team Spirit', 'Aurora'], { time: '2026-08-14 02:00:00', head: true }),
+      pad,
+      card('502', ['Team Yandex', 'Team Liquid'], { time: '2026-08-14 02:00:00' }),
+      pad,
+      card('503', ['Xtreme Gaming', 'GamerLegion'], { time: '2026-08-14 02:00:00' }),
+      pad,
+      card('504', ['HULIGANI', 'Vici Gaming'], { time: '2026-08-14 02:00:00' }),
+    ].join('');
+
+    const rows = parseDltvUpcomingMatchesPage(fixture, {
+      now: parseUtcDateTimeToUnixSeconds('2026-08-14 00:00:00'),
+      maxStartTime: parseUtcDateTimeToUnixSeconds('2026-08-15 00:00:00'),
+    });
+
+    expect(rows).toHaveLength(4);
+    expect(rows.map((row) => row.seriesId)).toEqual(['501', '502', '503', '504']);
+    for (const row of rows) {
+      expect(row.tournament).toBe('The International 2026');
+      expect(row.eventUrl).toBe('https://dltv.org/events/the-international-2026');
+      expect(row.bestOf).toBe('BO3');
+    }
+  });
+
   it('parses Jina-rendered markdown match cards as a fallback source', () => {
     const markdownFixture = `
 Title: Dota 2 Matches & livescore – DLTV
