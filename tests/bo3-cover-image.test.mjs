@@ -60,12 +60,12 @@ test('toChinaReachableBo3ImageUrl can emit an absolute URL for Mini Program clie
   );
 });
 
-test('getBo3ImageFetchCandidates falls back from BO3 image proxy to files origin', () => {
+test('getBo3ImageFetchCandidates prefers the reliable files origin over the flaky image proxy', () => {
   assert.deepEqual(
     getBo3ImageFetchCandidates('https://image-proxy.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp.webp?w=960&h=480'),
     [
-      'https://image-proxy.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp.webp?w=960&h=480',
       'https://files.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp',
+      'https://image-proxy.bo3.gg/uploads/news/471032/title_image/webp-a1ad4563323fda40b1520cf8559625c2.webp.webp?w=960&h=480',
       'https://wsrv.nl/?url=https%3A%2F%2Fimage-proxy.bo3.gg%2Fuploads%2Fnews%2F471032%2Ftitle_image%2Fwebp-a1ad4563323fda40b1520cf8559625c2.webp.webp%3Fw%3D960%26h%3D480',
     ],
   );
