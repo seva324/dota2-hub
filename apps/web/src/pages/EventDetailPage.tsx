@@ -138,6 +138,15 @@ function formatDateRange(value?: string): string {
   return `${fmt(start)} - ${fmt(end)}`;
 }
 
+/** DLTV center 是 UTC 时间串（"YYYY-MM-DD HH:MM:SS"），转北京时间 HH:MM 显示（与全站约定一致）。
+ *  注意：不能对原始字符串做 /\d{2}:\d{2}$/ 提取——那会抓到末尾的 MM:SS（"00:00"）。 */
+function formatCenterAsCstTime(center: string): string {
+  const date = new Date(String(center || '').replace(' ', 'T') + 'Z');
+  if (Number.isNaN(date.getTime())) return center;
+  const cst = new Date(date.getTime() + 8 * 3600000);
+  return `${cst.getHours().toString().padStart(2, '0')}:${cst.getMinutes().toString().padStart(2, '0')}`;
+}
+
 /** 从 DLTV 战队 URL（/teams/<slug>）提取 slug。 */
 function slugFromTeamUrl(url?: string | null): string | null {
   const match = String(url || '').match(/\/teams\/([^/?#]+)/);
@@ -373,7 +382,7 @@ function MatchCard({
         ) : (
           <div className="match-score">
             <div className="clock">
-              {match.center.match(/\d{2}:\d{2}$/)?.[0] || match.center}
+              {formatCenterAsCstTime(match.center)}
             </div>
             <span className="bo">{bo}</span>
           </div>

@@ -183,3 +183,40 @@ describe('dltv-event-detail-parser 已结束/upcoming 切分', () => {
     expect(payload.matches.finishedMatches.length).toBe(1);
   });
 });
+
+describe('dltv-event-detail-parser 中文表头积分榜（DLTV 中文版页面）', () => {
+  function cnStandingRow(rank, team, country, record, advance) {
+    return `
+      <div class="table__body-row">
+        <div class="table__body-row__cell" data-theme-dark-bgcolor="${advance ? '#163819' : '#1a1d24'}"><div class="cell__coloured">${rank}</div></div>
+        <a href="https://dltv.org/teams/${team.toLowerCase()}" class="table__body-row__cell">
+          <div class="cell__logo" data-theme-dark="/uploads/teams/small/x.png"></div>
+          <div class="cell__name"><div>${team}</div><div class="cell__name-text">${country}</div></div>
+        </a>
+        <div class="table__body-row__cell"><div class="cell__text big">${record}</div></div>
+      </div>`;
+  }
+
+  it('中文「团队/比赛」表头：战绩列正常提取（回归：EdgeOne 抓中文页时 record 为空）', () => {
+    const html = `<h1>THE INTERNATIONAL 2026</h1>
+      <section class="group__stage">
+        <div class="table">
+          <div class="table__head">
+            <div class="table__head-item width-75 big-text">团队</div>
+            <div class="table__head-item width-25 text-center">比赛</div>
+          </div>
+          <div class="table-body">
+            ${cnStandingRow(1, 'BoomBoys', 'Russia', '2 - 0', true)}
+            ${cnStandingRow(2, 'TEAM VISION', 'Russia', '2 - 0', true)}
+            ${cnStandingRow(16, 'OG', 'Philippines', '0 - 2', false)}
+          </div>
+        </div>
+      </section>`;
+    const payload = parseDltvEventDetailPage(html, 'the-international-2026');
+    expect(payload.groups.length).toBe(1);
+    const rows = payload.groups[0].rows;
+    expect(rows.map((r) => r.team)).toEqual(['BoomBoys', 'TEAM VISION', 'OG']);
+    expect(rows.map((r) => r.record)).toEqual(['2 - 0', '2 - 0', '0 - 2']);
+    expect(rows.map((r) => r.advance)).toEqual([true, true, false]);
+  });
+});
