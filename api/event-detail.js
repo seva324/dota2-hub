@@ -116,7 +116,7 @@ async function buildDetail(slug, fetchImpl = fetch, opts = {}) {
   if (res.debugHtml) {
     const d = res.debugHtml;
     const gsStart = d.indexOf('<section class="group__stage">');
-    payload._debugFragment = d.slice(gsStart >= 0 ? gsStart : 0, (gsStart >= 0 ? gsStart : 0) + 6000);
+    payload._debugFragment = d.slice(gsStart >= 0 ? gsStart : 0, (gsStart >= 0 ? gsStart : 0) + 16000);
     payload._debugTotalLen = d.length;
     payload._debugHasR = />\s*R\s*\d/.test(d);
     payload._debugHasCol6 = (d.match(/class="col-6"/g) || []).length;
