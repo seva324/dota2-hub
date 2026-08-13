@@ -81,7 +81,7 @@ function buildTimeoutSignal(timeoutMs) {
   };
 }
 
-async function fetchHtml(url, fetchImpl = fetch) {
+async function fetchHtml(url, fetchImpl = fetch, opts = {}) {
   const attempts = [
     { url, type: 'direct', timeoutMs: 12000 },
     { url: `https://r.jina.ai/http://${url.replace(/^https?:\/\//i, '')}`, type: 'jina', timeoutMs: 18000 },
@@ -99,7 +99,7 @@ async function fetchHtml(url, fetchImpl = fetch) {
       });
       if (!res.ok) continue;
       const text = await res.text();
-      if (String(text || '').trim().length >= 500) return { raw: text, sourceType: attempt.type };
+      if (String(text || '').trim().length >= 500) return { raw: text, sourceType: attempt.type, debugHtml: opts.debug ? text : null };
     } catch {
       // Ignore individual attempts and continue to the next source.
     } finally {
@@ -109,10 +109,16 @@ async function fetchHtml(url, fetchImpl = fetch) {
   return { raw: '', sourceType: 'failed' };
 }
 
-async function buildDetail(slug, fetchImpl = fetch) {
-  const res = await fetchHtml(`${DLTV_EVENT_BASE}${slug}`, fetchImpl);
+async function buildDetail(slug, fetchImpl = fetch, opts = {}) {
+  const res = await fetchHtml(`${DLTV_EVENT_BASE}${slug}`, fetchImpl, opts);
   const payload = res.raw ? parseDltvEventDetailPage(res.raw, slug) : null;
   if (!payload) return { payload: null, sourceType: res.sourceType };
+  if (res.debugHtml) {
+    const gsStart = res.debugHtml.indexOf('<section class="group__stage">');
+    payload._debugHtmlFragment = gsStart >= 0 ? res.debugHtml.slice(gsStart, gsStart + 2500) : res.debugHtml.slice(0, 1200);
+    // 小组赛区块里是否有 R 轮次表头字样
+    payload._debugHasR = />\s*R\s*\d/.test(res.debugHtml);
+  }
   // 简介首次冷抓时同步翻译（英文→中文），结果随 payload 写入内存/Neon 缓存。
   // 翻译失败/超时不阻塞：保留英文原文返回，下次冷抓再试。
   if (payload.about?.intro) {
@@ -203,12 +209,17 @@ export default async function handler(req, res) {
     }
   }
 
+  const debug = String(req.query?.debug || '') === '1';
   try {
-    const { payload, sourceType } = await buildDetail(slug, req.fetchImpl);
+    const { payload, sourceType } = await buildDetail(slug, req.fetchImpl, { debug });
     if (payload) {
-      memoryCache.set(slug, { payload, at: now, expiresAt: now + CACHE_TTL_MS });
-      persistNeon(payload);
-      return res.status(200).json({ ...rebaseImages(payload, req), source: sourceType });
+      const { _debugHtmlFragment: _d1, _debugHasR: _d2, ...cleanPayload } = payload;
+      memoryCache.set(slug, { payload: cleanPayload, at: now, expiresAt: now + CACHE_TTL_MS });
+      persistNeon(cleanPayload);
+      // debug 请求附带诊断字段返回，便于排查瑞士轮轮次识别。
+      return res.status(200).json(debug
+        ? { ...rebaseImages(payload, req), source: sourceType, debug: true, _debugHtmlFragment: payload._debugHtmlFragment, _debugHasR: payload._debugHasR }
+        : { ...rebaseImages(cleanPayload, req), source: sourceType });
     }
   } catch (error) {
     console.error('[Event Detail] build failed:', error instanceof Error ? error.message : String(error));
