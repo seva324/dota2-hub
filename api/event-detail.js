@@ -81,7 +81,7 @@ function buildTimeoutSignal(timeoutMs) {
   };
 }
 
-async function fetchHtml(url, fetchImpl = fetch, opts = {}) {
+async function fetchHtml(url, fetchImpl = fetch) {
   const attempts = [
     { url, type: 'direct', timeoutMs: 12000 },
     { url: `https://r.jina.ai/http://${url.replace(/^https?:\/\//i, '')}`, type: 'jina', timeoutMs: 18000 },
@@ -99,7 +99,7 @@ async function fetchHtml(url, fetchImpl = fetch, opts = {}) {
       });
       if (!res.ok) continue;
       const text = await res.text();
-      if (String(text || '').trim().length >= 500) return { raw: text, sourceType: attempt.type, debugHtml: opts.debug ? text : null };
+      if (String(text || '').trim().length >= 500) return { raw: text, sourceType: attempt.type };
     } catch {
       // Ignore individual attempts and continue to the next source.
     } finally {
@@ -109,20 +109,10 @@ async function fetchHtml(url, fetchImpl = fetch, opts = {}) {
   return { raw: '', sourceType: 'failed' };
 }
 
-async function buildDetail(slug, fetchImpl = fetch, opts = {}) {
-  const res = await fetchHtml(`${DLTV_EVENT_BASE}${slug}`, fetchImpl, opts);
+async function buildDetail(slug, fetchImpl = fetch) {
+  const res = await fetchHtml(`${DLTV_EVENT_BASE}${slug}`, fetchImpl);
   const payload = res.raw ? parseDltvEventDetailPage(res.raw, slug) : null;
   if (!payload) return { payload: null, sourceType: res.sourceType };
-  if (res.debugHtml) {
-    const d = res.debugHtml;
-    const gsStart = d.indexOf('<section class="group__stage">');
-    payload._debugFragment = d.slice(gsStart >= 0 ? gsStart : 0, (gsStart >= 0 ? gsStart : 0) + 16000);
-    payload._debugTotalLen = d.length;
-    payload._debugHasR = />\s*R\s*\d/.test(d);
-    payload._debugHasCol6 = (d.match(/class="col-6"/g) || []).length;
-    payload._debugHasLeaf = (d.match(/leaf-cell/g) || []).length;
-    payload._debugHasCardTitleGFixture = (d.match(/card__title/g) || []).length;
-  }
   // 简介首次冷抓时同步翻译（英文→中文），结果随 payload 写入内存/Neon 缓存。
   // 翻译失败/超时不阻塞：保留英文原文返回，下次冷抓再试。
   if (payload.about?.intro) {
@@ -213,18 +203,12 @@ export default async function handler(req, res) {
     }
   }
 
-  const debug = String(req.query?.debug || '') === '1';
   try {
-    const { payload, sourceType } = await buildDetail(slug, req.fetchImpl, { debug });
+    const { payload, sourceType } = await buildDetail(slug, req.fetchImpl);
     if (payload) {
-      // debug 请求返回带诊断字段的完整 payload（排查用），不写缓存避免污染。
-      if (debug) {
-        return res.status(200).json({ ...rebaseImages(payload, req), source: sourceType, debug: true });
-      }
-      const { _debugFragment: _f, _debugTotalLen: _t, _debugHasR: _r, _debugHasCol6: _c, _debugHasLeaf: _l, _debugHasCardTitleGFixture: _g, ...cleanPayload } = payload;
-      memoryCache.set(slug, { payload: cleanPayload, at: now, expiresAt: now + CACHE_TTL_MS });
-      persistNeon(cleanPayload);
-      return res.status(200).json({ ...rebaseImages(cleanPayload, req), source: sourceType });
+      memoryCache.set(slug, { payload, at: now, expiresAt: now + CACHE_TTL_MS });
+      persistNeon(payload);
+      return res.status(200).json({ ...rebaseImages(payload, req), source: sourceType });
     }
   } catch (error) {
     console.error('[Event Detail] build failed:', error instanceof Error ? error.message : String(error));
