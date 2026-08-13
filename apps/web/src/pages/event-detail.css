@@ -298,6 +298,71 @@
 .event-detail-root .stand-cell.dim { color: var(--muted); font-weight: 600; }
 .event-detail-root .stand-cell.pts { font-weight: 900; }
 
+/* ===== 瑞士轮积分榜右侧「对阵结果」（R1~R6） ===== */
+.event-detail-root .group-table.swiss { min-width: 0; }
+.event-detail-root .swiss-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.event-detail-root .swiss-table { min-width: 720px; }
+.event-detail-root .swiss-head,
+.event-detail-root .swiss-row {
+  display: grid;
+  grid-template-columns: 40px minmax(150px, 1fr) 70px repeat(var(--swiss-rounds, 6), minmax(90px, 1fr));
+  gap: 8px; align-items: center;
+  padding: 0 16px;
+}
+.event-detail-root .swiss-head { padding-top: 10px; padding-bottom: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-2); }
+.event-detail-root .swiss-head .c-rank,
+.event-detail-root .swiss-head .c-team,
+.event-detail-root .swiss-head .c-record { font-weight: 700; }
+.event-detail-root .swiss-head .c-record { text-align: center; }
+.event-detail-root .swiss-head .c-fixture { text-align: center; }
+.event-detail-root .swiss-row { padding-top: 8px; padding-bottom: 8px; }
+.event-detail-root .swiss-row:not(:last-child) { border-bottom: 1px solid var(--border-soft); }
+.event-detail-root .swiss-row.adv { background: rgba(52,209,123,0.05); }
+.event-detail-root .swiss-row.out { background: rgba(255,59,48,0.045); }
+.event-detail-root .swiss-rank {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 13px; font-weight: 900;
+  background: rgba(255,255,255,0.05); color: var(--muted);
+}
+.event-detail-root .swiss-row.adv .swiss-rank { background: rgba(52,209,123,0.18); color: var(--green); }
+.event-detail-root .swiss-row.out .swiss-rank { background: rgba(255,59,48,0.16); color: #ff8a80; }
+.event-detail-root .swiss-team { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.event-detail-root .swiss-team .logo {
+  width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center; overflow: hidden; flex: 0 0 auto;
+}
+.event-detail-root .swiss-team .logo img { width: 100%; height: 100%; object-fit: contain; }
+.event-detail-root .swiss-team .meta { min-width: 0; }
+.event-detail-root .swiss-team .t { font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.event-detail-root .swiss-team .c { font-size: 11px; color: var(--muted-2); }
+.event-detail-root .swiss-row .c-record { text-align: center; font-variant-numeric: tabular-nums; color: var(--text); font-weight: 700; font-size: 13px; }
+.event-detail-root .swiss-row .c-record.swiss-record { color: var(--muted); font-weight: 600; }
+.event-detail-root .swiss-fx {
+  min-height: 40px; border-radius: 9px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,0.025);
+  color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 5px 6px; text-align: center; min-width: 0;
+  font: inherit; cursor: default;
+}
+.event-detail-root .swiss-fx.empty { border-style: dashed; background: transparent; }
+.event-detail-root .swiss-fx.won { border-color: rgba(52,209,123,0.4); }
+.event-detail-root .swiss-fx.lost { border-color: rgba(255,59,48,0.35); }
+.event-detail-root .swiss-fx .fx-logo {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.event-detail-root .swiss-fx .fx-logo img { width: 100%; height: 100%; object-fit: contain; }
+.event-detail-root .swiss-fx .fx-score { font-family: var(--font-display); font-size: 12px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; color: var(--muted); }
+.event-detail-root .swiss-fx.won .fx-score { color: var(--green); }
+.event-detail-root .swiss-fx.lost .fx-score { color: #ff8a80; }
+.event-detail-root .swiss-fx.empty .fx-score { display: none; }
+.event-detail-root button.swiss-fx { cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease; }
+.event-detail-root button.swiss-fx:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
+
 /* ============================ 淘汰赛 bracket（双败晋级关系） ============================ */
 .event-detail-root .bracket-scroll { overflow-x: auto; padding: 8px 10px 14px; -webkit-overflow-scrolling: touch; }
 .event-detail-root .bracket { position: relative; min-width: 960px; display: grid; gap: 30px 0; }
@@ -437,4 +502,19 @@
   .event-detail-root .team-grid { grid-template-columns: 1fr; }
   .event-detail-root .prize-grid { grid-template-columns: 1fr; }
   .event-detail-root .stand-col-head, .event-detail-root .stand-row { grid-template-columns: 36px minmax(0,1fr) 62px 50px 42px; gap: 6px; padding-left: 12px; padding-right: 12px; }
+
+  /* 移动端 upcoming 卡片：压缩 logo/比分占用给队名腾空间，且队名允许两行换行，
+     避免长队名（如 Team Resilience / Xtreme Gaming）在固定 340px 卡内被省略截断。 */
+  .event-detail-root .match-card { flex-basis: min(340px, calc(100vw - 40px)); }
+  .event-detail-root .match-card-body { gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .event-detail-root .match-team { gap: 8px; }
+  .event-detail-root .match-team .logo { width: 26px; height: 26px; border-radius: 7px; flex: 0 0 26px; }
+  .event-detail-root .match-team .logo img { width: 100%; height: 100%; object-fit: contain; }
+  .event-detail-root .match-score { min-width: 44px; }
+  .event-detail-root .match-team .name {
+    font-size: 13px; line-height: 1.25;
+    white-space: normal; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    word-break: break-word;
+  }
 }

@@ -118,8 +118,9 @@ function TeamWithLogo({ name, logo, winner, alignRight }: {
   alignRight?: boolean;
 }) {
   const nameCls = winner ? 'text-white' : 'text-slate-300';
+  // 移动端允许队名折行(最多 2 行)避免被省略截断；桌面 md+ 恢复单行省略。
   const nameEl = (
-    <span className={`truncate text-[13px] font-semibold leading-9 ${nameCls}`}>{name}</span>
+    <span className={`line-clamp-2 whitespace-normal break-words text-[13px] font-semibold leading-5 ${nameCls} md:line-clamp-none md:whitespace-nowrap md:truncate md:leading-9`}>{name}</span>
   );
   const logoEl = (
     <SafeImg

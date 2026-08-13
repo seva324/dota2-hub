@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api-cache';
 import { SafeImg } from '@/components/custom/SafeImg';
@@ -46,6 +46,7 @@ interface GroupStanding {
 interface EventGroup {
   name: string;
   heads: string[];
+  rounds?: string[];
   rows: GroupStanding[];
 }
 
@@ -68,8 +69,9 @@ interface PlayoffRound {
   matches: PlayoffMatch[];
 }
 
-interface MatchRow {
+export interface MatchRow {
   url?: string;
+  time?: string;
   left: string;
   leftSlug?: string | null;
   leftLogo?: string | null;
@@ -481,51 +483,183 @@ function MatchesSection({
 /* 区块：小组赛积分榜（双栏表格 · 晋级/淘汰色）                           */
 /* ------------------------------------------------------------------ */
 
-function GroupStageSection({ groups, onOpenTeam }: { groups?: EventGroup[]; onOpenTeam?: (team: TeamLinkTarget) => void }) {
+/** 瑞士轮积分榜单行内嵌的「对阵结果」字段。 */
+interface FixtureCell {
+  round: string;
+  opponent: string;
+  opponentSlug?: string | null;
+  opponentLogo?: string | null;
+  score: string; // 相对本行队伍的比分（本队在前），如 OG 行 vs BoomBoys → "0 - 2"
+  won?: boolean;
+  url?: string;
+}
+
+/** 取一支队伍在已结束比赛里的对阵结果，按时间升序（早在前）。 */
+export function fixturesForTeam(team: string, finished: MatchRow[], rounds: string[], teamSlugMap?: Record<string, string>): FixtureCell[] {
+  const norm = (v?: string | null) => String(v || '').trim().toLowerCase();
+  const t = norm(team);
+  const scored = (finished || [])
+    .filter((m) => norm(m.left) === t || norm(m.right) === t)
+    .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')))
+    .map<FixtureCell>((m) => {
+      const onLeft = norm(m.left) === t;
+      const opp = onLeft ? m.right : m.left;
+      const oppSlug = onLeft ? m.rightSlug : m.leftSlug;
+      const oppLogo = onLeft ? m.rightLogo : m.leftLogo;
+      const [l = '', r = ''] = m.center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
+      const nL = Number(l);
+      const nR = Number(r);
+      // won = 该（subject）队伍是否获胜：subject 在左时比分取 l，在右时取 r。
+      let won: boolean | undefined;
+      if (/^w$/i.test(l)) won = onLeft;
+      else if (/^(ff|w)$/i.test(r)) won = !onLeft;
+      else if (!Number.isNaN(nL) && !Number.isNaN(nR)) won = onLeft ? nL > nR : nR > nL;
+      // 相对本队比分：本队分在前（W/FF 等非数字也按此顺序透传）。
+      const relScore = onLeft ? `${l} - ${r}` : `${r} - ${l}`;
+      return {
+        round: '',
+        opponent: opp,
+        opponentSlug: oppSlug ?? teamSlugMap?.[opp] ?? null,
+        opponentLogo: oppLogo,
+        score: relScore,
+        won,
+        url: m.url,
+      };
+    });
+  // 按轮名对齐：第 i 场映射到轮名 rounds[i]，超出则用「*」。占满轮数以对齐列头。
+  return scored.map((fx, i) => ({ ...fx, round: rounds[i] ?? '*' })).concat(
+    rounds.length > scored.length
+      ? Array.from({ length: rounds.length - scored.length }, (_, k) => ({ round: rounds[scored.length + k] || '', opponent: '', score: '' }))
+      : []
+  );
+}
+
+function GroupStageSection({
+  groups,
+  finished,
+  onOpenTeam,
+  onOpenMatch,
+  teamSlugMap,
+}: {
+  groups?: EventGroup[];
+  finished?: MatchRow[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
   if (!groups || groups.length === 0) return null;
   return (
     <section className="section" aria-label="小组赛">
       <SectionHead title="小组赛积分榜" eyebrow="小组赛" />
       <div className="group-grid">
-        {groups.map((group) => (
-          <div className="card group-table" key={group.name}>
-            <div className="group-table-head">
-              <h4>{group.name}</h4>
-              <span className="g-legend">
-                <span className="legend-dot adv" aria-hidden="true" />
-                晋级
-                <span className="legend-dot out" aria-hidden="true" />
-                淘汰
-              </span>
-            </div>
-            <div className="stand-col-head">
-              <span>#</span>
-              <span>队伍</span>
-              <span>战绩</span>
-              <span>图分</span>
-              <span>积分</span>
-            </div>
-            {group.rows.map((row) => (
-              <div className={`stand-row ${row.advance ? 'adv' : 'out'}`} key={`${group.name}-${row.position}-${row.team}`}>
-                <span className="stand-rank">{row.position}</span>
-                <TeamLink
-                  className="stand-team"
-                  team={{ name: row.team, slug: slugFromTeamUrl(row.teamUrl) }}
-                  onOpenTeam={onOpenTeam}
-                >
-                  <TeamLogo src={row.logo} name={row.team} size={28} />
-                  <div className="meta">
-                    <div className="t">{row.team}</div>
-                    {row.country ? <div className="c">{row.country}</div> : null}
-                  </div>
-                </TeamLink>
-                <span className="stand-cell dim">{row.record || '—'}</span>
-                <span className="stand-cell dim">{row.maps || '—'}</span>
-                <span className="stand-cell pts">{row.points || '—'}</span>
+        {groups.map((group) =>
+          group.rounds?.length ? (
+            <div className="card group-table swiss" key={group.name}>
+              <div className="group-table-head">
+                <h4>{group.name}</h4>
+                <span className="g-legend">
+                  <span className="legend-dot adv" aria-hidden="true" />
+                  晋级
+                  <span className="legend-dot out" aria-hidden="true" />
+                  淘汰
+                </span>
               </div>
-            ))}
-          </div>
-        ))}
+              <div className="swiss-scroll">
+                <div className="swiss-table" style={{ ['--swiss-rounds' as string]: group.rounds.length }}>
+                  <div className="swiss-head">
+                    <span className="c-rank">#</span>
+                    <span className="c-team">队伍</span>
+                    <span className="c-record">战绩</span>
+                    {group.rounds.map((r) => (
+                      <span className="c-fixture" key={r}>
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                  {group.rows.map((row) => (
+                    <div className={`swiss-row ${row.advance ? 'adv' : 'out'}`} key={`${group.name}-${row.position}-${row.team}`}>
+                      <span className="c-rank swiss-rank">{row.position}</span>
+                      <TeamLink
+                        className="c-team swiss-team"
+                        team={{ name: row.team, slug: slugFromTeamUrl(row.teamUrl) }}
+                        onOpenTeam={onOpenTeam}
+                      >
+                        <TeamLogo src={row.logo} name={row.team} size={26} />
+                        <div className="meta">
+                          <div className="t">{row.team}</div>
+                          {row.country ? <div className="c">{row.country}</div> : null}
+                        </div>
+                      </TeamLink>
+                      <span className="c-record swiss-record">{row.record || '—'}</span>
+                      {fixturesForTeam(row.team, finished || [], group.rounds || [], teamSlugMap).map((fx, i) => {
+                        if (!fx.opponent) {
+                          return <span className="c-fixture swiss-fx empty" key={`${row.team}-${fx.round}-${i}`} />;
+                        }
+                        const nav = fx.url ? seriesIdAndSlugFromMatchUrl(fx.url) : null;
+                        return (
+                          <button
+                            type="button"
+                            key={`${row.team}-${fx.round}-${i}`}
+                            className={`c-fixture swiss-fx ${fx.won === true ? 'won' : fx.won === false ? 'lost' : ''}`}
+                            title={`${fx.opponent} · ${fx.score}`}
+                            onClick={
+                              nav && onOpenMatch
+                                ? () => onOpenMatch(nav)
+                                : undefined
+                            }
+                          >
+                            <span className="fx-logo">
+                              <TeamLogo src={fx.opponentLogo} name={fx.opponent} size={22} />
+                            </span>
+                            <span className="fx-score">{fx.score.replace(/\s+/g, '')}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="card group-table" key={group.name}>
+              <div className="group-table-head">
+                <h4>{group.name}</h4>
+                <span className="g-legend">
+                  <span className="legend-dot adv" aria-hidden="true" />
+                  晋级
+                  <span className="legend-dot out" aria-hidden="true" />
+                  淘汰
+                </span>
+              </div>
+              <div className="stand-col-head">
+                <span>#</span>
+                <span>队伍</span>
+                <span>战绩</span>
+                <span>图分</span>
+                <span>积分</span>
+              </div>
+              {group.rows.map((row) => (
+                <div className={`stand-row ${row.advance ? 'adv' : 'out'}`} key={`${group.name}-${row.position}-${row.team}`}>
+                  <span className="stand-rank">{row.position}</span>
+                  <TeamLink
+                    className="stand-team"
+                    team={{ name: row.team, slug: slugFromTeamUrl(row.teamUrl) }}
+                    onOpenTeam={onOpenTeam}
+                  >
+                    <TeamLogo src={row.logo} name={row.team} size={28} />
+                    <div className="meta">
+                      <div className="t">{row.team}</div>
+                      {row.country ? <div className="c">{row.country}</div> : null}
+                    </div>
+                  </TeamLink>
+                  <span className="stand-cell dim">{row.record || '—'}</span>
+                  <span className="stand-cell dim">{row.maps || '—'}</span>
+                  <span className="stand-cell pts">{row.points || '—'}</span>
+                </div>
+              ))}
+            </div>
+          )
+        )}
       </div>
     </section>
   );
@@ -1276,7 +1410,7 @@ export function EventDetailPage({
           <HeroSection payload={payload} />
           <AboutSection about={payload.about} />
           <MatchesSection payload={payload} relatedLive={relatedLive} liveLoaded={liveLoaded} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} onOpenLive={onOpenLive} teamSlugMap={teamSlugMap} />
-          <GroupStageSection groups={payload.groups} onOpenTeam={onOpenTeam} />
+          <GroupStageSection groups={payload.groups} finished={payload.matches?.finishedMatches || []} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
           <StatsSection />

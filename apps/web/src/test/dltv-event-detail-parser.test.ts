@@ -220,3 +220,99 @@ describe('dltv-event-detail-parser 中文表头积分榜（DLTV 中文版页面�
     expect(rows.map((r) => r.advance)).toEqual([true, true, false]);
   });
 });
+
+describe('dltv-event-detail-parser 瑞士轮（TI2026 风格）', () => {
+  /** 左侧积分榜站立行（排名/队伍/战绩）。 */
+  function swissStandRow(rank, team, country, record, advance) {
+    return `
+      <div class="table__body-row">
+        <div class="table__body-row__cell" data-theme-dark-bgcolor="${advance ? '#163819' : '#641717'}"><div class="cell__coloured">${rank}</div></div>
+        <a href="https://dltv.org/teams/${team.toLowerCase()}" class="table__body-row__cell">
+          <div class="cell__logo" data-theme-dark="/uploads/teams/small/${team}.png"></div>
+          <div class="cell__name"><div>${team}</div><div class="cell__name-text">${country}</div></div>
+        </a>
+        <div class="table__body-row__cell"><div class="cell__text big">${record}</div></div>
+      </div>`;
+  }
+
+  /** 右侧对阵表：R1~R2 表头 + 每行一个 leaf-cell（对手 logo + 比分）。 */
+  function swissFixtureRow(matchUrl, opponent, opponentLogo, score) {
+    return `
+      <div class="table__body-row">
+        <a href="${matchUrl}" class="table__body-row__cell f-c width-16 align-center leaf-cell" data-match-popup="427637">
+          <div class="cell__logo-md" data-theme-light="${opponentLogo}" data-theme-dark="${opponentLogo}"></div>
+          <div class="cell__text"><strong>${score}</strong></div>
+        </a>
+      </div>`;
+  }
+
+  function swissHtml() {
+    return `
+      <section class="group__stage">
+        <div class="col-6">
+          <div class="table">
+            <div class="table__head">
+              <div class="table__head-item width-75 big-text">Team</div>
+              <div class="table__head-item width-25 text-center">Matches</div>
+            </div>
+            <div class="table-body">
+              ${swissStandRow(1, 'BoomBoys', 'Russia', '2 - 0', true)}
+              ${swissStandRow(16, 'OG', 'Philippines', '0 - 2', false)}
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="table">
+            <div class="table__head">
+              <div class="table__head-item width-16 text-center">R 1</div>
+              <div class="table__head-item width-16 text-center">R 2</div>
+            </div>
+            <div class="table-body">
+              ${swissFixtureRow('https://dltv.org/matches/427637/boomboys-vs-og-the-international-2026', 'OG', '/uploads/t.png', '2 - 0')}
+              ${swissFixtureRow('https://dltv.org/matches/427638/team-vision-vs-team-resilience-the-international-2026', 'Nigma', '/uploads/t2.png', '0 - 2')}
+            </div>
+          </div>
+        </div>
+      </section>`;
+  }
+
+  it('识别瑞士轮 R1~R6 表头并暴露 rounds', () => {
+    const payload = parseDltvEventDetailPage(swissHtml(), 'the-international-2026');
+    expect(payload.groups.length).toBe(1);
+    expect(payload.groups[0].rounds).toEqual(['R1', 'R2']);
+    expect(payload.groups[0].rows.length).toBe(2);
+    expect(payload.groups[0].rows[0].team).toBe('BoomBoys');
+  });
+
+  it('非瑞士轮（无 R 表头）时 rounds 为空', () => {
+    const html = `<section class="group__stage">
+      <div class="table">
+        <div class="table__head"><div class="table__head-item width-75 big-text">团队</div></div>
+        <div class="table-body">
+          ${swissStandRow(1, 'BoomBoys', 'Russia', '2 - 0', true)}
+        </div>
+      </div>
+    </section>`;
+    const payload = parseDltvEventDetailPage(html, 'some-event');
+    expect(payload.groups[0].rounds).toBeUndefined();
+  });
+});
+
+describe('dltv-event-detail-parser 已结束比赛时间（data-event-matches-odd）', () => {
+  it('提取已结束比赛的 time 字段（用于对阵结果按时间排序）', () => {
+    const row = `
+      <a href="https://dltv.org/matches/427635/team-falcons-vs-lgd-gaming-the-international-2026" class="table__body-row" data-event-matches-odd="2026-08-13 02:42:47" data-match-popup="1">
+        <div class="table__body-row__cell width-40"><div class="cell__logo" data-theme-dark="/uploads/l.png"></div><div class="cell__name">Team Falcons</div></div>
+        <div class="table__body-row__cell bordered width-20 align-center"><div class="cell__bold-gray"><div class="score">2 - 1</div></div></div>
+        <div class="table__body-row__cell width-40 align-right"><div class="cell__name">LGD Gaming</div><div class="cell__logo" data-theme-dark="/uploads/r.png"></div></div>
+      </a>`;
+    const html = `<section class="matches__scores">
+      <div class="card"><div class="card__title mt-4">Finished matches</div>
+        <div class="matches__scores-table">${row}</div>
+      </div>
+    </section>`;
+    const payload = parseDltvEventDetailPage(html, 'ti26');
+    expect(payload.matches.finishedMatches).toHaveLength(1);
+    expect(payload.matches.finishedMatches[0].time).toBe('2026-08-13 02:42:47');
+  });
+});
