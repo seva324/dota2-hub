@@ -193,12 +193,11 @@ export default async function handler(req, res) {
   const slug = String(req.query.slug || '').trim() || undefined;
 
   try {
-    // 元数据（series_item）与统计（lineups/teams）并行拉取；统计是 best-effort，
-    // 失败（null）时 payload 照常返回，视图隐藏对比区块。
-    const [{ series, source }, statsResult] = await Promise.all([
-      getDltvMatchPage({ seriesId, slug }),
-      getDltvSeriesStats({ seriesId }),
-    ]);
+    // 元数据（series_item）先行——这是渲染详情页的关键数据，需独占 DLTV 抓取预算。
+    // 统计（lineups/teams）随后 best-effort：并发抓取 dltv 会互相抢占导致冷抓超时
+    // （用户点击时 match-page 空回报 timeout → 前端"暂无比赛数据"）。串行后关键数据必达。
+    const { series, source } = await getDltvMatchPage({ seriesId, slug });
+    const statsResult = series ? await getDltvSeriesStats({ seriesId }).catch(() => null) : null;
     const stats = statsResult?.stats || null;
 
     // 真冷启动抓取超时/失败 → 返回 200 + source:'timeout'，绝不 404：
