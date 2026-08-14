@@ -55,11 +55,11 @@ export default async function handler(req, res) {
   try {
     const { results, source } = await getDltvResults();
 
-    // 首页结果列表很快（results 走 live 同源列表抓取 + 2min 缓存），顺手后台预热前几条
-    // 比赛详情页：用户点击 results 卡片时直接命中 match-page 内存/热缓存，省掉 12-31s 冷抓取。
-    // fire-and-forget，不阻塞本次响应；预热的抓取失败静默（getDltvMatchPage 自带缓存写入）。
+    // 首页结果列表很快（results 走 live 同源列表抓取 + 2min 缓存），顺手后台预热一个
+    // 更广的详情页集合（前 12 场）：用户点击 results/upcoming 卡片时更可能命中 match-page
+    // 缓存，减少冷抓取超时。fire-and-forget，不阻塞本次响应；内部按 3 并发分批，防 dltv 限流。
     prewarmMatchPages(
-      results.slice(0, 3).map((row) => ({
+      results.slice(0, 12).map((row) => ({
         seriesId: row.seriesId,
         slug: extractSlugFromMatchUrl(row.matchUrl),
       })),

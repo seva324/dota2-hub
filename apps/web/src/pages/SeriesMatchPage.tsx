@@ -513,6 +513,14 @@ export function SeriesMatchPage({ matchId, slug, onBack, onOpenTeam }: {
           <ArrowLeft className="size-4" /> 返回赛程
         </button>
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-8 py-6 text-sm text-slate-300">{error}</div>
+        <button
+          type="button"
+          onClick={() => loadRef.current?.()}
+          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+          style={{ backgroundColor: '#2b55e8' }}
+        >
+          <ArrowLeft className="size-4 rotate-180" aria-hidden="true" /> 重新加载
+        </button>
       </div>
     );
   }
