@@ -18,6 +18,37 @@ const design = {
   pip: '#facc15',
 };
 
+/** 从 match slug（<teamA>-vs-<teamB>[-<event-slug>]）还原两队显示名。
+ *  event 后缀会用 `-` 粘连在 b 队 slug 后，无法可靠剥离；因此仅当 slug 不含
+ *  事件后缀（b 队后无更多 `-`）时返回可信结果，否则返回 null 让 UI 走通用文案。 */
+function degradeNamesFromSlug(slug?: string): { left: string; right: string } | null {
+  const s = String(slug || '').trim();
+  const vsIdx = s.indexOf('-vs-');
+  if (vsIdx <= 0) return null;
+  const left = s.slice(0, vsIdx);
+  const right = s.slice(vsIdx + 4);
+  // 右侧含额外 `-` = 还有事件后缀，无法分离 → 视为不可信。
+  if (!left || !right || right.includes('-')) return null;
+  const TITLE = (seg: string) => seg.split('-').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return { left: TITLE(left), right: TITLE(right) };
+}
+
+/** 降级卡片：整页冷抓失败时，至少展示该场对阵 + 提示 + 重试。 */
+function DegradedMatchCard({ slug, error }: { slug?: string; error: string }) {
+  const names = degradeNamesFromSlug(slug);
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-8 py-8 text-center">
+      {names ? (
+        <div className="mb-3 text-lg font-bold text-white">
+          {names.left} <span className="mx-2 text-sm font-normal text-slate-500">vs</span> {names.right}
+        </div>
+      ) : null}
+      <div className="text-sm text-slate-400">{error}</div>
+      <div className="mt-2 text-xs text-slate-600">该场比赛的详细数据源（DLTV）抓取超时，可稍后或点击下方重试。</div>
+    </div>
+  );
+}
+
 // 官方 Dota2 图标（经 /api/asset-image 代理，走国内可达通道）
 const AGHS_ICON = '/api/asset-image?url=' + encodeURIComponent(
   'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/items/ultimate_scepter.png'
@@ -508,15 +539,15 @@ export function SeriesMatchPage({ matchId, slug, onBack, onOpenTeam }: {
 
   if (error) {
     return (
-      <div className="mx-auto flex max-w-[1280px] flex-col items-center gap-4 px-4 pt-28 lg:px-6" style={{ backgroundColor: '#0f1115' }}>
+      <div className="mx-auto flex max-w-[1280px] flex-col items-center gap-5 px-4 pt-28 lg:px-6" style={{ backgroundColor: '#0f1115' }}>
         <button type="button" onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white">
           <ArrowLeft className="size-4" /> 返回赛程
         </button>
-        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-8 py-6 text-sm text-slate-300">{error}</div>
+        <DegradedMatchCard slug={slug} error={error} />
         <button
           type="button"
           onClick={() => loadRef.current?.()}
-          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+          className="flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: '#2b55e8' }}
         >
           <ArrowLeft className="size-4 rotate-180" aria-hidden="true" /> 重新加载
