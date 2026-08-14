@@ -159,7 +159,7 @@ export interface MatchPagePayload {
   eventFormat?: string | null;
   event?: SeriesEventInfo | null;
   streams?: SeriesStream[];
-  source?: 'cache' | 'stale' | 'dltv' | 'timeout';
+  source?: 'cache' | 'stale' | 'dltv' | 'jina-cache' | 'jina' | 'timeout';
   teams: {
     radiant: SeriesTeamInfo;
     dire: SeriesTeamInfo;

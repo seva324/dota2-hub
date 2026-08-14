@@ -114,6 +114,37 @@ describe('dltv match page service', () => {
     expect(result.sourceType).toBe('direct');
   });
 
+  it('falls back to the jina global cache when direct gets a shell page', async () => {
+    // 回归：EdgeOne 出口直连 dltv 常拿壳页（无 marker），而 jina 对同一 URL 的
+    // 全局缓存命中时 1-3s 即可回传完整大页面——生产 match-page 加载的关键兜底路径。
+    // 缓存成功后不再发起 X-No-Cache 冷抓（慢且易超时）。
+    const { fetchMatchPageHtml } = await import('../../../../lib/server/dltv-match-page-service.js');
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(mockFetchResponse(makeShellHtml(), 200))
+      .mockResolvedValueOnce(mockFetchResponse(makeRealHtml()));
+    const result = await fetchMatchPageHtml('https://dltv.org/matches/427573/og-vs-nigma', fetchImpl);
+
+    expect(result.sourceType).toBe('jina-cache');
+    expect(result.raw).toContain(SERIES_ITEM_MARKER);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(String(fetchImpl.mock.calls[1][0])).toContain('r.jina.ai');
+    expect(result.attempts?.[1]).toMatchObject({ sourceType: 'jina-cache', status: 200 });
+  });
+
+  it('records per-attempt diagnostics when every fetch fails', async () => {
+    const { fetchMatchPageHtml } = await import('../../../../lib/server/dltv-match-page-service.js');
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeShellHtml(), 404));
+    const result = await fetchMatchPageHtml('https://dltv.org/matches/427573', fetchImpl);
+
+    expect(result.sourceType).toBe('failed');
+    expect(result.raw).toBe('');
+    // direct + jina-cache + jina ×2（两次冷抓间有 3s 间隔）
+    expect(result.attempts).toHaveLength(4);
+    expect(result.attempts.map((a) => a.sourceType)).toEqual(['direct', 'jina-cache', 'jina', 'jina']);
+    expect(result.attempts.every((a) => a.error)).toBe(true);
+  });
+
   it('treats a no-slug 404 shell as failed even though it mentions series_item', async () => {
     // 关键回归：壳页里的 series_item 只是函数参数名，没有赋值标记，不能误判为成功。
     const { fetchMatchPageHtml } = await import('../../../../lib/server/dltv-match-page-service.js');
