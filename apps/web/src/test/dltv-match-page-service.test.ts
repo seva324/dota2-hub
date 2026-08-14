@@ -182,13 +182,14 @@ describe('dltv match page service', () => {
     expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
   });
 
-  it('ignores a fresh-but-unfinished Neon snapshot and cold-fetches (no stale pre-match ghost)', async () => {
-    // 回归：比赛开始前被抓取的空快照（status=0/无 endedAt）曾长期污染 6h 长缓存，
-    // 导致比赛结束后用户仍看到"暂无比赛数据"。修复后此类快照必须当 miss，落冷抓并覆盖。
+  it('cold-fetches a STALE unfinished Neon snapshot (no stale pre-match ghost after 30min)', async () => {
+    // 回归：比赛开始前被抓取的空快照（status=0/无 endedAt）若长期污染缓存，
+    // 会导致比赛结束后用户仍看到"暂无比赛数据"。修复后此类快照仅在 30min 短鲜窗口内可复用；
+    // 超过即当 miss，落冷抓并覆盖，避免长期脏数据。
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     readDltvMatchPageCache.mockResolvedValue({
       payload: { seriesId: 427573, status: 0, endedAt: null, radiantTeam: { id: 1, name: 'OG' }, maps: [] },
-      refreshedAt: Date.now(),
+      refreshedAt: Date.now() - 31 * 60 * 1000, // 超过 30min 短鲜窗口
     });
     const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
 
@@ -201,8 +202,9 @@ describe('dltv match page service', () => {
     expect(writeDltvMatchPageCache).toHaveBeenCalledWith(fakeDb, 427573, expect.any(Object));
   });
 
-  it('does not write unfinished snapshots into the Neon long cache', async () => {
-    // 赛前/进行中抓到的快照只进内存短缓存，绝不进 Neon 6h——这是空快照污染缓存的源头。
+  it('writes unfinished (upcoming) snapshots into Neon for the 30min short-window reuse', async () => {
+    // 赛前/进行中快照允许写 Neon，但读取方只按 30min 短鲜窗口信任；超时即失效冷抓，
+    // 这样超大页面上传一次后其他实例 30min 内直接命中，避免每次冷抓大页面失败。
     const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
     const upcomingHtml = makeRealHtml({ status: 0, endedAt: null, maps: [] });
     const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(upcomingHtml));
@@ -210,7 +212,23 @@ describe('dltv match page service', () => {
     const { source } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
 
     expect(source).toBe('dltv');
-    expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
+    expect(writeDltvMatchPageCache).toHaveBeenCalledWith(fakeDb, 427573, expect.any(Object));
+  });
+
+  it('serves a FRESH unfinished Neon snapshot from cache (30min short window)', async () => {
+    // 冷抓/预热成功的未结束快照写入 Neon 后，30min 内其它实例应直接命中，避免再次冷抓超大页面。
+    const { getDltvMatchPage } = await import('../../../../lib/server/dltv-match-page-service.js');
+    readDltvMatchPageCache.mockResolvedValue({
+      payload: { seriesId: 427573, status: 0, endedAt: null, radiantTeam: { id: 1, name: 'OG' }, maps: [] },
+      refreshedAt: Date.now(), // 30min 短鲜窗口内
+    });
+    const fetchImpl = vi.fn().mockResolvedValue(mockFetchResponse(makeRealHtml()));
+
+    const { source, series } = await getDltvMatchPage({ seriesId: 427573, slug: 'og-vs-nigma' }, { fetchImpl });
+
+    expect(source).toBe('cache');
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(series?.radiantTeam?.name).toBe('OG');
   });
 
   it('serves a fresh in-memory payload on a second call without re-fetching', async () => {
