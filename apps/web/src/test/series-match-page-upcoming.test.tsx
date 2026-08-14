@@ -121,6 +121,11 @@ describe('SeriesMatchPage upcoming view', () => {
     expect(screen.getByText('平均时长')).toBeInTheDocument();
     expect(screen.getByText('Puck')).toBeInTheDocument();
 
+    // 数据对比：每项指标带 emoji 图标
+    for (const e of ['📈', '⚔️', '💀', '🤝', '🩸', '🎯', '🛡️', '⚡', '⏱️']) {
+      expect(screen.getByText(e)).toBeInTheDocument();
+    }
+
     // 国家名
     expect(screen.getByText('Kazakhstan')).toBeInTheDocument();
     expect(screen.getByText('举办国家')).toBeInTheDocument();

@@ -38,7 +38,7 @@ function TeamCell({ team, side, lose }: {
         <SafeImg src={logo || ''} alt={name} className="h-full w-full object-contain p-0.5" fallback={<TeamLogoFallback name={name} size={20} />} />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-xs font-bold" style={{ color: lose ? design.faint : design.fg }}>{name}</span>
+        <span className="block text-xs font-bold leading-snug line-clamp-2 whitespace-normal break-words" style={{ color: lose ? design.faint : design.fg }}>{name}</span>
         <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: side === 'Radiant' ? design.radiant : design.dire, opacity: lose ? 0.5 : 1 }}>
           {side === 'Radiant' ? '天辉' : '夜魇'}
         </span>
@@ -72,10 +72,11 @@ export function MapHistoryCards({ maps, team1, team2 }: {
         const direLose = m.winner !== direSideKey;
         const wTeam = m.winner === radiantSideKey ? radiant : dire;
         const wSide = m.winner === radiantSideKey ? '天辉' : '夜魇';
+        // 领先队伍由净经济差的正负决定：team1NetWorthLead 相对 team1（正=team1 领先，负=team2 领先）。
         const lead = m.team1NetWorthLead != null
-          ? `${formatNetWorth(Math.abs(m.team1NetWorthLead))} ${team1.name}`
+          ? `${formatNetWorth(Math.abs(m.team1NetWorthLead))} ${m.team1NetWorthLead > 0 ? team1.name : team2.name}`
           : m.team2NetWorthLead != null
-            ? `${formatNetWorth(Math.abs(m.team2NetWorthLead))} ${team2.name}`
+            ? `${formatNetWorth(Math.abs(m.team2NetWorthLead))} ${m.team2NetWorthLead > 0 ? team2.name : team1.name}`
             : null;
 
         return (

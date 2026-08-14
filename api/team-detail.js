@@ -10,6 +10,7 @@ import { getDltvUpcoming } from '../lib/server/dltv-matches-service.js';
 import { getDltvMatchPage } from '../lib/server/dltv-match-page-service.js';
 import { getDb } from '../lib/db.js';
 import { readDltvCache, writeDltvCache } from '../lib/server/dltv-neon-cache.js';
+import { parseSquadHtml } from '../lib/server/dltv-squad-parser.js';
 
 const DLTV_API_BASE = 'https://dltv.org/api/v1';
 const FETCH_TIMEOUT_MS = 8000;
@@ -373,47 +374,7 @@ async function fetchTeamPageHtml(teamSlug, fetchImpl = fetch) {
   return cached?.html || '';
 }
 
-const SQUAD_ROLE_LABEL = { 1: 'Core', 2: 'Mid', 3: 'Offlane', 4: 'Support', 5: 'Full Support' };
-
-/** 从战队页 HTML 解析 Active squad（昵称/真名/照片/国旗/天梯分/角色/教练）。 */
-function parseSquadHtml(html) {
-  const squadStart = html.indexOf('<section class="squad">');
-  if (squadStart < 0) return [];
-  const squadHtml = html.slice(squadStart, html.indexOf('</section>', squadStart) + 10);
-  const players = [];
-  const itemRe = /<a href="https:\/\/dltv\.org\/players\/([^"]+)" class="squad__box-item">([\s\S]*?)<\/a>/g;
-  for (const m of squadHtml.matchAll(itemRe)) {
-    const item = m[2];
-    // 昵称：flag 后第一个 <span>
-    const nickMatch = item.match(/<div class="flag"[^>]*>[\s\S]*?<\/div>\s*<span>([\s\S]*?)<\/span>/);
-    const nick = nickMatch ? nickMatch[1].trim() : item.match(/<span>([\s\S]*?)<\/span>/)?.[1]?.trim() || '';
-    // 真名：name 区块第二个 div
-    const real = item.match(/<\/span>\s*<\/div>\s*<div>([\s\S]*?)<\/div>/)?.[1]?.trim() || '';
-    const photo = item.match(/data-theme-light="([^"]+)"/)?.[1] || '';
-    // 国旗：直接取 DLTV 完整 URL（不依赖前端映射表）
-    const flagUrl = item.match(/background-image: url\('([^']*flags\/4x3\/[^']+)'\)/)?.[1] || '';
-    const flagCode = flagUrl.match(/flags\/4x3\/([a-z]+)\.svg/)?.[1] || '';
-    const rankRaw = item.match(/rank__num">(\d+)</)?.[1];
-    const roleBg = item.match(/role__bg-(\d+)/)?.[1];
-    const isCoach = /class="coach"/.test(item);
-    const playerIdRaw = item.match(/data-player-id="(\d+)"/)?.[1];
-    if (!nick) continue;
-    players.push({
-      nick,
-      realName: real,
-      photo: photo ? `https://dltv.org${String(photo).startsWith('/') ? '' : '/'}${photo}` : '',
-      flag: flagUrl ? `https://dltv.org${flagUrl.startsWith('/') ? '' : '/'}${flagUrl}` : '',
-      flagCode,
-      rank: rankRaw ? Number(rankRaw) : null,
-      roleKey: roleBg || '',
-      role: roleBg ? (SQUAD_ROLE_LABEL[Number(roleBg)] || `位置 ${roleBg}`) : isCoach ? 'Coach' : '',
-      isCoach,
-      playerId: playerIdRaw ? Number(playerIdRaw) : null,
-      slug: m[1] || '',
-    });
-  }
-  return players;
-}
+/** 从战队页 HTML 解析 Active squad → 由共享 lib/server/dltv-squad-parser.js 提供。 */
 
 /** 从战队页 HTML 解析成就（赛事名/奖牌/年份/链接/图标）。 */
 function parseAchievementsHtml(html) {

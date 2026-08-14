@@ -3,7 +3,8 @@ import { ArrowLeft, BarChart3, Calendar, ExternalLink, Trophy } from 'lucide-rea
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { resolveTeamLogo } from '@/lib/teams';
-import type { MatchPagePayload, SeriesLineupPlayer, SeriesTeamInfo } from '@/types/matchPage';
+import { apiFetch } from '@/lib/api-cache';
+import type { MatchPagePayload, SeriesHeroStat, SeriesLineupPlayer, SeriesTeamInfo } from '@/types/matchPage';
 
 const design = {
   blue: '#2b55e8',
@@ -212,44 +213,160 @@ function LineupColumn({ team, onOpenTeam }: { team: SeriesTeamInfo; onOpenTeam?:
   );
 }
 
-/** 单行两队对比：左队值 | 指标名 | 右队值。 */
-function StatCompareRow({ label, left, right }: { label: string; left: string; right: string }) {
+/** 单行两队对比：左值(radiant 绿) | 指标名(emoji + 相对条) | 右值(dire 红)；更优方加亮标记。 */
+function StatCompareRow({ label, icon, left, right, better }: {
+  label: string;
+  icon: string;
+  left: string;
+  right: string;
+  better: string | number | null;
+}) {
+  const lNum = typeof left === 'string' ? Number(String(left).replace(/[^\d.-]/g, '')) : NaN;
+  const rNum = typeof right === 'string' ? Number(String(right).replace(/[^\d.-]/g, '')) : NaN;
+  const hasBar = Number.isFinite(lNum) && Number.isFinite(rNum) && lNum >= 0 && rNum >= 0 && lNum + rNum > 0;
+  const lRatio = hasBar ? lNum / (lNum + rNum) : 0;
+  // radiant=绿(#34d399) 在左，dire=红(#ff3b30) 在右；更优方加粗 + 前导小圆点。
+  const leftCls = `text-right text-sm font-semibold tabular-nums ${better === 'left' ? 'font-black text-[#34d399]' : 'text-[#34d399]/70'}`;
+  const rightCls = `text-sm font-semibold tabular-nums ${better === 'right' ? 'font-black text-[#ff5b51]' : 'text-[#ff5b51]/70'}`;
+
   return (
-    <div className="grid grid-cols-[1fr_1.6fr_1fr] items-center gap-2 px-3 py-2 odd:bg-white/[0.02]">
-      <span className="text-right text-sm font-semibold tabular-nums text-white">{left}</span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-slate-200">{right}</span>
+    <div className="grid grid-cols-[1fr_1.7fr_1fr] items-center gap-2 px-3 py-2 odd:bg-white/[0.02]">
+      <span className={`flex items-center justify-end gap-1 ${leftCls}`}>
+        {better === 'left' && <span className="size-1 rounded-full bg-[#34d399]" />}
+        {left}
+      </span>
+      {/* 指标名(emoji) + 相对条 */}
+      <div className="flex flex-col items-center gap-1">
+        <span className="flex items-center gap-1 text-[11px] font-semibold tracking-wide text-slate-400">
+          <span aria-hidden="true">{icon}</span>
+          {label}
+        </span>
+        {hasBar && (
+          <div className="flex h-1.5 w-full max-w-[72px] overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-[#34d399]/70" style={{ width: `${Math.round(lRatio * 100)}%` }} />
+            <div className="h-full flex-1 rounded-full bg-[#ff3b30]/70" />
+          </div>
+        )}
+      </div>
+      <span className={`flex items-center justify-start gap-1 ${rightCls}`}>
+        {right}
+        {better === 'right' && <span className="size-1 rounded-full bg-[#ff3b30]" />}
+      </span>
     </div>
   );
 }
 
-function SignatureHeroes({ team }: { team: SeriesTeamInfo }) {
-  const heroes = team.stats?.heroes || [];
-  if (heroes.length === 0) return null;
+/** 单个招牌英雄徽章（头像 + 中文名 + 场次/胜率）。经 heroesData 按 heroId 回填中文名/图；
+ *  名称与图都无法解析(如 DLTV 空数据占位)时返回 null 不渲染。 */
+function HeroBadge({ hero, heroesData }: { hero: SeriesHeroStat; heroesData: Record<number, { name_cn?: string; img_url?: string }> }) {
+  if (!hero?.heroId) return null;
+  const meta = heroesData[hero.heroId];
+  const name = meta?.name_cn || hero.heroTitle || '';
+  const img = hero.heroImage || meta?.img_url || '';
+  // 名称和图都没有 → 无效占位行，直接不渲染（避免出现 "— 2场"）。
+  if (!name && !img) return null;
   return (
-    <div className="mt-4">
-      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        签名英雄 · {team.name}（场次 / 胜率）
+    <div
+      title={name || hero.heroTitle || ''}
+      className="flex items-center gap-1.5 rounded-lg border px-2 py-1.5"
+      style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(255,255,255,0.02)' }}
+    >
+      <SafeImg
+        src={img}
+        alt={name || '英雄'}
+        className="size-7 shrink-0 rounded border border-white/10 object-cover"
+        fallback={<span className="size-7 shrink-0 rounded border border-white/5 bg-black/30" />}
+      />
+      <div className="leading-tight min-w-0">
+        <div className="max-w-[88px] text-[11px] font-semibold leading-snug text-slate-200 line-clamp-2 whitespace-normal break-words">{name || '—'}</div>
+        <div className="text-[10px] tabular-nums text-slate-500">{hero.maps ?? 0} 场 · {formatPercent(hero.winRate)}</div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {heroes.map((hero) => (
-          <div
-            key={hero.heroId}
-            title={hero.heroTitle || ''}
-            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-1.5"
-          >
-            <SafeImg
-              src={hero.heroImage}
-              alt={hero.heroTitle || ''}
-              className="size-7 rounded border border-white/10 object-cover"
-              fallback={<span className="size-7 rounded border border-white/5 bg-black/30" />}
-            />
-            <div className="leading-tight">
-              <div className="max-w-[90px] truncate text-[11px] font-semibold text-slate-200">{hero.heroTitle || '—'}</div>
-              <div className="text-[10px] tabular-nums text-slate-500">{hero.maps ?? 0} 场 · {formatPercent(hero.winRate)}</div>
-            </div>
+    </div>
+  );
+}
+
+/** 一列队伍招牌英雄（含队伍名头）；heroes 为空时返回 null。 */
+function HeroColumn({ teamName, heroes, accent, heroesData }: {
+  teamName: string;
+  heroes: SeriesHeroStat[];
+  accent: string;
+  heroesData: Record<number, { name_cn?: string; img_url?: string }>;
+}) {
+  const valid = heroes.filter((h) => {
+    if (!h?.heroId) return false;
+    const meta = heroesData[h.heroId];
+    return Boolean(meta?.name_cn || h.heroTitle || h.heroImage || meta?.img_url);
+  });
+  if (valid.length === 0) return null;
+  return (
+    <div className="min-w-0">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
+        <span className="min-w-0 break-words">{teamName}</span>
+      </div>
+      <div className="flex flex-wrap justify-start gap-2">{valid.map((h) => <HeroBadge key={h.heroId} hero={h} heroesData={heroesData} />)}</div>
+    </div>
+  );
+}
+
+/** 两队招牌英雄对比：左队 | 共同英雄 | 右队，左右排布；两边共有的英雄居中显示为"共同英雄"。 */
+function SignatureHeroesComparison({ first, second }: { first: SeriesTeamInfo; second: SeriesTeamInfo }) {
+  const [heroesData, setHeroesData] = useState<Record<number, { name_cn?: string; img_url?: string }>>({});
+
+  // 英雄中英名/图静态，1h 共享缓存；用于招牌英雄中文名 + 回填 DLTV 缺失的 title/图。
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<Record<string, unknown>>('/api/heroes', { ttlMs: 60 * 60 * 1000, cacheEmpty: false })
+      .then((res) => {
+        if (cancelled) return;
+        const map: Record<number, { name_cn?: string; img_url?: string }> = {};
+        Object.entries(res || {}).forEach(([key, value]) => {
+          const v = value as { name_cn?: string; img_url?: string };
+          map[parseInt(key)] = { name_cn: v.name_cn || undefined, img_url: v.img_url || undefined };
+        });
+        setHeroesData(map);
+      })
+      .catch(() => { /* 拿不到中文名时保留英文 */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const aHeroes = first.stats?.heroes || [];
+  const bHeroes = second.stats?.heroes || [];
+  if (aHeroes.length === 0 && bHeroes.length === 0) return null;
+
+  const aIds = new Set(aHeroes.map((h) => h.heroId));
+  const bIds = new Set(bHeroes.map((h) => h.heroId));
+  const common = aHeroes.filter((h) => h.heroId != null && bIds.has(h.heroId));
+  const aUnique = aHeroes.filter((h) => h.heroId == null || !bIds.has(h.heroId));
+  const bUnique = bHeroes.filter((h) => h.heroId == null || !aIds.has(h.heroId));
+
+  return (
+    <div className="mt-5">
+      <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        <span className="size-1.5 rounded-full bg-amber-400/80" />
+        招牌英雄 Signature Heroes（场次 / 胜率）
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr] md:items-start md:gap-6">
+        {/* 左队 A */}
+        <HeroColumn teamName={first.name || '天辉'} heroes={aUnique} accent="#34d399" heroesData={heroesData} />
+
+        {/* 中间：共同英雄 */}
+        <div className="min-w-0 rounded-xl border px-3 py-2.5" style={{ borderColor: 'rgba(250,204,21,0.25)', backgroundColor: 'rgba(250,204,21,0.06)' }}>
+          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-300/90">
+            <span className="size-1.5 rounded-full bg-amber-400" />
+            共同英雄 {common.length > 0 ? `· ${common.length}` : ''}
           </div>
-        ))}
+          {common.length > 0 ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              {common.map((h) => <HeroBadge key={h.heroId} hero={h} heroesData={heroesData} />)}
+            </div>
+          ) : (
+            <div className="py-2 text-center text-[11px] text-slate-600">两队招牌英雄无交集</div>
+          )}
+        </div>
+
+        {/* 右队 B */}
+        <HeroColumn teamName={second.name || '夜魇'} heroes={bUnique} accent="#ff3b30" heroesData={heroesData} />
       </div>
     </div>
   );
@@ -264,17 +381,38 @@ function StatsComparison({ first, second }: { first: SeriesTeamInfo; second: Ser
   const pct = (v: number | null) => (v == null ? '—' : `${v}%`);
   const num = (v: number | null) => (v == null ? '—' : v.toFixed(1));
   const mins = (v: number | null) => (v == null ? '—' : `${Math.round(v / 60)} 分钟`);
+  // better: 'left' | 'right' | null —— 该指标下更优一方（更高优；场均死亡取更低）。
+  const higher = (lv: number | null, rv: number | null): 'left' | 'right' | null => {
+    if (lv == null || rv == null || lv === rv) return null;
+    return lv > rv ? 'left' : 'right';
+  };
+  const lower = (lv: number | null, rv: number | null): 'left' | 'right' | null => {
+    if (lv == null || rv == null || lv === rv) return null;
+    return lv < rv ? 'left' : 'right';
+  };
   const rows = [
-    { label: '胜率', left: pct(a.winRate), right: pct(b.winRate) },
-    { label: '场均击杀', left: num(a.avgKills), right: num(b.avgKills) },
-    { label: '场均死亡', left: num(a.avgDeaths), right: num(b.avgDeaths) },
-    { label: '助攻', left: num(a.avgAssists), right: num(b.avgAssists) },
-    { label: '一血', left: pct(a.fbRate), right: pct(b.fbRate) },
-    { label: '10杀', left: pct(a.f10Rate), right: pct(b.f10Rate) },
-    { label: '一血后胜率', left: pct(a.winFbRate), right: pct(b.winFbRate) },
-    { label: '10杀后胜率', left: pct(a.winF10Rate), right: pct(b.winF10Rate) },
-    { label: '平均时长', left: mins(a.avgTime), right: mins(b.avgTime) },
+    { label: '胜率', icon: '📈', left: pct(a.winRate), right: pct(b.winRate), better: higher(a.winRate, b.winRate) },
+    { label: '场均击杀', icon: '⚔️', left: num(a.avgKills), right: num(b.avgKills), better: higher(a.avgKills, b.avgKills) },
+    { label: '场均死亡', icon: '💀', left: num(a.avgDeaths), right: num(b.avgDeaths), better: lower(a.avgDeaths, b.avgDeaths) },
+    { label: '场均助攻', icon: '🤝', left: num(a.avgAssists), right: num(b.avgAssists), better: higher(a.avgAssists, b.avgAssists) },
+    { label: '一血率', icon: '🩸', left: pct(a.fbRate), right: pct(b.fbRate), better: higher(a.fbRate, b.fbRate) },
+    { label: '前10杀率', icon: '🎯', left: pct(a.f10Rate), right: pct(b.f10Rate), better: higher(a.f10Rate, b.f10Rate) },
+    { label: '一血后胜率', icon: '🛡️', left: pct(a.winFbRate), right: pct(b.winFbRate), better: higher(a.winFbRate, b.winFbRate) },
+    { label: '10杀后胜率', icon: '⚡', left: pct(a.winF10Rate), right: pct(b.winF10Rate), better: higher(a.winF10Rate, b.winF10Rate) },
+    { label: '平均时长', icon: '⏱️', left: mins(a.avgTime), right: mins(b.avgTime), better: null },
   ];
+
+  const teamHead = (team: SeriesTeamInfo, align: 'left' | 'right') => (
+    <div className={`flex min-w-0 items-center gap-2 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+      <SafeImg
+        src={team.logo || ''}
+        alt={team.name || ''}
+        className="size-6 shrink-0 rounded-md object-contain"
+        fallback={<TeamLogoFallback name={team.name || '?'} size={24} />}
+      />
+      <span className={`truncate text-xs font-bold uppercase text-slate-300 ${align === 'right' ? 'text-right' : ''}`}>{team.name}</span>
+    </div>
+  );
 
   return (
     <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-5">
@@ -282,15 +420,14 @@ function StatsComparison({ first, second }: { first: SeriesTeamInfo; second: Ser
         <BarChart3 className="size-4 text-blue-400" /> 数据对比 Statistics
       </h2>
       <div className="grid grid-cols-[1fr_1.6fr_1fr] items-center gap-2 px-3 pb-2">
-        <span className="truncate text-right text-xs font-bold uppercase text-slate-300">{first.name}</span>
+        {teamHead(first, 'left')}
         <span className="text-center text-[10px] font-semibold text-slate-600">近 3 个月</span>
-        <span className="truncate text-xs font-bold uppercase text-slate-300">{second.name}</span>
+        {teamHead(second, 'right')}
       </div>
       {rows.map((row) => (
-        <StatCompareRow key={row.label} label={row.label} left={row.left} right={row.right} />
+        <StatCompareRow key={row.label} label={row.label} icon={row.icon} left={row.left} right={row.right} better={row.better} />
       ))}
-      <SignatureHeroes team={first} />
-      <SignatureHeroes team={second} />
+      <SignatureHeroesComparison first={first} second={second} />
     </section>
   );
 }

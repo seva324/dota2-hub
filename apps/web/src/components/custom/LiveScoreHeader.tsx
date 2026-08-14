@@ -1,6 +1,7 @@
 import { SafeImg } from '@/components/custom/SafeImg';
 import { TeamLogoFallback } from '@/components/custom/TeamLogoFallback';
 import { resolveTeamLogo } from '@/lib/teams';
+import { formatBestOf } from '@/components/custom/LiveMatchCard';
 import type { LiveDetailPayload, LiveMap } from '@/types/liveDetail';
 
 const design = {
@@ -69,7 +70,7 @@ function TeamBlock({ team, side, wins, onOpenTeam }: {
         className="size-14 shrink-0 object-contain md:size-16"
         fallback={<TeamLogoFallback name={name} size={56} />}
       />
-      <span className="w-full truncate text-center text-sm font-bold text-white md:text-base">{name}</span>
+      <span className="w-full text-center text-sm font-bold text-white md:text-base line-clamp-2 whitespace-normal break-words md:line-clamp-none md:whitespace-nowrap md:truncate">{name}</span>
       <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: side === 'Radiant' ? design.radiant : design.dire }}>
         {side === 'Radiant' ? '天辉' : '夜魇'}
       </span>
@@ -171,7 +172,7 @@ export function LiveScoreHeader({ payload, activeMap, onSelectMap, onOpenTeam }:
             系列赛 {radiantWins} : {direWins} · {formatClock(activeMap.gameTime)}          </span>
           <div className="mt-2 flex items-center gap-2">
             <span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: design.text, backgroundColor: 'rgba(255,255,255,0.05)' }}>
-              赛制 {payload.bestOf || 3}
+              赛制 {formatBestOf(payload.bestOf)}
             </span>
             {isLive && (
               <span className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold text-white" style={{ backgroundColor: design.dire, boxShadow: `0 0 16px ${design.dire}66` }}>

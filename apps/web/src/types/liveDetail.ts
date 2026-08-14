@@ -54,6 +54,9 @@ export interface LivePick {
   isRadiant: boolean;
   hero: { id: number | null; name: string | null; codeName: string | null };
   player: { id: number | null; name: string | null; officialName: string | null };
+  /** 1~5号位（后端经 DLTV 阵容富化；缺失为 null） */
+  position?: number | null;
+  positionLabel?: string | null;
 }
 
 export interface LiveState {

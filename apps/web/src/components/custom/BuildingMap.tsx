@@ -75,7 +75,7 @@ export function BuildingMap({ buildingState, radiantName, direName }: {
     <div className="flex flex-col items-center gap-2 py-1">
       <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: design.radiant }}>
         <span className="size-2 rounded-full" style={{ backgroundColor: design.radiant, boxShadow: `0 0 8px ${design.radiant}55` }} />
-        {radiantName || 'Radiant'}（Radiant）
+        {radiantName || '天辉'}（天辉）
       </span>
       <svg viewBox="0 0 220 220" className="h-auto w-full max-w-[280px]" role="img" aria-label="建筑状态地图">
         {/* 背景网格 */}
@@ -98,7 +98,7 @@ export function BuildingMap({ buildingState, radiantName, direName }: {
       </svg>
       <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: design.dire }}>
         <span className="size-2 rounded-full" style={{ backgroundColor: design.dire, boxShadow: `0 0 8px ${design.dire}55` }} />
-        {direName || 'Dire'}（Dire）
+        {direName || '夜魇'}（夜魇）
       </span>
     </div>
   );

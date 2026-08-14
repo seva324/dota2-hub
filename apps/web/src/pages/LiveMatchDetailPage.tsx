@@ -140,9 +140,10 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack, onOpenTeam 
           </button>
           <div className="flex min-w-0 items-center gap-2">
             {activeMap.status === 'live' && <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-[#ff3b30]" />}
-            <span className="truncate text-sm font-semibold text-slate-200">
-              {payload.championship?.name || '直播中'} · {formatBestOf(payload.bestOf)}
+            <span className="text-sm font-semibold text-slate-200 line-clamp-2 whitespace-normal break-words text-right">
+              {payload.championship?.name || '直播中'}
             </span>
+            <span className="shrink-0 whitespace-nowrap text-sm font-semibold text-slate-200">· {formatBestOf(payload.bestOf)}</span>
           </div>
         </div>
 
@@ -171,7 +172,7 @@ export function LiveMatchDetailPage({ seriesId, slug, champ, onBack, onOpenTeam 
           />
         </SectionCard>
 
-        <SectionCard title="已结束地图 · Finished Maps" sub="来自 hawk.live 系列赛数据">
+        <SectionCard title="已结束地图 · Finished Maps">
           <MapHistoryCards
             maps={payload.maps}
             team1={payload.team1}
