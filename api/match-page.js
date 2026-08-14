@@ -196,7 +196,7 @@ export default async function handler(req, res) {
     // 元数据（series_item）先行——这是渲染详情页的关键数据，需独占 DLTV 抓取预算。
     // 统计（lineups/teams）随后 best-effort：并发抓取 dltv 会互相抢占导致冷抓超时
     // （用户点击时 match-page 空回报 timeout → 前端"暂无比赛数据"）。串行后关键数据必达。
-    const { series, source } = await getDltvMatchPage({ seriesId, slug });
+    const { series, source, attempts } = await getDltvMatchPage({ seriesId, slug });
     const statsResult = series ? await getDltvSeriesStats({ seriesId }).catch(() => null) : null;
     const stats = statsResult?.stats || null;
 
@@ -205,7 +205,8 @@ export default async function handler(req, res) {
     // no-store 防止 EdgeOne 把空/超时响应缓存 600s。
     if (!series) {
       res.setHeader('Cache-Control', MATCH_PAGE_NO_STORE_CACHE_CONTROL);
-      return res.status(200).json({ seriesId, source: 'timeout', maps: [] });
+      // attempts 只作诊断（每步抓取来源/状态/大小/耗时），前端忽略。
+      return res.status(200).json({ seriesId, source: 'timeout', maps: [], attempts });
     }
 
     const playersMeta = series.players || {};

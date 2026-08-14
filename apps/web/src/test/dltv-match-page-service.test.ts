@@ -334,7 +334,9 @@ describe('dltv match page service', () => {
     await vi.advanceTimersByTimeAsync(32000);
 
     const result = await promise;
-    expect(result).toEqual({ series: null, source: 'timeout' });
+    expect(result).toMatchObject({ series: null, source: 'timeout' });
+    // 无任何 attempt 完成时，诊断为空数组（抓取仍在后台跑）。
+    expect(result.attempts).toEqual([]);
     expect(writeDltvMatchPageCache).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
