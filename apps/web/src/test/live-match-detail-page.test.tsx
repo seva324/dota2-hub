@@ -67,7 +67,9 @@ describe('LiveMatchDetailPage', () => {
 
     expect(await screen.findByText('Team Resilience')).toBeTruthy();
     expect(screen.getByText('Rune Eaters')).toBeTruthy();
-    expect(screen.getByText('Games of the Future 2026: Playoffs · BO3')).toBeTruthy();
+    expect(screen.getByText('Games of the Future 2026: Playoffs')).toBeTruthy();
+    // BO3 为独立、不折叠的文本节（移动端标题拆分后）
+    expect(screen.getByText(/· BO3$/)).toBeTruthy();
     expect(screen.getByText('系列赛 0 : 0 · 12:00')).toBeTruthy();
     expect(screen.getByText('LIVE')).toBeTruthy();
 
