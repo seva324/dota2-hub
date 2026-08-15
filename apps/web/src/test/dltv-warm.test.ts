@@ -86,10 +86,10 @@ describe('dltv warm cron', () => {
     expect(result.matchPages.total).toBe(1);
     expect(result.matchPages.warmed).toBe(1);
 
-    // 完成的 6h 新鲜、upcoming 用更短新鲜窗口 → 分批检查。
+    // 完成的 6h 新鲜、upcoming 每轮强制全热（ttlMs=0，赛前列表动态变化不能 skip）。
     const ttlCalls = mocks.freshDltvMatchPageSeriesIds.mock.calls.map((c) => c[2]);
     expect(ttlCalls).toContain(6 * 60 * 60 * 1000);
-    expect(ttlCalls).toContain(30 * 60 * 1000);
+    expect(ttlCalls).toContain(0);
 
     // 两个 seriesId 都被预热，slug 从 matchUrl 正确提取。
     const warmedIds = mocks.getDltvMatchPage.mock.calls.map((c) => c[0].seriesId);
@@ -124,7 +124,9 @@ describe('dltv warm cron', () => {
     expect(mocks.getDltvSeriesStats).not.toHaveBeenCalled();
   });
 
-  it('skips upcoming entries that are fresh', async () => {
+  it('re-warms upcoming entries every round even when fresh (list changes dynamically)', async () => {
+    // upcoming 列表动态变化（新比赛随时加入），fresh-skip 会漏掉新增项 →
+    // 每轮强制全热（ttlMs=0），即使 Neon 里已有快照也重抓。
     mocks.getDltvLive.mockResolvedValue({ live: [] });
     mocks.getDltvUpcoming.mockResolvedValue({
       upcoming: [
@@ -132,14 +134,15 @@ describe('dltv warm cron', () => {
       ],
     });
     mocks.getDltvResults.mockResolvedValue({ results: [] });
-    mocks.freshDltvMatchPageSeriesIds.mockResolvedValue(new Set([427409]));
+    // ttlMs=0（upcoming 强制全热）时不做 fresh-skip；results 的 6h 窗口仍按 fresh 跳过。
+    mocks.freshDltvMatchPageSeriesIds.mockImplementation(async (_db, _ids, ttlMs) => (ttlMs === 0 ? new Set() : new Set([427409])));
     mocks.getDltvMatchPage.mockResolvedValue({ series: { seriesId: 427409 }, source: 'dltv' });
 
     const result = await warmDltvCaches();
 
-    expect(result.upcomingMatchPages.skippedFresh).toBe(1);
-    expect(result.upcomingMatchPages.warmed).toBe(0);
-    expect(mocks.getDltvMatchPage).not.toHaveBeenCalled();
+    expect(result.upcomingMatchPages.skippedFresh).toBe(0);
+    expect(result.upcomingMatchPages.warmed).toBe(1);
+    expect(mocks.getDltvMatchPage).toHaveBeenCalledTimes(1);
   });
 
   it('reports zero totals without a database', async () => {
