@@ -20,7 +20,7 @@ interface HeroData {
 }
 
 /** dltv 的 hero.id 与本地 heroes 表（官方 id 体系）存在错位：英文名是权威标识，优先按名匹配。 */
-function resolveHeroByName(name: string | undefined, heroesData: Record<number, HeroData>): HeroData | undefined {
+function resolveHeroByName(name: string | null | undefined, heroesData: Record<number, HeroData>): HeroData | undefined {
   const title = String(name || '').trim().toLowerCase();
   if (!title) return undefined;
   for (const hero of Object.values(heroesData)) {
