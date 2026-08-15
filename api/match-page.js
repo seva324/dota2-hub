@@ -7,6 +7,7 @@
 
 import { getDltvMatchPage } from '../lib/server/dltv-match-page-service.js';
 import { getDltvSeriesStats } from '../lib/server/dltv-series-stats.js';
+import { aggregateTeamSignatureHeroes } from '../lib/server/dltv-team-signature.js';
 import { getMirroredAssetUrl } from '../lib/asset-mirror.js';
 
 // match-page 现在由预热 cron 写 Neon（6h 缓存），数据更静态；CDN 边缘缓存加长到 6h，
@@ -176,6 +177,16 @@ function mapTeamStats(stats, teamId, req) {
   };
 }
 
+/** 队伍统计块：overall 沿用 dltv 队伍聚合接口；heroes（招牌英雄）改用选手
+ *  topHeroes 聚合（预期获胜前 10，见 dltv-team-signature.js）——dltv 队伍维度
+ *  英雄统计与选手数据常不一致。聚合不出时回退 dltv 接口数据。 */
+function buildTeamStatsBlock(stats, team, req) {
+  const base = mapTeamStats(stats, team?.id, req);
+  const signature = aggregateTeamSignatureHeroes(team?.players);
+  if (signature.length === 0) return base;
+  return { ...(base || { overall: null }), heroes: signature };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -238,7 +249,7 @@ export default async function handler(req, res) {
           f10Rate: series.radiantTeam?.f10Rate ?? null,
           mapsTotal: series.radiantTeam?.mapsTotal ?? null,
           players: (series.radiantTeam?.players || []).map((player) => mapLineupPlayer(player, req)).filter(Boolean),
-          stats: mapTeamStats(stats, series.radiantTeam?.id, req),
+          stats: buildTeamStatsBlock(stats, series.radiantTeam, req),
         },
         dire: {
           id: series.direTeam?.id ?? null,
@@ -253,7 +264,7 @@ export default async function handler(req, res) {
           f10Rate: series.direTeam?.f10Rate ?? null,
           mapsTotal: series.direTeam?.mapsTotal ?? null,
           players: (series.direTeam?.players || []).map((player) => mapLineupPlayer(player, req)).filter(Boolean),
-          stats: mapTeamStats(stats, series.direTeam?.id, req),
+          stats: buildTeamStatsBlock(stats, series.direTeam, req),
         },
       },
       maps: (() => {
