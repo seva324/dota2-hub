@@ -70,7 +70,7 @@ function PicksRow({ picks, side, label, heroesData }: {
                   fallback={<div className="flex size-10 items-center justify-center rounded-lg bg-white/10 text-[10px] font-bold text-slate-400">{heroNameCn.slice(0, 2) || '?'}</div>}
                 />
                 <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-1 text-[8px] font-black leading-tight" style={{ backgroundColor: accent, color: '#fff' }}>
-                  {pick.positionLabel || '?号位'}
+                  {pick.positionLabel || '—'}
                 </span>
               </div>
               <span className="mt-1.5 w-full text-center text-[10px] font-semibold text-slate-200 line-clamp-2 whitespace-normal break-words" title={pick.player.name || ''}>

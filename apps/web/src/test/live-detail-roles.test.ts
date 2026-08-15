@@ -121,6 +121,23 @@ describe('live-detail position enrichment', () => {
     expect(out.maps[0].picks[0].positionLabel).toBe('1号位');
   });
 
+  it('matches via real-name token when hawk name shares no substring with the nick (KingJungles → KJ via "jungles")', async () => {
+    const { enrichLiveDetailPositions } = await import('../../../../lib/server/live-detail-roles.js');
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => squadPageHtml([
+        squadItemHtml('KJ', 'Matheus Santos Jungles Diniz', '5'),
+        squadItemHtml('Yuma', 'Yuma Benjamin Langlet Muckenhirn', '1'),
+      ]),
+    } as Response);
+
+    const payload = makePayload('LGD Gaming', 'Rune Eaters', { KingJungles: 'Undying' });
+
+    const out = await enrichLiveDetailPositions(payload);
+    expect(out.maps[0].picks[0].position).toBe(5);
+    expect(out.maps[0].picks[0].positionLabel).toBe('5号位');
+  });
+
   it('skips substring matching for very short names to avoid false positives', async () => {
     const { enrichLiveDetailPositions } = await import('../../../../lib/server/live-detail-roles.js');
     vi.mocked(fetch).mockResolvedValue({
