@@ -12,6 +12,8 @@
  */
 
 import { warmDltvCaches } from '../../lib/server/dltv-warm.js';
+import { getDltvLive, getDltvUpcoming, getDltvResults } from '../../lib/server/dltv-matches-service.js';
+import { getSquadRoleMap } from '../../lib/server/live-detail-roles.js';
 
 function parseArgs(argv) {
   const result = {};
@@ -43,6 +45,38 @@ try {
     warmed: block.warmed,
     budgetHit: block.budgetHit,
   });
+
+  // 预热 DLTV 战队 squad（live-detail 位置号数据源）：EdgeOne 出口抓战队页
+  // 间歇失败，本机抓取后写 Neon，EdgeOne 读 Neon 稳定命中。
+  // 只热 live+upcoming 队伍（位置号只对这两类页面有意义）；单并发 + 间隔，
+  // 避免连抓触发 dltv 对本机 IP 的限速（35 连发会把本机也限了）。
+  let squadWarmed = 0;
+  let squadFailed = 0;
+  try {
+    const [liveL, upL] = await Promise.all([
+      getDltvLive({ forceRefresh: false }),
+      getDltvUpcoming({ forceRefresh: false }),
+    ]);
+    const teamNames = new Set();
+    for (const rows of [liveL?.live, upL?.upcoming]) {
+      for (const m of rows || []) {
+        if (m?.radiantName) teamNames.add(String(m.radiantName));
+        if (m?.direName) teamNames.add(String(m.direName));
+      }
+    }
+    for (const name of teamNames) {
+      try {
+        const map = await getSquadRoleMap(name);
+        if (map && map.size > 0) squadWarmed += 1;
+        else squadFailed += 1;
+      } catch {
+        squadFailed += 1;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  } catch (error) {
+    console.warn(`[warm-dltv-local] squad warm failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
   console.log(
     JSON.stringify({
       ok: true,
@@ -68,6 +102,7 @@ try {
         })),
       },
       seriesStats: summarize(result.seriesStats),
+      squad: { teams: squadWarmed + squadFailed, warmed: squadWarmed, failed: squadFailed },
       dbAvailable: result.dbAvailable,
     }),
   );
