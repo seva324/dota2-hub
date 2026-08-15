@@ -138,6 +138,31 @@ describe('live-detail position enrichment', () => {
     expect(out.maps[0].picks[0].positionLabel).toBe('5号位');
   });
 
+  it('falls back to known player positions when the team has no DLTV roster (HULIGANI/L1GA)', async () => {
+    const { enrichLiveDetailPositions } = await import('../../../../lib/server/live-detail-roles.js');
+    // HULIGANI：DLTV 战队页无 Active squad（302 到 l1ga-team 也无 roster）。
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => '<html><body>no squad section</body></html>',
+    } as Response);
+
+    const payload = makePayload('OG', 'HULIGANI', {
+      ssnovv1: 'Sven',
+      'Mirage`雨': 'Shadow Fiend',
+      Corrupted: 'Centaur Warrunner',
+      sayuw: 'Earthshaker',
+      RESPECT: 'Undying',
+    });
+
+    const out = await enrichLiveDetailPositions(payload);
+    const byName = Object.fromEntries(out.maps[0].picks.map((p) => [p.player.name, p.position]));
+    expect(byName.ssnovv1).toBe(1);
+    expect(byName['Mirage`雨']).toBe(2);
+    expect(byName.Corrupted).toBe(3);
+    expect(byName.sayuw).toBe(4);
+    expect(byName.RESPECT).toBe(5);
+  });
+
   it('skips substring matching for very short names to avoid false positives', async () => {
     const { enrichLiveDetailPositions } = await import('../../../../lib/server/live-detail-roles.js');
     vi.mocked(fetch).mockResolvedValue({
