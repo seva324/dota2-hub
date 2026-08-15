@@ -131,6 +131,41 @@ describe('SeriesMatchPage upcoming view', () => {
     expect(screen.getByText('举办国家')).toBeInTheDocument();
   });
 
+  it('resolves signature hero Chinese names by english title when dltv heroId misaligns with the heroes table', async () => {
+    // 回归：dltv 的 heroId 与本地 heroes 表（官方 id 体系）存在错位——dltv 73=Invoker，
+    // 而表里 73=Alchemist（炼金术士）。中文名必须按英文名（heroTitle）匹配，不能按 id。
+    const payload = makeUpcomingPayload();
+    payload.teams.radiant.stats = {
+      overall: { maps: 19, wins: 12, winRate: 63, fbRate: 56, f10Rate: 72, winFbRate: 80, winF10Rate: 77, avgKills: 30.9, avgDeaths: 21.3, avgAssists: 75.3, avgTime: 2484 },
+      heroes: [{ heroId: 73, heroTitle: 'Invoker', heroImage: null, maps: 11, wins: 10, winRate: 90.9 }],
+    };
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/heroes')) {
+        return {
+          ok: true,
+          json: async () => ({
+            '73': { id: 73, name: 'Alchemist', name_cn: '炼金术士', img: 'alchemist', img_url: null },
+            '74': { id: 74, name: 'Invoker', name_cn: '祈求者', img: 'invoker', img_url: null },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => payload } as Response;
+    });
+
+    render(
+      <SeriesMatchPage
+        matchId="427409"
+        slug="team-resilience-vs-rune-eaters-games-of-the-future-2026"
+        onBack={() => {}}
+      />,
+    );
+
+    // 招牌英雄中文名按英文名匹配：显示祈求者，而不是按 id 错位的炼金术士。
+    expect(await screen.findByText('祈求者')).toBeInTheDocument();
+    expect(screen.queryByText('炼金术士')).not.toBeInTheDocument();
+  });
+
   it('links the event name and 赛程 button to the tournament detail page', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

@@ -19,6 +19,16 @@ interface HeroData {
   img_url?: string;
 }
 
+/** dltv 的 hero.id 与本地 heroes 表（官方 id 体系）存在错位：英文名是权威标识，优先按名匹配。 */
+function resolveHeroByName(name: string | undefined, heroesData: Record<number, HeroData>): HeroData | undefined {
+  const title = String(name || '').trim().toLowerCase();
+  if (!title) return undefined;
+  for (const hero of Object.values(heroesData)) {
+    if (hero.name && String(hero.name).trim().toLowerCase() === title) return hero;
+  }
+  return undefined;
+}
+
 function heroImg(pick: LivePick): string {
   const id = pick.hero.id ?? undefined;
   const img = pick.hero.codeName?.replace(/^npc_dota_hero_/, '') || undefined;
@@ -43,7 +53,8 @@ function PicksRow({ picks, side, label, heroesData }: {
       </div>
       <div className="grid grid-cols-5 gap-1.5">
         {picks.map((pick, i) => {
-          const hero = heroesData[pick.hero.id ?? -1];
+          const heroById = heroesData[pick.hero.id ?? -1];
+          const hero = resolveHeroByName(pick.hero.name, heroesData) || heroById;
           const heroNameCn = hero?.name_cn || pick.hero.name || '—';
           return (
             <div

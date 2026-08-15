@@ -258,9 +258,27 @@ function StatCompareRow({ label, icon, left, right, better }: {
 
 /** 单个招牌英雄徽章（头像 + 中文名 + 场次/胜率）。经 heroesData 按 heroId 回填中文名/图；
  *  名称与图都无法解析(如 DLTV 空数据占位)时返回 null 不渲染。 */
-function HeroBadge({ hero, heroesData }: { hero: SeriesHeroStat; heroesData: Record<number, { name_cn?: string; img_url?: string }> }) {
+type HeroesMeta = Record<number, { name?: string; name_cn?: string; img_url?: string }>;
+
+/** dltv 的 heroId 与本地 heroes 表（官方 id 体系）存在错位（如 dltv 73=Invoker 而表 73=Alchemist）：
+ *  英文名是权威标识，优先按 heroTitle 精确匹配；匹配不到再退回 heroId 索引。 */
+function resolveHeroMeta(
+  heroId: number | null | undefined,
+  heroTitle: string | null | undefined,
+  heroesData: HeroesMeta,
+): { name?: string; name_cn?: string; img_url?: string } | undefined {
+  const title = String(heroTitle || '').trim().toLowerCase();
+  if (title) {
+    for (const meta of Object.values(heroesData)) {
+      if (meta?.name && String(meta.name).trim().toLowerCase() === title) return meta;
+    }
+  }
+  return heroId != null ? heroesData[heroId] : undefined;
+}
+
+function HeroBadge({ hero, heroesData }: { hero: SeriesHeroStat; heroesData: HeroesMeta }) {
   if (!hero?.heroId) return null;
-  const meta = heroesData[hero.heroId];
+  const meta = resolveHeroMeta(hero.heroId, hero.heroTitle, heroesData);
   const name = meta?.name_cn || hero.heroTitle || '';
   const img = hero.heroImage || meta?.img_url || '';
   // 名称和图都没有 → 无效占位行，直接不渲染（避免出现 "— 2场"）。
@@ -290,11 +308,11 @@ function HeroColumn({ teamName, heroes, accent, heroesData }: {
   teamName: string;
   heroes: SeriesHeroStat[];
   accent: string;
-  heroesData: Record<number, { name_cn?: string; img_url?: string }>;
+  heroesData: HeroesMeta;
 }) {
   const valid = heroes.filter((h) => {
     if (!h?.heroId) return false;
-    const meta = heroesData[h.heroId];
+    const meta = resolveHeroMeta(h.heroId, h.heroTitle, heroesData);
     return Boolean(meta?.name_cn || h.heroTitle || h.heroImage || meta?.img_url);
   });
   if (valid.length === 0) return null;
@@ -311,7 +329,7 @@ function HeroColumn({ teamName, heroes, accent, heroesData }: {
 
 /** 两队招牌英雄对比：左队 | 共同英雄 | 右队，左右排布；两边共有的英雄居中显示为"共同英雄"。 */
 function SignatureHeroesComparison({ first, second }: { first: SeriesTeamInfo; second: SeriesTeamInfo }) {
-  const [heroesData, setHeroesData] = useState<Record<number, { name_cn?: string; img_url?: string }>>({});
+  const [heroesData, setHeroesData] = useState<HeroesMeta>({});
 
   // 英雄中英名/图静态，1h 共享缓存；用于招牌英雄中文名 + 回填 DLTV 缺失的 title/图。
   useEffect(() => {
@@ -319,10 +337,14 @@ function SignatureHeroesComparison({ first, second }: { first: SeriesTeamInfo; s
     apiFetch<Record<string, unknown>>('/api/heroes', { ttlMs: 60 * 60 * 1000, cacheEmpty: false })
       .then((res) => {
         if (cancelled) return;
-        const map: Record<number, { name_cn?: string; img_url?: string }> = {};
+        const map: HeroesMeta = {};
         Object.entries(res || {}).forEach(([key, value]) => {
-          const v = value as { name_cn?: string; img_url?: string };
-          map[parseInt(key)] = { name_cn: v.name_cn || undefined, img_url: v.img_url || undefined };
+          const v = value as { name?: string; name_cn?: string; img_url?: string };
+          map[parseInt(key)] = {
+            name: v.name || undefined,
+            name_cn: v.name_cn || undefined,
+            img_url: v.img_url || undefined,
+          };
         });
         setHeroesData(map);
       })
