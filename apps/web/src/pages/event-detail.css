@@ -299,9 +299,11 @@
 .event-detail-root .stand-cell.pts { font-weight: 900; }
 
 /* ===== 瑞士轮积分榜右侧「对阵结果」（R1~R6） ===== */
-.event-detail-root .group-table.swiss { min-width: 0; }
+/* 瑞士轮表格很宽（16 队 × R1~R6），独占整行（跨满双栏 grid），否则右侧轮次会被卡片裁掉；
+   表格本身保持内容宽度（max-content）不拉伸，窄屏仍由 .swiss-scroll 横向滚动。 */
+.event-detail-root .group-table.swiss { grid-column: 1 / -1; min-width: 0; }
 .event-detail-root .swiss-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.event-detail-root .swiss-table { min-width: 720px; }
+.event-detail-root .swiss-table { min-width: 720px; width: max-content; }
 .event-detail-root .swiss-head,
 .event-detail-root .swiss-row {
   display: grid;

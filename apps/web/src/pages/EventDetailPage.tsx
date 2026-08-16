@@ -160,6 +160,27 @@ export function formatCenterAsCstTime(center: string): string {
   return `${hour}:${minute}`;
 }
 
+/** 淘汰赛 bracket 的日期同为 DLTV UTC 时间串，转北京时间 "MM-DD HH:MM"（含跨天日期翻转）。 */
+export function formatBracketDateCst(value?: string): string {
+  if (!value) return '';
+  const date = new Date(String(value).replace(' ', 'T') + 'Z');
+  if (Number.isNaN(date.getTime())) return value;
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const pick = (type: string) => parts.find((p) => p.type === type)?.value || '';
+  const mm = pick('month').padStart(2, '0');
+  const dd = pick('day').padStart(2, '0');
+  const hh = pick('hour').padStart(2, '0');
+  const min = pick('minute').padStart(2, '0');
+  return `${mm}-${dd} ${hh}:${min}`;
+}
+
 /** 从 DLTV 战队 URL（/teams/<slug>）提取 slug。 */
 function slugFromTeamUrl(url?: string | null): string | null {
   const match = String(url || '').match(/\/teams\/([^/?#]+)/);
@@ -977,7 +998,7 @@ function BracketMatchCard({
   );
   return (
     <div className="bmatch-card" data-mid={mid}>
-      <div className="bmatch-date">{match.date || ''}</div>
+      <div className="bmatch-date">{formatBracketDateCst(match.date)}</div>
       {teamLink(a, Boolean(a.winner))}
       {teamLink(b, Boolean(b.winner))}
     </div>
@@ -1154,6 +1175,7 @@ function PlayoffsSection({
               <i className="win" aria-hidden="true" />
               实线 · 胜者晋级
             </span>
+            <span>时间均为北京时间</span>
           </div>
         </div>
       </div>
