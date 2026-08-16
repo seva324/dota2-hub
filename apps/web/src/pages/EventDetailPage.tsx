@@ -48,6 +48,8 @@ interface EventGroup {
   heads: string[];
   rounds?: string[];
   rows: GroupStanding[];
+  /** 比赛列表型阶段块（如 TI2026 Elimination Round）：非积分榜，行是比赛列表。 */
+  matches?: MatchRow[];
 }
 
 interface PlayoffTeam {
@@ -327,7 +329,10 @@ function AboutSection({ about }: { about?: AboutData }) {
 /* 区块：关联直播 / 即将开赛（横向滑动卡片）                              */
 /* ------------------------------------------------------------------ */
 
-function matchStage(rounds: PlayoffRound[] | undefined, url?: string): { stage: string; bo: string } {
+function matchStage(
+  rounds: { round: string; matches: { url?: string }[] }[] | undefined,
+  url?: string,
+): { stage: string; bo: string } {
   if (rounds && url) {
     for (const r of rounds) {
       if (r.matches.some((mm) => mm.url === url)) {
@@ -351,7 +356,8 @@ function MatchCard({
 }: {
   match: MatchRow;
   live?: boolean;
-  rounds?: PlayoffRound[];
+  /** 仅用于 matchStage 按 url 查找轮次名/赛制（PlayoffRound 与阶段比赛列表组均可传入）。 */
+  rounds?: { round: string; matches: { url?: string }[] }[];
   onOpenTeam?: (team: TeamLinkTarget) => void;
   onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
   teamSlugMap?: Record<string, string>;
@@ -442,9 +448,20 @@ function MatchesSection({
   teamSlugMap?: Record<string, string>;
 }) {
   // 关联直播优先用 hawk.live 的实时卡片（可进 live detail）；hawk.live 已加载但仍未覆盖时回退 DLTV 页面的 isLive 行。
-  const dltvLiveRows = (payload.matches?.matches || []).filter((m) => m.isLive);
+  // 阶段比赛列表组（groups[].matches，如 Elimination Round）的比赛行已在阶段块渲染，这里排除避免重复。
+  const stageMatchUrls = useMemo(() => {
+    const set = new Set<string>();
+    for (const g of payload.groups || []) {
+      for (const m of g.matches || []) {
+        if (m.url) set.add(m.url);
+      }
+    }
+    return set;
+  }, [payload]);
+  const isStageOwned = (m: MatchRow) => Boolean(m.url && stageMatchUrls.has(m.url));
+  const dltvLiveRows = (payload.matches?.matches || []).filter((m) => m.isLive && !isStageOwned(m));
   const hasRelatedLive = relatedLive.length > 0 || (liveLoaded && dltvLiveRows.length > 0);
-  const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive);
+  const upcomingMatches = (payload.matches?.matches || []).filter((m) => !m.isLive && !isStageOwned(m));
   const hasUpcoming = upcomingMatches.length > 0;
   if (!hasRelatedLive && !hasUpcoming) return null;
   return (
@@ -547,12 +564,14 @@ function GroupStageSection({
   onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
   teamSlugMap?: Record<string, string>;
 }) {
-  if (!groups || groups.length === 0) return null;
+  // 仅渲染积分榜组（rows）；比赛列表型阶段块（matches，如 Elimination Round）由 StageMatchesSection 渲染。
+  const standings = (groups || []).filter((g) => (g.rows || []).length > 0);
+  if (standings.length === 0) return null;
   return (
     <section className="section" aria-label="小组赛">
       <SectionHead title="小组赛积分榜" eyebrow="小组赛" />
       <div className="group-grid">
-        {groups.map((group) =>
+        {standings.map((group) =>
           group.rounds?.length ? (
             <div className="card group-table swiss" key={group.name}>
               <div className="group-table-head">
@@ -662,6 +681,116 @@ function GroupStageSection({
         )}
       </div>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 区块：阶段比赛列表（比赛列表型阶段块，如 TI2026 Elimination Round）      */
+/* ------------------------------------------------------------------ */
+
+/** 阶段比赛行的中心格：比分行（"1 - 0"）→ finished 态；时间行 → upcoming 态。 */
+function isStageMatchFinished(center?: string) {
+  return Boolean(String(center || '').trim()) && !/^\d{4}-\d{2}-\d{2}/.test(String(center || '').trim());
+}
+
+/** 阶段比赛列表（如 Elimination Round）：DLTV 将这类比赛列表放在 group__stage 区块内，
+ *  与积分榜（rows）区分，这里按阶段名独立成块渲染比赛行（live/upcoming/finished 三态）。 */
+function StageMatchesSection({
+  groups,
+  onOpenTeam,
+  onOpenMatch,
+  teamSlugMap,
+}: {
+  groups?: EventGroup[];
+  onOpenTeam?: (team: TeamLinkTarget) => void;
+  onOpenMatch?: (nav: { matchId: string; slug?: string }) => void;
+  teamSlugMap?: Record<string, string>;
+}) {
+  const stages = (groups || []).filter((g) => (g.matches || []).length > 0);
+  if (stages.length === 0) return null;
+
+  return (
+    <>
+      {stages.map((g) => {
+        // matchStage 仅按 url 匹配轮次，传 MatchRow 结构即可（无需 PlayoffMatch 的 teams）。
+        const rounds: { round: string; matches: { url?: string }[] }[] = [{ round: g.name, matches: g.matches || [] }];
+        const shown = (g.matches || []).filter((m) => m.isLive || !isStageMatchFinished(m.center));
+        const finished = (g.matches || []).filter((m) => !m.isLive && isStageMatchFinished(m.center));
+        return (
+          <section className="section" aria-label={g.name} key={g.name}>
+            <SectionHead title={g.name} eyebrow="阶段赛程" />
+            <div className="matches-scroll">
+              {shown.map((m) => (
+                <MatchCard
+                  key={m.url || `${m.left}-${m.right}-${m.center}`}
+                  match={m}
+                  live={m.isLive}
+                  rounds={rounds}
+                  onOpenTeam={onOpenTeam}
+                  onOpenMatch={onOpenMatch}
+                  teamSlugMap={teamSlugMap}
+                />
+              ))}
+            </div>
+            {finished.length > 0 ? (
+              <div className="finished-cards">
+                {finished.map((m) => {
+                  const nav = seriesIdAndSlugFromMatchUrl(m.url);
+                  const parts = m.center.replace(/\s+/g, ' ').split('-').map((x) => x.trim());
+                  const p1 = parts[0] || '';
+                  const p2 = parts[1] || '';
+                  let lw = false;
+                  let rw = false;
+                  if (/^W$/i.test(p1)) lw = true;
+                  else if (/^(FF|W)$/i.test(p2)) rw = true;
+                  else {
+                    const n1 = Number(p1);
+                    const n2 = Number(p2);
+                    lw = n1 > n2;
+                    rw = n2 > n1;
+                  }
+                  return (
+                    <div
+                      className={`finished-card ${nav && onOpenMatch ? 'clickable' : ''}`}
+                      key={m.url || `${m.left}-${m.right}-${m.center}`}
+                      role={nav && onOpenMatch ? 'button' : undefined}
+                      tabIndex={nav && onOpenMatch ? 0 : undefined}
+                      onClick={nav && onOpenMatch ? () => onOpenMatch(nav) : undefined}
+                      onKeyDown={nav && onOpenMatch ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenMatch(nav); } } : undefined}
+                    >
+                      <div className="fc-head">
+                        <span className="done">已结束</span>
+                        <span>{g.name}</span>
+                      </div>
+                      <div className="fc-teams">
+                        <TeamLink
+                          className={`fc-team ${lw ? 'win' : ''}`}
+                          team={{ name: m.left, slug: m.leftSlug ?? teamSlugMap?.[m.left] ?? null }}
+                          onOpenTeam={onOpenTeam}
+                        >
+                          <TeamLogo src={m.leftLogo} name={m.left} size={24} />
+                          <span className="nm">{m.left}</span>
+                          <span className="sc">{p1}</span>
+                        </TeamLink>
+                        <TeamLink
+                          className={`fc-team ${rw ? 'win' : ''}`}
+                          team={{ name: m.right, slug: m.rightSlug ?? teamSlugMap?.[m.right] ?? null }}
+                          onOpenTeam={onOpenTeam}
+                        >
+                          <TeamLogo src={m.rightLogo} name={m.right} size={24} />
+                          <span className="nm">{m.right}</span>
+                          <span className="sc">{p2}</span>
+                        </TeamLink>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
+    </>
   );
 }
 
@@ -1349,12 +1478,23 @@ export function EventDetailPage({
       if (slug) map[p.name] = slug;
     }
     for (const g of payload?.groups || []) {
-      for (const r of g.rows) {
+      for (const r of g.rows || []) {
         const slug = slugFromTeamUrl(r.teamUrl);
         if (slug && !map[r.team]) map[r.team] = slug;
       }
     }
     return map;
+  }, [payload]);
+
+  // 阶段比赛列表组（groups[].matches）的已结束比赛已在阶段块内渲染，从「已结束比赛」区排除避免重复。
+  const nonStageFinished = useMemo(() => {
+    const stageUrls = new Set<string>();
+    for (const g of payload?.groups || []) {
+      for (const m of g.matches || []) {
+        if (m.url) stageUrls.add(m.url);
+      }
+    }
+    return (payload?.matches?.finishedMatches || []).filter((m) => !(m.url && stageUrls.has(m.url)));
   }, [payload]);
 
   // 本赛事涉及的全部战队名（participants + 关联直播/已结束行的对阵），用于把 hawk.live 的实时场次归属到本赛事。
@@ -1411,11 +1551,12 @@ export function EventDetailPage({
           <AboutSection about={payload.about} />
           <MatchesSection payload={payload} relatedLive={relatedLive} liveLoaded={liveLoaded} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} onOpenLive={onOpenLive} teamSlugMap={teamSlugMap} />
           <GroupStageSection groups={payload.groups} finished={payload.matches?.finishedMatches || []} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
+          <StageMatchesSection groups={payload.groups} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
           <PlayoffsSection rounds={payload.playoffRounds} prizes={payload.prizePool} onOpenTeam={onOpenTeam} teamSlugMap={teamSlugMap} />
           <PrizePoolSection prizes={payload.prizePool} breakdown={payload.about?.prizeBreakdown} />
           <StatsSection />
           <ParticipantsSection participants={payload.participants} onOpenTeam={onOpenTeam} />
-          <FinishedSection finished={payload.matches?.finishedMatches || []} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
+          <FinishedSection finished={nonStageFinished} onOpenTeam={onOpenTeam} onOpenMatch={onOpenMatch} teamSlugMap={teamSlugMap} />
           {payload.source ? (
             <p className="text-center text-[11px] text-slate-600">数据来源 DLTV · {payload.source}</p>
           ) : null}

@@ -24,7 +24,8 @@ const DLTV_EVENT_BASE = 'https://dltv.org/events/';
 const CACHE_CONTROL = 'public, max-age=0, s-maxage=0, must-revalidate';
 // v5：比赛行用 match URL 还原战队全名 + slug（修复 upcoming 卡片战队跳转错误），强制换 key 重建。
 // v6：解析器新增瑞士轮积分榜 rounds/对阵结果字段，强制换 key 重建缓存（丢弃旧 parse 形态）。
-const NEON_CACHE_PREFIX = 'dltv:event-detail:v6:';
+// v7：解析器新增比赛列表型阶段块（如 TI2026 Elimination Round，groups[].matches），强制换 key 重建。
+const NEON_CACHE_PREFIX = 'dltv:event-detail:v7:';
 const NEON_TTL_MS = 15 * 60 * 1000;
 const NEON_STALE_MAX_MS = 6 * 60 * 60 * 1000;
 const CACHE_TTL_MS = 2 * 60 * 1000;
@@ -35,7 +36,7 @@ const LOCK_TTL_MS = 10000;
 const memoryCache = new Map();
 
 function cacheKey(slug) {
-  return `dltv:event-detail:${String(slug || '').trim().toLowerCase()}`;
+  return `${NEON_CACHE_PREFIX}${String(slug || '').trim().toLowerCase()}`;
 }
 
 function rebaseImages(payload, req) {
@@ -50,6 +51,11 @@ function rebaseImages(payload, req) {
     groups: (payload.groups || []).map((g) => ({
       ...g,
       rows: (g.rows || []).map((row) => ({ ...row, logo: rebase(row.logo) })),
+      matches: (g.matches || []).map((m) => ({
+        ...m,
+        leftLogo: rebase(m.leftLogo),
+        rightLogo: rebase(m.rightLogo),
+      })),
     })),
     playoffRounds: (payload.playoffRounds || []).map((r) => ({
       ...r,

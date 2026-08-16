@@ -320,6 +320,116 @@ describe('dltv-event-detail-parser 瑞士轮（TI2026 风格）', () => {
   });
 });
 
+describe('dltv-event-detail-parser 阶段比赛列表（TI2026 Elimination Round 风格）', () => {
+  /** 比赛列表型阶段块的行：左队名 → 中心（时间/比分）→ 右队名，行链接到 /matches/。 */
+  function stageMatchRow(url, left, leftLogo, center, right, rightLogo, live = false) {
+    return `
+      <a href="${url}" class="table__body-row" data-match-popup="1">
+        <div class="table__body-row__cell width-36">
+          <div class="cell__logo" data-theme-light="${leftLogo}" data-theme-dark="${leftLogo}"></div>
+          <div class="cell__name">${left}</div>
+        </div>
+        <div class="table__body-row__cell width-4"></div>
+        <div class="table__body-row__cell bordered width-20 align-center">
+          <div class="cell__bold-gray">
+            <div class="score">${center}</div>
+            ${live ? '<div class="label label__danger">live</div>' : ''}
+          </div>
+        </div>
+        <div class="table__body-row__cell width-4 align-right"></div>
+        <div class="table__body-row__cell width-36 align-right">
+          <div class="cell__name">${right}</div>
+          <div class="cell__logo" data-theme-light="${rightLogo}" data-theme-dark="${rightLogo}"></div>
+        </div>
+      </a>`;
+  }
+
+  function stageHtml() {
+    const stageParticipants = `
+      <section class="event__participants">
+        <div class="card"><div class="card__body"><div class="event__participants-teams">
+          <div class="event__participants-teams__team">
+            <a href="https://dltv.org/teams/lgd-gaming" class="title overflow-text-1">LGD Gaming</a>
+            <div class="logo" data-theme-light="/l.png" data-theme-dark="/l.png"></div>
+          </div>
+          <div class="event__participants-teams__team">
+            <a href="https://dltv.org/teams/team-yandex" class="title overflow-text-1">Team Yandex</a>
+            <div class="logo" data-theme-light="/r.png" data-theme-dark="/r.png"></div>
+          </div>
+        </div></div></div>
+      </section>`;
+    return `<h1>THE INTERNATIONAL 2026</h1>
+      ${stageParticipants}
+      <section class="group__stage">
+        <div class="card">
+          <div class="card__title">Elimination Round</div>
+          <div class="card__body">
+            <div class="matches__scores">
+              <div class="table">
+                <div class="table__body">
+                  ${stageMatchRow('https://dltv.org/matches/427683/lgd-gaming-vs-team-yandex-the-international-2026', 'LGD Gaming', '/l.png', '<span class="text-default" data-moment="HH:mm">2026-08-16 08:00:00</span>', 'Team Yandex', '/r.png')}
+                  ${stageMatchRow('https://dltv.org/matches/427686/team-falcons-vs-vici-gaming-the-international-2026', 'Team Falcons', '/f.png', '<span>1</span><span>-</span><span>0</span>', 'Vici Gaming', '/v.png', true)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>`;
+  }
+
+  it('比赛列表型阶段块解析为 { name, matches } 组（阶段名取自 card__title）', () => {
+    const payload = parseDltvEventDetailPage(stageHtml(), 'the-international-2026');
+    const stage = payload.groups.find((g) => g.matches);
+    expect(stage).toBeTruthy();
+    expect(stage.name).toBe('Elimination Round');
+    expect(stage.matches).toHaveLength(2);
+    const [upcoming, live] = stage.matches;
+    expect(upcoming.left).toBe('LGD Gaming');
+    expect(upcoming.leftSlug).toBe('lgd-gaming');
+    expect(upcoming.right).toBe('Team Yandex');
+    expect(upcoming.rightSlug).toBe('team-yandex');
+    expect(upcoming.center).toBe('2026-08-16 08:00:00');
+    expect(upcoming.isLive).toBe(false);
+    expect(upcoming.url).toBe('https://dltv.org/matches/427683/lgd-gaming-vs-team-yandex-the-international-2026');
+    expect(live.center).toBe('1 - 0');
+    expect(live.isLive).toBe(true);
+    expect(live.leftLogo).toBe('https://dltv.org/f.png');
+    expect(live.rightLogo).toBe('https://dltv.org/v.png');
+  });
+
+  it('阶段比赛列表组不参与瑞士轮 rounds 标记（rounds 仅作用于积分榜组）', () => {
+    const payload = parseDltvEventDetailPage(stageHtml(), 'the-international-2026');
+    const stage = payload.groups.find((g) => g.matches);
+    expect(stage.rounds).toBeUndefined();
+  });
+
+  it('无比赛列表的积分榜赛事不受影响（保持原 groups 形态）', () => {
+    const html = `<h1>X</h1>${participantsHtml()}
+      <section class="group__stage">
+        <div class="card"><div class="card__title">Group Stage</div><div class="card__body">
+          <div class="table">
+            <div class="table__head"><div class="table__head-item width-75 big-text">团队</div></div>
+            <div class="table-body">
+              <div class="table__body-row">
+                <div class="table__body-row__cell" data-theme-dark-bgcolor="#163819"><div class="cell__coloured">1</div></div>
+                <a href="https://dltv.org/teams/lgd-gaming" class="table__body-row__cell">
+                  <div class="cell__logo" data-theme-dark="/uploads/l.png"></div>
+                  <div class="cell__name"><div>LGD Gaming</div><div class="cell__name-text">China</div></div>
+                </a>
+                <div class="table__body-row__cell"><div class="cell__text big">2 - 0</div></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </section>`;
+    const payload = parseDltvEventDetailPage(html, 'x');
+    expect(payload.groups).toHaveLength(1);
+    expect(payload.groups[0].name).toBe('团队');
+    expect(payload.groups[0].rows).toHaveLength(1);
+    expect(payload.groups[0].matches).toBeUndefined();
+  });
+});
+
 describe('dltv-event-detail-parser 已结束比赛时间（data-event-matches-odd）', () => {
   it('提取已结束比赛的 time 字段（用于对阵结果按时间排序）', () => {
     const row = `

@@ -76,6 +76,41 @@ describe('EventDetailPage navigation', () => {
     expect(screen.getByRole('button', { name: /查看详情/ })).toBeTruthy();
   });
 
+  it('renders match-list stage groups (Elimination Round) as their own section and excludes them from upcoming', async () => {
+    const payloadWithStage = {
+      ...PAYLOAD,
+      groups: [
+        {
+          name: 'Elimination Round',
+          heads: [],
+          rows: [],
+          matches: [
+            { url: 'https://dltv.org/matches/555/team-a-vs-team-b-test-event', left: 'Team A', leftSlug: 'team-a', center: '10:00', right: 'Team B', rightSlug: 'team-b', isLive: false },
+            { url: 'https://dltv.org/matches/556/team-c-vs-team-d-test-event', left: 'Team C', leftSlug: 'team-c', center: '1 - 0', right: 'Team D', rightSlug: 'team-d', isLive: true },
+          ],
+        },
+      ],
+    };
+    __resetApiCache();
+    vi.unstubAllGlobals();
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/event-detail')) return createJsonResponse(payloadWithStage);
+      if (url.startsWith('/api/live-hero')) return createJsonResponse({ liveMatches: [] });
+      return createJsonResponse({});
+    }));
+    renderEventDetail();
+    await waitFor(() => {
+      expect(screen.getAllByText('Elimination Round').length).toBeGreaterThan(0);
+    });
+    // 阶段块渲染两场比赛（upcoming 卡片 + live 卡片）
+    expect(screen.getByRole('button', { name: /Team A.*Team B/s })).toBeTruthy();
+    expect(screen.getByText('直播进行中')).toBeTruthy();
+    // 阶段块内的比赛不再出现在「即将开赛」里（避免重复）
+    const upcomingSection = screen.getByLabelText('即将开赛');
+    expect(upcomingSection.textContent).not.toContain('Team C');
+  });
+
   it('navigates to the internal match detail page when clicking 查看详情', async () => {
     const { onOpenMatch } = renderEventDetail();
     await waitFor(() => {
